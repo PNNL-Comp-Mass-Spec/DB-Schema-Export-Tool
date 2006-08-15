@@ -30,7 +30,6 @@ Public Class frmMain
     Private Const THREAD_WAIT_MSEC As Integer = 150
 
     Private Const ROW_COUNT_SEPARATOR As String = ControlChars.Tab & " ("
-    Private Const DATA_ROW_COUNT_WARNING_THRESHOLD As Integer = 1000
 
     Protected Enum eTableNameSortModeConstants
         Name = 0
@@ -60,6 +59,9 @@ Public Class frmMain
 
     ' Note: Must contain valid RegEx statements (tested case-insensitive)
     Protected mTableNameAutoSelectRegEx() As String
+
+    Protected mDefaultDMSDatabaseList() As String
+    Protected mDefaultMTSDatabaseList() As String
 
     Private mWorking As Boolean
 
@@ -180,14 +182,18 @@ Public Class frmMain
             intValidTableNameCount = 0
             ReDim strValidTableNames(strTableNames.Length - 1)
 
-            ' See if any of the tables in strTableNames() has more than DATA_ROW_COUNT_WARNING_THRESHOLD rows
+            ' See if any of the tables in strTableNames() has more than clsExportDBSchema.DATA_ROW_COUNT_WARNING_THRESHOLD rows
             For intIndex = 0 To strTableNames.Length - 1
                 blnKeepTable = True
 
                 intIndexMatch = Array.BinarySearch(mCachedTableList, strTableNames(intIndex))
                 If intIndexMatch >= 0 Then
-                    If mCachedTableListRowCounts(intIndexMatch) >= DATA_ROW_COUNT_WARNING_THRESHOLD Then
-                        eResponse = System.Windows.Forms.MessageBox.Show("Warning, table " & strTableNames(intIndex) & " has " & mCachedTableListRowCounts(intIndexMatch).ToString & " rows.  Are you sure you want to export data from it?", "Row Count Over " & DATA_ROW_COUNT_WARNING_THRESHOLD.ToString, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2)
+                    If mCachedTableListRowCounts(intIndexMatch) >= clsExportDBSchema.DATA_ROW_COUNT_WARNING_THRESHOLD Then
+                        eResponse = System.Windows.Forms.MessageBox.Show("Warning, table " & strTableNames(intIndex) & " has " & _
+                                       mCachedTableListRowCounts(intIndexMatch).ToString & " rows.  Are you sure you want to export data from it?", _
+                                       "Row Count Over " & clsExportDBSchema.DATA_ROW_COUNT_WARNING_THRESHOLD.ToString, _
+                                       MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2)
+
                         If eResponse = Windows.Forms.DialogResult.No Then
                             blnKeepTable = False
                         ElseIf eResponse = Windows.Forms.DialogResult.Cancel Then
@@ -350,6 +356,7 @@ Public Class frmMain
 
                     mnuEditScriptObjectsThreaded.Checked = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "ScriptObjectsThreaded", mnuEditScriptObjectsThreaded.Checked)
                     mnuEditPauseAfterEachDatabase.Checked = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "PauseAfterEachDatabase", mnuEditPauseAfterEachDatabase.Checked)
+                    mnuEditIncludeTimestampInScriptFileHeader.Checked = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "IncludeTimestampInScriptFileHeader", mnuEditIncludeTimestampInScriptFileHeader.Checked)
 
                     chkCreateFolderForEachDB.Checked = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "CreateFolderForEachDB", chkCreateFolderForEachDB.Checked)
                     txtOutputFolderNamePrefix.Text = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "OutputFolderNamePrefix", txtOutputFolderNamePrefix.Text)
@@ -453,6 +460,7 @@ Public Class frmMain
 
                         .SetParam(XML_SECTION_PROGRAM_OPTIONS, "ScriptObjectsThreaded", mnuEditScriptObjectsThreaded.Checked)
                         .SetParam(XML_SECTION_PROGRAM_OPTIONS, "PauseAfterEachDatabase", mnuEditPauseAfterEachDatabase.Checked)
+                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "IncludeTimestampInScriptFileHeader", mnuEditIncludeTimestampInScriptFileHeader.Checked)
 
                         .SetParam(XML_SECTION_PROGRAM_OPTIONS, "CreateFolderForEachDB", chkCreateFolderForEachDB.Checked)
                         .SetParam(XML_SECTION_PROGRAM_OPTIONS, "OutputFolderNamePrefix", txtOutputFolderNamePrefix.Text)
@@ -598,8 +606,10 @@ Public Class frmMain
 
                 blnHighlightCurrentRow = False
                 If htSelectedTableNamesSaved.Contains(strTableName) Then
+                    ' User had previously highlighted this table name; re-highlight it
                     blnHighlightCurrentRow = True
                 ElseIf blnAutoHiglightRows Then
+                    ' Test strTableName against the RegEx values from mTableNameAutoSelectRegEx()
                     For intCompareIndex = 0 To mTableNameAutoSelectRegEx.Length - 1
                         If objRegExArray(intCompareIndex).Match(strTableName).Success Then
                             blnHighlightCurrentRow = True
@@ -608,6 +618,7 @@ Public Class frmMain
                     Next intCompareIndex
 
                     If Not blnHighlightCurrentRow Then
+                        ' No match: test strTableName against the names in mTableNamesToAutoSelect()
                         For intCompareIndex = 0 To mTableNamesToAutoSelect.Length - 1
                             If strTableName.ToLower = mTableNamesToAutoSelect(intCompareIndex).ToLower Then
                                 blnHighlightCurrentRow = True
@@ -634,6 +645,9 @@ Public Class frmMain
         mCachedTableListCount = 0
         ReDim mCachedTableList(-1)
         ReDim mCachedTableListRowCounts(-1)
+
+        ReDim mDefaultDMSDatabaseList(-1)
+        ReDim mDefaultMTSDatabaseList(-1)
 
         PopulateComboBoxes()
 
@@ -723,14 +737,16 @@ Public Class frmMain
             clsExportDBSchema.InitializeSchemaExportOptions(mSchemaExportOptions)
             With mSchemaExportOptions
                 .OutputFolderPath = txtOutputFolderPath.Text
-                .IncludeSystemObjects = mnuEditIncludeSystemObjects.Checked
-                .CreateFolderForEachDB = chkCreateFolderForEachDB.Checked
                 .OutputFolderNamePrefix = txtOutputFolderNamePrefix.Text
-                .SaveDataAsInsertIntoStatements = mnuEditSaveDataAsInsertIntoStatements.Checked
+                .CreateFolderForEachDB = chkCreateFolderForEachDB.Checked
+                .IncludeSystemObjects = mnuEditIncludeSystemObjects.Checked
+                .IncludeTimestampInScriptFileHeader = mnuEditIncludeTimestampInScriptFileHeader.Checked
 
+                .SaveDataAsInsertIntoStatements = mnuEditSaveDataAsInsertIntoStatements.Checked
+                .DatabaseTypeForInsertInto = clsExportDBSchema.eTargetDatabaseTypeConstants.SqlServer       ' Reserved for future expansion
                 .AutoSelectTableNamesForDataExport = mnuEditAutoSelectDefaultTableNames.Checked
 
-                ' Future expansion: Update mDBSchemaExporter.TableNamesToAutoSelect and mDBSchemaExporter.TableNameAutoSelectRegEx
+                ' Note: mDBSchemaExporter & mTableNameAutoSelectRegEx will be passed to mDBSchemaExporter below
 
                 For intIndex = 0 To lstObjectTypesToScript.Items.Count - 1
                     blnSelected = lstObjectTypesToScript.GetSelected(intIndex)
@@ -779,15 +795,28 @@ Public Class frmMain
         End Try
 
         Try
+            If mDBSchemaExporter Is Nothing Then
+                mDBSchemaExporter = New clsExportDBSchema
+            End If
+
+            If Not mTableNamesToAutoSelect Is Nothing Then
+                mDBSchemaExporter.TableNamesToAutoSelect = mTableNamesToAutoSelect
+            End If
+
+            If Not mTableNameAutoSelectRegEx Is Nothing Then
+                mDBSchemaExporter.TableNameAutoSelectRegEx = mTableNameAutoSelectRegEx
+            End If
+        Catch ex As Exception
+            System.Windows.Forms.MessageBox.Show("Error instantiating mDBSchemaExporter and updating the data export auto-select lists: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            Exit Sub
+        End Try
+
+        Try
             mWorking = True
             EnableDisableControls()
 
             UpdatePauseUnpauseCaption(clsExportDBSchema.ePauseStatusConstants.Unpaused)
             Application.DoEvents()
-
-            If mDBSchemaExporter Is Nothing Then
-                mDBSchemaExporter = New clsExportDBSchema
-            End If
 
             If Not mnuEditScriptObjectsThreaded.Checked Then
                 ScriptDBSchemaObjectsThread()
@@ -854,17 +883,31 @@ Public Class frmMain
         End Try
     End Sub
 
-    Private Sub SubTaskProgressUpdate(ByVal taskDescription As String, ByVal percentComplete As Single)
-        lblSubtaskProgress.Text = taskDescription
-        pbarSubtaskProgress.Value = percentComplete
+    Private Sub SelectDefaultDBs(ByVal strDBList() As String)
 
-        If mDBSchemaExporter.ProgressStepCount > 0 Then
-            pbarProgress.Value = mDBSchemaExporter.ProgressStep / CSng(mDBSchemaExporter.ProgressStepCount) * 100.0! + 1.0! / mDBSchemaExporter.ProgressStepCount * percentComplete
+        Dim intIndex As Integer
+        Dim strCurrentDB As String
+
+        If Not strDBList Is Nothing Then
+
+            ' Update the entries in strDBList to be lower case, then sort alphabetically
+            For intIndex = 0 To strDBList.Length - 1
+                strDBList(intIndex) = strDBList(intIndex).ToLower
+            Next intIndex
+
+            Array.Sort(strDBList)
+
+            lstDatabasesToProcess.ClearSelected()
+
+            For intIndex = 0 To lstDatabasesToProcess.Items.Count - 1
+                strCurrentDB = lstDatabasesToProcess.Items(intIndex).ToString.ToLower
+
+                If Array.BinarySearch(strDBList, strCurrentDB) >= 0 Then
+                    lstDatabasesToProcess.SetSelected(intIndex, True)
+                End If
+            Next intIndex
         End If
-    End Sub
 
-    Private Sub SubTaskProgressComplete()
-        pbarSubtaskProgress.Value = pbarProgress.Maximum
     End Sub
 
     Private Sub ResetToDefaults(ByVal blnConfirm As Boolean)
@@ -890,6 +933,7 @@ Public Class frmMain
             mnuEditScriptObjectsThreaded.Checked = False
             mnuEditIncludeSystemObjects.Checked = False
             mnuEditPauseAfterEachDatabase.Checked = False
+            mnuEditIncludeTimestampInScriptFileHeader.Checked = False
 
             mnuEditIncludeTableRowCounts.Checked = True
             mnuEditAutoSelectDefaultTableNames.Checked = True
@@ -901,6 +945,23 @@ Public Class frmMain
 
             clsExportDBSchema.InitializeAutoSelectTableNames(mTableNamesToAutoSelect)
             clsExportDBSchema.InitializeAutoSelectTableRegEx(mTableNameAutoSelectRegEx)
+
+            ReDim mDefaultDMSDatabaseList(2)
+            mDefaultDMSDatabaseList(0) = "DMS5"
+            mDefaultDMSDatabaseList(1) = "Protein_Sequences"
+            mDefaultDMSDatabaseList(2) = "DMSHistoricLog1"
+
+            ReDim mDefaultMTSDatabaseList(9)
+            mDefaultMTSDatabaseList(0) = "MT_Template_01"
+            mDefaultMTSDatabaseList(1) = "PT_Template_01"
+            mDefaultMTSDatabaseList(2) = "MT_Main"
+            mDefaultMTSDatabaseList(3) = "MTS_Master"
+            mDefaultMTSDatabaseList(4) = "Prism_IFC"
+            mDefaultMTSDatabaseList(5) = "Prism_RPT"
+            mDefaultMTSDatabaseList(6) = "PAST_BB"
+            mDefaultMTSDatabaseList(7) = "Master_Sequences"
+            mDefaultMTSDatabaseList(8) = "MT_Historic_Log"
+            mDefaultMTSDatabaseList(9) = "MT_HistoricLog"
 
             EnableDisableControls()
         Catch ex As Exception
@@ -1013,6 +1074,19 @@ Public Class frmMain
         End If
 
     End Function
+
+    Private Sub SubTaskProgressUpdate(ByVal taskDescription As String, ByVal percentComplete As Single)
+        lblSubtaskProgress.Text = taskDescription
+        pbarSubtaskProgress.Value = percentComplete
+
+        If mDBSchemaExporter.ProgressStepCount > 0 Then
+            pbarProgress.Value = mDBSchemaExporter.ProgressStep / CSng(mDBSchemaExporter.ProgressStepCount) * 100.0! + 1.0! / mDBSchemaExporter.ProgressStepCount * percentComplete
+        End If
+    End Sub
+
+    Private Sub SubTaskProgressComplete()
+        pbarSubtaskProgress.Value = pbarProgress.Maximum
+    End Sub
 
     Private Sub UpdateDatabaseList()
         Dim strDatabaseList() As String = New String() {}
@@ -1259,6 +1333,14 @@ Public Class frmMain
         ScriptDBSchemaObjects()
     End Sub
 
+    Private Sub cmdSelectDefaultDMSDBs_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdSelectDefaultDMSDBs.Click
+        SelectDefaultDBs(mDefaultDMSDatabaseList)
+    End Sub
+
+    Private Sub cmdSelectDefaultMTSDBs_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdSelectDefaultMTSDBs.Click
+        SelectDefaultDBs(mDefaultMTSDatabaseList)
+    End Sub
+
     Private Sub cmdExit_Click(ByVal eventSender As System.Object, ByVal eventArgs As System.EventArgs) Handles cmdExit.Click
         Me.Close()
     End Sub
@@ -1349,6 +1431,10 @@ Public Class frmMain
 
     Private Sub mnuEditPauseAfterEachDatabase_Click_1(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditPauseAfterEachDatabase.Click
         mnuEditPauseAfterEachDatabase.Checked = Not mnuEditPauseAfterEachDatabase.Checked
+    End Sub
+
+    Private Sub mnuEditIncludeTimestampInScriptFileHeader_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditIncludeTimestampInScriptFileHeader.Click
+        mnuEditIncludeTimestampInScriptFileHeader.Checked = Not mnuEditIncludeTimestampInScriptFileHeader.Checked
     End Sub
 
     Private Sub mnuEditIncludeTableRowCounts_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditIncludeTableRowCounts.Click

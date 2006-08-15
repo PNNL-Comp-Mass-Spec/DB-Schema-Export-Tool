@@ -35,6 +35,7 @@ Partial Class frmMain
         Me.mnuEdit = New System.Windows.Forms.MenuItem
         Me.mnuEditIncludeSystemObjects = New System.Windows.Forms.MenuItem
         Me.mnuEditPauseAfterEachDatabase = New System.Windows.Forms.MenuItem
+        Me.mnuEditIncludeTimestampInScriptFileHeader = New System.Windows.Forms.MenuItem
         Me.mnuEditSep2 = New System.Windows.Forms.MenuItem
         Me.mnuEditIncludeTableRowCounts = New System.Windows.Forms.MenuItem
         Me.mnuEditAutoSelectDefaultTableNames = New System.Windows.Forms.MenuItem
@@ -54,6 +55,9 @@ Partial Class frmMain
         Me.mnuHelp = New System.Windows.Forms.MenuItem
         Me.mnuHelpAbout = New System.Windows.Forms.MenuItem
         Me.fraOutputOptions = New System.Windows.Forms.GroupBox
+        Me.lblSelectDefaultDBs = New System.Windows.Forms.Label
+        Me.cmdSelectDefaultDMSDBs = New System.Windows.Forms.Button
+        Me.cmdSelectDefaultMTSDBs = New System.Windows.Forms.Button
         Me.lblOutputFolderNamePrefix = New System.Windows.Forms.Label
         Me.txtOutputFolderNamePrefix = New System.Windows.Forms.TextBox
         Me.cboTableNamesToExportSortOrder = New System.Windows.Forms.ComboBox
@@ -222,13 +226,13 @@ Partial Class frmMain
         '
         'mnuEditSep4
         '
-        Me.mnuEditSep4.Index = 11
+        Me.mnuEditSep4.Index = 12
         Me.mnuEditSep4.Text = "-"
         '
         'mnuEdit
         '
         Me.mnuEdit.Index = 1
-        Me.mnuEdit.MenuItems.AddRange(New System.Windows.Forms.MenuItem() {Me.mnuEditStart, Me.mnuEditIncludeSystemObjects, Me.mnuEditSep1, Me.mnuEditScriptObjectsThreaded, Me.mnuEditPauseAfterEachDatabase, Me.mnuEditSep2, Me.mnuEditIncludeTableRowCounts, Me.mnuEditAutoSelectDefaultTableNames, Me.mnuEditSep3, Me.mnuEditWarnOnHighTableRowCount, Me.mnuEditSaveDataAsInsertIntoStatements, Me.mnuEditSep4, Me.mnuEditResetOptions})
+        Me.mnuEdit.MenuItems.AddRange(New System.Windows.Forms.MenuItem() {Me.mnuEditStart, Me.mnuEditIncludeSystemObjects, Me.mnuEditSep1, Me.mnuEditScriptObjectsThreaded, Me.mnuEditPauseAfterEachDatabase, Me.mnuEditIncludeTimestampInScriptFileHeader, Me.mnuEditSep2, Me.mnuEditIncludeTableRowCounts, Me.mnuEditAutoSelectDefaultTableNames, Me.mnuEditSep3, Me.mnuEditWarnOnHighTableRowCount, Me.mnuEditSaveDataAsInsertIntoStatements, Me.mnuEditSep4, Me.mnuEditResetOptions})
         Me.mnuEdit.Text = "&Edit"
         '
         'mnuEditIncludeSystemObjects
@@ -241,42 +245,48 @@ Partial Class frmMain
         Me.mnuEditPauseAfterEachDatabase.Index = 4
         Me.mnuEditPauseAfterEachDatabase.Text = "&Pause after each Database"
         '
+        'mnuEditIncludeTimestampInScriptFileHeader
+        '
+        Me.mnuEditIncludeTimestampInScriptFileHeader.Index = 5
+        Me.mnuEditIncludeTimestampInScriptFileHeader.Text = "Include Timestamp in Script File Header"
+        '
         'mnuEditSep2
         '
-        Me.mnuEditSep2.Index = 5
+        Me.mnuEditSep2.Index = 6
         Me.mnuEditSep2.Text = "-"
         '
         'mnuEditIncludeTableRowCounts
         '
         Me.mnuEditIncludeTableRowCounts.Checked = True
-        Me.mnuEditIncludeTableRowCounts.Index = 6
+        Me.mnuEditIncludeTableRowCounts.Index = 7
         Me.mnuEditIncludeTableRowCounts.Text = "Obtain Table Row &Counts"
         '
         'mnuEditAutoSelectDefaultTableNames
         '
         Me.mnuEditAutoSelectDefaultTableNames.Checked = True
-        Me.mnuEditAutoSelectDefaultTableNames.Index = 7
+        Me.mnuEditAutoSelectDefaultTableNames.Index = 8
         Me.mnuEditAutoSelectDefaultTableNames.Text = "&Auto-select Default Table Names"
         '
         'mnuEditSep3
         '
-        Me.mnuEditSep3.Index = 8
+        Me.mnuEditSep3.Index = 9
         Me.mnuEditSep3.Text = "-"
         '
         'mnuEditWarnOnHighTableRowCount
         '
-        Me.mnuEditWarnOnHighTableRowCount.Index = 9
+        Me.mnuEditWarnOnHighTableRowCount.Checked = True
+        Me.mnuEditWarnOnHighTableRowCount.Index = 10
         Me.mnuEditWarnOnHighTableRowCount.Text = "&Warn If High Table Row Count"
         '
         'mnuEditSaveDataAsInsertIntoStatements
         '
         Me.mnuEditSaveDataAsInsertIntoStatements.Checked = True
-        Me.mnuEditSaveDataAsInsertIntoStatements.Index = 10
+        Me.mnuEditSaveDataAsInsertIntoStatements.Index = 11
         Me.mnuEditSaveDataAsInsertIntoStatements.Text = "Save Data As &Insert Into Statements"
         '
         'mnuEditResetOptions
         '
-        Me.mnuEditResetOptions.Index = 12
+        Me.mnuEditResetOptions.Index = 13
         Me.mnuEditResetOptions.Text = "&Reset Options to Defaults"
         '
         'lblProgress
@@ -387,6 +397,9 @@ Partial Class frmMain
                     Or System.Windows.Forms.AnchorStyles.Left) _
                     Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.fraOutputOptions.BackColor = System.Drawing.SystemColors.Control
+        Me.fraOutputOptions.Controls.Add(Me.lblSelectDefaultDBs)
+        Me.fraOutputOptions.Controls.Add(Me.cmdSelectDefaultDMSDBs)
+        Me.fraOutputOptions.Controls.Add(Me.cmdSelectDefaultMTSDBs)
         Me.fraOutputOptions.Controls.Add(Me.lblOutputFolderNamePrefix)
         Me.fraOutputOptions.Controls.Add(Me.txtOutputFolderNamePrefix)
         Me.fraOutputOptions.Controls.Add(Me.cboTableNamesToExportSortOrder)
@@ -406,6 +419,47 @@ Partial Class frmMain
         Me.fraOutputOptions.TabIndex = 3
         Me.fraOutputOptions.TabStop = False
         Me.fraOutputOptions.Text = "Output Options"
+        '
+        'lblSelectDefaultDBs
+        '
+        Me.lblSelectDefaultDBs.BackColor = System.Drawing.SystemColors.Control
+        Me.lblSelectDefaultDBs.Cursor = System.Windows.Forms.Cursors.Default
+        Me.lblSelectDefaultDBs.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblSelectDefaultDBs.ForeColor = System.Drawing.SystemColors.ControlText
+        Me.lblSelectDefaultDBs.Location = New System.Drawing.Point(11, 258)
+        Me.lblSelectDefaultDBs.Name = "lblSelectDefaultDBs"
+        Me.lblSelectDefaultDBs.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.lblSelectDefaultDBs.Size = New System.Drawing.Size(81, 19)
+        Me.lblSelectDefaultDBs.TabIndex = 15
+        Me.lblSelectDefaultDBs.Text = "Select default:"
+        '
+        'cmdSelectDefaultDMSDBs
+        '
+        Me.cmdSelectDefaultDMSDBs.BackColor = System.Drawing.SystemColors.Control
+        Me.cmdSelectDefaultDMSDBs.Cursor = System.Windows.Forms.Cursors.Default
+        Me.cmdSelectDefaultDMSDBs.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.cmdSelectDefaultDMSDBs.ForeColor = System.Drawing.SystemColors.ControlText
+        Me.cmdSelectDefaultDMSDBs.Location = New System.Drawing.Point(92, 253)
+        Me.cmdSelectDefaultDMSDBs.Name = "cmdSelectDefaultDMSDBs"
+        Me.cmdSelectDefaultDMSDBs.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.cmdSelectDefaultDMSDBs.Size = New System.Drawing.Size(75, 25)
+        Me.cmdSelectDefaultDMSDBs.TabIndex = 14
+        Me.cmdSelectDefaultDMSDBs.Text = "DMS DBs"
+        Me.cmdSelectDefaultDMSDBs.UseVisualStyleBackColor = False
+        '
+        'cmdSelectDefaultMTSDBs
+        '
+        Me.cmdSelectDefaultMTSDBs.BackColor = System.Drawing.SystemColors.Control
+        Me.cmdSelectDefaultMTSDBs.Cursor = System.Windows.Forms.Cursors.Default
+        Me.cmdSelectDefaultMTSDBs.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.cmdSelectDefaultMTSDBs.ForeColor = System.Drawing.SystemColors.ControlText
+        Me.cmdSelectDefaultMTSDBs.Location = New System.Drawing.Point(175, 253)
+        Me.cmdSelectDefaultMTSDBs.Name = "cmdSelectDefaultMTSDBs"
+        Me.cmdSelectDefaultMTSDBs.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.cmdSelectDefaultMTSDBs.Size = New System.Drawing.Size(75, 25)
+        Me.cmdSelectDefaultMTSDBs.TabIndex = 13
+        Me.cmdSelectDefaultMTSDBs.Text = "MTS DBs"
+        Me.cmdSelectDefaultMTSDBs.UseVisualStyleBackColor = False
         '
         'lblOutputFolderNamePrefix
         '
@@ -492,10 +546,10 @@ Partial Class frmMain
         Me.lstDatabasesToProcess.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
                     Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
         Me.lstDatabasesToProcess.ItemHeight = 14
-        Me.lstDatabasesToProcess.Location = New System.Drawing.Point(6, 91)
+        Me.lstDatabasesToProcess.Location = New System.Drawing.Point(9, 91)
         Me.lstDatabasesToProcess.Name = "lstDatabasesToProcess"
         Me.lstDatabasesToProcess.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended
-        Me.lstDatabasesToProcess.Size = New System.Drawing.Size(242, 186)
+        Me.lstDatabasesToProcess.Size = New System.Drawing.Size(242, 158)
         Me.lstDatabasesToProcess.TabIndex = 3
         '
         'mnuFileSep1
@@ -683,7 +737,7 @@ Partial Class frmMain
         Me.Controls.Add(Me.fraStatus)
         Me.Menu = Me.MainMenuControl
         Me.Name = "frmMain"
-        Me.Text = "frmMain"
+        Me.Text = "DB Schema Export Tool"
         Me.fraConnectionSettings.ResumeLayout(False)
         Me.fraConnectionSettings.PerformLayout()
         Me.fraOutputOptions.ResumeLayout(False)
@@ -750,4 +804,8 @@ Partial Class frmMain
     Friend WithEvents lblOutputFolderNamePrefix As System.Windows.Forms.Label
     Friend WithEvents txtOutputFolderNamePrefix As System.Windows.Forms.TextBox
     Friend WithEvents mnuEditSep3 As System.Windows.Forms.MenuItem
+    Friend WithEvents mnuEditIncludeTimestampInScriptFileHeader As System.Windows.Forms.MenuItem
+    Friend WithEvents lblSelectDefaultDBs As System.Windows.Forms.Label
+    Friend WithEvents cmdSelectDefaultDMSDBs As System.Windows.Forms.Button
+    Friend WithEvents cmdSelectDefaultMTSDBs As System.Windows.Forms.Button
 End Class

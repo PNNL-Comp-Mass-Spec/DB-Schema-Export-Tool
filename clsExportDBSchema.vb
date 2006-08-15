@@ -46,6 +46,14 @@ Public Class clsExportDBSchema
 
     Public Const DEFAULT_OUTPUT_FOLDER_NAME_PREFIX As String = "DBSchema__"
 
+    ' Note: this value defines the maximum number of data rows that will be exported 
+    ' from tables that are auto-added to the table list for data export
+    Public Const DATA_ROW_COUNT_WARNING_THRESHOLD As Integer = 1000
+
+    Private Const COMMENT_START_TEXT As String = "/****** "
+    Private Const COMMENT_END_TEXT As String = " ******/"
+    Private Const COMMENT_END_TEXT_SHORT As String = "*/"
+
     Public Enum eDBSchemaExportErrorCodes
         NoError = 0
         GeneralError = 1
@@ -88,6 +96,14 @@ Public Class clsExportDBSchema
         GeneralObject = 8
     End Enum
 
+    ' Note: Currenly only SqlServer is supported
+    Public Enum eTargetDatabaseTypeConstants
+        SqlServer = 0
+        MySql = 1
+        Postgres = 2
+        SqlLite = 3
+    End Enum
+
 #End Region
 
 #Region "Structures"
@@ -96,8 +112,10 @@ Public Class clsExportDBSchema
         Public OutputFolderNamePrefix As String
         Public CreateFolderForEachDB As Boolean
         Public IncludeSystemObjects As Boolean
-        Public SaveDataAsInsertIntoStatements As Boolean
+        Public IncludeTimestampInScriptFileHeader As Boolean
 
+        Public SaveDataAsInsertIntoStatements As Boolean
+        Public DatabaseTypeForInsertInto As eTargetDatabaseTypeConstants
         Public AutoSelectTableNamesForDataExport As Boolean
 
         Public ExportTables As Boolean
@@ -265,12 +283,15 @@ Public Class clsExportDBSchema
         Me.RequestUnpause()
     End Sub
 
-    Private Function AutoSelectTableNamesForDataExport(ByVal objDatabase As Microsoft.SqlServer.Management.Smo.Database, ByRef strTableNamesForDataExport() As String, ByVal udtSchemaExportOptions As udtSchemaExportOptionsType) As Boolean
+    Private Function AutoSelectTableNamesForDataExport(ByVal objDatabase As Microsoft.SqlServer.Management.Smo.Database, ByRef strTableNamesForDataExport() As String, ByRef intMaximumDataRowsToExport() As Integer, ByRef udtSchemaExportOptions As udtSchemaExportOptionsType) As Boolean
 
         Dim objRegExOptions As System.Text.RegularExpressions.RegexOptions
         Dim objRegExArray() As System.Text.RegularExpressions.Regex
 
-        Dim objTableNames As System.Collections.Specialized.StringCollection
+        ' Stores the table names and maximum number of data rows to export (0 means all rows)
+        Dim htTableNames As Hashtable
+        Dim objEnum As System.Collections.IDictionaryEnumerator
+
         Dim intIndex As Integer
         Dim intCompareIndex As Integer
 
@@ -286,20 +307,24 @@ Public Class clsExportDBSchema
 
             blnNewTableFound = False
 
-            objTableNames = New System.Collections.Specialized.StringCollection
+            htTableNames = New Hashtable
 
-            ' Copy the table names from strTableNamesForDataExport to objTableNames
+            ' Copy the table names from strTableNamesForDataExport to htTableNames
+            ' Store 0 for the hash value since we want to export all of the data rows from the tables in strTableNamesForDataExport
+            ' Simultaneously, populate intMaximumDataRowsToExport
             If Not strTableNamesForDataExport Is Nothing Then
+                ReDim intMaximumDataRowsToExport(strTableNamesForDataExport.Length - 1)
+
                 For intIndex = 0 To strTableNamesForDataExport.Length - 1
-                    objTableNames.Add(strTableNamesForDataExport(intIndex))
+                    htTableNames.Add(strTableNamesForDataExport(intIndex), 0)
                 Next intIndex
             End If
 
-            ' Copy the table names from mTableNamesToAutoSelect to objTableNames (if not yet present)
+            ' Copy the table names from mTableNamesToAutoSelect to htTableNames (if not yet present)
             If Not mTableNamesToAutoSelect Is Nothing Then
                 For intIndex = 0 To mTableNamesToAutoSelect.Length - 1
-                    If Not objTableNames.Contains(mTableNamesToAutoSelect(intIndex)) Then
-                        objTableNames.Add(mTableNamesToAutoSelect(intIndex))
+                    If Not htTableNames.Contains(mTableNamesToAutoSelect(intIndex)) Then
+                        htTableNames.Add(mTableNamesToAutoSelect(intIndex), DATA_ROW_COUNT_WARNING_THRESHOLD)
                         blnNewTableFound = True
                     End If
                 Next intIndex
@@ -324,8 +349,8 @@ Public Class clsExportDBSchema
 
                     For intCompareIndex = 0 To mTableNameAutoSelectRegEx.Length - 1
                         If objRegExArray(intCompareIndex).Match(strTableName).Success Then
-                            If Not objTableNames.Contains(strTableName) Then
-                                objTableNames.Add(strTableName)
+                            If Not htTableNames.Contains(strTableName) Then
+                                htTableNames.Add(strTableName, DATA_ROW_COUNT_WARNING_THRESHOLD)
                                 blnNewTableFound = True
                             End If
                             Exit For
@@ -335,11 +360,19 @@ Public Class clsExportDBSchema
             End If
 
             If blnNewTableFound Then
-                ReDim strTableNamesForDataExport(objTableNames.Count - 1)
+                ReDim strTableNamesForDataExport(htTableNames.Count - 1)
+                ReDim intMaximumDataRowsToExport(htTableNames.Count - 1)
 
-                For intIndex = 0 To objTableNames.Count - 1
-                    strTableNamesForDataExport(intIndex) = objTableNames.Item(intIndex)
-                Next intIndex
+                intIndex = 0
+                objEnum = htTableNames.GetEnumerator
+                Do While objEnum.MoveNext
+                    strTableNamesForDataExport(intIndex) = CStr(objEnum.Key)
+                    intMaximumDataRowsToExport(intIndex) = CInt(objEnum.Value)
+                    intIndex += 1
+                Loop
+
+                ' Sort strTableNamesForDataExport and sort intMaximumDataRowsToExport parallel to it
+                Array.Sort(strTableNamesForDataExport, intMaximumDataRowsToExport)
             End If
 
         Catch ex As Exception
@@ -361,6 +394,62 @@ Public Class clsExportDBSchema
 
         SetPauseStatus(ePauseStatusConstants.Unpaused)
     End Sub
+
+    Private Function CleanSqlScript(ByRef objStringCollection As System.Collections.Specialized.StringCollection, ByRef udtSchemaExportOptions As udtSchemaExportOptionsType) As System.Collections.Specialized.StringCollection
+
+        Dim intIndex As Integer
+        Dim intIndexStart As Integer
+        Dim intIndexEnd As Integer
+        Dim intCrLfIndex As Integer
+
+        Dim strText As String
+
+        Dim chWhiteSpaceChars() As Char = New Char() {" "c, ControlChars.Tab}
+
+        Try
+            If Not udtSchemaExportOptions.IncludeTimestampInScriptFileHeader Then
+                ' Look for and remove the timestamp from the first line of the Sql script
+                If Not objStringCollection Is Nothing AndAlso objStringCollection.Count > 0 Then
+                    ' Look for and remove the text  "Script Date: 08/14/2006 20:14:31" prior to the first "******/"
+                    ' Do not look past the first carriage return of each entry in objStringCollection
+
+                    For intIndex = 0 To objStringCollection.Count - 1
+                        strText = objStringCollection(intIndex)
+
+                        ' Find the first CrLf after the first non-blank line in strText
+                        intIndexStart = 0
+                        Do
+                            intCrLfIndex = strText.IndexOf(ControlChars.NewLine, intIndexStart)
+                            If intCrLfIndex = intIndexStart Then
+                                intIndexStart += 2
+                            Else
+                                Exit Do
+                            End If
+                        Loop While intCrLfIndex >= 0 And intCrLfIndex < intIndexStart
+
+                        If intCrLfIndex < 0 Then intCrLfIndex = strText.Length - 1
+
+                        intIndexStart = strText.IndexOf("Script Date: ", 0, intCrLfIndex + 1)
+                        intIndexEnd = strText.IndexOf(COMMENT_END_TEXT_SHORT, 0, intCrLfIndex + 1)
+
+                        If intIndexStart > 0 And intIndexEnd > 0 Then
+                            strText = strText.Substring(0, intIndexStart).TrimEnd(chWhiteSpaceChars) & COMMENT_END_TEXT & _
+                                      strText.Substring(intIndexEnd + COMMENT_END_TEXT_SHORT.Length)
+
+                            objStringCollection(intIndex) = String.Copy(strText)
+                        End If
+                    Next
+                End If
+            End If
+
+        Catch ex As Exception
+            ' Leave objStringCollection unchanged
+        End Try
+   
+
+        Return objStringCollection
+
+    End Function
 
     Public Function ConnectToServer(ByVal udtServerConnectionInfo As udtServerConnectionInfoType) As Boolean
         Dim blnConnected As Boolean
@@ -399,7 +488,7 @@ Public Class clsExportDBSchema
 
     End Function
 
-    Private Function ExportDBObjectsUsingSMO(ByRef objSqlServer As Microsoft.SqlServer.Management.Smo.Server, ByVal strDatabaseName As String, ByVal strTableNamesForDataExport() As String, ByVal udtSchemaExportOptions As udtSchemaExportOptionsType, ByRef blnDBNotFoundReturn As Boolean) As Boolean
+    Private Function ExportDBObjectsUsingSMO(ByRef objSqlServer As Microsoft.SqlServer.Management.Smo.Server, ByVal strDatabaseName As String, ByVal strTableNamesForDataExport() As String, ByRef udtSchemaExportOptions As udtSchemaExportOptionsType, ByRef blnDBNotFoundReturn As Boolean) As Boolean
 
         Dim objDatabase As Microsoft.SqlServer.Management.Smo.Database
 
@@ -408,6 +497,9 @@ Public Class clsExportDBSchema
         Dim strOutputFolderPathCurrentDB As String = String.Empty
         Dim intProcessCount As Integer
         Dim intProcessCountExpected As Integer
+
+        Dim intMaximumDataRowsToExport() As Integer
+        ReDim intMaximumDataRowsToExport(-1)
 
         Dim blnSuccess As Boolean
 
@@ -418,7 +510,7 @@ Public Class clsExportDBSchema
             With objScriptOptions
                 .Default = True
                 .DriAll = True
-                .IncludeHeaders = True
+                .IncludeHeaders = True          ' If True, then includes a line of the form: /****** Object:  Table [dbo].[T_Analysis_Description]    Script Date: 08/14/2006 12:14:31 ******/
                 .IncludeDatabaseContext = False
                 .IncludeIfNotExists = False     ' If True, then the entire SP is placed inside an nvarchar variable
                 .Indexes = True
@@ -465,7 +557,7 @@ Public Class clsExportDBSchema
             End If
 
             If udtSchemaExportOptions.AutoSelectTableNamesForDataExport Then
-                blnSuccess = AutoSelectTableNamesForDataExport(objDatabase, strTableNamesForDataExport, udtSchemaExportOptions)
+                blnSuccess = AutoSelectTableNamesForDataExport(objDatabase, strTableNamesForDataExport, intMaximumDataRowsToExport, udtSchemaExportOptions)
                 If Not blnSuccess Then
                     Return False
                 End If
@@ -491,8 +583,8 @@ Public Class clsExportDBSchema
                 intProcessCount = ExportDBObjectsWork(objDatabase, objScriptOptions, udtSchemaExportOptions, strOutputFolderPathCurrentDB, False, intProcessCountExpected)
             End If
 
-            ' Export data from tables specified by strTableNamesForDataExport
-            blnSuccess = ExportDBTableData(objDatabase, strTableNamesForDataExport, udtSchemaExportOptions, strOutputFolderPathCurrentDB, intProcessCount, intProcessCountExpected)
+            ' Export data from tables specified by strTableNamesForDataExport; maximum row counts are specified by intMaximumDataRowsToExport
+            blnSuccess = ExportDBTableData(objDatabase, strTableNamesForDataExport, intMaximumDataRowsToExport, udtSchemaExportOptions, strOutputFolderPathCurrentDB, intProcessCount, intProcessCountExpected)
 
         Catch ex As Exception
             SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error scripting objects in database " & strDatabaseName)
@@ -502,7 +594,7 @@ Public Class clsExportDBSchema
         Return blnSuccess
     End Function
 
-    Private Function ExportDBObjectsWork(ByRef objDatabase As Microsoft.SqlServer.Management.Smo.Database, ByRef objScriptOptions As Microsoft.SqlServer.Management.Smo.ScriptingOptions, ByVal udtSchemaExportOptions As udtSchemaExportOptionsType, ByVal strOutputFolderPathCurrentDB As String, ByVal blnCountObjectsOnly As Boolean, ByVal intProcessCountExpected As Integer) As Integer
+    Private Function ExportDBObjectsWork(ByRef objDatabase As Microsoft.SqlServer.Management.Smo.Database, ByRef objScriptOptions As Microsoft.SqlServer.Management.Smo.ScriptingOptions, ByRef udtSchemaExportOptions As udtSchemaExportOptionsType, ByVal strOutputFolderPathCurrentDB As String, ByVal blnCountObjectsOnly As Boolean, ByVal intProcessCountExpected As Integer) As Integer
         Dim objTable As Microsoft.SqlServer.Management.Smo.Table
 
         Dim objSMOObject() As Microsoft.SqlServer.Management.Smo.SqlSmoObject
@@ -513,6 +605,7 @@ Public Class clsExportDBSchema
 
         Dim dsObjects As DataSet
         Dim objRow As DataRow
+        Dim strObjectSchema As String
         Dim strObjectName As String
 
         Dim objScripter As Microsoft.SqlServer.Management.Smo.Scripter
@@ -524,7 +617,6 @@ Public Class clsExportDBSchema
         Dim intObjectIterator As Integer
 
         Dim strSql As String
-        Dim strXType As String
 
         intProcessCount = 0
 
@@ -542,7 +634,7 @@ Public Class clsExportDBSchema
                         UpdateSubtaskProgress(intProcessCount, intProcessCountExpected)
 
                         objSMOObject(0) = objTable
-                        WriteTextToFile(strOutputFolderPathCurrentDB, objTable.Name, objScripter.Script(objSMOObject), True)
+                        WriteTextToFile(strOutputFolderPathCurrentDB, objTable.Name, CleanSqlScript(objScripter.Script(objSMOObject), udtSchemaExportOptions), True)
                     End If
 
                     intProcessCount += 1
@@ -555,13 +647,13 @@ Public Class clsExportDBSchema
             End If
         End If
 
-        ' One option to obtain the list of views, stored procedures, and UDFs is to use objDatabase.EnumObjects
+        ' Option 1) obtain the list of views, stored procedures, and UDFs is to use objDatabase.EnumObjects
         ' However, this only returns the object name, type, and URN, not whether or not it is a system object
         '
-        ' A second option is to use objDatabase.Views, objDatabase.StoredProcedures, etc.
+        ' Option 2) use objDatabase.Views, objDatabase.StoredProcedures, etc.
         ' However, on Sql Server 2005 this returns many system views and system procedures that we typically don't want to export
         '
-        ' So, instead, we'll simply query the sysobjects table and filter on the xtype field
+        ' Option 3) query the sysobjects table and filter on the xtype field
         ' Possible values for XType:
         '   C = CHECK constraint
         '   D = Default or DEFAULT constraint
@@ -580,61 +672,140 @@ Public Class clsExportDBSchema
         '   V = View
         '   X = Extended stored procedure
 
+        ''Dim strXType As String
+        ''For intObjectIterator = 0 To 2
+        ''    strXType = String.Empty
+        ''    Select Case intObjectIterator
+        ''        Case 0
+        ''            ' Views
+        ''            If udtSchemaExportOptions.ExportViews Then
+        ''                strXType = " = 'V'"
+        ''            End If
+        ''        Case 1
+        ''            ' Stored procedures
+        ''            If udtSchemaExportOptions.ExportStoredProcedures Then
+        ''                strXType = " = 'P'"
+        ''            End If
+        ''        Case 2
+        ''            ' User defined functions
+        ''            If udtSchemaExportOptions.ExportUserDefinedFunctions Then
+        ''                strXType = " IN ('IF', 'FN', 'TF')"
+        ''            End If
+        ''        Case Else
+        ''            ' Unknown value for intObjectIterator; skip it
+        ''    End Select
+
+        ''    If strXType.Length > 0 Then
+        ''        strSql = "SELECT name FROM sysobjects WHERE xtype " & strXType
+        ''        If Not udtSchemaExportOptions.IncludeSystemObjects Then
+        ''            strSql &= " AND category = 0"
+        ''        End If
+        ''        strSql &= " ORDER BY Name"
+        ''        dsObjects = objDatabase.ExecuteWithResults(strSql)
+
+        ''        If blnCountObjectsOnly Then
+        ''            intProcessCount += dsObjects.Tables(0).Rows.Count
+        ''        Else
+        ''            For Each objRow In dsObjects.Tables(0).Rows
+        ''                strObjectName = objRow.Item(0).ToString
+        ''                mSubtaskProgressStepDescription = strObjectName
+        ''                UpdateSubtaskProgress(intProcessCount, intProcessCountExpected)
+
+        ''                Select Case intObjectIterator
+        ''                    Case 0
+        ''                        ' Views
+        ''                        objSMOObject(0) = objDatabase.Views(strObjectName)
+        ''                    Case 1
+        ''                        ' Stored procedures
+        ''                        objSMOObject(0) = objDatabase.StoredProcedures(strObjectName)
+        ''                    Case 2
+        ''                        ' User defined functions
+        ''                        objSMOObject(0) = objDatabase.UserDefinedFunctions(strObjectName)
+        ''                    Case Else
+        ''                        ' Unknown value for intObjectIterator; skip it
+        ''                        objSMOObject(0) = Nothing
+        ''                End Select
+
+        ''                If Not objSMOObject(0) Is Nothing Then
+        ''                    WriteTextToFile(strOutputFolderPathCurrentDB, strObjectName, CleanSqlScript(objScripter.Script(objSMOObject), udtSchemaExportOptions), True)
+        ''                End If
+
+        ''                intProcessCount += 1
+        ''                CheckPauseStatus()
+        ''                If mAbortProcessing Then
+        ''                    UpdateProgress("Aborted processing", mProgressPercentComplete)
+        ''                    Exit Function
+        ''                End If
+        ''            Next objRow
+        ''        End If
+        ''    End If
+        ''Next intObjectIterator
+
+
+        ' Option 4) Query the INFORMATION_SCHEMA views
+
         For intObjectIterator = 0 To 2
-            strXType = String.Empty
+            strSql = String.Empty
             Select Case intObjectIterator
                 Case 0
                     ' Views
                     If udtSchemaExportOptions.ExportViews Then
-                        strXType = " = 'V'"
+                        strSql = "SELECT table_schema, table_name FROM INFORMATION_SCHEMA.tables WHERE table_type = 'view' "
+                        If Not udtSchemaExportOptions.IncludeSystemObjects Then
+                            strSql &= " AND table_name NOT IN ('sysconstraints', 'syssegments') "
+                        End If
+                        strSql &= " ORDER BY table_name"
                     End If
                 Case 1
                     ' Stored procedures
                     If udtSchemaExportOptions.ExportStoredProcedures Then
-                        strXType = " = 'P'"
+                        strSql = "SELECT routine_schema, routine_name FROM INFORMATION_SCHEMA.routines WHERE routine_type = 'procedure' "
+                        If Not udtSchemaExportOptions.IncludeSystemObjects Then
+                            strSql &= " AND routine_name NOT LIKE 'dt[_]%' "
+                        End If
+                        strSql &= " ORDER BY routine_name"
                     End If
                 Case 2
                     ' User defined functions
                     If udtSchemaExportOptions.ExportUserDefinedFunctions Then
-                        strXType = " IN ('IF', 'FN', 'TF')"
+                        strSql = "SELECT routine_schema, routine_name FROM INFORMATION_SCHEMA.routines WHERE routine_type = 'function' "
+                        strSql &= " ORDER BY routine_name"
                     End If
                 Case Else
                     ' Unknown value for intObjectIterator; skip it
             End Select
 
-            If strXType.Length > 0 Then
-                strSql = "SELECT name FROM sysobjects WHERE xtype " & strXType
-                If Not udtSchemaExportOptions.IncludeSystemObjects Then
-                    strSql &= " AND category = 0"
-                End If
-                strSql &= " ORDER BY Name"
+            If strSql.Length > 0 Then
                 dsObjects = objDatabase.ExecuteWithResults(strSql)
 
                 If blnCountObjectsOnly Then
                     intProcessCount += dsObjects.Tables(0).Rows.Count
                 Else
                     For Each objRow In dsObjects.Tables(0).Rows
-                        strObjectName = objRow.Item(0).ToString
+                        ' The first column is the schema
+                        ' The second column is the name
+                        strObjectSchema = objRow.Item(0).ToString
+                        strObjectName = objRow.Item(1).ToString
                         mSubtaskProgressStepDescription = strObjectName
                         UpdateSubtaskProgress(intProcessCount, intProcessCountExpected)
 
                         Select Case intObjectIterator
                             Case 0
                                 ' Views
-                                objSMOObject(0) = objDatabase.Views(strObjectName)
+                                objSMOObject(0) = objDatabase.Views(strObjectName, strObjectSchema)
                             Case 1
                                 ' Stored procedures
-                                objSMOObject(0) = objDatabase.StoredProcedures(strObjectName)
+                                objSMOObject(0) = objDatabase.StoredProcedures(strObjectName, strObjectSchema)
                             Case 2
                                 ' User defined functions
-                                objSMOObject(0) = objDatabase.UserDefinedFunctions(strObjectName)
+                                objSMOObject(0) = objDatabase.UserDefinedFunctions(strObjectName, strObjectSchema)
                             Case Else
                                 ' Unknown value for intObjectIterator; skip it
                                 objSMOObject(0) = Nothing
                         End Select
 
                         If Not objSMOObject(0) Is Nothing Then
-                            WriteTextToFile(strOutputFolderPathCurrentDB, strObjectName, objScripter.Script(objSMOObject), True)
+                            WriteTextToFile(strOutputFolderPathCurrentDB, strObjectName, CleanSqlScript(objScripter.Script(objSMOObject), udtSchemaExportOptions), True)
                         End If
 
                         intProcessCount += 1
@@ -652,7 +823,7 @@ Public Class clsExportDBSchema
             If blnCountObjectsOnly Then
                 intProcessCount += objDatabase.UserDefinedDataTypes.Count
             Else
-                intItemCount = ScriptObjects(objDatabase.UserDefinedDataTypes, objScriptOptions, strOutputFolderPathCurrentDB, intProcessCountExpected)
+                intItemCount = ScriptObjects(objDatabase.UserDefinedDataTypes, objScriptOptions, udtSchemaExportOptions, strOutputFolderPathCurrentDB, intProcessCountExpected)
                 intProcessCount += intItemCount
             End If
         End If
@@ -661,7 +832,7 @@ Public Class clsExportDBSchema
             If blnCountObjectsOnly Then
                 intProcessCount += objDatabase.UserDefinedTypes.Count
             Else
-                intItemCount = ScriptObjects(objDatabase.UserDefinedTypes, objScriptOptions, strOutputFolderPathCurrentDB, intProcessCountExpected)
+                intItemCount = ScriptObjects(objDatabase.UserDefinedTypes, objScriptOptions, udtSchemaExportOptions, strOutputFolderPathCurrentDB, intProcessCountExpected)
                 intProcessCount += intItemCount
             End If
         End If
@@ -670,7 +841,7 @@ Public Class clsExportDBSchema
 
     End Function
 
-    Private Function ExportDBTableData(ByRef objDatabase As Microsoft.SqlServer.Management.Smo.Database, ByRef strTableNamesForDataExport() As String, ByVal udtSchemaExportOptions As udtSchemaExportOptionsType, ByVal strOutputFolderPathCurrentDB As String, ByVal intProcessCount As Integer, ByVal intProcessCountExpected As Integer) As Boolean
+    Private Function ExportDBTableData(ByRef objDatabase As Microsoft.SqlServer.Management.Smo.Database, ByRef strTableNamesForDataExport() As String, ByRef intMaximumDataRowsToExport() As Integer, ByRef udtSchemaExportOptions As udtSchemaExportOptionsType, ByVal strOutputFolderPathCurrentDB As String, ByVal intProcessCount As Integer, ByVal intProcessCountExpected As Integer) As Boolean
 
         Dim objTable As Microsoft.SqlServer.Management.Smo.Table
         Dim objColumn As Microsoft.SqlServer.Management.Smo.Column
@@ -687,6 +858,7 @@ Public Class clsExportDBSchema
 
         Dim objCurrentRow As System.Text.StringBuilder
 
+        Dim strHeader As String
         Dim strInsertIntoLine As String = String.Empty
         Dim chColSepChar As Char
 
@@ -720,15 +892,28 @@ Public Class clsExportDBSchema
                             End If
                         Next
 
-                        ' Export the data from objTable
-                        strSql = "Select * from [" & objDatabase.Tables(strTableNamesForDataExport(intTableIndex)).Name & "]"
+                        ' Export the data from objTable, possibly limiting the number of rows to export
+                        strSql = "SELECT "
+                        If Not intMaximumDataRowsToExport Is Nothing AndAlso intMaximumDataRowsToExport.Length > intTableIndex Then
+                            If intMaximumDataRowsToExport(intTableIndex) > 0 Then
+                                strSql &= "TOP " & intMaximumDataRowsToExport(intTableIndex).ToString
+                            End If
+                        End If
+                        strSql &= " * FROM [" & objDatabase.Tables(strTableNamesForDataExport(intTableIndex)).Name & "]"
 
                         ' Read method #1: Populate a DataSet
                         dsCurrentTable = objDatabase.ExecuteWithResults(strSql)
 
                         objTableRows = New System.Collections.Specialized.StringCollection()
-                        objTableRows.Add("/****** Object:  Table [" & objTable.Name & "]    Script Date: " & GetTimeStamp() & " ******/")
-                        objTableRows.Add("/****** RowCount = " & objTable.RowCount & " ******/")
+
+                        strHeader = COMMENT_START_TEXT & "Object:  Table [" & objTable.Name & "]"
+                        If udtSchemaExportOptions.IncludeTimestampInScriptFileHeader Then
+                            strHeader &= "    Script Date: " & GetTimeStamp()
+                        End If
+                        strHeader &= COMMENT_END_TEXT
+                        objTableRows.Add(strHeader)
+
+                        objTableRows.Add(COMMENT_START_TEXT & "RowCount: " & objTable.RowCount & COMMENT_END_TEXT)
 
                         intColumnCount = dsCurrentTable.Tables(0).Columns.Count
                         ReDim eColumnType(intColumnCount - 1)
@@ -793,6 +978,13 @@ Public Class clsExportDBSchema
                         Next
 
                         If udtSchemaExportOptions.SaveDataAsInsertIntoStatements Then
+                            ' Future capability:
+                            ''Select Case udtSchemaExportOptions.DatabaseTypeForInsertInto
+                            ''    Case eTargetDatabaseTypeConstants.SqlServer
+                            ''    Case Else
+                            ''        ' Unsupported mode
+                            ''End Select
+
                             If blnIdentityColumnFound Then
                                 strInsertIntoLine = "INSERT INTO [" & objTable.Name & "] (" & objCurrentRow.ToString & ") VALUES ("
                                 objTableRows.Add("SET IDENTITY_INSERT [" & objTable.Name & "] ON")
@@ -801,7 +993,7 @@ Public Class clsExportDBSchema
                                 strInsertIntoLine = "INSERT INTO [" & objTable.Name & "] VALUES ("
 
                                 ' However, we'll display the column names in the output file
-                                objTableRows.Add("/****** Columns: " & objCurrentRow.ToString & " ******/")
+                                objTableRows.Add(COMMENT_START_TEXT & "Columns: " & objCurrentRow.ToString & COMMENT_END_TEXT)
                             End If
                             chColSepChar = ","c
                         Else
@@ -1066,8 +1258,11 @@ Public Class clsExportDBSchema
 
             .CreateFolderForEachDB = True           ' This will be forced to true if more than one DB is to be scripted
             .IncludeSystemObjects = False
-            .SaveDataAsInsertIntoStatements = True
 
+            .IncludeTimestampInScriptFileHeader = False
+
+            .SaveDataAsInsertIntoStatements = True
+            .DatabaseTypeForInsertInto = eTargetDatabaseTypeConstants.SqlServer
             .AutoSelectTableNamesForDataExport = True
 
             .ExportTables = True
@@ -1215,7 +1410,7 @@ Public Class clsExportDBSchema
         Return blnSuccess
     End Function
 
-    Private Function ScriptObjects(ByRef objSchemaCollection As Microsoft.SqlServer.Management.Smo.SchemaCollectionBase, ByVal objScriptOptions As Microsoft.SqlServer.Management.Smo.ScriptingOptions, ByVal strOutputFolderPathCurrentDB As String, ByVal intProcessCountExpected As Integer) As Integer
+    Private Function ScriptObjects(ByRef objSchemaCollection As Microsoft.SqlServer.Management.Smo.SchemaCollectionBase, ByRef objScriptOptions As Microsoft.SqlServer.Management.Smo.ScriptingOptions, ByRef udtSchemaExportOptions As udtSchemaExportOptionsType, ByVal strOutputFolderPathCurrentDB As String, ByVal intProcessCountExpected As Integer) As Integer
         ' Returns the number of objects scripted
 
         Dim objItem As Microsoft.SqlServer.Management.Smo.Schema
@@ -1226,7 +1421,7 @@ Public Class clsExportDBSchema
             mSubtaskProgressStepDescription = objItem.Name
             UpdateSubtaskProgress(intProcessCount, intProcessCountExpected)
 
-            WriteTextToFile(strOutputFolderPathCurrentDB, objItem.Name, objItem.Script(objScriptOptions), True)
+            WriteTextToFile(strOutputFolderPathCurrentDB, objItem.Name, CleanSqlScript(objItem.Script(objScriptOptions), udtSchemaExportOptions), True)
 
             intProcessCount += 1
 
@@ -1327,6 +1522,7 @@ Public Class clsExportDBSchema
                     .UserName = udtServerConnectionInfo.UserName
                     .Password = udtServerConnectionInfo.Password
                 End If
+                .ConnectionTimeout = 10
             End With
 
             objServerConnection = New Microsoft.SqlServer.Management.Common.ServerConnection(objConnectionInfo)

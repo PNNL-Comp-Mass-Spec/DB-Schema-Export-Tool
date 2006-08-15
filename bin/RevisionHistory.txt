@@ -1,6 +1,12 @@
 DB Schema Export Tool
 
-Version 1.0.0.3 (Assembly 1.0.2417); August 14, 2006
+Version 1.0.1.0, Build 2418; August 15, 2006
+	- Updated to use the INFORMATION_SCHEMA views to obtain the list of Views, stored procedures, and user defined functions in the database
+	- Updated to limit the number of data rows exported to a maximum of 1000 rows if the table is auto-selected via the pre-defined table names to match
+	- Updated to no longer include a date stamp in the script files by default
+	- Added buttons for "Select Default DMS DBs" and "Select Default MTS DBs"
+
+Version 1.0.0.3, Build 2417; August 14, 2006
 	- Added option to auto-select table names for data export based on a match list and on a RegEx list
 
 Version 1.0.0.2 (Assembly 1.0.2417); August 14, 2006

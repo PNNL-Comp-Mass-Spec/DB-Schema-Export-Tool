@@ -12,6 +12,7 @@
     <item key="SaveDataAsInsertIntoStatements" value="True" />
     <item key="WarnOnHighTableRowCount" value="True" />
     <item key="OutputFolderNamePrefix" value="DBSchema__" />
+    <item key="IncludeTimestampInScriptFileHeader" value="False" />
   </section>
   <section name="DBSchemaExportDatabaseSettings">
     <item key="ServerName" value="Albert" />
