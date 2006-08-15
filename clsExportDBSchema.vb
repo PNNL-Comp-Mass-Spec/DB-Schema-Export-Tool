@@ -25,7 +25,7 @@ Option Strict On
 ' SOFTWARE.  This notice including this sentence must appear on any copies of 
 ' this computer software.
 '
-' Last updated August 14, 2006
+' Last updated August 15, 2006
 
 Public Class clsExportDBSchema
 
