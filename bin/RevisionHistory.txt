@@ -1,0 +1,7 @@
+DB Schema Export Tool
+
+Version 1.0.0.3 (Assembly 1.0.2417); August 14, 2006
+	- Added option to auto-select table names for data export based on a match list and on a RegEx list
+
+Version 1.0.0.2 (Assembly 1.0.2417); August 14, 2006
+	- Initial release of the DB Schema Export Tool

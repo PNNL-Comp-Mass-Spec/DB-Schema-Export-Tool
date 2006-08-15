@@ -98,6 +98,8 @@ Public Class clsExportDBSchema
         Public IncludeSystemObjects As Boolean
         Public SaveDataAsInsertIntoStatements As Boolean
 
+        Public AutoSelectTableNamesForDataExport As Boolean
+
         Public ExportTables As Boolean
         Public ExportViews As Boolean
         Public ExportStoredProcedures As Boolean
@@ -131,6 +133,11 @@ Public Class clsExportDBSchema
 
     Private mColumnCharNonStandardRegEx As System.Text.RegularExpressions.Regex
 
+    Protected mTableNamesToAutoSelect() As String
+
+    ' Note: Must contain valid RegEx statements (tested case-insensitive)
+    Protected mTableNameAutoSelectRegEx() As String
+
     Private mErrorCode As eDBSchemaExportErrorCodes
     Private mStatusMessage As String
 
@@ -157,6 +164,34 @@ Public Class clsExportDBSchema
 #End Region
 
 #Region "Properties"
+
+    Public Property TableNamesToAutoSelect() As String()
+        Get
+            Return mTableNamesToAutoSelect
+        End Get
+        Set(ByVal value As String())
+            If value Is Nothing Then
+                ReDim mTableNamesToAutoSelect(-1)
+            Else
+                ReDim mTableNamesToAutoSelect(value.Length - 1)
+                Array.Copy(value, mTableNamesToAutoSelect, value.Length)
+            End If
+        End Set
+    End Property
+
+    Public Property TableNameAutoSelectRegEx() As String()
+        Get
+            Return mTableNameAutoSelectRegEx
+        End Get
+        Set(ByVal value As String())
+            If value Is Nothing Then
+                ReDim mTableNameAutoSelectRegEx(-1)
+            Else
+                ReDim mTableNameAutoSelectRegEx(value.Length - 1)
+                Array.Copy(value, mTableNameAutoSelectRegEx, value.Length)
+            End If
+        End Set
+    End Property
 
     Public ReadOnly Property ConnectedToServer() As Boolean
         Get
@@ -230,6 +265,91 @@ Public Class clsExportDBSchema
         Me.RequestUnpause()
     End Sub
 
+    Private Function AutoSelectTableNamesForDataExport(ByVal objDatabase As Microsoft.SqlServer.Management.Smo.Database, ByRef strTableNamesForDataExport() As String, ByVal udtSchemaExportOptions As udtSchemaExportOptionsType) As Boolean
+
+        Dim objRegExOptions As System.Text.RegularExpressions.RegexOptions
+        Dim objRegExArray() As System.Text.RegularExpressions.Regex
+
+        Dim objTableNames As System.Collections.Specialized.StringCollection
+        Dim intIndex As Integer
+        Dim intCompareIndex As Integer
+
+        Dim blnNewTableFound As Boolean
+
+        Dim strTableName As String
+
+        Dim dtTables As System.Data.DataTable
+        Dim objRow As System.Data.DataRow
+
+        Try
+            ResetSubtaskProgress("Auto-selecting tables to export data from")
+
+            blnNewTableFound = False
+
+            objTableNames = New System.Collections.Specialized.StringCollection
+
+            ' Copy the table names from strTableNamesForDataExport to objTableNames
+            If Not strTableNamesForDataExport Is Nothing Then
+                For intIndex = 0 To strTableNamesForDataExport.Length - 1
+                    objTableNames.Add(strTableNamesForDataExport(intIndex))
+                Next intIndex
+            End If
+
+            ' Copy the table names from mTableNamesToAutoSelect to objTableNames (if not yet present)
+            If Not mTableNamesToAutoSelect Is Nothing Then
+                For intIndex = 0 To mTableNamesToAutoSelect.Length - 1
+                    If Not objTableNames.Contains(mTableNamesToAutoSelect(intIndex)) Then
+                        objTableNames.Add(mTableNamesToAutoSelect(intIndex))
+                        blnNewTableFound = True
+                    End If
+                Next intIndex
+            End If
+
+            ' Initialize objRegExArray (we'll fill it below if blnAutoHiglightRows = True)
+            objRegExOptions = System.Text.RegularExpressions.RegexOptions.Compiled Or _
+                              System.Text.RegularExpressions.RegexOptions.IgnoreCase Or _
+                              System.Text.RegularExpressions.RegexOptions.Singleline
+
+            If Not mTableNameAutoSelectRegEx Is Nothing Then
+                ReDim objRegExArray(mTableNameAutoSelectRegEx.Length - 1)
+                For intIndex = 0 To mTableNameAutoSelectRegEx.Length - 1
+                    objRegExArray(intIndex) = New System.Text.RegularExpressions.Regex(mTableNameAutoSelectRegEx(intIndex), objRegExOptions)
+                Next intIndex
+
+                ' Step through the table names for this DB and compare to the RegEx values
+                dtTables = objDatabase.EnumObjects(Microsoft.SqlServer.Management.Smo.DatabaseObjectTypes.Table, Microsoft.SqlServer.Management.Smo.SortOrder.Name)
+
+                For Each objRow In dtTables.Rows
+                    strTableName = objRow.Item("Name").ToString
+
+                    For intCompareIndex = 0 To mTableNameAutoSelectRegEx.Length - 1
+                        If objRegExArray(intCompareIndex).Match(strTableName).Success Then
+                            If Not objTableNames.Contains(strTableName) Then
+                                objTableNames.Add(strTableName)
+                                blnNewTableFound = True
+                            End If
+                            Exit For
+                        End If
+                    Next intCompareIndex
+                Next objRow
+            End If
+
+            If blnNewTableFound Then
+                ReDim strTableNamesForDataExport(objTableNames.Count - 1)
+
+                For intIndex = 0 To objTableNames.Count - 1
+                    strTableNamesForDataExport(intIndex) = objTableNames.Item(intIndex)
+                Next intIndex
+            End If
+
+        Catch ex As Exception
+            SetLocalError(eDBSchemaExportErrorCodes.ConfigurationError, "Error in AutoSelectTableNamesForDataExport")
+            Return False
+        End Try
+
+        Return True
+    End Function
+
     Private Sub CheckPauseStatus()
         If mPauseStatus = ePauseStatusConstants.PauseRequested Then
             SetPauseStatus(ePauseStatusConstants.Paused)
@@ -279,7 +399,7 @@ Public Class clsExportDBSchema
 
     End Function
 
-    Private Function ExportDBObjectsUsingSMO(ByRef objSqlServer As Microsoft.SqlServer.Management.Smo.Server, ByVal strDatabaseName As String, ByRef strTableNamesForDataExport() As String, ByVal udtSchemaExportOptions As udtSchemaExportOptionsType, ByRef blnDBNotFoundReturn As Boolean) As Boolean
+    Private Function ExportDBObjectsUsingSMO(ByRef objSqlServer As Microsoft.SqlServer.Management.Smo.Server, ByVal strDatabaseName As String, ByVal strTableNamesForDataExport() As String, ByVal udtSchemaExportOptions As udtSchemaExportOptionsType, ByRef blnDBNotFoundReturn As Boolean) As Boolean
 
         Dim objDatabase As Microsoft.SqlServer.Management.Smo.Database
 
@@ -292,7 +412,6 @@ Public Class clsExportDBSchema
         Dim blnSuccess As Boolean
 
         Try
-            ResetSubtaskProgress("Counting number of objects to export")
             blnDBNotFoundReturn = False
 
             objScriptOptions = New Microsoft.SqlServer.Management.Smo.ScriptingOptions
@@ -345,12 +464,21 @@ Public Class clsExportDBSchema
                 System.IO.Directory.CreateDirectory(strOutputFolderPathCurrentDB)
             End If
 
+            If udtSchemaExportOptions.AutoSelectTableNamesForDataExport Then
+                blnSuccess = AutoSelectTableNamesForDataExport(objDatabase, strTableNamesForDataExport, udtSchemaExportOptions)
+                If Not blnSuccess Then
+                    Return False
+                End If
+            End If
+
         Catch ex As Exception
             SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating or creating folder " & strOutputFolderPathCurrentDB)
             Return False
         End Try
 
         Try
+            ResetSubtaskProgress("Counting number of objects to export")
+
             ' Preview the number of objects to export
             intProcessCount = ExportDBObjectsWork(objDatabase, objScriptOptions, udtSchemaExportOptions, strOutputFolderPathCurrentDB, True, 0)
             intProcessCountExpected = intProcessCount
@@ -931,12 +1059,16 @@ Public Class clsExportDBSchema
     End Function
 
     Public Shared Sub InitializeSchemaExportOptions(ByRef udtSchemaExportOptions As udtSchemaExportOptionsType)
+
         With udtSchemaExportOptions
             .OutputFolderPath = String.Empty
             .OutputFolderNamePrefix = DEFAULT_OUTPUT_FOLDER_NAME_PREFIX
 
             .CreateFolderForEachDB = True           ' This will be forced to true if more than one DB is to be scripted
             .IncludeSystemObjects = False
+            .SaveDataAsInsertIntoStatements = True
+
+            .AutoSelectTableNamesForDataExport = True
 
             .ExportTables = True
             .ExportViews = True
@@ -1137,6 +1269,28 @@ Public Class clsExportDBSchema
 
     End Function
 
+    Public Shared Sub InitializeAutoSelectTableNames(ByRef strTableNames() As String)
+        ReDim strTableNames(10)
+        strTableNames(0) = "T_Dataset_Process_State"
+        strTableNames(1) = "T_Process_State"
+        strTableNames(2) = "T_Event_Target"
+        strTableNames(3) = "T_Process_Config"
+        strTableNames(4) = "T_Process_Config_Parameters"
+        strTableNames(5) = "T_Process_Step_Control"
+        strTableNames(6) = "T_Process_Step_Control_States"
+        strTableNames(7) = "T_Histogram_Mode_Name"
+        strTableNames(8) = "T_Peak_Matching_Defaults"
+        strTableNames(9) = "T_Quantitation_Defaults"
+        strTableNames(10) = "T_Folder_Paths"
+    End Sub
+
+    Public Shared Sub InitializeAutoSelectTableRegEx(ByRef strRegExSpecs() As String)
+        ReDim strRegExSpecs(2)
+        strRegExSpecs(0) = ".*_?Type_?Name"
+        strRegExSpecs(1) = ".*_?State_?Name"
+        strRegExSpecs(2) = ".*_State"
+    End Sub
+
     Private Sub InitializeLocalVariables(ByVal blnResetServerConnection As Boolean)
         mErrorCode = eDBSchemaExportErrorCodes.NoError
         mStatusMessage = String.Empty
@@ -1151,6 +1305,9 @@ Public Class clsExportDBSchema
         If blnResetServerConnection Then
             ResetSqlServerConnection(mSqlServerOptionsCurrent)
         End If
+
+        InitializeAutoSelectTableNames(mTableNamesToAutoSelect)
+        InitializeAutoSelectTableRegEx(mTableNameAutoSelectRegEx)
 
         mAbortProcessing = False
         SetPauseStatus(ePauseStatusConstants.Unpaused)

@@ -56,7 +56,6 @@ Public Class frmMain
     Protected mCachedTableListRowCounts() As Long
     Protected mCachedTableListIncludesRowCounts As Boolean
 
-    ' Note: The names in mTableNamesToAutoSelect must be all lower case
     Protected mTableNamesToAutoSelect() As String
 
     ' Note: Must contain valid RegEx statements (tested case-insensitive)
@@ -610,7 +609,7 @@ Public Class frmMain
 
                     If Not blnHighlightCurrentRow Then
                         For intCompareIndex = 0 To mTableNamesToAutoSelect.Length - 1
-                            If strTableName.ToLower = mTableNamesToAutoSelect(intCompareIndex) Then
+                            If strTableName.ToLower = mTableNamesToAutoSelect(intCompareIndex).ToLower Then
                                 blnHighlightCurrentRow = True
                                 Exit For
                             End If
@@ -728,6 +727,10 @@ Public Class frmMain
                 .CreateFolderForEachDB = chkCreateFolderForEachDB.Checked
                 .OutputFolderNamePrefix = txtOutputFolderNamePrefix.Text
                 .SaveDataAsInsertIntoStatements = mnuEditSaveDataAsInsertIntoStatements.Checked
+
+                .AutoSelectTableNamesForDataExport = mnuEditAutoSelectDefaultTableNames.Checked
+
+                ' Future expansion: Update mDBSchemaExporter.TableNamesToAutoSelect and mDBSchemaExporter.TableNameAutoSelectRegEx
 
                 For intIndex = 0 To lstObjectTypesToScript.Items.Count - 1
                     blnSelected = lstObjectTypesToScript.GetSelected(intIndex)
@@ -896,28 +899,8 @@ Public Class frmMain
             chkCreateFolderForEachDB.Checked = True
             txtOutputFolderNamePrefix.Text = clsExportDBSchema.DEFAULT_OUTPUT_FOLDER_NAME_PREFIX
 
-            ' Make sure the entries in mTableNamesToAutoSelect() are all lowercase
-            ReDim mTableNamesToAutoSelect(10)
-            mTableNamesToAutoSelect(0) = "T_Dataset_Process_State"
-            mTableNamesToAutoSelect(1) = "T_Process_State"
-            mTableNamesToAutoSelect(2) = "T_Event_Target"
-            mTableNamesToAutoSelect(3) = "T_Process_Config"
-            mTableNamesToAutoSelect(4) = "T_Process_Config_Parameters"
-            mTableNamesToAutoSelect(5) = "T_Process_Step_Control"
-            mTableNamesToAutoSelect(6) = "T_Process_Step_Control_States"
-            mTableNamesToAutoSelect(7) = "T_Histogram_Mode_Name"
-            mTableNamesToAutoSelect(8) = "T_Peak_Matching_Defaults"
-            mTableNamesToAutoSelect(9) = "T_Quantitation_Defaults"
-            mTableNamesToAutoSelect(10) = "T_Folder_Paths"
-
-            ReDim mTableNameAutoSelectRegEx(2)
-            mTableNameAutoSelectRegEx(0) = ".*_?Type_?Name"
-            mTableNameAutoSelectRegEx(1) = ".*_?State_?Name"
-            mTableNameAutoSelectRegEx(2) = ".*_State"
-
-            ' Change all of the names in mTableNamesToAutoSelect and mTableNameAutoSelectRegEx to lowercase
-            ValidateAutoSelectArray(mTableNamesToAutoSelect)
-            ValidateAutoSelectArray(mTableNameAutoSelectRegEx)
+            clsExportDBSchema.InitializeAutoSelectTableNames(mTableNamesToAutoSelect)
+            clsExportDBSchema.InitializeAutoSelectTableRegEx(mTableNameAutoSelectRegEx)
 
             EnableDisableControls()
         Catch ex As Exception
@@ -1164,39 +1147,6 @@ Public Class frmMain
             mWorking = False
             EnableDisableControls()
         End Try
-
-    End Sub
-
-    Private Sub ValidateAutoSelectArray(ByRef strList() As String)
-        ' Examine strList() to make sure it doesn't contain any empty strings and to change all the names to lowercase
-
-        Dim intIndex As Integer
-        Dim intTargetIndex As Integer
-
-        Try
-            If strList Is Nothing Then
-                ReDim strList(-1)
-            Else
-                intTargetIndex = 0
-                For intIndex = 0 To strList.Length - 1
-                    If Not strList(intIndex) Is Nothing AndAlso strList(intIndex).Length > 0 Then
-                        strList(intTargetIndex) = strList(intIndex).ToLower
-                        intTargetIndex += 1
-                    End If
-                Next intIndex
-
-                If intTargetIndex < strList.Length Then
-                    ReDim Preserve strList(intTargetIndex - 1)
-                End If
-
-                Array.Sort(strList)
-            End If
-
-        Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error in ValidateAutoSelectArray: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-            ReDim strList(-1)
-        End Try
-
 
     End Sub
 
