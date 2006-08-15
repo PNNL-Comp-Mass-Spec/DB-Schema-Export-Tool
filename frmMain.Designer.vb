@@ -31,15 +31,16 @@ Partial Class frmMain
         Me.txtServerName = New System.Windows.Forms.TextBox
         Me.lblPassword = New System.Windows.Forms.Label
         Me.lblUsername = New System.Windows.Forms.Label
-        Me.mnuEditSep3 = New System.Windows.Forms.MenuItem
+        Me.mnuEditSep4 = New System.Windows.Forms.MenuItem
         Me.mnuEdit = New System.Windows.Forms.MenuItem
         Me.mnuEditIncludeSystemObjects = New System.Windows.Forms.MenuItem
         Me.mnuEditPauseAfterEachDatabase = New System.Windows.Forms.MenuItem
         Me.mnuEditSep2 = New System.Windows.Forms.MenuItem
         Me.mnuEditIncludeTableRowCounts = New System.Windows.Forms.MenuItem
         Me.mnuEditAutoSelectDefaultTableNames = New System.Windows.Forms.MenuItem
-        Me.mnuEditSaveDataAsInsertIntoStatements = New System.Windows.Forms.MenuItem
+        Me.mnuEditSep3 = New System.Windows.Forms.MenuItem
         Me.mnuEditWarnOnHighTableRowCount = New System.Windows.Forms.MenuItem
+        Me.mnuEditSaveDataAsInsertIntoStatements = New System.Windows.Forms.MenuItem
         Me.mnuEditResetOptions = New System.Windows.Forms.MenuItem
         Me.lblProgress = New System.Windows.Forms.Label
         Me.mnuFileLoadOptions = New System.Windows.Forms.MenuItem
@@ -219,15 +220,15 @@ Partial Class frmMain
         Me.lblUsername.TabIndex = 3
         Me.lblUsername.Text = "SQL Server Username"
         '
-        'mnuEditSep3
+        'mnuEditSep4
         '
-        Me.mnuEditSep3.Index = 10
-        Me.mnuEditSep3.Text = "-"
+        Me.mnuEditSep4.Index = 11
+        Me.mnuEditSep4.Text = "-"
         '
         'mnuEdit
         '
         Me.mnuEdit.Index = 1
-        Me.mnuEdit.MenuItems.AddRange(New System.Windows.Forms.MenuItem() {Me.mnuEditStart, Me.mnuEditIncludeSystemObjects, Me.mnuEditSep1, Me.mnuEditScriptObjectsThreaded, Me.mnuEditPauseAfterEachDatabase, Me.mnuEditSep2, Me.mnuEditIncludeTableRowCounts, Me.mnuEditAutoSelectDefaultTableNames, Me.mnuEditSaveDataAsInsertIntoStatements, Me.mnuEditWarnOnHighTableRowCount, Me.mnuEditSep3, Me.mnuEditResetOptions})
+        Me.mnuEdit.MenuItems.AddRange(New System.Windows.Forms.MenuItem() {Me.mnuEditStart, Me.mnuEditIncludeSystemObjects, Me.mnuEditSep1, Me.mnuEditScriptObjectsThreaded, Me.mnuEditPauseAfterEachDatabase, Me.mnuEditSep2, Me.mnuEditIncludeTableRowCounts, Me.mnuEditAutoSelectDefaultTableNames, Me.mnuEditSep3, Me.mnuEditWarnOnHighTableRowCount, Me.mnuEditSaveDataAsInsertIntoStatements, Me.mnuEditSep4, Me.mnuEditResetOptions})
         Me.mnuEdit.Text = "&Edit"
         '
         'mnuEditIncludeSystemObjects
@@ -257,20 +258,25 @@ Partial Class frmMain
         Me.mnuEditAutoSelectDefaultTableNames.Index = 7
         Me.mnuEditAutoSelectDefaultTableNames.Text = "&Auto-select Default Table Names"
         '
-        'mnuEditSaveDataAsInsertIntoStatements
+        'mnuEditSep3
         '
-        Me.mnuEditSaveDataAsInsertIntoStatements.Checked = True
-        Me.mnuEditSaveDataAsInsertIntoStatements.Index = 8
-        Me.mnuEditSaveDataAsInsertIntoStatements.Text = "Save Data As &Insert Into Statements"
+        Me.mnuEditSep3.Index = 8
+        Me.mnuEditSep3.Text = "-"
         '
         'mnuEditWarnOnHighTableRowCount
         '
         Me.mnuEditWarnOnHighTableRowCount.Index = 9
         Me.mnuEditWarnOnHighTableRowCount.Text = "&Warn If High Table Row Count"
         '
+        'mnuEditSaveDataAsInsertIntoStatements
+        '
+        Me.mnuEditSaveDataAsInsertIntoStatements.Checked = True
+        Me.mnuEditSaveDataAsInsertIntoStatements.Index = 10
+        Me.mnuEditSaveDataAsInsertIntoStatements.Text = "Save Data As &Insert Into Statements"
+        '
         'mnuEditResetOptions
         '
-        Me.mnuEditResetOptions.Index = 11
+        Me.mnuEditResetOptions.Index = 12
         Me.mnuEditResetOptions.Text = "&Reset Options to Defaults"
         '
         'lblProgress
@@ -699,7 +705,7 @@ Partial Class frmMain
     Friend WithEvents txtServerName As System.Windows.Forms.TextBox
     Friend WithEvents lblPassword As System.Windows.Forms.Label
     Friend WithEvents lblUsername As System.Windows.Forms.Label
-    Friend WithEvents mnuEditSep3 As System.Windows.Forms.MenuItem
+    Friend WithEvents mnuEditSep4 As System.Windows.Forms.MenuItem
     Friend WithEvents mnuEdit As System.Windows.Forms.MenuItem
     Friend WithEvents mnuEditResetOptions As System.Windows.Forms.MenuItem
     Friend WithEvents lblProgress As System.Windows.Forms.Label
@@ -743,4 +749,5 @@ Partial Class frmMain
     Friend WithEvents mnuEditWarnOnHighTableRowCount As System.Windows.Forms.MenuItem
     Friend WithEvents lblOutputFolderNamePrefix As System.Windows.Forms.Label
     Friend WithEvents txtOutputFolderNamePrefix As System.Windows.Forms.TextBox
+    Friend WithEvents mnuEditSep3 As System.Windows.Forms.MenuItem
 End Class

@@ -693,7 +693,12 @@ Public Class clsExportDBSchema
                                     Case eDataColumnTypeConstants.Numeric
                                         objCurrentRow.Append(objRow.Item(intColumnIndex).ToString)
                                     Case eDataColumnTypeConstants.Text, eDataColumnTypeConstants.DateTime, eDataColumnTypeConstants.GUID
-                                        objCurrentRow.Append(PossiblyQuoteText(objRow.Item(intColumnIndex).ToString))
+                                        If udtSchemaExportOptions.SaveDataAsInsertIntoStatements Then
+                                            objCurrentRow.Append(PossiblyQuoteText(objRow.Item(intColumnIndex).ToString))
+                                        Else
+                                            objCurrentRow.Append(objRow.Item(intColumnIndex).ToString)
+                                        End If
+
                                     Case eDataColumnTypeConstants.BinaryArray
                                         Try
                                             bytData = CType(CType(objRow.Item(intColumnIndex), Array), Byte())
@@ -748,7 +753,7 @@ Public Class clsExportDBSchema
                             objTableRows.Add(objCurrentRow.ToString)
                         Next
 
-                        If blnIdentityColumnFound Then
+                        If blnIdentityColumnFound AndAlso udtSchemaExportOptions.SaveDataAsInsertIntoStatements Then
                             objTableRows.Add("SET IDENTITY_INSERT [" & objTable.Name & "] OFF")
                         End If
 
