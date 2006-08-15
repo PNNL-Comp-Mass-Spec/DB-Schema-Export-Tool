@@ -1,4 +1,4 @@
-/****** Object:  Table [dbo].[T_Tmp_DataTypeTest]    Script Date: 08/14/2006 18:10:00 ******/
+/****** Object:  Table [dbo].[T_Tmp_DataTypeTest] ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
