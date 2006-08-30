@@ -422,6 +422,7 @@ Partial Class frmMain
         '
         'lblSelectDefaultDBs
         '
+        Me.lblSelectDefaultDBs.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
         Me.lblSelectDefaultDBs.BackColor = System.Drawing.SystemColors.Control
         Me.lblSelectDefaultDBs.Cursor = System.Windows.Forms.Cursors.Default
         Me.lblSelectDefaultDBs.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
@@ -435,6 +436,7 @@ Partial Class frmMain
         '
         'cmdSelectDefaultDMSDBs
         '
+        Me.cmdSelectDefaultDMSDBs.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
         Me.cmdSelectDefaultDMSDBs.BackColor = System.Drawing.SystemColors.Control
         Me.cmdSelectDefaultDMSDBs.Cursor = System.Windows.Forms.Cursors.Default
         Me.cmdSelectDefaultDMSDBs.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
@@ -449,6 +451,7 @@ Partial Class frmMain
         '
         'cmdSelectDefaultMTSDBs
         '
+        Me.cmdSelectDefaultMTSDBs.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
         Me.cmdSelectDefaultMTSDBs.BackColor = System.Drawing.SystemColors.Control
         Me.cmdSelectDefaultMTSDBs.Cursor = System.Windows.Forms.Cursors.Default
         Me.cmdSelectDefaultMTSDBs.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
@@ -463,6 +466,7 @@ Partial Class frmMain
         '
         'lblOutputFolderNamePrefix
         '
+        Me.lblOutputFolderNamePrefix.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
         Me.lblOutputFolderNamePrefix.BackColor = System.Drawing.SystemColors.Control
         Me.lblOutputFolderNamePrefix.Cursor = System.Windows.Forms.Cursors.Default
         Me.lblOutputFolderNamePrefix.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
@@ -477,6 +481,7 @@ Partial Class frmMain
         'txtOutputFolderNamePrefix
         '
         Me.txtOutputFolderNamePrefix.AcceptsReturn = True
+        Me.txtOutputFolderNamePrefix.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
         Me.txtOutputFolderNamePrefix.BackColor = System.Drawing.SystemColors.Window
         Me.txtOutputFolderNamePrefix.Cursor = System.Windows.Forms.Cursors.IBeam
         Me.txtOutputFolderNamePrefix.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))

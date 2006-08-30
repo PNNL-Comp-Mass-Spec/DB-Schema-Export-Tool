@@ -1,5 +1,8 @@
 DB Schema Export Tool
 
+Version 1.0.2.0, Build 2433; August 30, 2006
+	- Fixed bug that failed to move around some of the controls below the Database listbox when resizing the form
+
 Version 1.0.1.0, Build 2418; August 15, 2006
 	- Updated to use the INFORMATION_SCHEMA views to obtain the list of Views, stored procedures, and user defined functions in the database
 	- Updated to limit the number of data rows exported to a maximum of 1000 rows if the table is auto-selected via the pre-defined table names to match
