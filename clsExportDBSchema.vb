@@ -868,6 +868,7 @@ Public Class clsExportDBSchema
         Dim intColumnIndex As Integer
 
         Dim blnIdentityColumnFound As Boolean
+        Dim blnTableFound As Boolean
         Dim blnDataFound As Boolean
         Dim blnSuccess As Boolean
 
@@ -880,9 +881,16 @@ Public Class clsExportDBSchema
                     mSubtaskProgressStepDescription = "Exporting data from " & strTableNamesForDataExport(intTableIndex)
                     UpdateSubtaskProgress(intProcessCount, intProcessCountExpected)
 
+                    blnTableFound = False
                     If objDatabase.Tables.Contains(strTableNamesForDataExport(intTableIndex)) Then
                         objTable = objDatabase.Tables(strTableNamesForDataExport(intTableIndex))
+                        blnTableFound = True
+                    ElseIf objDatabase.Tables.Contains(strTableNamesForDataExport(intTableIndex), "dbo") Then
+                        objTable = objDatabase.Tables(strTableNamesForDataExport(intTableIndex), "dbo")
+                        blnTableFound = True
+                    End If
 
+                    If blnTableFound Then
                         ' See if any of the columns in the table is an identity column
                         blnIdentityColumnFound = False
                         For Each objColumn In objTable.Columns
@@ -899,7 +907,7 @@ Public Class clsExportDBSchema
                                 strSql &= "TOP " & intMaximumDataRowsToExport(intTableIndex).ToString
                             End If
                         End If
-                        strSql &= " * FROM [" & objDatabase.Tables(strTableNamesForDataExport(intTableIndex)).Name & "]"
+                        strSql &= " * FROM [" & objTable.Name & "]"
 
                         ' Read method #1: Populate a DataSet
                         dsCurrentTable = objDatabase.ExecuteWithResults(strSql)

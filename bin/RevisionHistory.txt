@@ -1,5 +1,8 @@
 DB Schema Export Tool
 
+Version 1.0.3.0, Build 2488; October 24, 2006
+	- When retrieving data, now trying schema "dbo" if table name not found in default tables collection
+
 Version 1.0.2.0, Build 2433; August 30, 2006
 	- Fixed bug that failed to move around some of the controls below the Database listbox when resizing the form
 
