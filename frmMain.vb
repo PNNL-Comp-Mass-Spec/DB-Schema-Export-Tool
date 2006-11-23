@@ -361,6 +361,9 @@ Public Class frmMain
                     chkCreateFolderForEachDB.Checked = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "CreateFolderForEachDB", chkCreateFolderForEachDB.Checked)
                     txtOutputFolderNamePrefix.Text = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "OutputFolderNamePrefix", txtOutputFolderNamePrefix.Text)
 
+                    chkExportServerSettingsLoginsAndJobs.Checked = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "ExportServerSettingsLoginsAndJobs", chkExportServerSettingsLoginsAndJobs.Checked)
+                    txtServerOutputFolderNamePrefix.Text = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "ServerOutputFolderNamePrefix", txtServerOutputFolderNamePrefix.Text)
+
                     mnuEditIncludeTableRowCounts.Checked = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "IncludeTableRowCounts", mnuEditIncludeTableRowCounts.Checked)
                     mnuEditAutoSelectDefaultTableNames.Checked = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "AutoSelectDefaultTableNames", mnuEditAutoSelectDefaultTableNames.Checked)
                     mnuEditSaveDataAsInsertIntoStatements.Checked = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "SaveDataAsInsertIntoStatements", mnuEditSaveDataAsInsertIntoStatements.Checked)
@@ -464,6 +467,9 @@ Public Class frmMain
 
                         .SetParam(XML_SECTION_PROGRAM_OPTIONS, "CreateFolderForEachDB", chkCreateFolderForEachDB.Checked)
                         .SetParam(XML_SECTION_PROGRAM_OPTIONS, "OutputFolderNamePrefix", txtOutputFolderNamePrefix.Text)
+
+                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "ExportServerSettingsLoginsAndJobs", chkExportServerSettingsLoginsAndJobs.Checked)
+                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "ServerOutputFolderNamePrefix", txtServerOutputFolderNamePrefix.Text)
 
                         .SetParam(XML_SECTION_PROGRAM_OPTIONS, "IncludeTableRowCounts", mnuEditIncludeTableRowCounts.Checked)
                         .SetParam(XML_SECTION_PROGRAM_OPTIONS, "AutoSelectDefaultTableNames", mnuEditAutoSelectDefaultTableNames.Checked)
@@ -687,6 +693,7 @@ Public Class frmMain
             With lstObjectTypesToScript
                 With .Items
                     .Clear()
+                    .Insert(clsExportDBSchema.eSchemaObjectTypeConstants.SchemasAndRoles, "Schemas and Roles")
                     .Insert(clsExportDBSchema.eSchemaObjectTypeConstants.Tables, "Tables")
                     .Insert(clsExportDBSchema.eSchemaObjectTypeConstants.Views, "Views")
                     .Insert(clsExportDBSchema.eSchemaObjectTypeConstants.StoredProcedures, "Stored Procedures")
@@ -742,6 +749,9 @@ Public Class frmMain
                 .IncludeSystemObjects = mnuEditIncludeSystemObjects.Checked
                 .IncludeTimestampInScriptFileHeader = mnuEditIncludeTimestampInScriptFileHeader.Checked
 
+                .ExportServerSettingsLoginsAndJobs = chkExportServerSettingsLoginsAndJobs.Checked
+                .ServerOutputFolderNamePrefix = txtServerOutputFolderNamePrefix.Text
+
                 .SaveDataAsInsertIntoStatements = mnuEditSaveDataAsInsertIntoStatements.Checked
                 .DatabaseTypeForInsertInto = clsExportDBSchema.eTargetDatabaseTypeConstants.SqlServer       ' Reserved for future expansion
                 .AutoSelectTableNamesForDataExport = mnuEditAutoSelectDefaultTableNames.Checked
@@ -752,6 +762,8 @@ Public Class frmMain
                     blnSelected = lstObjectTypesToScript.GetSelected(intIndex)
 
                     Select Case CType(intIndex, clsExportDBSchema.eSchemaObjectTypeConstants)
+                        Case clsExportDBSchema.eSchemaObjectTypeConstants.SchemasAndRoles
+                            .ExportDBSchemasAndRoles = blnSelected
                         Case clsExportDBSchema.eSchemaObjectTypeConstants.Tables
                             .ExportTables = blnSelected
                         Case clsExportDBSchema.eSchemaObjectTypeConstants.Views
@@ -774,6 +786,7 @@ Public Class frmMain
                     .UseIntegratedAuthentication = chkUseIntegratedAuthentication.Checked
                 End With
             End With
+
         Catch ex As Exception
             System.Windows.Forms.MessageBox.Show("Error initializing mSchemaExportOptions in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
             Exit Sub
@@ -784,7 +797,7 @@ Public Class frmMain
             mDatabaseListToProcess = GetSelectedDatabases()
             mTableNamesForDataExport = GetSelectedTableNamesForDataExport(mnuEditWarnOnHighTableRowCount.Checked)
 
-            If mDatabaseListToProcess.Length = 0 And mTableNamesForDataExport.Length = 0 Then
+            If mDatabaseListToProcess.Length = 0 And Not mSchemaExportOptions.ExportServerSettingsLoginsAndJobs Then
                 System.Windows.Forms.MessageBox.Show("No databases or tables were selected; unable to continue", "Nothing To Do", MessageBoxButtons.OK, MessageBoxIcon.Information)
                 Exit Sub
             End If
@@ -877,7 +890,7 @@ Public Class frmMain
         ' Note: Populate mDatabaseListToProcess and mTableNamesForDataExport prior to calling this sub
 
         Try
-            mSchemaExportSuccess = mDBSchemaExporter.ScriptDBObjectsStart(mSchemaExportOptions, mDatabaseListToProcess, mTableNamesForDataExport)
+            mSchemaExportSuccess = mDBSchemaExporter.ScriptServerAndDBObjects(mSchemaExportOptions, mDatabaseListToProcess, mTableNamesForDataExport)
         Catch ex As Exception
             System.Windows.Forms.MessageBox.Show("Error in ScriptDBSchemaObjectsThread: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
@@ -941,7 +954,10 @@ Public Class frmMain
             mnuEditWarnOnHighTableRowCount.Checked = True
 
             chkCreateFolderForEachDB.Checked = True
-            txtOutputFolderNamePrefix.Text = clsExportDBSchema.DEFAULT_OUTPUT_FOLDER_NAME_PREFIX
+            txtOutputFolderNamePrefix.Text = clsExportDBSchema.DEFAULT_DB_OUTPUT_FOLDER_NAME_PREFIX
+
+            chkExportServerSettingsLoginsAndJobs.Checked = False
+            txtServerOutputFolderNamePrefix.Text = clsExportDBSchema.DEFAULT_SERVER_OUTPUT_FOLDER_NAME_PREFIX
 
             clsExportDBSchema.InitializeAutoSelectTableNames(mTableNamesToAutoSelect)
             clsExportDBSchema.InitializeAutoSelectTableRegEx(mTableNameAutoSelectRegEx)
@@ -1012,6 +1028,7 @@ Public Class frmMain
             With objToolTipControl
                 .SetToolTip(chkCreateFolderForEachDB, "This will be automatically enabled if multiple databases are chosen above")
                 .SetToolTip(txtOutputFolderNamePrefix, "The output folder for each database will be named with this prefix followed by the database name")
+                .SetToolTip(txtServerOutputFolderNamePrefix, "Server settings will be saved in a folder with this prefix followed by the server name")
             End With
         Catch ex As Exception
             System.Windows.Forms.MessageBox.Show("Error in SetToolTips: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)

@@ -1,5 +1,15 @@
 DB Schema Export Tool
 
+Version 1.0.4.0, Build 2517; November 22, 2006
+	- Added option to save configuration information for the specified server
+		- Creates folder ServerSchema_ServerName
+		- Saves .Sql files for the server logins, the SQL Server Agent jobs, the Database Mail configuration, and for the Registry Settings pertinent to SQL Server
+		- Also saves files ServerInformation.ini and ServerConfiguration.ini listing configuration settings
+	- Added option to save additional information for each selected database
+		- DBDefinition in file DBDefinition_DatabaseName.sql
+		- Roles in files Role_UserName.sql
+		- Schemas in files Schema_SchemaName.sql
+
 Version 1.0.3.0, Build 2488; October 24, 2006
 	- When retrieving data, now trying schema "dbo" if table name not found in default tables collection
 
