@@ -25,7 +25,7 @@ Option Strict On
 ' SOFTWARE.  This notice including this sentence must appear on any copies of 
 ' this computer software.
 '
-' Last updated November 22, 2006
+' Last updated December 6, 2006
 
 Public Class clsExportDBSchema
 
@@ -685,7 +685,6 @@ Public Class clsExportDBSchema
                                         ByRef udtSchemaExportOptions As udtSchemaExportOptionsType, _
                                         ByRef objScriptOptions As Microsoft.SqlServer.Management.Smo.ScriptingOptions, _
                                         ByRef udtWorkingParams As udtDBExportWorkingParamsType)
-
         Dim intIndex As Integer
 
         If udtWorkingParams.CountObjectsOnly Then
@@ -752,9 +751,13 @@ Public Class clsExportDBSchema
                                ByRef objScriptOptions As Microsoft.SqlServer.Management.Smo.ScriptingOptions, _
                                ByRef udtWorkingParams As udtDBExportWorkingParamsType)
 
+        Const SYNC_OBJ_TABLE_PREFIX As String = "syncobj_0x"
+
         Dim objScripter As Microsoft.SqlServer.Management.Smo.Scripter
         Dim objSMOObject() As Microsoft.SqlServer.Management.Smo.SqlSmoObject
         Dim objTable As Microsoft.SqlServer.Management.Smo.Table
+
+        Dim blnIncludeTable As Boolean
 
         If udtWorkingParams.CountObjectsOnly Then
             ' Note: objDatabase.Tables includes system tables, so udtWorkingParams.ProcessCount will be 
@@ -767,7 +770,20 @@ Public Class clsExportDBSchema
             ReDim objSMOObject(0)
 
             For Each objTable In objDatabase.Tables
-                If udtSchemaExportOptions.IncludeSystemObjects OrElse Not objTable.IsSystemObject Then
+                blnIncludeTable = True
+                If Not udtSchemaExportOptions.IncludeSystemObjects Then
+                    If objTable.IsSystemObject Then
+                        blnincludetable = False
+                    Else
+                        If objTable.Name.Length >= SYNC_OBJ_TABLE_PREFIX.Length Then
+                            If objTable.Name.ToLower.Substring(0, SYNC_OBJ_TABLE_PREFIX.Length) = SYNC_OBJ_TABLE_PREFIX.ToLower Then
+                                blnIncludeTable = False
+                            End If
+                        End If
+                    End If
+                End If
+
+                If blnIncludeTable Then
                     mSubtaskProgressStepDescription = objTable.Name
                     UpdateSubtaskProgress(udtWorkingParams.ProcessCount, udtWorkingParams.ProcessCountExpected)
 
