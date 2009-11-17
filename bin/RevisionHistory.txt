@@ -1,5 +1,12 @@
 DB Schema Export Tool
 
+Version 1.1.3608
+	- Updated to Sql Server 2008
+
+Version 1.0.4.1, Build 3224; October 29, 2008
+	- Updated to Visual Studio 2008
+	- Updated to use SMO (instead of DMO)
+
 Version 1.0.4.1, Build 2531; December 6, 2006
 	- Now excluding tables that start with "syncobj_0x" since these tables are used in replication
 	- Updated to new version of PRISM.dll

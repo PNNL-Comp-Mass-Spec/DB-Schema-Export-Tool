@@ -955,6 +955,7 @@ Public Class clsExportDBSchema
         ' Initialize the scripter and objSMOObject()
         objScripter = New Microsoft.SqlServer.Management.Smo.Scripter(mSqlServer)
         objScripter.Options = objScriptOptions
+
         ReDim objSMOObject(0)
 
         For intObjectIterator = 0 To 2
@@ -1609,14 +1610,19 @@ Public Class clsExportDBSchema
         Dim objScriptOptions As New Microsoft.SqlServer.Management.Smo.ScriptingOptions
 
         With objScriptOptions
+            '.Bindings = True
             .Default = True
             .DriAll = True
+            '.DriAllKeys = True
+            '.ExtendedProperties = True
             .IncludeHeaders = True          ' If True, then includes a line of the form: /****** Object:  Table [dbo].[T_Analysis_Description]    Script Date: 08/14/2006 12:14:31 ******/
             .IncludeDatabaseContext = False
             .IncludeIfNotExists = False     ' If True, then the entire SP is placed inside an nvarchar variable
             .Indexes = True
+            '.NoCollation = True
             .NoCommandTerminator = False
             .Permissions = True
+            '.PrimaryObject = True
             .SchemaQualify = True           ' If True, then adds extra [dbo]. prefixes
             '.ScriptDrops = True            ' If True, the script only contains Drop commands, not Create commands
             .Statistics = True
