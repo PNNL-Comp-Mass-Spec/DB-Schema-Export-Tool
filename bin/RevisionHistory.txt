@@ -1,6 +1,11 @@
 DB Schema Export Tool
 
-Version 1.1.3608
+Version 1.1.4164; May 27, 2011
+	- New version of Prism.DLL
+	- Now specifying HintPath for the SQL Server references
+		- C:\Program Files (x86)\Microsoft SQL Server\100\SDK\Assemblies
+
+Version 1.1.3608; November 17, 2009
 	- Updated to Sql Server 2008
 
 Version 1.0.4.1, Build 3224; October 29, 2008

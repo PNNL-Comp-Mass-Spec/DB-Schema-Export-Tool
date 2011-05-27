@@ -6,7 +6,7 @@ Option Strict On
 ' See clsMTSAutomation for additional information
 
 Module modMain
-    Public Const PROGRAM_DATE As String = "November 17, 2009"
+    Public Const PROGRAM_DATE As String = "May 27, 2011"
 
     Public Sub Main()
         ' This could be used to show frmMain
