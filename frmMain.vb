@@ -713,852 +713,863 @@ Public Class frmMain
     End Sub
 
     Private Sub ProgressUpdate(ByVal taskDescription As String, ByVal percentComplete As Single)
-        lblProgress.Text = taskDescription
-        pbarProgress.Value = percentComplete
-    End Sub
-
-    Private Sub ProgressComplete()
-        pbarProgress.Value = pbarProgress.Maximum
-    End Sub
-
-    Private Sub ScriptDBSchemaObjects()
-
-        Dim strMessage As String
-        Dim intIndex As Integer
-        Dim blnSelected As Boolean
-
-        If mWorking Then Exit Sub
-
-        Try
-            ' Validate txtOutputFolderPath.Text
-            If txtOutputFolderPath.TextLength = 0 Then
-                txtOutputFolderPath.Text = GetAppFolderPath()
-            End If
-
-            If Not System.IO.Directory.Exists(txtOutputFolderPath.Text) Then
-                strMessage = "Output folder not found: " & txtOutputFolderPath.Text
-                System.Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-                Exit Sub
-            End If
-
-            clsExportDBSchema.InitializeSchemaExportOptions(mSchemaExportOptions)
-            With mSchemaExportOptions
-                .OutputFolderPath = txtOutputFolderPath.Text
-                .OutputFolderNamePrefix = txtOutputFolderNamePrefix.Text
-                .CreateFolderForEachDB = chkCreateFolderForEachDB.Checked
-                .IncludeSystemObjects = mnuEditIncludeSystemObjects.Checked
-                .IncludeTimestampInScriptFileHeader = mnuEditIncludeTimestampInScriptFileHeader.Checked
-
-                .ExportServerSettingsLoginsAndJobs = chkExportServerSettingsLoginsAndJobs.Checked
-                .ServerOutputFolderNamePrefix = txtServerOutputFolderNamePrefix.Text
-
-                .SaveDataAsInsertIntoStatements = mnuEditSaveDataAsInsertIntoStatements.Checked
-                .DatabaseTypeForInsertInto = clsExportDBSchema.eTargetDatabaseTypeConstants.SqlServer       ' Reserved for future expansion
-                .AutoSelectTableNamesForDataExport = mnuEditAutoSelectDefaultTableNames.Checked
-
-                ' Note: mDBSchemaExporter & mTableNameAutoSelectRegEx will be passed to mDBSchemaExporter below
-
-                For intIndex = 0 To lstObjectTypesToScript.Items.Count - 1
-                    blnSelected = lstObjectTypesToScript.GetSelected(intIndex)
-
-                    Select Case CType(intIndex, clsExportDBSchema.eSchemaObjectTypeConstants)
-                        Case clsExportDBSchema.eSchemaObjectTypeConstants.SchemasAndRoles
-                            .ExportDBSchemasAndRoles = blnSelected
-                        Case clsExportDBSchema.eSchemaObjectTypeConstants.Tables
-                            .ExportTables = blnSelected
-                        Case clsExportDBSchema.eSchemaObjectTypeConstants.Views
-                            .ExportViews = blnSelected
-                        Case clsExportDBSchema.eSchemaObjectTypeConstants.StoredProcedures
-                            .ExportStoredProcedures = blnSelected
-                        Case clsExportDBSchema.eSchemaObjectTypeConstants.UserDefinedFunctions
-                            .ExportUserDefinedFunctions = blnSelected
-                        Case clsExportDBSchema.eSchemaObjectTypeConstants.UserDefinedDataTypes
-                            .ExportUserDefinedDataTypes = blnSelected
-                        Case clsExportDBSchema.eSchemaObjectTypeConstants.UserDefinedTypes
-                            .ExportUserDefinedTypes = blnSelected
-                    End Select
-                Next intIndex
-
-                With .ConnectionInfo
-                    .ServerName = txtServerName.Text
-                    .UserName = txtUsername.Text
-                    .Password = txtPassword.Text
-                    .UseIntegratedAuthentication = chkUseIntegratedAuthentication.Checked
-                End With
-            End With
-
-        Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error initializing mSchemaExportOptions in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-            Exit Sub
-        End Try
-
-        Try
-            ' Populate mDatabaseListToProcess and mTableNamesForDataExport
-            mDatabaseListToProcess = GetSelectedDatabases()
-            mTableNamesForDataExport = GetSelectedTableNamesForDataExport(mnuEditWarnOnHighTableRowCount.Checked)
-
-            If mDatabaseListToProcess.Length = 0 And Not mSchemaExportOptions.ExportServerSettingsLoginsAndJobs Then
-                System.Windows.Forms.MessageBox.Show("No databases or tables were selected; unable to continue", "Nothing To Do", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                Exit Sub
-            End If
-
-        Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error determining list of databases (and tables) to process: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-            Exit Sub
-        End Try
-
-        Try
-            If mDBSchemaExporter Is Nothing Then
-                mDBSchemaExporter = New clsExportDBSchema
-            End If
-
-            If Not mTableNamesToAutoSelect Is Nothing Then
-                mDBSchemaExporter.TableNamesToAutoSelect = mTableNamesToAutoSelect
-            End If
-
-            If Not mTableNameAutoSelectRegEx Is Nothing Then
-                mDBSchemaExporter.TableNameAutoSelectRegEx = mTableNameAutoSelectRegEx
-            End If
-        Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error instantiating mDBSchemaExporter and updating the data export auto-select lists: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-            Exit Sub
-        End Try
-
-        Try
-            mWorking = True
-            EnableDisableControls()
-
-            UpdatePauseUnpauseCaption(clsExportDBSchema.ePauseStatusConstants.Unpaused)
-            Application.DoEvents()
-
-            If Not mnuEditScriptObjectsThreaded.Checked Then
-                ScriptDBSchemaObjectsThread()
-            Else
-                ' Use the following to call the SP on a separate thread
-                mThread = New Threading.Thread(AddressOf ScriptDBSchemaObjectsThread)
-                mThread.Start()
-                System.Threading.Thread.Sleep(THREAD_WAIT_MSEC)
-
-                Do While mThread.ThreadState = Threading.ThreadState.Running OrElse mThread.ThreadState = Threading.ThreadState.AbortRequested OrElse mThread.ThreadState = Threading.ThreadState.WaitSleepJoin OrElse mThread.ThreadState = Threading.ThreadState.Suspended OrElse mThread.ThreadState = Threading.ThreadState.SuspendRequested
-                    Try
-                        If mThread.Join(THREAD_WAIT_MSEC) Then
-                            ' The Join succeeded, meaning the thread has finished running
-                            Exit Do
-                            'ElseIf mRequestCancel = True Then
-                            '    mThread.Abort()
-                        End If
-
-                    Catch ex As Exception
-                        ' Error joining thread; this can happen if the thread is trying to abort, so I believe we can ignore the error
-                        ' Sleep another THREAD_WAIT_MSEC msec, then exit the Do Loop
-                        System.Threading.Thread.Sleep(THREAD_WAIT_MSEC)
-                        Exit Do
-                    End Try
-                    Application.DoEvents()
-                Loop
-            End If
-
-            Application.DoEvents()
-            If Not mSchemaExportSuccess OrElse mDBSchemaExporter.ErrorCode <> 0 Then
-                strMessage = "Error exporting the schema objects (ErrorCode=" & mDBSchemaExporter.ErrorCode.ToString & "): " & ControlChars.NewLine & mDBSchemaExporter.StatusMessage
-                System.Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-            End If
-        Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error calling ScriptDBSchemaObjectsThread in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-        Finally
-            mWorking = False
-            EnableDisableControls()
-            UpdatePauseUnpauseCaption(clsExportDBSchema.ePauseStatusConstants.Unpaused)
-            Try
-                If Not mThread Is Nothing AndAlso mThread.ThreadState <> Threading.ThreadState.Stopped Then
-                    mThread.Abort()
-                End If
-            Catch ex As Exception
-                ' Ignore errors here
-            End Try
-        End Try
-
-        Try
-            lblSubtaskProgress.Text = "Schema export complete"
-        Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error finalizing results in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-        End Try
-
-    End Sub
-
-    Private Sub ScriptDBSchemaObjectsThread()
-        ' Note: Populate mDatabaseListToProcess and mTableNamesForDataExport prior to calling this sub
-
-        Try
-            mSchemaExportSuccess = mDBSchemaExporter.ScriptServerAndDBObjects(mSchemaExportOptions, mDatabaseListToProcess, mTableNamesForDataExport)
-        Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error in ScriptDBSchemaObjectsThread: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-        End Try
-    End Sub
-
-    Private Sub SelectDefaultDBs(ByVal strDBList() As String)
-
-        Dim intIndex As Integer
-        Dim strCurrentDB As String
-
-        If Not strDBList Is Nothing Then
-
-            ' Update the entries in strDBList to be lower case, then sort alphabetically
-            For intIndex = 0 To strDBList.Length - 1
-                strDBList(intIndex) = strDBList(intIndex).ToLower
-            Next intIndex
-
-            Array.Sort(strDBList)
-
-            lstDatabasesToProcess.ClearSelected()
-
-            For intIndex = 0 To lstDatabasesToProcess.Items.Count - 1
-                strCurrentDB = lstDatabasesToProcess.Items(intIndex).ToString.ToLower
-
-                If Array.BinarySearch(strDBList, strCurrentDB) >= 0 Then
-                    lstDatabasesToProcess.SetSelected(intIndex, True)
-                End If
-            Next intIndex
-        End If
-
-    End Sub
-
-    Private Sub ResetToDefaults(ByVal blnConfirm As Boolean)
-        Dim eResponse As System.Windows.Forms.DialogResult
-
-        Try
-            If blnConfirm Then
-                eResponse = System.Windows.Forms.MessageBox.Show("Are you sure you want to reset all settings to their default values?", "Reset to Defaults", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1)
-                If eResponse <> Windows.Forms.DialogResult.Yes Then
-                    Exit Sub
-                End If
-            End If
-
-            Me.Width = 600
-            Me.Height = 600
-
-            txtServerName.Text = clsExportDBSchema.SQL_SERVER_NAME_DEFAULT
-
-            chkUseIntegratedAuthentication.Checked = True
-            txtUsername.Text = clsExportDBSchema.SQL_SERVER_USERNAME_DEFAULT
-            txtPassword.Text = clsExportDBSchema.SQL_SERVER_PASSWORD_DEFAULT
-
-            mnuEditScriptObjectsThreaded.Checked = False
-            mnuEditIncludeSystemObjects.Checked = False
-            mnuEditPauseAfterEachDatabase.Checked = False
-            mnuEditIncludeTimestampInScriptFileHeader.Checked = False
-
-            mnuEditIncludeTableRowCounts.Checked = True
-            mnuEditAutoSelectDefaultTableNames.Checked = True
-            mnuEditSaveDataAsInsertIntoStatements.Checked = True
-            mnuEditWarnOnHighTableRowCount.Checked = True
-
-            chkCreateFolderForEachDB.Checked = True
-            txtOutputFolderNamePrefix.Text = clsExportDBSchema.DEFAULT_DB_OUTPUT_FOLDER_NAME_PREFIX
-
-            chkExportServerSettingsLoginsAndJobs.Checked = False
-            txtServerOutputFolderNamePrefix.Text = clsExportDBSchema.DEFAULT_SERVER_OUTPUT_FOLDER_NAME_PREFIX
-
-            clsExportDBSchema.InitializeAutoSelectTableNames(mTableNamesToAutoSelect)
-            clsExportDBSchema.InitializeAutoSelectTableRegEx(mTableNameAutoSelectRegEx)
-
-            ReDim mDefaultDMSDatabaseList(2)
-            mDefaultDMSDatabaseList(0) = "DMS5"
-            mDefaultDMSDatabaseList(1) = "Protein_Sequences"
-            mDefaultDMSDatabaseList(2) = "DMSHistoricLog1"
-
-            ReDim mDefaultMTSDatabaseList(9)
-            mDefaultMTSDatabaseList(0) = "MT_Template_01"
-            mDefaultMTSDatabaseList(1) = "PT_Template_01"
-            mDefaultMTSDatabaseList(2) = "MT_Main"
-            mDefaultMTSDatabaseList(3) = "MTS_Master"
-            mDefaultMTSDatabaseList(4) = "Prism_IFC"
-            mDefaultMTSDatabaseList(5) = "Prism_RPT"
-            mDefaultMTSDatabaseList(6) = "PAST_BB"
-            mDefaultMTSDatabaseList(7) = "Master_Sequences"
-            mDefaultMTSDatabaseList(8) = "MT_Historic_Log"
-            mDefaultMTSDatabaseList(9) = "MT_HistoricLog"
-
-            EnableDisableControls()
-        Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error in ResetToDefaults: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-        End Try
-
-    End Sub
-
-    Private Sub SelectAllListboxItems(ByVal objListBox As ListBox)
-        Dim intIndex As Integer
-
-        Try
-            For intIndex = 0 To objListBox.Items.Count - 1
-                objListBox.SetSelected(intIndex, True)
-            Next
-        Catch ex As Exception
-            ' Ignore errors here
-        End Try
-    End Sub
-
-    Private Sub SelectOutputFolder()
-        ' Prompts the user to select the output folder to create the scripted objects in 
-
-        Dim objFolderBrowser As PRISM.Files.FolderBrowser
-        Dim blnSuccess As Boolean
-
-        Try
-            objFolderBrowser = New PRISM.Files.FolderBrowser
-
-            If txtOutputFolderPath.TextLength > 0 Then
-                blnSuccess = objFolderBrowser.BrowseForFolder(txtOutputFolderPath.Text)
-            Else
-                blnSuccess = objFolderBrowser.BrowseForFolder(GetAppFolderPath())
-            End If
-
-            If blnSuccess Then
-                txtOutputFolderPath.Text = objFolderBrowser.FolderPath
-            End If
-        Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error in SelectOutputFolder: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-        End Try
-    End Sub
-
-    Private Sub SetToolTips()
-        Dim objToolTipControl As New System.Windows.Forms.ToolTip
-
-        Try
-            With objToolTipControl
-                .SetToolTip(chkCreateFolderForEachDB, "This will be automatically enabled if multiple databases are chosen above")
-                .SetToolTip(txtOutputFolderNamePrefix, "The output folder for each database will be named with this prefix followed by the database name")
-                .SetToolTip(txtServerOutputFolderNamePrefix, "Server settings will be saved in a folder with this prefix followed by the server name")
-            End With
-        Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error in SetToolTips: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-        Finally
-            objToolTipControl = Nothing
-        End Try
-
-    End Sub
-
-    Private Sub ShowAboutBox()
-        Dim strMessage As String
-
-        strMessage = String.Empty
-
-        strMessage &= "Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in August 2006" & ControlChars.NewLine
-        strMessage &= "Copyright 2006, Battelle Memorial Institute.  All Rights Reserved." & ControlChars.NewLine & ControlChars.NewLine
-
-        strMessage &= "This is version " & System.Windows.Forms.Application.ProductVersion & " (" & PROGRAM_DATE & "). " & ControlChars.NewLine & ControlChars.NewLine
-
-        strMessage &= "E-mail: matthew.monroe@pnl.gov or matt@alchemistmatt.com" & ControlChars.NewLine
-        strMessage &= "Website: http://ncrr.pnl.gov/ or http://www.sysbio.org/resources/staff/" & ControlChars.NewLine & ControlChars.NewLine
-
-        strMessage &= "Licensed under the Apache License, Version 2.0; you may not use this file except in compliance with the License.  "
-        strMessage &= "You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0" & ControlChars.NewLine & ControlChars.NewLine
-
-        strMessage &= "Notice: This computer software was prepared by Battelle Memorial Institute, "
-        strMessage &= "hereinafter the Contractor, under Contract No. DE-AC05-76RL0 1830 with the "
-        strMessage &= "Department of Energy (DOE).  All rights in the computer software are reserved "
-        strMessage &= "by DOE on behalf of the United States Government and the Contractor as "
-        strMessage &= "provided in the Contract.  NEITHER THE   VERNMENT NOR THE CONTRACTOR MAKES ANY "
-        strMessage &= "WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS "
-        strMessage &= "SOFTWARE.  This notice including this sentence must appear on any copies of "
-        strMessage &= "this computer software." & ControlChars.NewLine
-
-        Windows.Forms.MessageBox.Show(strMessage, "About", MessageBoxButtons.OK, MessageBoxIcon.Information)
-    End Sub
-
-    Private Sub StripRowCountsFromTableNames(ByRef strTableNames() As String)
-        Dim intIndex As Integer
-
-        If strTableNames Is Nothing Then Exit Sub
-        For intIndex = 0 To strTableNames.Length - 1
-            strTableNames(intIndex) = StripRowCountFromTableName(strTableNames(intIndex))
-        Next intIndex
-
-    End Sub
-
-    Private Function StripRowCountFromTableName(ByVal strTableName As String) As String
-        Dim intCharIndex As Integer
-
-        If strTableName Is Nothing Then
-            Return String.Empty
-        Else
-            intCharIndex = strTableName.IndexOf(ROW_COUNT_SEPARATOR)
-            If intCharIndex > 0 Then
-                Return strTableName.Substring(0, intCharIndex)
-            Else
-                Return strTableName
-            End If
-        End If
-
-    End Function
-
-    Private Sub SubTaskProgressUpdate(ByVal taskDescription As String, ByVal percentComplete As Single)
-        lblSubtaskProgress.Text = taskDescription
-        pbarSubtaskProgress.Value = percentComplete
-
-        If mDBSchemaExporter.ProgressStepCount > 0 Then
-            pbarProgress.Value = mDBSchemaExporter.ProgressStep / CSng(mDBSchemaExporter.ProgressStepCount) * 100.0! + 1.0! / mDBSchemaExporter.ProgressStepCount * percentComplete
-        End If
-    End Sub
-
-    Private Sub SubTaskProgressComplete()
-        pbarSubtaskProgress.Value = pbarProgress.Maximum
-    End Sub
-
-    Private Sub UpdateDatabaseList()
-        Dim strDatabaseList() As String = New String() {}
-        Dim intIndex As Integer
-        Dim intItemIndex As Integer
-
-        Dim htSelectedDatabaseNamesSaved As Hashtable
-        Dim objItem As Object
-
-        If mWorking Then Exit Sub
-
-        Try
-            mWorking = True
-            EnableDisableControls()
-
-            UpdatePauseUnpauseCaption(clsExportDBSchema.ePauseStatusConstants.Unpaused)
-            Application.DoEvents()
-
-            If VerifyOrUpdateServerConnection(True) Then
-                ' Cache the currently selected names so that we can re-highlight them below
-                htSelectedDatabaseNamesSaved = New Hashtable
-                For Each objItem In lstDatabasesToProcess.SelectedItems
-                    htSelectedDatabaseNamesSaved.Add(CStr(objItem), "")
-                Next
-
-                lstDatabasesToProcess.Items.Clear()
-
-                If mDBSchemaExporter.GetSqlServerDatabases(strDatabaseList) Then
-                    For intIndex = 0 To strDatabaseList.Length - 1
-                        If strDatabaseList(intIndex) Is Nothing Then Exit For
-
-                        intItemIndex = lstDatabasesToProcess.Items.Add(strDatabaseList(intIndex))
-
-                        If htSelectedDatabaseNamesSaved.Contains(strDatabaseList(intIndex)) Then
-                            ' Highlight this table name
-                            lstDatabasesToProcess.SetSelected(intItemIndex, True)
-                        End If
-                    Next intIndex
-                End If
-            End If
-        Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error in UpdateDatabaseList: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-        Finally
-            mWorking = False
-            EnableDisableControls()
-        End Try
-    End Sub
-
-    Private Sub UpdatePauseUnpauseCaption(ByVal ePauseStatus As clsExportDBSchema.ePauseStatusConstants)
-        Try
-            Select Case ePauseStatus
-                Case clsExportDBSchema.ePauseStatusConstants.Paused
-                    cmdPauseUnpause.Text = "Un&pause"
-                Case clsExportDBSchema.ePauseStatusConstants.PauseRequested
-                    cmdPauseUnpause.Text = "&Pausing"
-                Case clsExportDBSchema.ePauseStatusConstants.Unpaused
-                    cmdPauseUnpause.Text = "&Pause"
-                Case clsExportDBSchema.ePauseStatusConstants.UnpauseRequested
-                    cmdPauseUnpause.Text = "Un&pausing"
-                Case Else
-                    cmdPauseUnpause.Text = "Un&pause"
-            End Select
-        Catch ex As Exception
-            ' Ignore errors here
-        End Try
-    End Sub
-
-    Private Sub UpdateTableNamesInSelectedDB()
-
-        Dim strDatabaseName As String = String.Empty
-        Dim strTableList() As String = New String() {}
-        Dim lngRowCounts() As Long = New Long() {}
-        Dim blnIncludeTableRowCounts As Boolean
-
-        Dim intIndex As Integer
-        If mWorking Then Exit Sub
-
-        Try
-            If lstDatabasesToProcess.Items.Count = 0 Then
-                System.Windows.Forms.MessageBox.Show("The database list is currently empty; unable to continue", "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-                Exit Try
-            ElseIf lstDatabasesToProcess.SelectedIndex < 0 Then
-                ' Auto-select the first database
-                lstDatabasesToProcess.SelectedIndex = 0
-            End If
-            strDatabaseName = CStr(lstDatabasesToProcess.Items(lstDatabasesToProcess.SelectedIndex))
-
-        Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error determining selected database name in UpdateTableNamesInSelectedDB: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-        End Try
-
-        If strDatabaseName Is Nothing OrElse strDatabaseName.Length = 0 Then
-            Exit Sub
-        End If
-
-        Try
-            mWorking = True
-            EnableDisableControls()
-
-            UpdatePauseUnpauseCaption(clsExportDBSchema.ePauseStatusConstants.Unpaused)
-            Application.DoEvents()
-
-            If VerifyOrUpdateServerConnection(True) Then
-
-                blnIncludeTableRowCounts = mnuEditIncludeTableRowCounts.Checked
-                If mDBSchemaExporter.GetSqlServerDatabaseTableNames(strDatabaseName, strTableList, lngRowCounts, blnIncludeTableRowCounts, mnuEditIncludeSystemObjects.Checked) Then
-                    mCachedTableListCount = 0
-                    mCachedTableListIncludesRowCounts = blnIncludeTableRowCounts
-                    ReDim mCachedTableList(strTableList.Length - 1)
-                    ReDim mCachedTableListRowCounts(strTableList.Length - 1)
-
-                    For intIndex = 0 To strTableList.Length - 1
-                        If strTableList(mCachedTableListCount) Is Nothing Then Exit For
-                        mCachedTableList(mCachedTableListCount) = strTableList(mCachedTableListCount)
-                        mCachedTableListRowCounts(mCachedTableListCount) = lngRowCounts(mCachedTableListCount)
-                        mCachedTableListCount += 1
-                    Next intIndex
-
-                    If mCachedTableListCount < mCachedTableList.Length Then
-                        ReDim Preserve mCachedTableList(mCachedTableListCount - 1)
-                        ReDim Preserve mCachedTableListRowCounts(mCachedTableListCount - 1)
-                    End If
-
-                    Array.Sort(mCachedTableList, mCachedTableListRowCounts)
-
-                    PopulateTableNamesToExport(True)
-                End If
-            End If
-        Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error in UpdateTableNamesInSelectedDB: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-        Finally
-            mWorking = False
-            EnableDisableControls()
-        End Try
-
-    End Sub
-
-    Private Function ValueToTextEstimate(ByVal lngValue As Long) As String
-        ' Converts lngValue to a text-based value
-        ' For data between 10000 and 1 million, rounds to the nearest thousand
-        ' For data over 1 million, displays as x.x million
-
-        Dim strValue As String = String.Empty
-        Dim lngValueAbs As Long
-        Dim dblDivisor As Double
-
-        lngValueAbs = Math.Abs(lngValue)
-        If lngValueAbs < 100 Then
-            strValue = lngValue.ToString
-        ElseIf lngValue >= 1000000 Then
-            strValue = Math.Round(lngValue / 1000000.0, 1) & " million"
-        Else
-            dblDivisor = 10 ^ (Math.Floor(Math.Log10(lngValueAbs)) - 1)
-            strValue = (Math.Round(lngValue / dblDivisor, 0) * dblDivisor).ToString("#,###,##0")
-        End If
-
-        Return strValue
-    End Function
-
-    Private Function VerifyOrUpdateServerConnection(ByVal blnInformUserOnFailure As Boolean) As Boolean
-        Dim blnConnected As Boolean
-        Dim udtConnectionInfo As clsExportDBSchema.udtServerConnectionInfoType
-
-        Dim strMessage As String
-
-        Try
-            strMessage = String.Empty
-            blnConnected = False
-
-            If txtServerName.TextLength = 0 Then
-                strMessage = "Please enter the server name"
-                If blnInformUserOnFailure Then
-                    System.Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-                End If
-            Else
-                With udtConnectionInfo
-                    .ServerName = txtServerName.Text
-                    .UseIntegratedAuthentication = chkUseIntegratedAuthentication.Checked
-                    .UserName = txtUsername.Text
-                    .Password = txtPassword.Text
-                End With
-
-                If mDBSchemaExporter Is Nothing Then
-                    mDBSchemaExporter = New clsExportDBSchema(udtConnectionInfo)
-                    blnConnected = mDBSchemaExporter.ConnectedToServer
-                Else
-                    blnConnected = mDBSchemaExporter.ConnectToServer(udtConnectionInfo)
-                End If
-
-                If Not blnConnected AndAlso blnInformUserOnFailure Then
-                    strMessage = "Error connecting to server " & udtConnectionInfo.ServerName
-                    If mDBSchemaExporter.StatusMessage.Length > 0 Then
-                        strMessage &= "; " & mDBSchemaExporter.StatusMessage
-                    End If
-                    System.Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-                End If
-            End If
-
-        Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error in VerifyOrUpdateServerConnection: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-            blnConnected = False
-        End Try
-
-        Return blnConnected
-    End Function
-
-    Private Sub frmMain_Load(ByVal eventSender As System.Object, ByVal eventArgs As System.EventArgs) Handles MyBase.Load
-        ' Note that InitializeControls() is called in Sub New()
-
-    End Sub
+		lblProgress.Text = taskDescription
+		UpdateProgressBar(pbarProgress, percentComplete)	
+	End Sub
+
+	Private Sub ProgressComplete()
+		pbarProgress.Value = pbarProgress.Maximum
+	End Sub
+
+	Private Sub ScriptDBSchemaObjects()
+
+		Dim strMessage As String
+		Dim intIndex As Integer
+		Dim blnSelected As Boolean
+
+		If mWorking Then Exit Sub
+
+		Try
+			' Validate txtOutputFolderPath.Text
+			If txtOutputFolderPath.TextLength = 0 Then
+				txtOutputFolderPath.Text = GetAppFolderPath()
+			End If
+
+			If Not System.IO.Directory.Exists(txtOutputFolderPath.Text) Then
+				strMessage = "Output folder not found: " & txtOutputFolderPath.Text
+				System.Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+				Exit Sub
+			End If
+
+			clsExportDBSchema.InitializeSchemaExportOptions(mSchemaExportOptions)
+			With mSchemaExportOptions
+				.OutputFolderPath = txtOutputFolderPath.Text
+				.OutputFolderNamePrefix = txtOutputFolderNamePrefix.Text
+				.CreateFolderForEachDB = chkCreateFolderForEachDB.Checked
+				.IncludeSystemObjects = mnuEditIncludeSystemObjects.Checked
+				.IncludeTimestampInScriptFileHeader = mnuEditIncludeTimestampInScriptFileHeader.Checked
+
+				.ExportServerSettingsLoginsAndJobs = chkExportServerSettingsLoginsAndJobs.Checked
+				.ServerOutputFolderNamePrefix = txtServerOutputFolderNamePrefix.Text
+
+				.SaveDataAsInsertIntoStatements = mnuEditSaveDataAsInsertIntoStatements.Checked
+				.DatabaseTypeForInsertInto = clsExportDBSchema.eTargetDatabaseTypeConstants.SqlServer		' Reserved for future expansion
+				.AutoSelectTableNamesForDataExport = mnuEditAutoSelectDefaultTableNames.Checked
+
+				' Note: mDBSchemaExporter & mTableNameAutoSelectRegEx will be passed to mDBSchemaExporter below
+
+				For intIndex = 0 To lstObjectTypesToScript.Items.Count - 1
+					blnSelected = lstObjectTypesToScript.GetSelected(intIndex)
+
+					Select Case CType(intIndex, clsExportDBSchema.eSchemaObjectTypeConstants)
+						Case clsExportDBSchema.eSchemaObjectTypeConstants.SchemasAndRoles
+							.ExportDBSchemasAndRoles = blnSelected
+						Case clsExportDBSchema.eSchemaObjectTypeConstants.Tables
+							.ExportTables = blnSelected
+						Case clsExportDBSchema.eSchemaObjectTypeConstants.Views
+							.ExportViews = blnSelected
+						Case clsExportDBSchema.eSchemaObjectTypeConstants.StoredProcedures
+							.ExportStoredProcedures = blnSelected
+						Case clsExportDBSchema.eSchemaObjectTypeConstants.UserDefinedFunctions
+							.ExportUserDefinedFunctions = blnSelected
+						Case clsExportDBSchema.eSchemaObjectTypeConstants.UserDefinedDataTypes
+							.ExportUserDefinedDataTypes = blnSelected
+						Case clsExportDBSchema.eSchemaObjectTypeConstants.UserDefinedTypes
+							.ExportUserDefinedTypes = blnSelected
+					End Select
+				Next intIndex
+
+				With .ConnectionInfo
+					.ServerName = txtServerName.Text
+					.UserName = txtUsername.Text
+					.Password = txtPassword.Text
+					.UseIntegratedAuthentication = chkUseIntegratedAuthentication.Checked
+				End With
+			End With
+
+		Catch ex As Exception
+			System.Windows.Forms.MessageBox.Show("Error initializing mSchemaExportOptions in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			Exit Sub
+		End Try
+
+		Try
+			' Populate mDatabaseListToProcess and mTableNamesForDataExport
+			mDatabaseListToProcess = GetSelectedDatabases()
+			mTableNamesForDataExport = GetSelectedTableNamesForDataExport(mnuEditWarnOnHighTableRowCount.Checked)
+
+			If mDatabaseListToProcess.Length = 0 And Not mSchemaExportOptions.ExportServerSettingsLoginsAndJobs Then
+				System.Windows.Forms.MessageBox.Show("No databases or tables were selected; unable to continue", "Nothing To Do", MessageBoxButtons.OK, MessageBoxIcon.Information)
+				Exit Sub
+			End If
+
+		Catch ex As Exception
+			System.Windows.Forms.MessageBox.Show("Error determining list of databases (and tables) to process: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			Exit Sub
+		End Try
+
+		Try
+			If mDBSchemaExporter Is Nothing Then
+				mDBSchemaExporter = New clsExportDBSchema
+			End If
+
+			If Not mTableNamesToAutoSelect Is Nothing Then
+				mDBSchemaExporter.TableNamesToAutoSelect = mTableNamesToAutoSelect
+			End If
+
+			If Not mTableNameAutoSelectRegEx Is Nothing Then
+				mDBSchemaExporter.TableNameAutoSelectRegEx = mTableNameAutoSelectRegEx
+			End If
+		Catch ex As Exception
+			System.Windows.Forms.MessageBox.Show("Error instantiating mDBSchemaExporter and updating the data export auto-select lists: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			Exit Sub
+		End Try
+
+		Try
+			mWorking = True
+			EnableDisableControls()
+
+			UpdatePauseUnpauseCaption(clsExportDBSchema.ePauseStatusConstants.Unpaused)
+			Application.DoEvents()
+
+			If Not mnuEditScriptObjectsThreaded.Checked Then
+				ScriptDBSchemaObjectsThread()
+			Else
+				' Use the following to call the SP on a separate thread
+				mThread = New Threading.Thread(AddressOf ScriptDBSchemaObjectsThread)
+				mThread.Start()
+				System.Threading.Thread.Sleep(THREAD_WAIT_MSEC)
+
+				Do While mThread.ThreadState = Threading.ThreadState.Running OrElse mThread.ThreadState = Threading.ThreadState.AbortRequested OrElse mThread.ThreadState = Threading.ThreadState.WaitSleepJoin OrElse mThread.ThreadState = Threading.ThreadState.Suspended OrElse mThread.ThreadState = Threading.ThreadState.SuspendRequested
+					Try
+						If mThread.Join(THREAD_WAIT_MSEC) Then
+							' The Join succeeded, meaning the thread has finished running
+							Exit Do
+							'ElseIf mRequestCancel = True Then
+							'    mThread.Abort()
+						End If
+
+					Catch ex As Exception
+						' Error joining thread; this can happen if the thread is trying to abort, so I believe we can ignore the error
+						' Sleep another THREAD_WAIT_MSEC msec, then exit the Do Loop
+						System.Threading.Thread.Sleep(THREAD_WAIT_MSEC)
+						Exit Do
+					End Try
+					Application.DoEvents()
+				Loop
+			End If
+
+			Application.DoEvents()
+			If Not mSchemaExportSuccess OrElse mDBSchemaExporter.ErrorCode <> 0 Then
+				strMessage = "Error exporting the schema objects (ErrorCode=" & mDBSchemaExporter.ErrorCode.ToString & "): " & ControlChars.NewLine & mDBSchemaExporter.StatusMessage
+				System.Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			End If
+		Catch ex As Exception
+			System.Windows.Forms.MessageBox.Show("Error calling ScriptDBSchemaObjectsThread in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+		Finally
+			mWorking = False
+			EnableDisableControls()
+			UpdatePauseUnpauseCaption(clsExportDBSchema.ePauseStatusConstants.Unpaused)
+			Try
+				If Not mThread Is Nothing AndAlso mThread.ThreadState <> Threading.ThreadState.Stopped Then
+					mThread.Abort()
+				End If
+			Catch ex As Exception
+				' Ignore errors here
+			End Try
+		End Try
+
+		Try
+			lblSubtaskProgress.Text = "Schema export complete"
+		Catch ex As Exception
+			System.Windows.Forms.MessageBox.Show("Error finalizing results in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+		End Try
+
+	End Sub
+
+	Private Sub ScriptDBSchemaObjectsThread()
+		' Note: Populate mDatabaseListToProcess and mTableNamesForDataExport prior to calling this sub
+
+		Try
+			mSchemaExportSuccess = mDBSchemaExporter.ScriptServerAndDBObjects(mSchemaExportOptions, mDatabaseListToProcess, mTableNamesForDataExport)
+		Catch ex As Exception
+			System.Windows.Forms.MessageBox.Show("Error in ScriptDBSchemaObjectsThread: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+		End Try
+	End Sub
+
+	Private Sub SelectDefaultDBs(ByVal strDBList() As String)
+
+		Dim intIndex As Integer
+		Dim strCurrentDB As String
+
+		If Not strDBList Is Nothing Then
+
+			' Update the entries in strDBList to be lower case, then sort alphabetically
+			For intIndex = 0 To strDBList.Length - 1
+				strDBList(intIndex) = strDBList(intIndex).ToLower
+			Next intIndex
+
+			Array.Sort(strDBList)
+
+			lstDatabasesToProcess.ClearSelected()
+
+			For intIndex = 0 To lstDatabasesToProcess.Items.Count - 1
+				strCurrentDB = lstDatabasesToProcess.Items(intIndex).ToString.ToLower
+
+				If Array.BinarySearch(strDBList, strCurrentDB) >= 0 Then
+					lstDatabasesToProcess.SetSelected(intIndex, True)
+				End If
+			Next intIndex
+		End If
+
+	End Sub
+
+	Private Sub ResetToDefaults(ByVal blnConfirm As Boolean)
+		Dim eResponse As System.Windows.Forms.DialogResult
+
+		Try
+			If blnConfirm Then
+				eResponse = System.Windows.Forms.MessageBox.Show("Are you sure you want to reset all settings to their default values?", "Reset to Defaults", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1)
+				If eResponse <> Windows.Forms.DialogResult.Yes Then
+					Exit Sub
+				End If
+			End If
+
+			Me.Width = 600
+			Me.Height = 600
+
+			txtServerName.Text = clsExportDBSchema.SQL_SERVER_NAME_DEFAULT
+
+			chkUseIntegratedAuthentication.Checked = True
+			txtUsername.Text = clsExportDBSchema.SQL_SERVER_USERNAME_DEFAULT
+			txtPassword.Text = clsExportDBSchema.SQL_SERVER_PASSWORD_DEFAULT
+
+			mnuEditScriptObjectsThreaded.Checked = False
+			mnuEditIncludeSystemObjects.Checked = False
+			mnuEditPauseAfterEachDatabase.Checked = False
+			mnuEditIncludeTimestampInScriptFileHeader.Checked = False
+
+			mnuEditIncludeTableRowCounts.Checked = True
+			mnuEditAutoSelectDefaultTableNames.Checked = True
+			mnuEditSaveDataAsInsertIntoStatements.Checked = True
+			mnuEditWarnOnHighTableRowCount.Checked = True
+
+			chkCreateFolderForEachDB.Checked = True
+			txtOutputFolderNamePrefix.Text = clsExportDBSchema.DEFAULT_DB_OUTPUT_FOLDER_NAME_PREFIX
+
+			chkExportServerSettingsLoginsAndJobs.Checked = False
+			txtServerOutputFolderNamePrefix.Text = clsExportDBSchema.DEFAULT_SERVER_OUTPUT_FOLDER_NAME_PREFIX
+
+			clsExportDBSchema.InitializeAutoSelectTableNames(mTableNamesToAutoSelect)
+			clsExportDBSchema.InitializeAutoSelectTableRegEx(mTableNameAutoSelectRegEx)
+
+			ReDim mDefaultDMSDatabaseList(2)
+			mDefaultDMSDatabaseList(0) = "DMS5"
+			mDefaultDMSDatabaseList(1) = "Protein_Sequences"
+			mDefaultDMSDatabaseList(2) = "DMSHistoricLog1"
+
+			ReDim mDefaultMTSDatabaseList(9)
+			mDefaultMTSDatabaseList(0) = "MT_Template_01"
+			mDefaultMTSDatabaseList(1) = "PT_Template_01"
+			mDefaultMTSDatabaseList(2) = "MT_Main"
+			mDefaultMTSDatabaseList(3) = "MTS_Master"
+			mDefaultMTSDatabaseList(4) = "Prism_IFC"
+			mDefaultMTSDatabaseList(5) = "Prism_RPT"
+			mDefaultMTSDatabaseList(6) = "PAST_BB"
+			mDefaultMTSDatabaseList(7) = "Master_Sequences"
+			mDefaultMTSDatabaseList(8) = "MT_Historic_Log"
+			mDefaultMTSDatabaseList(9) = "MT_HistoricLog"
+
+			EnableDisableControls()
+		Catch ex As Exception
+			System.Windows.Forms.MessageBox.Show("Error in ResetToDefaults: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+		End Try
+
+	End Sub
+
+	Private Sub SelectAllListboxItems(ByVal objListBox As ListBox)
+		Dim intIndex As Integer
+
+		Try
+			For intIndex = 0 To objListBox.Items.Count - 1
+				objListBox.SetSelected(intIndex, True)
+			Next
+		Catch ex As Exception
+			' Ignore errors here
+		End Try
+	End Sub
+
+	Private Sub SelectOutputFolder()
+		' Prompts the user to select the output folder to create the scripted objects in 
+
+		Dim objFolderBrowser As PRISM.Files.FolderBrowser
+		Dim blnSuccess As Boolean
+
+		Try
+			objFolderBrowser = New PRISM.Files.FolderBrowser
+
+			If txtOutputFolderPath.TextLength > 0 Then
+				blnSuccess = objFolderBrowser.BrowseForFolder(txtOutputFolderPath.Text)
+			Else
+				blnSuccess = objFolderBrowser.BrowseForFolder(GetAppFolderPath())
+			End If
+
+			If blnSuccess Then
+				txtOutputFolderPath.Text = objFolderBrowser.FolderPath
+			End If
+		Catch ex As Exception
+			System.Windows.Forms.MessageBox.Show("Error in SelectOutputFolder: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+		End Try
+	End Sub
+
+	Private Sub SetToolTips()
+		Dim objToolTipControl As New System.Windows.Forms.ToolTip
+
+		Try
+			With objToolTipControl
+				.SetToolTip(chkCreateFolderForEachDB, "This will be automatically enabled if multiple databases are chosen above")
+				.SetToolTip(txtOutputFolderNamePrefix, "The output folder for each database will be named with this prefix followed by the database name")
+				.SetToolTip(txtServerOutputFolderNamePrefix, "Server settings will be saved in a folder with this prefix followed by the server name")
+			End With
+		Catch ex As Exception
+			System.Windows.Forms.MessageBox.Show("Error in SetToolTips: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+		Finally
+			objToolTipControl = Nothing
+		End Try
+
+	End Sub
+
+	Private Sub ShowAboutBox()
+		Dim strMessage As String
+
+		strMessage = String.Empty
+
+		strMessage &= "Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in August 2006" & ControlChars.NewLine
+		strMessage &= "Copyright 2006, Battelle Memorial Institute.  All Rights Reserved." & ControlChars.NewLine & ControlChars.NewLine
+
+		strMessage &= "This is version " & System.Windows.Forms.Application.ProductVersion & " (" & PROGRAM_DATE & "). " & ControlChars.NewLine & ControlChars.NewLine
+
+		strMessage &= "E-mail: matthew.monroe@pnl.gov or matt@alchemistmatt.com" & ControlChars.NewLine
+		strMessage &= "Website: http://ncrr.pnl.gov/ or http://www.sysbio.org/resources/staff/" & ControlChars.NewLine & ControlChars.NewLine
+
+		strMessage &= "Licensed under the Apache License, Version 2.0; you may not use this file except in compliance with the License.  "
+		strMessage &= "You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0" & ControlChars.NewLine & ControlChars.NewLine
+
+		strMessage &= "Notice: This computer software was prepared by Battelle Memorial Institute, "
+		strMessage &= "hereinafter the Contractor, under Contract No. DE-AC05-76RL0 1830 with the "
+		strMessage &= "Department of Energy (DOE).  All rights in the computer software are reserved "
+		strMessage &= "by DOE on behalf of the United States Government and the Contractor as "
+		strMessage &= "provided in the Contract.  NEITHER THE   VERNMENT NOR THE CONTRACTOR MAKES ANY "
+		strMessage &= "WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS "
+		strMessage &= "SOFTWARE.  This notice including this sentence must appear on any copies of "
+		strMessage &= "this computer software." & ControlChars.NewLine
+
+		Windows.Forms.MessageBox.Show(strMessage, "About", MessageBoxButtons.OK, MessageBoxIcon.Information)
+	End Sub
+
+	Private Sub StripRowCountsFromTableNames(ByRef strTableNames() As String)
+		Dim intIndex As Integer
+
+		If strTableNames Is Nothing Then Exit Sub
+		For intIndex = 0 To strTableNames.Length - 1
+			strTableNames(intIndex) = StripRowCountFromTableName(strTableNames(intIndex))
+		Next intIndex
+
+	End Sub
+
+	Private Function StripRowCountFromTableName(ByVal strTableName As String) As String
+		Dim intCharIndex As Integer
+
+		If strTableName Is Nothing Then
+			Return String.Empty
+		Else
+			intCharIndex = strTableName.IndexOf(ROW_COUNT_SEPARATOR)
+			If intCharIndex > 0 Then
+				Return strTableName.Substring(0, intCharIndex)
+			Else
+				Return strTableName
+			End If
+		End If
+
+	End Function
+
+	Private Sub SubTaskProgressUpdate(ByVal taskDescription As String, ByVal percentComplete As Single)
+		lblSubtaskProgress.Text = taskDescription
+		UpdateProgressBar(pbarSubtaskProgress, percentComplete)
+
+		If mDBSchemaExporter.ProgressStepCount > 0 Then
+			Dim percentCompleteOverall As Single
+			percentCompleteOverall = mDBSchemaExporter.ProgressStep / CSng(mDBSchemaExporter.ProgressStepCount) * 100.0! + 1.0! / mDBSchemaExporter.ProgressStepCount * percentComplete
+			UpdateProgressBar(pbarProgress, percentCompleteOverall)
+		End If
+	End Sub
+
+	Private Sub SubTaskProgressComplete()
+		pbarSubtaskProgress.Value = pbarProgress.Maximum
+	End Sub
+
+	Private Sub UpdateDatabaseList()
+		Dim strDatabaseList() As String = New String() {}
+		Dim intIndex As Integer
+		Dim intItemIndex As Integer
+
+		Dim htSelectedDatabaseNamesSaved As Hashtable
+		Dim objItem As Object
+
+		If mWorking Then Exit Sub
+
+		Try
+			mWorking = True
+			EnableDisableControls()
+
+			UpdatePauseUnpauseCaption(clsExportDBSchema.ePauseStatusConstants.Unpaused)
+			Application.DoEvents()
+
+			If VerifyOrUpdateServerConnection(True) Then
+				' Cache the currently selected names so that we can re-highlight them below
+				htSelectedDatabaseNamesSaved = New Hashtable
+				For Each objItem In lstDatabasesToProcess.SelectedItems
+					htSelectedDatabaseNamesSaved.Add(CStr(objItem), "")
+				Next
+
+				lstDatabasesToProcess.Items.Clear()
+
+				If mDBSchemaExporter.GetSqlServerDatabases(strDatabaseList) Then
+					For intIndex = 0 To strDatabaseList.Length - 1
+						If strDatabaseList(intIndex) Is Nothing Then Exit For
+
+						intItemIndex = lstDatabasesToProcess.Items.Add(strDatabaseList(intIndex))
+
+						If htSelectedDatabaseNamesSaved.Contains(strDatabaseList(intIndex)) Then
+							' Highlight this table name
+							lstDatabasesToProcess.SetSelected(intItemIndex, True)
+						End If
+					Next intIndex
+				End If
+			End If
+		Catch ex As Exception
+			System.Windows.Forms.MessageBox.Show("Error in UpdateDatabaseList: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+		Finally
+			mWorking = False
+			EnableDisableControls()
+		End Try
+	End Sub
+
+	Private Sub UpdatePauseUnpauseCaption(ByVal ePauseStatus As clsExportDBSchema.ePauseStatusConstants)
+		Try
+			Select Case ePauseStatus
+				Case clsExportDBSchema.ePauseStatusConstants.Paused
+					cmdPauseUnpause.Text = "Un&pause"
+				Case clsExportDBSchema.ePauseStatusConstants.PauseRequested
+					cmdPauseUnpause.Text = "&Pausing"
+				Case clsExportDBSchema.ePauseStatusConstants.Unpaused
+					cmdPauseUnpause.Text = "&Pause"
+				Case clsExportDBSchema.ePauseStatusConstants.UnpauseRequested
+					cmdPauseUnpause.Text = "Un&pausing"
+				Case Else
+					cmdPauseUnpause.Text = "Un&pause"
+			End Select
+		Catch ex As Exception
+			' Ignore errors here
+		End Try
+	End Sub
+
+	Private Sub UpdateProgressBar(ByVal pbar As System.Windows.Forms.ProgressBar, ByVal sngPercentComplete As Single)
+		Dim intPercentComplete As Integer = CInt(sngPercentComplete)
+
+		If intPercentComplete < pbar.Minimum Then intPercentComplete = pbar.Minimum
+		If intPercentComplete > pbar.Maximum Then intPercentComplete = pbar.Maximum
+		pbar.Value = intPercentComplete
+
+	End Sub
+
+	Private Sub UpdateTableNamesInSelectedDB()
+
+		Dim strDatabaseName As String = String.Empty
+		Dim strTableList() As String = New String() {}
+		Dim lngRowCounts() As Long = New Long() {}
+		Dim blnIncludeTableRowCounts As Boolean
+
+		Dim intIndex As Integer
+		If mWorking Then Exit Sub
+
+		Try
+			If lstDatabasesToProcess.Items.Count = 0 Then
+				System.Windows.Forms.MessageBox.Show("The database list is currently empty; unable to continue", "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+				Exit Try
+			ElseIf lstDatabasesToProcess.SelectedIndex < 0 Then
+				' Auto-select the first database
+				lstDatabasesToProcess.SelectedIndex = 0
+			End If
+			strDatabaseName = CStr(lstDatabasesToProcess.Items(lstDatabasesToProcess.SelectedIndex))
+
+		Catch ex As Exception
+			System.Windows.Forms.MessageBox.Show("Error determining selected database name in UpdateTableNamesInSelectedDB: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+		End Try
+
+		If strDatabaseName Is Nothing OrElse strDatabaseName.Length = 0 Then
+			Exit Sub
+		End If
+
+		Try
+			mWorking = True
+			EnableDisableControls()
+
+			UpdatePauseUnpauseCaption(clsExportDBSchema.ePauseStatusConstants.Unpaused)
+			Application.DoEvents()
+
+			If VerifyOrUpdateServerConnection(True) Then
+
+				blnIncludeTableRowCounts = mnuEditIncludeTableRowCounts.Checked
+				If mDBSchemaExporter.GetSqlServerDatabaseTableNames(strDatabaseName, strTableList, lngRowCounts, blnIncludeTableRowCounts, mnuEditIncludeSystemObjects.Checked) Then
+					mCachedTableListCount = 0
+					mCachedTableListIncludesRowCounts = blnIncludeTableRowCounts
+					ReDim mCachedTableList(strTableList.Length - 1)
+					ReDim mCachedTableListRowCounts(strTableList.Length - 1)
+
+					For intIndex = 0 To strTableList.Length - 1
+						If strTableList(mCachedTableListCount) Is Nothing Then Exit For
+						mCachedTableList(mCachedTableListCount) = strTableList(mCachedTableListCount)
+						mCachedTableListRowCounts(mCachedTableListCount) = lngRowCounts(mCachedTableListCount)
+						mCachedTableListCount += 1
+					Next intIndex
+
+					If mCachedTableListCount < mCachedTableList.Length Then
+						ReDim Preserve mCachedTableList(mCachedTableListCount - 1)
+						ReDim Preserve mCachedTableListRowCounts(mCachedTableListCount - 1)
+					End If
+
+					Array.Sort(mCachedTableList, mCachedTableListRowCounts)
+
+					PopulateTableNamesToExport(True)
+				End If
+			End If
+		Catch ex As Exception
+			System.Windows.Forms.MessageBox.Show("Error in UpdateTableNamesInSelectedDB: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+		Finally
+			mWorking = False
+			EnableDisableControls()
+		End Try
+
+	End Sub
+
+	Private Function ValueToTextEstimate(ByVal lngValue As Long) As String
+		' Converts lngValue to a text-based value
+		' For data between 10000 and 1 million, rounds to the nearest thousand
+		' For data over 1 million, displays as x.x million
+
+		Dim strValue As String = String.Empty
+		Dim lngValueAbs As Long
+		Dim dblDivisor As Double
+
+		lngValueAbs = Math.Abs(lngValue)
+		If lngValueAbs < 100 Then
+			strValue = lngValue.ToString
+		ElseIf lngValue >= 1000000 Then
+			strValue = Math.Round(lngValue / 1000000.0, 1) & " million"
+		Else
+			dblDivisor = 10 ^ (Math.Floor(Math.Log10(lngValueAbs)) - 1)
+			strValue = (Math.Round(lngValue / dblDivisor, 0) * dblDivisor).ToString("#,###,##0")
+		End If
+
+		Return strValue
+	End Function
+
+	Private Function VerifyOrUpdateServerConnection(ByVal blnInformUserOnFailure As Boolean) As Boolean
+		Dim blnConnected As Boolean
+		Dim udtConnectionInfo As clsExportDBSchema.udtServerConnectionInfoType
+
+		Dim strMessage As String
+
+		Try
+			strMessage = String.Empty
+			blnConnected = False
+
+			If txtServerName.TextLength = 0 Then
+				strMessage = "Please enter the server name"
+				If blnInformUserOnFailure Then
+					System.Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+				End If
+			Else
+				With udtConnectionInfo
+					.ServerName = txtServerName.Text
+					.UseIntegratedAuthentication = chkUseIntegratedAuthentication.Checked
+					.UserName = txtUsername.Text
+					.Password = txtPassword.Text
+				End With
+
+				If mDBSchemaExporter Is Nothing Then
+					mDBSchemaExporter = New clsExportDBSchema(udtConnectionInfo)
+					blnConnected = mDBSchemaExporter.ConnectedToServer
+				Else
+					blnConnected = mDBSchemaExporter.ConnectToServer(udtConnectionInfo)
+				End If
+
+				If Not blnConnected AndAlso blnInformUserOnFailure Then
+					strMessage = "Error connecting to server " & udtConnectionInfo.ServerName
+					If mDBSchemaExporter.StatusMessage.Length > 0 Then
+						strMessage &= "; " & mDBSchemaExporter.StatusMessage
+					End If
+					System.Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+				End If
+			End If
+
+		Catch ex As Exception
+			System.Windows.Forms.MessageBox.Show("Error in VerifyOrUpdateServerConnection: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			blnConnected = False
+		End Try
+
+		Return blnConnected
+	End Function
+
+	Private Sub frmMain_Load(ByVal eventSender As System.Object, ByVal eventArgs As System.EventArgs) Handles MyBase.Load
+		' Note that InitializeControls() is called in Sub New()
+
+	End Sub
 
 #Region "Control Handlers"
 
-    Private Sub cboTableNamesToExportSortOrder_SelectedIndexChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cboTableNamesToExportSortOrder.SelectedIndexChanged
-        PopulateTableNamesToExport(False)
-    End Sub
+	Private Sub cboTableNamesToExportSortOrder_SelectedIndexChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cboTableNamesToExportSortOrder.SelectedIndexChanged
+		PopulateTableNamesToExport(False)
+	End Sub
 
-    Private Sub cmdPauseUnpause_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdPauseUnpause.Click
-        If Not mDBSchemaExporter Is Nothing Then
-            mDBSchemaExporter.TogglePause()
-            If mDBSchemaExporter.PauseStatus = clsExportDBSchema.ePauseStatusConstants.UnpauseRequested OrElse _
-                mDBSchemaExporter.PauseStatus = clsExportDBSchema.ePauseStatusConstants.Unpaused Then
-            End If
-        End If
-    End Sub
+	Private Sub cmdPauseUnpause_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdPauseUnpause.Click
+		If Not mDBSchemaExporter Is Nothing Then
+			mDBSchemaExporter.TogglePause()
+			If mDBSchemaExporter.PauseStatus = clsExportDBSchema.ePauseStatusConstants.UnpauseRequested OrElse _
+			 mDBSchemaExporter.PauseStatus = clsExportDBSchema.ePauseStatusConstants.Unpaused Then
+			End If
+		End If
+	End Sub
 
-    Private Sub cmdRefreshDBList_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdRefreshDBList.Click
-        UpdateDatabaseList()
-    End Sub
+	Private Sub cmdRefreshDBList_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdRefreshDBList.Click
+		UpdateDatabaseList()
+	End Sub
 
-    Private Sub cmdUpdateTableNames_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdUpdateTableNames.Click
-        UpdateTableNamesInSelectedDB()
-    End Sub
+	Private Sub cmdUpdateTableNames_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdUpdateTableNames.Click
+		UpdateTableNamesInSelectedDB()
+	End Sub
 
-    Private Sub chkUseIntegratedAuthentication_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles chkUseIntegratedAuthentication.CheckedChanged
-        EnableDisableControls()
-    End Sub
+	Private Sub chkUseIntegratedAuthentication_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles chkUseIntegratedAuthentication.CheckedChanged
+		EnableDisableControls()
+	End Sub
 
-    Private Sub cmdAbort_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdAbort.Click
-        ConfirmAbortRequest()
-    End Sub
+	Private Sub cmdAbort_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdAbort.Click
+		ConfirmAbortRequest()
+	End Sub
 
-    Private Sub cmdGo_Click(ByVal eventSender As System.Object, ByVal eventArgs As System.EventArgs) Handles cmdGo.Click
-        ScriptDBSchemaObjects()
-    End Sub
+	Private Sub cmdGo_Click(ByVal eventSender As System.Object, ByVal eventArgs As System.EventArgs) Handles cmdGo.Click
+		ScriptDBSchemaObjects()
+	End Sub
 
-    Private Sub cmdSelectDefaultDMSDBs_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdSelectDefaultDMSDBs.Click
-        SelectDefaultDBs(mDefaultDMSDatabaseList)
-    End Sub
+	Private Sub cmdSelectDefaultDMSDBs_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdSelectDefaultDMSDBs.Click
+		SelectDefaultDBs(mDefaultDMSDatabaseList)
+	End Sub
 
-    Private Sub cmdSelectDefaultMTSDBs_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdSelectDefaultMTSDBs.Click
-        SelectDefaultDBs(mDefaultMTSDatabaseList)
-    End Sub
+	Private Sub cmdSelectDefaultMTSDBs_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdSelectDefaultMTSDBs.Click
+		SelectDefaultDBs(mDefaultMTSDatabaseList)
+	End Sub
 
-    Private Sub cmdExit_Click(ByVal eventSender As System.Object, ByVal eventArgs As System.EventArgs) Handles cmdExit.Click
-        Me.Close()
-    End Sub
+	Private Sub cmdExit_Click(ByVal eventSender As System.Object, ByVal eventArgs As System.EventArgs) Handles cmdExit.Click
+		Me.Close()
+	End Sub
 
-    Private Sub lstDatabasesToProcess_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles lstDatabasesToProcess.KeyPress
-        ' Always mark e as handled to allow Ctrl+A to be used to select all the entries in the listbox
-        e.Handled = True
-    End Sub
+	Private Sub lstDatabasesToProcess_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles lstDatabasesToProcess.KeyPress
+		' Always mark e as handled to allow Ctrl+A to be used to select all the entries in the listbox
+		e.Handled = True
+	End Sub
 
-    Private Sub lstDatabasesToProcess_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles lstDatabasesToProcess.KeyDown
-        If e.Control Then
-            If e.KeyCode = Keys.A Then
-                ' Ctrl+A - Select All
-                SelectAllListboxItems(lstDatabasesToProcess)
-                e.Handled = True
-            End If
-        End If
-    End Sub
+	Private Sub lstDatabasesToProcess_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles lstDatabasesToProcess.KeyDown
+		If e.Control Then
+			If e.KeyCode = Keys.A Then
+				' Ctrl+A - Select All
+				SelectAllListboxItems(lstDatabasesToProcess)
+				e.Handled = True
+			End If
+		End If
+	End Sub
 
-    Private Sub lstObjectTypesToScript_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles lstObjectTypesToScript.KeyPress
-        ' Always mark e as handled to allow Ctrl+A to be used to select all the entries in the listbox
-        e.Handled = True
-    End Sub
+	Private Sub lstObjectTypesToScript_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles lstObjectTypesToScript.KeyPress
+		' Always mark e as handled to allow Ctrl+A to be used to select all the entries in the listbox
+		e.Handled = True
+	End Sub
 
-    Private Sub lstObjectTypesToScript_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles lstObjectTypesToScript.KeyDown
-        If e.Control Then
-            If e.KeyCode = Keys.A Then
-                ' Ctrl+A - Select All
-                SelectAllListboxItems(lstObjectTypesToScript)
-                e.Handled = True
-            End If
-        End If
-    End Sub
+	Private Sub lstObjectTypesToScript_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles lstObjectTypesToScript.KeyDown
+		If e.Control Then
+			If e.KeyCode = Keys.A Then
+				' Ctrl+A - Select All
+				SelectAllListboxItems(lstObjectTypesToScript)
+				e.Handled = True
+			End If
+		End If
+	End Sub
 
-    Private Sub lstTableNamesToExportData_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles lstTableNamesToExportData.KeyPress
-        ' Always mark e as handled to allow Ctrl+A to be used to select all the entries in the listbox
-        e.Handled = True
-    End Sub
+	Private Sub lstTableNamesToExportData_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles lstTableNamesToExportData.KeyPress
+		' Always mark e as handled to allow Ctrl+A to be used to select all the entries in the listbox
+		e.Handled = True
+	End Sub
 
-    Private Sub lstTableNamesToExportData_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles lstTableNamesToExportData.KeyDown
-        If e.Control Then
-            If e.KeyCode = Keys.A Then
-                ' Ctrl+A - Select All
-                SelectAllListboxItems(lstTableNamesToExportData)
-                e.Handled = True
-            End If
-        End If
-    End Sub
+	Private Sub lstTableNamesToExportData_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles lstTableNamesToExportData.KeyDown
+		If e.Control Then
+			If e.KeyCode = Keys.A Then
+				' Ctrl+A - Select All
+				SelectAllListboxItems(lstTableNamesToExportData)
+				e.Handled = True
+			End If
+		End If
+	End Sub
 
 #End Region
 
 #Region "Form Handlers"
-    Private Sub frmMain_Closing(ByVal sender As Object, ByVal e As System.ComponentModel.CancelEventArgs) Handles MyBase.Closing
-        If Not mDBSchemaExporter Is Nothing Then
-            mDBSchemaExporter.AbortProcessingNow()
-        End If
-    End Sub
+	Private Sub frmMain_Closing(ByVal sender As Object, ByVal e As System.ComponentModel.CancelEventArgs) Handles MyBase.Closing
+		If Not mDBSchemaExporter Is Nothing Then
+			mDBSchemaExporter.AbortProcessingNow()
+		End If
+	End Sub
 #End Region
 
 #Region "Menu Handlers"
-    Private Sub mnuFileSelectOutputFolder_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuFileSelectOutputFolder.Click
-        SelectOutputFolder()
-    End Sub
+	Private Sub mnuFileSelectOutputFolder_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuFileSelectOutputFolder.Click
+		SelectOutputFolder()
+	End Sub
 
-    Private Sub mnuFileSaveOptions_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuFileSaveOptions.Click
-        IniFileSaveOptions()
-    End Sub
+	Private Sub mnuFileSaveOptions_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuFileSaveOptions.Click
+		IniFileSaveOptions()
+	End Sub
 
-    Private Sub mnuFileLoadOptions_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuFileLoadOptions.Click
-        IniFileLoadOptions()
-    End Sub
+	Private Sub mnuFileLoadOptions_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuFileLoadOptions.Click
+		IniFileLoadOptions()
+	End Sub
 
-    Private Sub mnuFileExit_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuFileExit.Click
-        Me.Close()
-    End Sub
+	Private Sub mnuFileExit_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuFileExit.Click
+		Me.Close()
+	End Sub
 
-    Private Sub mnuEditStart_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditStart.Click
-        ScriptDBSchemaObjects()
-    End Sub
+	Private Sub mnuEditStart_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditStart.Click
+		ScriptDBSchemaObjects()
+	End Sub
 
-    Private Sub mnuEditIncludeSystemObjects_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditIncludeSystemObjects.Click
-        mnuEditIncludeSystemObjects.Checked = Not mnuEditIncludeSystemObjects.Checked
-    End Sub
+	Private Sub mnuEditIncludeSystemObjects_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditIncludeSystemObjects.Click
+		mnuEditIncludeSystemObjects.Checked = Not mnuEditIncludeSystemObjects.Checked
+	End Sub
 
-    Private Sub mnuEditScriptObjectsThreaded_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditScriptObjectsThreaded.Click
-        mnuEditScriptObjectsThreaded.Checked = Not mnuEditScriptObjectsThreaded.Checked
-    End Sub
+	Private Sub mnuEditScriptObjectsThreaded_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditScriptObjectsThreaded.Click
+		mnuEditScriptObjectsThreaded.Checked = Not mnuEditScriptObjectsThreaded.Checked
+	End Sub
 
-    Private Sub mnuEditPauseAfterEachDatabase_Click_1(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditPauseAfterEachDatabase.Click
-        mnuEditPauseAfterEachDatabase.Checked = Not mnuEditPauseAfterEachDatabase.Checked
-    End Sub
+	Private Sub mnuEditPauseAfterEachDatabase_Click_1(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditPauseAfterEachDatabase.Click
+		mnuEditPauseAfterEachDatabase.Checked = Not mnuEditPauseAfterEachDatabase.Checked
+	End Sub
 
-    Private Sub mnuEditIncludeTimestampInScriptFileHeader_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditIncludeTimestampInScriptFileHeader.Click
-        mnuEditIncludeTimestampInScriptFileHeader.Checked = Not mnuEditIncludeTimestampInScriptFileHeader.Checked
-    End Sub
+	Private Sub mnuEditIncludeTimestampInScriptFileHeader_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditIncludeTimestampInScriptFileHeader.Click
+		mnuEditIncludeTimestampInScriptFileHeader.Checked = Not mnuEditIncludeTimestampInScriptFileHeader.Checked
+	End Sub
 
-    Private Sub mnuEditIncludeTableRowCounts_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditIncludeTableRowCounts.Click
-        mnuEditIncludeTableRowCounts.Checked = Not mnuEditIncludeTableRowCounts.Checked
-    End Sub
+	Private Sub mnuEditIncludeTableRowCounts_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditIncludeTableRowCounts.Click
+		mnuEditIncludeTableRowCounts.Checked = Not mnuEditIncludeTableRowCounts.Checked
+	End Sub
 
-    Private Sub mnuEditAutoSelectDefaultTableNames_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditAutoSelectDefaultTableNames.Click
-        mnuEditAutoSelectDefaultTableNames.Checked = Not mnuEditAutoSelectDefaultTableNames.Checked
-    End Sub
+	Private Sub mnuEditAutoSelectDefaultTableNames_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditAutoSelectDefaultTableNames.Click
+		mnuEditAutoSelectDefaultTableNames.Checked = Not mnuEditAutoSelectDefaultTableNames.Checked
+	End Sub
 
-    Private Sub mnuEditSaveDataAsInsertIntoStatements_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditSaveDataAsInsertIntoStatements.Click
-        mnuEditSaveDataAsInsertIntoStatements.Checked = Not mnuEditSaveDataAsInsertIntoStatements.Checked
-    End Sub
+	Private Sub mnuEditSaveDataAsInsertIntoStatements_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditSaveDataAsInsertIntoStatements.Click
+		mnuEditSaveDataAsInsertIntoStatements.Checked = Not mnuEditSaveDataAsInsertIntoStatements.Checked
+	End Sub
 
-    Private Sub mnuEditWarnOnHighTableRowCount_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditWarnOnHighTableRowCount.Click
-        mnuEditWarnOnHighTableRowCount.Checked = Not mnuEditWarnOnHighTableRowCount.Checked
-    End Sub
+	Private Sub mnuEditWarnOnHighTableRowCount_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditWarnOnHighTableRowCount.Click
+		mnuEditWarnOnHighTableRowCount.Checked = Not mnuEditWarnOnHighTableRowCount.Checked
+	End Sub
 
-    Private Sub mnuEditResetOptions_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditResetOptions.Click
-        ResetToDefaults(True)
-    End Sub
+	Private Sub mnuEditResetOptions_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditResetOptions.Click
+		ResetToDefaults(True)
+	End Sub
 
-    Private Sub mnuHelpAbout_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuHelpAbout.Click
-        ShowAboutBox()
-    End Sub
+	Private Sub mnuHelpAbout_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuHelpAbout.Click
+		ShowAboutBox()
+	End Sub
 #End Region
 
 #Region "DB Schema Export Automation Events"
-    Private Sub mDBSchemaExporter_NewMessage(ByVal strMessage As String, ByVal eMessageType As clsExportDBSchema.eMessageTypeConstants) Handles mDBSchemaExporter.NewMessage
-        If Me.InvokeRequired Then
-            Me.Invoke(New AppendNewMessageHandler(AddressOf AppendNewMessage), New Object() {strMessage, eMessageType})
-        Else
-            AppendNewMessage(strMessage, eMessageType)
-        End If
-        Application.DoEvents()
-    End Sub
+	Private Sub mDBSchemaExporter_NewMessage(ByVal strMessage As String, ByVal eMessageType As clsExportDBSchema.eMessageTypeConstants) Handles mDBSchemaExporter.NewMessage
+		If Me.InvokeRequired Then
+			Me.Invoke(New AppendNewMessageHandler(AddressOf AppendNewMessage), New Object() {strMessage, eMessageType})
+		Else
+			AppendNewMessage(strMessage, eMessageType)
+		End If
+		Application.DoEvents()
+	End Sub
 
-    Private Sub mDBSchemaExporter_PauseStatusChange() Handles mDBSchemaExporter.PauseStatusChange
-        If Me.InvokeRequired Then
-            Me.Invoke(New UpdatePauseUnpauseCaptionHandler(AddressOf UpdatePauseUnpauseCaption), New Object() {mDBSchemaExporter.PauseStatus})
-        Else
-            UpdatePauseUnpauseCaption(mDBSchemaExporter.PauseStatus)
-        End If
-        Application.DoEvents()
-    End Sub
+	Private Sub mDBSchemaExporter_PauseStatusChange() Handles mDBSchemaExporter.PauseStatusChange
+		If Me.InvokeRequired Then
+			Me.Invoke(New UpdatePauseUnpauseCaptionHandler(AddressOf UpdatePauseUnpauseCaption), New Object() {mDBSchemaExporter.PauseStatus})
+		Else
+			UpdatePauseUnpauseCaption(mDBSchemaExporter.PauseStatus)
+		End If
+		Application.DoEvents()
+	End Sub
 
-    Private Sub mDBSchemaExporter_ProgressChanged(ByVal taskDescription As String, ByVal percentComplete As Single) Handles mDBSchemaExporter.ProgressChanged
-        If Me.InvokeRequired Then
-            Me.Invoke(New ProgressUpdateHandler(AddressOf ProgressUpdate), New Object() {taskDescription, percentComplete})
-        Else
-            ProgressUpdate(taskDescription, percentComplete)
-        End If
-        Application.DoEvents()
-    End Sub
+	Private Sub mDBSchemaExporter_ProgressChanged(ByVal taskDescription As String, ByVal percentComplete As Single) Handles mDBSchemaExporter.ProgressChanged
+		If Me.InvokeRequired Then
+			Me.Invoke(New ProgressUpdateHandler(AddressOf ProgressUpdate), New Object() {taskDescription, percentComplete})
+		Else
+			ProgressUpdate(taskDescription, percentComplete)
+		End If
+		Application.DoEvents()
+	End Sub
 
-    Private Sub mDBSchemaExporter_ProgressComplete() Handles mDBSchemaExporter.ProgressComplete
-        If Me.InvokeRequired Then
-            Me.Invoke(New ProgressCompleteHandler(AddressOf ProgressComplete), New Object() {})
-        Else
-            ProgressComplete()
-        End If
-        Application.DoEvents()
-    End Sub
+	Private Sub mDBSchemaExporter_ProgressComplete() Handles mDBSchemaExporter.ProgressComplete
+		If Me.InvokeRequired Then
+			Me.Invoke(New ProgressCompleteHandler(AddressOf ProgressComplete), New Object() {})
+		Else
+			ProgressComplete()
+		End If
+		Application.DoEvents()
+	End Sub
 
-    Private Sub mDBSchemaExporter_ProgressReset() Handles mDBSchemaExporter.ProgressReset
-        If Me.InvokeRequired Then
-            Me.Invoke(New ProgressUpdateHandler(AddressOf ProgressUpdate), New Object() {mDBSchemaExporter.ProgressStepDescription, 0})
-        Else
-            ProgressUpdate(mDBSchemaExporter.ProgressStepDescription, 0)
-        End If
-    End Sub
+	Private Sub mDBSchemaExporter_ProgressReset() Handles mDBSchemaExporter.ProgressReset
+		If Me.InvokeRequired Then
+			Me.Invoke(New ProgressUpdateHandler(AddressOf ProgressUpdate), New Object() {mDBSchemaExporter.ProgressStepDescription, 0})
+		Else
+			ProgressUpdate(mDBSchemaExporter.ProgressStepDescription, 0)
+		End If
+	End Sub
 
-    Private Sub mDBSchemaExporter_DBExportStarting(ByVal strDatabaseName As String) Handles mDBSchemaExporter.DBExportStarting
-        If Me.InvokeRequired Then
-            Me.Invoke(New HandleDBExportStartingEventHandler(AddressOf HandleDBExportStartingEvent), New Object() {strDatabaseName})
-        Else
-            HandleDBExportStartingEvent(strDatabaseName)
-        End If
-        Application.DoEvents()
-    End Sub
+	Private Sub mDBSchemaExporter_DBExportStarting(ByVal strDatabaseName As String) Handles mDBSchemaExporter.DBExportStarting
+		If Me.InvokeRequired Then
+			Me.Invoke(New HandleDBExportStartingEventHandler(AddressOf HandleDBExportStartingEvent), New Object() {strDatabaseName})
+		Else
+			HandleDBExportStartingEvent(strDatabaseName)
+		End If
+		Application.DoEvents()
+	End Sub
 
-    Private Sub mDBSchemaExporter_SubtaskProgressChanged(ByVal taskDescription As String, ByVal percentComplete As Single) Handles mDBSchemaExporter.SubtaskProgressChanged
-        If Me.InvokeRequired Then
-            Me.Invoke(New SubTaskProgressUpdateHandler(AddressOf SubTaskProgressUpdate), New Object() {taskDescription, percentComplete})
-        Else
-            SubTaskProgressUpdate(taskDescription, percentComplete)
-        End If
-        Application.DoEvents()
-    End Sub
+	Private Sub mDBSchemaExporter_SubtaskProgressChanged(ByVal taskDescription As String, ByVal percentComplete As Single) Handles mDBSchemaExporter.SubtaskProgressChanged
+		If Me.InvokeRequired Then
+			Me.Invoke(New SubTaskProgressUpdateHandler(AddressOf SubTaskProgressUpdate), New Object() {taskDescription, percentComplete})
+		Else
+			SubTaskProgressUpdate(taskDescription, percentComplete)
+		End If
+		Application.DoEvents()
+	End Sub
 
-    Private Sub mDBSchemaExporter_SubtaskProgressComplete() Handles mDBSchemaExporter.SubtaskProgressComplete
-        If Me.InvokeRequired Then
-            Me.Invoke(New SubTaskProgressCompleteHandler(AddressOf SubTaskProgressComplete), New Object() {})
-        Else
-            SubTaskProgressComplete()
-        End If
-        Application.DoEvents()
-    End Sub
+	Private Sub mDBSchemaExporter_SubtaskProgressComplete() Handles mDBSchemaExporter.SubtaskProgressComplete
+		If Me.InvokeRequired Then
+			Me.Invoke(New SubTaskProgressCompleteHandler(AddressOf SubTaskProgressComplete), New Object() {})
+		Else
+			SubTaskProgressComplete()
+		End If
+		Application.DoEvents()
+	End Sub
 
-    Private Sub mDBSchemaExporter_SubtaskProgressReset() Handles mDBSchemaExporter.SubtaskProgressReset
-        If Me.InvokeRequired Then
-            Me.Invoke(New SubTaskProgressUpdateHandler(AddressOf SubTaskProgressUpdate), New Object() {mDBSchemaExporter.SubtaskProgressStepDescription, 0})
-        Else
-            SubTaskProgressUpdate(mDBSchemaExporter.SubtaskProgressStepDescription, 0)
-        End If
-        Application.DoEvents()
-    End Sub
+	Private Sub mDBSchemaExporter_SubtaskProgressReset() Handles mDBSchemaExporter.SubtaskProgressReset
+		If Me.InvokeRequired Then
+			Me.Invoke(New SubTaskProgressUpdateHandler(AddressOf SubTaskProgressUpdate), New Object() {mDBSchemaExporter.SubtaskProgressStepDescription, 0})
+		Else
+			SubTaskProgressUpdate(mDBSchemaExporter.SubtaskProgressStepDescription, 0)
+		End If
+		Application.DoEvents()
+	End Sub
 #End Region
 
 End Class

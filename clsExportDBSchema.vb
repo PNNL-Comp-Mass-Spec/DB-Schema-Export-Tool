@@ -1041,7 +1041,7 @@ Public Class clsExportDBSchema
                                        ByRef udtSchemaExportOptions As udtSchemaExportOptionsType, _
                                        ByRef udtWorkingParams As udtDBExportWorkingParamsType) As Boolean
 
-        Dim objTable As Microsoft.SqlServer.Management.Smo.Table
+		Dim objTable As Microsoft.SqlServer.Management.Smo.Table = Nothing
         Dim objColumn As Microsoft.SqlServer.Management.Smo.Column
 
         Dim intTableIndex As Integer
