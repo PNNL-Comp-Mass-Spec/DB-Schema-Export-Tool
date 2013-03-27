@@ -1,5 +1,8 @@
 DB Schema Export Tool
 
+Version 1.2.4834; March 27, 2013
+	- Added/removed server settings to support Sql Server 2008
+
 Version 1.2.4651; September 25, 2012
 	- Updated to Visual Studio 2010 and .NET 4
 
