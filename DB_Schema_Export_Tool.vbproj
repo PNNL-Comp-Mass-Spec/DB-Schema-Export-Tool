@@ -39,7 +39,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DefineDebug>true</DefineDebug>
     <DefineTrace>true</DefineTrace>
-    <OutputPath>bin\</OutputPath>
+    <OutputPath>bin\debug\</OutputPath>
     <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022,42353,42354,42355</NoWarn>
     <DebugType>full</DebugType>
     <PlatformTarget>x86</PlatformTarget>
@@ -52,14 +52,14 @@
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
+  <PropertyGroup>
+    <OptionInfer>On</OptionInfer>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.SqlServer.ConnectionInfo, Version=10.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
       <HintPath>C:\Program Files (x86)\Microsoft SQL Server\100\SDK\Assemblies</HintPath>
     </Reference>
     <Reference Include="Microsoft.SqlServer.Management.Sdk.Sfc, Version=10.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>C:\Program Files (x86)\Microsoft SQL Server\100\SDK\Assemblies</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.OlapEnum, Version=10.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
       <HintPath>C:\Program Files (x86)\Microsoft SQL Server\100\SDK\Assemblies</HintPath>
     </Reference>
     <Reference Include="Microsoft.SqlServer.ServiceBrokerEnum, Version=10.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">

@@ -441,7 +441,7 @@ Public Class clsExportDBSchema
             If Not udtSchemaExportOptions.IncludeTimestampInScriptFileHeader Then
                 ' Look for and remove the timestamp from the first line of the Sql script
                 If Not objStringCollection Is Nothing AndAlso objStringCollection.Count > 0 Then
-                    ' Look for and remove the text  "Script Date: 08/14/2006 20:14:31" prior to the each "******/"
+					' Look for and remove the text  "Script Date: 08/14/2006 20:14:31" prior to each "******/"
                     ' If blnRemoveAllOccurrences = True, then searches for all occurrences
                     ' If blnRemoveAllOccurrences = False, then does not look past the first 
                     '   carriage return of each entry in objStringCollection
@@ -453,56 +453,62 @@ Public Class clsExportDBSchema
                         If blnRemoveAllScriptDateOccurrences Then
                             intFinalSearchIndex = strText.Length - 1
                         Else
-                            ' Find the first CrLf after the first non-blank line in strText
-                            Do
-                                intFinalSearchIndex = strText.IndexOf(ControlChars.NewLine, intIndexStart)
-                                If intFinalSearchIndex = intIndexStart Then
-                                    intIndexStart += 2
-                                Else
-                                    Exit Do
-                                End If
-                            Loop While intFinalSearchIndex >= 0 AndAlso intFinalSearchIndex < intIndexStart AndAlso intIndexStart < strText.Length
+							' Find the first CrLf after the first non-blank line in strText
+							' However, if the script starts with several SET statements then we need to skip those lines
+							Dim objectCommentStartIndex As Integer = strText.IndexOf(COMMENT_START_TEXT & "Object:")
+							If strText.Trim().StartsWith("SET") AndAlso objectCommentStartIndex > 0 Then
+								intIndexStart = objectCommentStartIndex
+							End If
 
-                            If intFinalSearchIndex < 0 Then intFinalSearchIndex = strText.Length - 1
-                        End If
+							Do
+								intFinalSearchIndex = strText.IndexOf(ControlChars.NewLine, intIndexStart)
+								If intFinalSearchIndex = intIndexStart Then
+									intIndexStart += 2
+								Else
+									Exit Do
+								End If
+							Loop While intFinalSearchIndex >= 0 AndAlso intFinalSearchIndex < intIndexStart AndAlso intIndexStart < strText.Length
+
+							If intFinalSearchIndex < 0 Then intFinalSearchIndex = strText.Length - 1
+						End If
 
 
-                        Do
-                            intIndexStartCurrent = strText.IndexOf(COMMENT_SCRIPT_DATE_TEXT, intIndexStart)
-                            If intIndexStartCurrent > 0 AndAlso intIndexStartCurrent <= intFinalSearchIndex Then
-                                intIndexNextCrLf = strText.IndexOf(ControlChars.NewLine, intIndexStartCurrent)
-                                If intIndexNextCrLf <= 0 Then
-                                    intIndexNextCrLf = strText.Length - 1
-                                End If
-                                intIndexEndCurrent = strText.IndexOf(COMMENT_END_TEXT_SHORT, intIndexStartCurrent)
+						Do
+							intIndexStartCurrent = strText.IndexOf(COMMENT_SCRIPT_DATE_TEXT, intIndexStart)
+							If intIndexStartCurrent > 0 AndAlso intIndexStartCurrent <= intFinalSearchIndex Then
+								intIndexNextCrLf = strText.IndexOf(ControlChars.NewLine, intIndexStartCurrent)
+								If intIndexNextCrLf <= 0 Then
+									intIndexNextCrLf = strText.Length - 1
+								End If
+								intIndexEndCurrent = strText.IndexOf(COMMENT_END_TEXT_SHORT, intIndexStartCurrent)
 
-                                If intIndexEndCurrent > intIndexStartCurrent And intIndexEndCurrent <= intFinalSearchIndex Then
-                                    strText = strText.Substring(0, intIndexStartCurrent).TrimEnd(chWhiteSpaceChars) & COMMENT_END_TEXT & _
-                                              strText.Substring(intIndexEndCurrent + COMMENT_END_TEXT_SHORT.Length)
-                                    blnTextChanged = True
-                                End If
-                            End If
-                        Loop While blnRemoveAllScriptDateOccurrences And intIndexStartCurrent > 0
+								If intIndexEndCurrent > intIndexStartCurrent And intIndexEndCurrent <= intFinalSearchIndex Then
+									strText = strText.Substring(0, intIndexStartCurrent).TrimEnd(chWhiteSpaceChars) & COMMENT_END_TEXT & _
+										strText.Substring(intIndexEndCurrent + COMMENT_END_TEXT_SHORT.Length)
+									blnTextChanged = True
+								End If
+							End If
+						Loop While blnRemoveAllScriptDateOccurrences And intIndexStartCurrent > 0
 
-                        If blnRemoveDuplicateHeaderLine Then
-                            intFirstCrLf = strText.IndexOf(ControlChars.NewLine, 0)
-                            If intFirstCrLf > 0 AndAlso intFirstCrLf < strText.Length Then
-                                intIndexNextCrLf = strText.IndexOf(ControlChars.NewLine, intFirstCrLf + 1)
+						If blnRemoveDuplicateHeaderLine Then
+							intFirstCrLf = strText.IndexOf(ControlChars.NewLine, 0)
+							If intFirstCrLf > 0 AndAlso intFirstCrLf < strText.Length Then
+								intIndexNextCrLf = strText.IndexOf(ControlChars.NewLine, intFirstCrLf + 1)
 
-                                If intIndexNextCrLf > intFirstCrLf Then
-                                    If strText.Substring(0, intFirstCrLf) = strText.Substring(intFirstCrLf + 2, intIndexNextCrLf - intFirstCrLf - 2) Then
-                                        strText = strText.Substring(intFirstCrLf + 2)
-                                        blnTextChanged = True
-                                    End If
-                                End If
-                            End If
-                        End If
+								If intIndexNextCrLf > intFirstCrLf Then
+									If strText.Substring(0, intFirstCrLf) = strText.Substring(intFirstCrLf + 2, intIndexNextCrLf - intFirstCrLf - 2) Then
+										strText = strText.Substring(intFirstCrLf + 2)
+										blnTextChanged = True
+									End If
+								End If
+							End If
+						End If
 
-                        If blnTextChanged Then
-                            objStringCollection(intIndex) = String.Copy(strText)
-                        End If
+						If blnTextChanged Then
+							objStringCollection(intIndex) = String.Copy(strText)
+						End If
 
-                    Next intIndex
+					Next intIndex
                 End If
             End If
 
@@ -786,6 +792,10 @@ Public Class clsExportDBSchema
                 If blnIncludeTable Then
                     mSubtaskProgressStepDescription = objTable.Name
                     UpdateSubtaskProgress(udtWorkingParams.ProcessCount, udtWorkingParams.ProcessCountExpected)
+
+					If objTable.Name = "T_Job_Steps_History" Then
+						Console.WriteLine("Check This")
+					End If
 
                     objSMOObject(0) = objTable
                     WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB, objTable.Name, _
