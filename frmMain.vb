@@ -8,9 +8,10 @@ Option Strict On
 ' Program started August 11, 2006
 ' Copyright 2006, Battelle Memorial Institute.  All Rights Reserved.
 
-' E-mail: matthew.monroe@pnl.gov or matt@alchemistmatt.com
-' Website: http://ncrr.pnl.gov/ or http://www.sysbio.org/resources/staff/
+' E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com
+' Website: http://panomics.pnnl.gov/ or http://www.sysbio.org/resources/staff/
 ' -------------------------------------------------------------------------------
+Imports System.Text.RegularExpressions
 
 Public Class frmMain
 
@@ -44,24 +45,21 @@ Public Class frmMain
     Private mXmlSettingsFilePath As String
 
     Private mSchemaExportOptions As clsExportDBSchema.udtSchemaExportOptionsType
-    Private mDatabaseListToProcess As String()
-    Private mTableNamesForDataExport As String()
+	Private mDatabaseListToProcess As List(Of String)
+	Private mTableNamesForDataExport As List(Of String)
 
-    ' Note: mCachedTableList is sorted alphabetically to allow for binary searching
-    Protected mCachedTableListCount As Integer
-    Protected mCachedTableList() As String
+	' Keys are table names; values are row counts, though row counts will be 0 if mCachedTableListIncludesRowCounts = False
+	Protected mCachedTableList As Dictionary(Of String, Int64)
 
-    ' Note: mCachedTableListRowCounts is sorted parallel with mCachedTableList
-    Protected mCachedTableListRowCounts() As Long
-    Protected mCachedTableListIncludesRowCounts As Boolean
+	Protected mCachedTableListIncludesRowCounts As Boolean
 
-    Protected mTableNamesToAutoSelect() As String
+	Protected mTableNamesToAutoSelect As List(Of String)
 
     ' Note: Must contain valid RegEx statements (tested case-insensitive)
-    Protected mTableNameAutoSelectRegEx() As String
+	Protected mTableNameAutoSelectRegEx As List(Of String)
 
-    Protected mDefaultDMSDatabaseList() As String
-    Protected mDefaultMTSDatabaseList() As String
+	Protected mDefaultDMSDatabaseList As List(Of String)
+	Protected mDefaultMTSDatabaseList As List(Of String)
 
     Private mWorking As Boolean
 
@@ -93,7 +91,7 @@ Public Class frmMain
 
     Private Sub ConfirmAbortRequest()
         Dim ePauseStatusSaved As clsExportDBSchema.ePauseStatusConstants
-        Dim eResponse As System.Windows.Forms.DialogResult
+		Dim eResponse As Windows.Forms.DialogResult
 
         If Not mDBSchemaExporter Is Nothing Then
             ePauseStatusSaved = mDBSchemaExporter.PauseStatus
@@ -102,17 +100,17 @@ Public Class frmMain
             Application.DoEvents()
 
             eResponse = MessageBox.Show("Are you sure you want to abort processing?", "Abort", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1)
-            If eResponse = System.Windows.Forms.DialogResult.Yes Then
-                mDBSchemaExporter.AbortProcessingNow()
+			If eResponse = Windows.Forms.DialogResult.Yes Then
+				mDBSchemaExporter.AbortProcessingNow()
 
-                ' Note that AbortProcessingNow should have called RequestUnpause, but we'll call it here just in case
-                mDBSchemaExporter.RequestUnpause()
-            Else
-                If ePauseStatusSaved = clsExportDBSchema.ePauseStatusConstants.Unpaused OrElse _
-                   ePauseStatusSaved = clsExportDBSchema.ePauseStatusConstants.UnpauseRequested Then
-                    mDBSchemaExporter.RequestUnpause()
-                End If
-            End If
+				' Note that AbortProcessingNow should have called RequestUnpause, but we'll call it here just in case
+				mDBSchemaExporter.RequestUnpause()
+			Else
+				If ePauseStatusSaved = clsExportDBSchema.ePauseStatusConstants.Unpaused OrElse _
+				   ePauseStatusSaved = clsExportDBSchema.ePauseStatusConstants.UnpauseRequested Then
+					mDBSchemaExporter.RequestUnpause()
+				End If
+			End If
             Application.DoEvents()
 
         End If
@@ -134,7 +132,7 @@ Public Class frmMain
             mnuEditResetOptions.Enabled = Not mWorking
 
         Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error in EnableDisableControls: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			Windows.Forms.MessageBox.Show("Error in EnableDisableControls: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
     End Sub
 
@@ -148,7 +146,7 @@ Public Class frmMain
         ' Could use Application.StartupPath, but .GetExecutingAssembly is better
         Dim strPath As String
 
-        strPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)
+		strPath = IO.Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location)
         If blnReturnParentIfFolderNamedDebug Then
             If strPath.ToLower.EndsWith(DEBUG_FOLDER_NAME) Then
                 strPath = strPath.Substring(0, strPath.Length - DEBUG_FOLDER_NAME.Length)
@@ -158,94 +156,76 @@ Public Class frmMain
         Return strPath
     End Function
 
-    Private Function GetSelectedDatabases() As String()
-        Return GetSelectedListboxItems(lstDatabasesToProcess)
-    End Function
+	Private Function GetSelectedDatabases() As List(Of String)
+		Return GetSelectedListboxItems(lstDatabasesToProcess)
+	End Function
 
-    Private Function GetSelectedTableNamesForDataExport(ByVal blnWarnIfRowCountOverThreshold As Boolean) As String()
-        Dim strTableNames() As String
+	Private Function GetSelectedTableNamesForDataExport(ByVal blnWarnIfRowCountOverThreshold As Boolean) As List(Of String)
+		Dim lstTableNames As List(Of String)
 
-        Dim intValidTableNameCount As Integer
-        Dim strValidTableNames() As String
+		lstTableNames = GetSelectedListboxItems(lstTableNamesToExportData)
 
-        Dim intIndex As Integer
-        Dim intIndexMatch As Integer
-        Dim eResponse As System.Windows.Forms.DialogResult
+		StripRowCountsFromTableNames(lstTableNames)
 
-        Dim blnKeepTable As Boolean
+		If lstTableNames.Count = 0 OrElse Not mCachedTableListIncludesRowCounts OrElse Not blnWarnIfRowCountOverThreshold Then
+			Return lstTableNames
+		End If
 
-        strTableNames = GetSelectedListboxItems(lstTableNamesToExportData)
+		Dim lstValidTableNames = New List(Of String)(lstTableNames.Count)
 
-        StripRowCountsFromTableNames(strTableNames)
+		' See if any of the tables in lstTableNames has more than clsExportDBSchema.DATA_ROW_COUNT_WARNING_THRESHOLD rows
+		For Each tableName In lstTableNames
+			Dim blnKeepTable = True
 
-        If strTableNames.Length > 0 AndAlso mCachedTableListIncludesRowCounts AndAlso blnWarnIfRowCountOverThreshold Then
-            intValidTableNameCount = 0
-            ReDim strValidTableNames(strTableNames.Length - 1)
+			Dim tableRowCount As Int64
+			If mCachedTableList.TryGetValue(tableName, tableRowCount) Then
 
-            ' See if any of the tables in strTableNames() has more than clsExportDBSchema.DATA_ROW_COUNT_WARNING_THRESHOLD rows
-            For intIndex = 0 To strTableNames.Length - 1
-                blnKeepTable = True
+				If tableRowCount >= clsExportDBSchema.DATA_ROW_COUNT_WARNING_THRESHOLD Then
+					Dim eResponse = Windows.Forms.MessageBox.Show("Warning, table " & tableName & " has " &
+					  tableRowCount.ToString & " rows.  Are you sure you want to export data from it?",
+					  "Row Count Over " & clsExportDBSchema.DATA_ROW_COUNT_WARNING_THRESHOLD.ToString,
+					  MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2)
 
-                intIndexMatch = Array.BinarySearch(mCachedTableList, strTableNames(intIndex))
-                If intIndexMatch >= 0 Then
-                    If mCachedTableListRowCounts(intIndexMatch) >= clsExportDBSchema.DATA_ROW_COUNT_WARNING_THRESHOLD Then
-                        eResponse = System.Windows.Forms.MessageBox.Show("Warning, table " & strTableNames(intIndex) & " has " & _
-                                       mCachedTableListRowCounts(intIndexMatch).ToString & " rows.  Are you sure you want to export data from it?", _
-                                       "Row Count Over " & clsExportDBSchema.DATA_ROW_COUNT_WARNING_THRESHOLD.ToString, _
-                                       MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2)
+					If eResponse = Windows.Forms.DialogResult.No Then
+						blnKeepTable = False
+					ElseIf eResponse = Windows.Forms.DialogResult.Cancel Then
+						Exit For
+					End If
+				End If
 
-                        If eResponse = Windows.Forms.DialogResult.No Then
-                            blnKeepTable = False
-                        ElseIf eResponse = Windows.Forms.DialogResult.Cancel Then
-                            Exit For
-                        End If
-                    End If
-                Else
-                    ' Table not found; keep it anyway
-                End If
+			Else
+				' Table not found; keep it anyway
+			End If
 
-                If blnKeepTable Then
-                    strValidTableNames(intValidTableNameCount) = strTableNames(intIndex)
-                    intValidTableNameCount += 1
-                End If
-            Next intIndex
+			If blnKeepTable Then
+				lstValidTableNames.Add(tableName)
+			End If
+		Next
 
-            If intValidTableNameCount < strValidTableNames.Length Then
-                ReDim strTableNames(intValidTableNameCount - 1)
-                For intIndex = 0 To intValidTableNameCount - 1
-                    strTableNames(intIndex) = String.Copy(strValidTableNames(intIndex))
-                Next intIndex
-            End If
-        End If
+		Return lstValidTableNames
+		
+	End Function
 
-        Return strTableNames
-    End Function
+	Private Function GetSelectedListboxItems(ByRef objListbox As Windows.Forms.ListBox) As List(Of String)
+		Dim lstItems As List(Of String)
+		lstItems = New List(Of String)(objListbox.SelectedItems.Count + 1)
 
-    Private Function GetSelectedListboxItems(ByRef objListbox As System.Windows.Forms.ListBox) As String()
-        Dim objItem As Object
-        Dim strItemList() As String
-        Dim intIndex As Integer
+		Try
 
-        Try
-            ReDim strItemList(objListbox.SelectedItems.Count - 1)
+			lstItems.AddRange(From objItem As Object In objListbox.SelectedItems Select CStr(objItem))
 
-            If strItemList.Length > 0 Then
-                intIndex = 0
-                For Each objItem In objListbox.SelectedItems
-                    strItemList(intIndex) = CStr(objItem)
-                    intIndex += 1
-                Next objItem
-            End If
+		Catch ex As Exception
+			If lstItems Is Nothing Then
+				lstItems = New List(Of String)
+			End If
+		End Try
 
-        Catch ex As Exception
-            ReDim strItemList(-1)
-        End Try
+		Return lstItems
 
-        Return strItemList
-    End Function
+	End Function
 
     Private Function GetSettingsFilePath() As String
-        Return System.IO.Path.Combine(GetAppFolderPath(), XML_SETTINGS_FILE_NAME)
+		Return IO.Path.Combine(GetAppFolderPath(), XML_SETTINGS_FILE_NAME)
     End Function
 
     Private Sub HandleDBExportStartingEvent(ByVal strDatabaseName As String)
@@ -256,7 +236,7 @@ Public Class frmMain
                 mDBSchemaExporter.RequestPause()
             End If
         Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error in HandleDBExportStartingEvent: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			Windows.Forms.MessageBox.Show("Error in HandleDBExportStartingEvent: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
     End Sub
 
@@ -281,7 +261,7 @@ Public Class frmMain
 
         Dim strFilePath As String
 
-        Dim objOpenFile As New System.Windows.Forms.OpenFileDialog
+		Dim objOpenFile As New Windows.Forms.OpenFileDialog
 
         strFilePath = String.Copy(mXmlSettingsFilePath)
 
@@ -300,7 +280,7 @@ Public Class frmMain
 
             If strFilePath.Length > 0 Then
                 Try
-                    .InitialDirectory = System.IO.Directory.GetParent(strFilePath).ToString
+					.InitialDirectory = IO.Directory.GetParent(strFilePath).ToString
                 Catch
                     .InitialDirectory = GetAppFolderPath()
                 End Try
@@ -334,7 +314,7 @@ Public Class frmMain
             End If
 
             ' Sleep for 100 msec, just to be safe
-            System.Threading.Thread.Sleep(100)
+			Threading.Thread.Sleep(100)
 
             ' Read the settings from the XML file
             With objXmlFile
@@ -377,14 +357,12 @@ Public Class frmMain
                     End If
 
                 Catch ex As Exception
-                    System.Windows.Forms.MessageBox.Show("Invalid parameter in settings file: " & System.IO.Path.GetFileName(strFilePath), "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+					Windows.Forms.MessageBox.Show("Invalid parameter in settings file: " & IO.Path.GetFileName(strFilePath), "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
                 End Try
             End With
-
-            objXmlFile = Nothing
-
+            
         Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error loading settings from file: " & strFilePath, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			Windows.Forms.MessageBox.Show("Error loading settings from file: " & strFilePath, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
 
     End Sub
@@ -394,7 +372,7 @@ Public Class frmMain
 
         Dim strFilePath As String
 
-        Dim objSaveFile As New System.Windows.Forms.SaveFileDialog
+		Dim objSaveFile As New Windows.Forms.SaveFileDialog
 
         strFilePath = String.Copy(mXmlSettingsFilePath)
 
@@ -413,7 +391,7 @@ Public Class frmMain
 
             If strFilePath.Length > 0 Then
                 Try
-                    .InitialDirectory = System.IO.Directory.GetParent(strFilePath).ToString
+					.InitialDirectory = IO.Directory.GetParent(strFilePath).ToString
                 Catch
                     .InitialDirectory = GetAppFolderPath()
                 End Try
@@ -421,300 +399,275 @@ Public Class frmMain
                 .InitialDirectory = GetAppFolderPath()
             End If
 
-            If System.IO.File.Exists(strFilePath) Then
-                .FileName = System.IO.Path.GetFileName(strFilePath)
-            Else
-                .FileName = XML_SETTINGS_FILE_NAME
-            End If
+			If IO.File.Exists(strFilePath) Then
+				.FileName = IO.Path.GetFileName(strFilePath)
+			Else
+				.FileName = XML_SETTINGS_FILE_NAME
+			End If
 
-            .Title = "Specify file to save options to"
+			.Title = "Specify file to save options to"
 
-            .ShowDialog()
-            If .FileName.Length > 0 Then
-                mXmlSettingsFilePath = .FileName
+			.ShowDialog()
+			If .FileName.Length > 0 Then
+				mXmlSettingsFilePath = .FileName
 
-                IniFileSaveOptions(mXmlSettingsFilePath, False)
-            End If
-        End With
+				IniFileSaveOptions(mXmlSettingsFilePath, False)
+			End If
+		End With
 
-    End Sub
+	End Sub
 
-    Private Sub IniFileSaveOptions(ByVal strFilePath As String, Optional ByVal blnSaveWindowDimensionsOnly As Boolean = False)
-        Dim objXmlFile As New PRISM.Files.XmlSettingsFileAccessor
+	Private Sub IniFileSaveOptions(ByVal strFilePath As String, Optional ByVal blnSaveWindowDimensionsOnly As Boolean = False)
+		Dim objXmlFile As New PRISM.Files.XmlSettingsFileAccessor
 
-        Try
-            With objXmlFile
-                ' Pass True to .LoadSettings() here so that newly made Xml files will have the correct capitalization
-                .LoadSettings(strFilePath, True)
+		Try
+			With objXmlFile
+				' Pass True to .LoadSettings() here so that newly made Xml files will have the correct capitalization
+				.LoadSettings(strFilePath, True)
 
-                Try
-                    .SetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowWidth", Me.Width)
-                    .SetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowHeight", Me.Height - 20)
+				Try
+					.SetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowWidth", Me.Width)
+					.SetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowHeight", Me.Height - 20)
 
-                    If Not blnSaveWindowDimensionsOnly Then
+					If Not blnSaveWindowDimensionsOnly Then
 
-                        .SetParam(XML_SECTION_DATABASE_SETTINGS, "ServerName", txtServerName.Text)
+						.SetParam(XML_SECTION_DATABASE_SETTINGS, "ServerName", txtServerName.Text)
 
-                        .SetParam(XML_SECTION_DATABASE_SETTINGS, "UseIntegratedAuthentication", chkUseIntegratedAuthentication.Checked)
-                        .SetParam(XML_SECTION_DATABASE_SETTINGS, "Username", txtUsername.Text)
-                        .SetParam(XML_SECTION_DATABASE_SETTINGS, "Password", txtPassword.Text)
+						.SetParam(XML_SECTION_DATABASE_SETTINGS, "UseIntegratedAuthentication", chkUseIntegratedAuthentication.Checked)
+						.SetParam(XML_SECTION_DATABASE_SETTINGS, "Username", txtUsername.Text)
+						.SetParam(XML_SECTION_DATABASE_SETTINGS, "Password", txtPassword.Text)
 
-                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "OutputFolderPath", txtOutputFolderPath.Text)
+						.SetParam(XML_SECTION_PROGRAM_OPTIONS, "OutputFolderPath", txtOutputFolderPath.Text)
 
-                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "ScriptObjectsThreaded", mnuEditScriptObjectsThreaded.Checked)
-                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "PauseAfterEachDatabase", mnuEditPauseAfterEachDatabase.Checked)
-                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "IncludeTimestampInScriptFileHeader", mnuEditIncludeTimestampInScriptFileHeader.Checked)
+						.SetParam(XML_SECTION_PROGRAM_OPTIONS, "ScriptObjectsThreaded", mnuEditScriptObjectsThreaded.Checked)
+						.SetParam(XML_SECTION_PROGRAM_OPTIONS, "PauseAfterEachDatabase", mnuEditPauseAfterEachDatabase.Checked)
+						.SetParam(XML_SECTION_PROGRAM_OPTIONS, "IncludeTimestampInScriptFileHeader", mnuEditIncludeTimestampInScriptFileHeader.Checked)
 
-                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "CreateFolderForEachDB", chkCreateFolderForEachDB.Checked)
-                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "OutputFolderNamePrefix", txtOutputFolderNamePrefix.Text)
+						.SetParam(XML_SECTION_PROGRAM_OPTIONS, "CreateFolderForEachDB", chkCreateFolderForEachDB.Checked)
+						.SetParam(XML_SECTION_PROGRAM_OPTIONS, "OutputFolderNamePrefix", txtOutputFolderNamePrefix.Text)
 
-                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "ExportServerSettingsLoginsAndJobs", chkExportServerSettingsLoginsAndJobs.Checked)
-                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "ServerOutputFolderNamePrefix", txtServerOutputFolderNamePrefix.Text)
+						.SetParam(XML_SECTION_PROGRAM_OPTIONS, "ExportServerSettingsLoginsAndJobs", chkExportServerSettingsLoginsAndJobs.Checked)
+						.SetParam(XML_SECTION_PROGRAM_OPTIONS, "ServerOutputFolderNamePrefix", txtServerOutputFolderNamePrefix.Text)
 
-                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "IncludeTableRowCounts", mnuEditIncludeTableRowCounts.Checked)
-                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "AutoSelectDefaultTableNames", mnuEditAutoSelectDefaultTableNames.Checked)
-                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "SaveDataAsInsertIntoStatements", mnuEditSaveDataAsInsertIntoStatements.Checked)
-                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "WarnOnHighTableRowCount", mnuEditWarnOnHighTableRowCount.Checked)
+						.SetParam(XML_SECTION_PROGRAM_OPTIONS, "IncludeTableRowCounts", mnuEditIncludeTableRowCounts.Checked)
+						.SetParam(XML_SECTION_PROGRAM_OPTIONS, "AutoSelectDefaultTableNames", mnuEditAutoSelectDefaultTableNames.Checked)
+						.SetParam(XML_SECTION_PROGRAM_OPTIONS, "SaveDataAsInsertIntoStatements", mnuEditSaveDataAsInsertIntoStatements.Checked)
+						.SetParam(XML_SECTION_PROGRAM_OPTIONS, "WarnOnHighTableRowCount", mnuEditWarnOnHighTableRowCount.Checked)
 
-                    End If
+					End If
 
-                Catch ex As Exception
-                    System.Windows.Forms.MessageBox.Show("Error storing parameter in settings file: " & System.IO.Path.GetFileName(strFilePath), "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-                End Try
+				Catch ex As Exception
+					Windows.Forms.MessageBox.Show("Error storing parameter in settings file: " & IO.Path.GetFileName(strFilePath), "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+				End Try
 
-                .SaveSettings()
-            End With
-        Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error saving settings to file: " & strFilePath, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-        End Try
+				.SaveSettings()
+			End With
+		Catch ex As Exception
+			Windows.Forms.MessageBox.Show("Error saving settings to file: " & strFilePath, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+		End Try
 
-        ''Dim objProperty As System.Configuration.SettingsProperty
-        ''Dim objProvider As System.Configuration.SettingsProvider
-        ''Dim objAttributes As System.Configuration.SettingsAttributeDictionary
-
-        ''Try
-        ''    objProvider = New System.Configuration.LocalFileSettingsProvider
-        ''    objAttributes = New System.Configuration.SettingsAttributeDictionary
-        ''    objAttributes.Add("", "")
+		''Dim objProperty As System.Configuration.SettingsProperty
+		''Dim objProvider As System.Configuration.SettingsProvider
+		''Dim objAttributes As System.Configuration.SettingsAttributeDictionary
 
-        ''    objProperty = New System.Configuration.SettingsProperty("ServerName", System.Type.GetType("System.String"), objProvider, False, "", Configuration.SettingsSerializeAs.String, objAttributes, False, False)
-        ''    My.Settings.Properties.Add(objProperty)
+		''Try
+		''    objProvider = New System.Configuration.LocalFileSettingsProvider
+		''    objAttributes = New System.Configuration.SettingsAttributeDictionary
+		''    objAttributes.Add("", "")
 
-        ''    My.Settings.Item("ServerName") = txtServerName.Text
-
-        ''    My.Settings.Save()
-        ''Catch ex As Exception
-
-        ''End Try
-    End Sub
-
-    Private Sub PopulateTableNamesToExport(ByVal blnEnableAutoSelectDefaultTableNames As Boolean)
-
-        Dim strTableName As String
-        Dim strItem As String
-
-        Dim intIndex As Integer
-        Dim intItemIndex As Integer
-        Dim intCompareIndex As Integer
-
-        Dim htSelectedTableNamesSaved As Hashtable
-        Dim objItem As Object
-
-        Dim objRegExOptions As System.Text.RegularExpressions.RegexOptions
-        Dim objRegExArray() As System.Text.RegularExpressions.Regex
-
-        Dim intPointerArray() As Integer
-        Dim lngValues() As Long
-        Dim strNames() As String
-        Dim eSortOrder As eTableNameSortModeConstants
-
-        Dim blnAutoHiglightRows As Boolean
-        Dim blnHighlightCurrentRow As Boolean
-
-        Try
-            If mCachedTableListCount <= 0 Then
-                lstTableNamesToExportData.Items.Clear()
-                Exit Sub
-            End If
-
-            If cboTableNamesToExportSortOrder.SelectedIndex >= 0 Then
-                eSortOrder = CType(cboTableNamesToExportSortOrder.SelectedIndex, eTableNameSortModeConstants)
-            Else
-                eSortOrder = eTableNameSortModeConstants.Name
-            End If
-
-            ' Populate intPointerArray
-            ReDim intPointerArray(mCachedTableListCount - 1)
-            For intIndex = 0 To mCachedTableListCount - 1
-                intPointerArray(intIndex) = intIndex
-            Next intIndex
-
-            If eSortOrder = eTableNameSortModeConstants.RowCount Then
-                ' Sort on RowCount
-                ReDim lngValues(mCachedTableListCount - 1)
-                Array.Copy(mCachedTableListRowCounts, lngValues, mCachedTableListCount)
-                Array.Sort(lngValues, intPointerArray)
-            Else
-                ' Sort on Table Name
-                ReDim strNames(mCachedTableListCount - 1)
-                Array.Copy(mCachedTableList, strNames, mCachedTableListCount)
-                Array.Sort(strNames, intPointerArray)
-            End If
-
-            ' Assure that the auto-select table names are not nothing
-            If mTableNamesToAutoSelect Is Nothing Then
-                ReDim mTableNamesToAutoSelect(-1)
-            End If
-
-            If mTableNameAutoSelectRegEx Is Nothing Then
-                ReDim mTableNameAutoSelectRegEx(-1)
-            End If
-
-            ' Initialize objRegExArray (we'll fill it below if blnAutoHiglightRows = True)
-            objRegExOptions = System.Text.RegularExpressions.RegexOptions.Compiled Or _
-                              System.Text.RegularExpressions.RegexOptions.IgnoreCase Or _
-                              System.Text.RegularExpressions.RegexOptions.Singleline
-
-            ReDim objRegExArray(mTableNameAutoSelectRegEx.Length - 1)
-
-            If mnuEditAutoSelectDefaultTableNames.Checked And blnEnableAutoSelectDefaultTableNames Then
-                blnAutoHiglightRows = True
-
-                For intIndex = 0 To mTableNameAutoSelectRegEx.Length - 1
-                    objRegExArray(intIndex) = New System.Text.RegularExpressions.Regex(mTableNameAutoSelectRegEx(intIndex), objRegExOptions)
-                Next intIndex
-            Else
-                blnAutoHiglightRows = False
-            End If
-
-            ' Cache the currently selected names so that we can re-highlight them below
-            htSelectedTableNamesSaved = New Hashtable
-            For Each objItem In lstTableNamesToExportData.SelectedItems
-                htSelectedTableNamesSaved.Add(StripRowCountFromTableName(CStr(objItem)), "")
-            Next
-
-            lstTableNamesToExportData.Items.Clear()
-
-            For intIndex = 0 To mCachedTableListCount - 1
-                strTableName = String.Copy(mCachedTableList(intPointerArray(intIndex)))
-
-                If mCachedTableListIncludesRowCounts Then
-                    strItem = strTableName & ROW_COUNT_SEPARATOR & ValueToTextEstimate(mCachedTableListRowCounts(intPointerArray(intIndex)))
-                    If mCachedTableListRowCounts(intPointerArray(intIndex)) = 1 Then
-                        strItem &= " row)"
-                    Else
-                        strItem &= " rows)"
-                    End If
-                Else
-                    strItem = String.Copy(strTableName)
-                End If
-                intItemIndex = lstTableNamesToExportData.Items.Add(strItem)
-
-                blnHighlightCurrentRow = False
-                If htSelectedTableNamesSaved.Contains(strTableName) Then
-                    ' User had previously highlighted this table name; re-highlight it
-                    blnHighlightCurrentRow = True
-                ElseIf blnAutoHiglightRows Then
-                    ' Test strTableName against the RegEx values from mTableNameAutoSelectRegEx()
-                    For intCompareIndex = 0 To mTableNameAutoSelectRegEx.Length - 1
-                        If objRegExArray(intCompareIndex).Match(strTableName).Success Then
-                            blnHighlightCurrentRow = True
-                            Exit For
-                        End If
-                    Next intCompareIndex
-
-                    If Not blnHighlightCurrentRow Then
-                        ' No match: test strTableName against the names in mTableNamesToAutoSelect()
-                        For intCompareIndex = 0 To mTableNamesToAutoSelect.Length - 1
-                            If strTableName.ToLower = mTableNamesToAutoSelect(intCompareIndex).ToLower Then
-                                blnHighlightCurrentRow = True
-                                Exit For
-                            End If
-                        Next intCompareIndex
-                    End If
-                End If
-
-                If blnHighlightCurrentRow Then
-                    ' Highlight this table name
-                    lstTableNamesToExportData.SetSelected(intItemIndex, True)
-                End If
-            Next intIndex
-
-        Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error in PopulateTableNamesToExport: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-        End Try
-
-    End Sub
-
-    Private Sub InitializeControls()
-
-        mCachedTableListCount = 0
-        ReDim mCachedTableList(-1)
-        ReDim mCachedTableListRowCounts(-1)
-
-        ReDim mDefaultDMSDatabaseList(-1)
-        ReDim mDefaultMTSDatabaseList(-1)
-
-        PopulateComboBoxes()
-
-        SetToolTips()
-
-        ResetToDefaults(False)
-
-        Try
-            mXmlSettingsFilePath = GetSettingsFilePath()
-
-            If Not System.IO.File.Exists(mXmlSettingsFilePath) Then
-                IniFileSaveOptions(mXmlSettingsFilePath)
-            End If
-        Catch ex As Exception
-            ' Ignore errors here
-        End Try
-
-        IniFileLoadOptions(mXmlSettingsFilePath, False, False)
-
-        EnableDisableControls()
-
-    End Sub
-
-    Private Sub PopulateComboBoxes()
-        Dim intIndex As Integer
-
-        Try
-            With cboTableNamesToExportSortOrder
-                With .Items
-                    .Clear()
-                    .Insert(eTableNameSortModeConstants.Name, "Sort by Name")
-                    .Insert(eTableNameSortModeConstants.RowCount, "Sort by Row Count")
-                End With
-                .SelectedIndex = eTableNameSortModeConstants.Name
-            End With
-
-            With lstObjectTypesToScript
-                With .Items
-                    .Clear()
-                    .Insert(clsExportDBSchema.eSchemaObjectTypeConstants.SchemasAndRoles, "Schemas and Roles")
-                    .Insert(clsExportDBSchema.eSchemaObjectTypeConstants.Tables, "Tables")
-                    .Insert(clsExportDBSchema.eSchemaObjectTypeConstants.Views, "Views")
-                    .Insert(clsExportDBSchema.eSchemaObjectTypeConstants.StoredProcedures, "Stored Procedures")
-                    .Insert(clsExportDBSchema.eSchemaObjectTypeConstants.UserDefinedFunctions, "User Defined Functions")
-                    .Insert(clsExportDBSchema.eSchemaObjectTypeConstants.UserDefinedDataTypes, "User Defined Data Types")
-                    .Insert(clsExportDBSchema.eSchemaObjectTypeConstants.UserDefinedTypes, "User Defined Types")
-                End With
-
-                For intIndex = 0 To .Items.Count - 1
-                    .SetSelected(intIndex, True)
-                Next intIndex
-            End With
-        Catch ex As Exception
-            System.Windows.Forms.MessageBox.Show("Error in PopulateComboBoxes: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-        End Try
-
-    End Sub
-
-    Private Sub ProgressUpdate(ByVal taskDescription As String, ByVal percentComplete As Single)
+		''    objProperty = New System.Configuration.SettingsProperty("ServerName", System.Type.GetType("System.String"), objProvider, False, "", Configuration.SettingsSerializeAs.String, objAttributes, False, False)
+		''    My.Settings.Properties.Add(objProperty)
+
+		''    My.Settings.Item("ServerName") = txtServerName.Text
+
+		''    My.Settings.Save()
+		''Catch ex As Exception
+
+		''End Try
+	End Sub
+
+	Private Sub PopulateTableNamesToExport(ByVal blnEnableAutoSelectDefaultTableNames As Boolean)
+
+		Try
+			If mCachedTableList.Count <= 0 Then
+				lstTableNamesToExportData.Items.Clear()
+				Exit Sub
+			End If
+
+			Dim eSortOrder As eTableNameSortModeConstants
+			If cboTableNamesToExportSortOrder.SelectedIndex >= 0 Then
+				eSortOrder = CType(cboTableNamesToExportSortOrder.SelectedIndex, eTableNameSortModeConstants)
+			Else
+				eSortOrder = eTableNameSortModeConstants.Name
+			End If
+
+			Dim lstSortedTables As List(Of KeyValuePair(Of String, Int64))
+
+			If eSortOrder = eTableNameSortModeConstants.RowCount Then
+				' Sort on RowCount
+				lstSortedTables = (From item In mCachedTableList Select item Order By item.Value).ToList()				
+
+			Else
+				' Sort on Table Name
+				lstSortedTables = (From item In mCachedTableList Select item Order By item.Key).ToList()
+			End If
+
+			' Assure that the auto-select table names are not nothing
+			If mTableNamesToAutoSelect Is Nothing Then
+				mTableNamesToAutoSelect = New List(Of String)
+			End If
+
+			If mTableNameAutoSelectRegEx Is Nothing Then
+				mTableNameAutoSelectRegEx = New List(Of String)
+			End If
+
+			' Initialize objRegExArray (we'll fill it below if blnAutoHiglightRows = True)
+			Const objRegExOptions As RegexOptions =
+			  RegexOptions.Compiled Or _
+			  RegexOptions.IgnoreCase Or _
+			  RegexOptions.Singleline
+
+			Dim lstRegExSpecs = New List(Of Regex)
+			Dim blnAutoHiglightRows As Boolean
+
+			If mnuEditAutoSelectDefaultTableNames.Checked And blnEnableAutoSelectDefaultTableNames Then
+				blnAutoHiglightRows = True
+
+				For Each regexItem In mTableNameAutoSelectRegEx
+					lstRegExSpecs.Add(New Regex(regexItem, objRegExOptions))
+				Next
+			Else
+				blnAutoHiglightRows = False
+			End If
+
+			' Cache the currently selected names so that we can re-highlight them below
+			Dim lstSelectedTableNamesSaved = New SortedSet(Of String)
+			For Each objItem In lstTableNamesToExportData.SelectedItems
+				lstSelectedTableNamesSaved.Add(StripRowCountFromTableName(CStr(objItem)))
+			Next
+
+			lstTableNamesToExportData.Items.Clear()
+
+			For Each tableItem In lstSortedTables
+
+				' tableItem.Key is Table Name
+				' tableItem.Value is the number of rows in the table (if mCachedTableListIncludesRowCounts = True)
+
+				Dim strItem As String
+
+				If mCachedTableListIncludesRowCounts Then
+					strItem = tableItem.Key & ROW_COUNT_SEPARATOR & ValueToTextEstimate(tableItem.Value)
+					If tableItem.Value = 1 Then
+						strItem &= " row)"
+					Else
+						strItem &= " rows)"
+					End If
+				Else
+					strItem = String.Copy(tableItem.Key)
+				End If
+
+				Dim intItemIndex = lstTableNamesToExportData.Items.Add(strItem)
+
+				Dim blnHighlightCurrentRow = False
+				If lstSelectedTableNamesSaved.Contains(tableItem.Key) Then
+					' User had previously highlighted this table name; re-highlight it
+					blnHighlightCurrentRow = True
+				ElseIf blnAutoHiglightRows Then
+					' Test strTableName against the RegEx values from mTableNameAutoSelectRegEx()
+					For Each regexMatcher In lstRegExSpecs
+						If regexMatcher.Match(tableItem.Key).Success Then
+							blnHighlightCurrentRow = True
+							Exit For
+						End If
+					Next
+
+					If Not blnHighlightCurrentRow Then
+						' No match: test strTableName against the names in mTableNamesToAutoSelect
+						If mTableNamesToAutoSelect.Contains(tableItem.Key, StringComparer.CurrentCultureIgnoreCase) Then
+							blnHighlightCurrentRow = True
+						End If
+					End If
+				End If
+
+				If blnHighlightCurrentRow Then
+					' Highlight this table name
+					lstTableNamesToExportData.SetSelected(intItemIndex, True)
+				End If
+			Next
+
+		Catch ex As Exception
+			Windows.Forms.MessageBox.Show("Error in PopulateTableNamesToExport: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+		End Try
+
+	End Sub
+
+	Private Sub InitializeControls()
+
+		mCachedTableList = New Dictionary(Of String, Int64)
+
+		mDefaultDMSDatabaseList = New List(Of String)
+		mDefaultMTSDatabaseList = New List(Of String)
+
+		PopulateComboBoxes()
+
+		SetToolTips()
+
+		ResetToDefaults(False)
+
+		Try
+			mXmlSettingsFilePath = GetSettingsFilePath()
+
+			If Not IO.File.Exists(mXmlSettingsFilePath) Then
+				IniFileSaveOptions(mXmlSettingsFilePath)
+			End If
+		Catch ex As Exception
+			' Ignore errors here
+		End Try
+
+		IniFileLoadOptions(mXmlSettingsFilePath, False, False)
+
+		EnableDisableControls()
+
+	End Sub
+
+	Private Sub PopulateComboBoxes()
+		Dim intIndex As Integer
+
+		Try
+			With cboTableNamesToExportSortOrder
+				With .Items
+					.Clear()
+					.Insert(eTableNameSortModeConstants.Name, "Sort by Name")
+					.Insert(eTableNameSortModeConstants.RowCount, "Sort by Row Count")
+				End With
+				.SelectedIndex = eTableNameSortModeConstants.Name
+			End With
+
+			With lstObjectTypesToScript
+				With .Items
+					.Clear()
+					.Insert(clsExportDBSchema.eSchemaObjectTypeConstants.SchemasAndRoles, "Schemas and Roles")
+					.Insert(clsExportDBSchema.eSchemaObjectTypeConstants.Tables, "Tables")
+					.Insert(clsExportDBSchema.eSchemaObjectTypeConstants.Views, "Views")
+					.Insert(clsExportDBSchema.eSchemaObjectTypeConstants.StoredProcedures, "Stored Procedures")
+					.Insert(clsExportDBSchema.eSchemaObjectTypeConstants.UserDefinedFunctions, "User Defined Functions")
+					.Insert(clsExportDBSchema.eSchemaObjectTypeConstants.UserDefinedDataTypes, "User Defined Data Types")
+					.Insert(clsExportDBSchema.eSchemaObjectTypeConstants.UserDefinedTypes, "User Defined Types")
+				End With
+
+				For intIndex = 0 To .Items.Count - 1
+					.SetSelected(intIndex, True)
+				Next intIndex
+			End With
+		Catch ex As Exception
+			Windows.Forms.MessageBox.Show("Error in PopulateComboBoxes: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+		End Try
+
+	End Sub
+
+	Private Sub ProgressUpdate(ByVal taskDescription As String, ByVal percentComplete As Single)
 		lblProgress.Text = taskDescription
-		UpdateProgressBar(pbarProgress, percentComplete)	
+		UpdateProgressBar(pbarProgress, percentComplete)
 	End Sub
 
 	Private Sub ProgressComplete()
@@ -735,13 +688,14 @@ Public Class frmMain
 				txtOutputFolderPath.Text = GetAppFolderPath()
 			End If
 
-			If Not System.IO.Directory.Exists(txtOutputFolderPath.Text) Then
+			If Not IO.Directory.Exists(txtOutputFolderPath.Text) Then
 				strMessage = "Output folder not found: " & txtOutputFolderPath.Text
-				System.Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+				Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
 				Exit Sub
 			End If
 
-			clsExportDBSchema.InitializeSchemaExportOptions(mSchemaExportOptions)
+			mSchemaExportOptions = clsExportDBSchema.GetDefaultSchemaExportOptions()
+
 			With mSchemaExportOptions
 				.OutputFolderPath = txtOutputFolderPath.Text
 				.OutputFolderNamePrefix = txtOutputFolderNamePrefix.Text
@@ -788,7 +742,7 @@ Public Class frmMain
 			End With
 
 		Catch ex As Exception
-			System.Windows.Forms.MessageBox.Show("Error initializing mSchemaExportOptions in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			Windows.Forms.MessageBox.Show("Error initializing mSchemaExportOptions in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
 			Exit Sub
 		End Try
 
@@ -797,13 +751,13 @@ Public Class frmMain
 			mDatabaseListToProcess = GetSelectedDatabases()
 			mTableNamesForDataExport = GetSelectedTableNamesForDataExport(mnuEditWarnOnHighTableRowCount.Checked)
 
-			If mDatabaseListToProcess.Length = 0 And Not mSchemaExportOptions.ExportServerSettingsLoginsAndJobs Then
-				System.Windows.Forms.MessageBox.Show("No databases or tables were selected; unable to continue", "Nothing To Do", MessageBoxButtons.OK, MessageBoxIcon.Information)
+			If mDatabaseListToProcess.Count = 0 And Not mSchemaExportOptions.ExportServerSettingsLoginsAndJobs Then
+				Windows.Forms.MessageBox.Show("No databases or tables were selected; unable to continue", "Nothing To Do", MessageBoxButtons.OK, MessageBoxIcon.Information)
 				Exit Sub
 			End If
 
 		Catch ex As Exception
-			System.Windows.Forms.MessageBox.Show("Error determining list of databases (and tables) to process: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			Windows.Forms.MessageBox.Show("Error determining list of databases (and tables) to process: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
 			Exit Sub
 		End Try
 
@@ -820,7 +774,7 @@ Public Class frmMain
 				mDBSchemaExporter.TableNameAutoSelectRegEx = mTableNameAutoSelectRegEx
 			End If
 		Catch ex As Exception
-			System.Windows.Forms.MessageBox.Show("Error instantiating mDBSchemaExporter and updating the data export auto-select lists: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			Windows.Forms.MessageBox.Show("Error instantiating mDBSchemaExporter and updating the data export auto-select lists: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
 			Exit Sub
 		End Try
 
@@ -837,7 +791,7 @@ Public Class frmMain
 				' Use the following to call the SP on a separate thread
 				mThread = New Threading.Thread(AddressOf ScriptDBSchemaObjectsThread)
 				mThread.Start()
-				System.Threading.Thread.Sleep(THREAD_WAIT_MSEC)
+				Threading.Thread.Sleep(THREAD_WAIT_MSEC)
 
 				Do While mThread.ThreadState = Threading.ThreadState.Running OrElse mThread.ThreadState = Threading.ThreadState.AbortRequested OrElse mThread.ThreadState = Threading.ThreadState.WaitSleepJoin OrElse mThread.ThreadState = Threading.ThreadState.Suspended OrElse mThread.ThreadState = Threading.ThreadState.SuspendRequested
 					Try
@@ -851,7 +805,7 @@ Public Class frmMain
 					Catch ex As Exception
 						' Error joining thread; this can happen if the thread is trying to abort, so I believe we can ignore the error
 						' Sleep another THREAD_WAIT_MSEC msec, then exit the Do Loop
-						System.Threading.Thread.Sleep(THREAD_WAIT_MSEC)
+						Threading.Thread.Sleep(THREAD_WAIT_MSEC)
 						Exit Do
 					End Try
 					Application.DoEvents()
@@ -861,10 +815,10 @@ Public Class frmMain
 			Application.DoEvents()
 			If Not mSchemaExportSuccess OrElse mDBSchemaExporter.ErrorCode <> 0 Then
 				strMessage = "Error exporting the schema objects (ErrorCode=" & mDBSchemaExporter.ErrorCode.ToString & "): " & ControlChars.NewLine & mDBSchemaExporter.StatusMessage
-				System.Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+				Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
 			End If
 		Catch ex As Exception
-			System.Windows.Forms.MessageBox.Show("Error calling ScriptDBSchemaObjectsThread in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			Windows.Forms.MessageBox.Show("Error calling ScriptDBSchemaObjectsThread in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
 		Finally
 			mWorking = False
 			EnableDisableControls()
@@ -881,7 +835,7 @@ Public Class frmMain
 		Try
 			lblSubtaskProgress.Text = "Schema export complete"
 		Catch ex As Exception
-			System.Windows.Forms.MessageBox.Show("Error finalizing results in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			Windows.Forms.MessageBox.Show("Error finalizing results in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
 		End Try
 
 	End Sub
@@ -892,43 +846,41 @@ Public Class frmMain
 		Try
 			mSchemaExportSuccess = mDBSchemaExporter.ScriptServerAndDBObjects(mSchemaExportOptions, mDatabaseListToProcess, mTableNamesForDataExport)
 		Catch ex As Exception
-			System.Windows.Forms.MessageBox.Show("Error in ScriptDBSchemaObjectsThread: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			Windows.Forms.MessageBox.Show("Error in ScriptDBSchemaObjectsThread: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
 		End Try
 	End Sub
 
-	Private Sub SelectDefaultDBs(ByVal strDBList() As String)
+	Private Sub SelectDefaultDBs(ByVal lstDefaultDBs As List(Of String))
 
 		Dim intIndex As Integer
 		Dim strCurrentDB As String
 
-		If Not strDBList Is Nothing Then
+		If Not lstDefaultDBs Is Nothing Then
 
-			' Update the entries in strDBList to be lower case, then sort alphabetically
-			For intIndex = 0 To strDBList.Length - 1
-				strDBList(intIndex) = strDBList(intIndex).ToLower
-			Next intIndex
+			Dim lstSortedDBs = (From item In lstDefaultDBs Select item.ToLower()).ToList()
 
-			Array.Sort(strDBList)
+			lstSortedDBs.Sort()
 
 			lstDatabasesToProcess.ClearSelected()
 
 			For intIndex = 0 To lstDatabasesToProcess.Items.Count - 1
-				strCurrentDB = lstDatabasesToProcess.Items(intIndex).ToString.ToLower
+				strCurrentDB = lstDatabasesToProcess.Items(intIndex).ToString.ToLower()
 
-				If Array.BinarySearch(strDBList, strCurrentDB) >= 0 Then
+				If lstSortedDBs.BinarySearch(strCurrentDB) >= 0 Then
 					lstDatabasesToProcess.SetSelected(intIndex, True)
 				End If
+
 			Next intIndex
 		End If
 
 	End Sub
 
 	Private Sub ResetToDefaults(ByVal blnConfirm As Boolean)
-		Dim eResponse As System.Windows.Forms.DialogResult
+		Dim eResponse As Windows.Forms.DialogResult
 
 		Try
 			If blnConfirm Then
-				eResponse = System.Windows.Forms.MessageBox.Show("Are you sure you want to reset all settings to their default values?", "Reset to Defaults", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1)
+				eResponse = Windows.Forms.MessageBox.Show("Are you sure you want to reset all settings to their default values?", "Reset to Defaults", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1)
 				If eResponse <> Windows.Forms.DialogResult.Yes Then
 					Exit Sub
 				End If
@@ -959,29 +911,29 @@ Public Class frmMain
 			chkExportServerSettingsLoginsAndJobs.Checked = False
 			txtServerOutputFolderNamePrefix.Text = clsExportDBSchema.DEFAULT_SERVER_OUTPUT_FOLDER_NAME_PREFIX
 
-			clsExportDBSchema.InitializeAutoSelectTableNames(mTableNamesToAutoSelect)
-			clsExportDBSchema.InitializeAutoSelectTableRegEx(mTableNameAutoSelectRegEx)
+			mTableNamesToAutoSelect = clsDBSchemaExportTool.GetTableNamesToAutoExportData
+			mTableNameAutoSelectRegEx = clsDBSchemaExportTool.GetTableRegExToAutoExportData()
 
-			ReDim mDefaultDMSDatabaseList(2)
-			mDefaultDMSDatabaseList(0) = "DMS5"
-			mDefaultDMSDatabaseList(1) = "Protein_Sequences"
-			mDefaultDMSDatabaseList(2) = "DMSHistoricLog1"
+			mDefaultDMSDatabaseList.Clear()
+			mDefaultDMSDatabaseList.Add("DMS5")
+			mDefaultDMSDatabaseList.Add("Protein_Sequences")
+			mDefaultDMSDatabaseList.Add("DMSHistoricLog1")
 
-			ReDim mDefaultMTSDatabaseList(9)
-			mDefaultMTSDatabaseList(0) = "MT_Template_01"
-			mDefaultMTSDatabaseList(1) = "PT_Template_01"
-			mDefaultMTSDatabaseList(2) = "MT_Main"
-			mDefaultMTSDatabaseList(3) = "MTS_Master"
-			mDefaultMTSDatabaseList(4) = "Prism_IFC"
-			mDefaultMTSDatabaseList(5) = "Prism_RPT"
-			mDefaultMTSDatabaseList(6) = "PAST_BB"
-			mDefaultMTSDatabaseList(7) = "Master_Sequences"
-			mDefaultMTSDatabaseList(8) = "MT_Historic_Log"
-			mDefaultMTSDatabaseList(9) = "MT_HistoricLog"
+			mDefaultMTSDatabaseList.Clear()
+			mDefaultMTSDatabaseList.Add("MT_Template_01")
+			mDefaultMTSDatabaseList.Add("PT_Template_01")
+			mDefaultMTSDatabaseList.Add("MT_Main")
+			mDefaultMTSDatabaseList.Add("MTS_Master")
+			mDefaultMTSDatabaseList.Add("Prism_IFC")
+			mDefaultMTSDatabaseList.Add("Prism_RPT")
+			mDefaultMTSDatabaseList.Add("PAST_BB")
+			mDefaultMTSDatabaseList.Add("Master_Sequences")
+			mDefaultMTSDatabaseList.Add("MT_Historic_Log")
+			mDefaultMTSDatabaseList.Add("MT_HistoricLog")
 
 			EnableDisableControls()
 		Catch ex As Exception
-			System.Windows.Forms.MessageBox.Show("Error in ResetToDefaults: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			Windows.Forms.MessageBox.Show("Error in ResetToDefaults: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
 		End Try
 
 	End Sub
@@ -1017,23 +969,23 @@ Public Class frmMain
 				txtOutputFolderPath.Text = objFolderBrowser.FolderPath
 			End If
 		Catch ex As Exception
-			System.Windows.Forms.MessageBox.Show("Error in SelectOutputFolder: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			Windows.Forms.MessageBox.Show("Error in SelectOutputFolder: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
 		End Try
 	End Sub
 
 	Private Sub SetToolTips()
-		Dim objToolTipControl As New System.Windows.Forms.ToolTip
+
 
 		Try
-			With objToolTipControl
-				.SetToolTip(chkCreateFolderForEachDB, "This will be automatically enabled if multiple databases are chosen above")
-				.SetToolTip(txtOutputFolderNamePrefix, "The output folder for each database will be named with this prefix followed by the database name")
-				.SetToolTip(txtServerOutputFolderNamePrefix, "Server settings will be saved in a folder with this prefix followed by the server name")
-			End With
+
+			Using objToolTipControl = New Windows.Forms.ToolTip
+				objToolTipControl.SetToolTip(chkCreateFolderForEachDB, "This will be automatically enabled if multiple databases are chosen above")
+				objToolTipControl.SetToolTip(txtOutputFolderNamePrefix, "The output folder for each database will be named with this prefix followed by the database name")
+				objToolTipControl.SetToolTip(txtServerOutputFolderNamePrefix, "Server settings will be saved in a folder with this prefix followed by the server name")
+			End Using
+
 		Catch ex As Exception
-			System.Windows.Forms.MessageBox.Show("Error in SetToolTips: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-		Finally
-			objToolTipControl = Nothing
+			Windows.Forms.MessageBox.Show("Error in SetToolTips: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
 		End Try
 
 	End Sub
@@ -1046,10 +998,10 @@ Public Class frmMain
 		strMessage &= "Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in August 2006" & ControlChars.NewLine
 		strMessage &= "Copyright 2006, Battelle Memorial Institute.  All Rights Reserved." & ControlChars.NewLine & ControlChars.NewLine
 
-		strMessage &= "This is version " & System.Windows.Forms.Application.ProductVersion & " (" & PROGRAM_DATE & "). " & ControlChars.NewLine & ControlChars.NewLine
+		strMessage &= "This is version " & Windows.Forms.Application.ProductVersion & " (" & PROGRAM_DATE & "). " & ControlChars.NewLine & ControlChars.NewLine
 
-		strMessage &= "E-mail: matthew.monroe@pnl.gov or matt@alchemistmatt.com" & ControlChars.NewLine
-		strMessage &= "Website: http://ncrr.pnl.gov/ or http://www.sysbio.org/resources/staff/" & ControlChars.NewLine & ControlChars.NewLine
+		strMessage &= "E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com" & ControlChars.NewLine
+		strMessage &= "Website: http://panomics.pnnl.gov/ or http://www.sysbio.org/resources/staff/" & ControlChars.NewLine & ControlChars.NewLine
 
 		strMessage &= "Licensed under the Apache License, Version 2.0; you may not use this file except in compliance with the License.  "
 		strMessage &= "You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0" & ControlChars.NewLine & ControlChars.NewLine
@@ -1066,12 +1018,12 @@ Public Class frmMain
 		Windows.Forms.MessageBox.Show(strMessage, "About", MessageBoxButtons.OK, MessageBoxIcon.Information)
 	End Sub
 
-	Private Sub StripRowCountsFromTableNames(ByRef strTableNames() As String)
+	Private Sub StripRowCountsFromTableNames(ByRef lstTableNames As List(Of String))
 		Dim intIndex As Integer
 
-		If strTableNames Is Nothing Then Exit Sub
-		For intIndex = 0 To strTableNames.Length - 1
-			strTableNames(intIndex) = StripRowCountFromTableName(strTableNames(intIndex))
+		If lstTableNames Is Nothing Then Exit Sub
+		For intIndex = 0 To lstTableNames.Count - 1
+			lstTableNames(intIndex) = StripRowCountFromTableName(lstTableNames(intIndex))
 		Next intIndex
 
 	End Sub
@@ -1082,7 +1034,7 @@ Public Class frmMain
 		If strTableName Is Nothing Then
 			Return String.Empty
 		Else
-			intCharIndex = strTableName.IndexOf(ROW_COUNT_SEPARATOR)
+			intCharIndex = strTableName.IndexOf(ROW_COUNT_SEPARATOR, StringComparison.Ordinal)
 			If intCharIndex > 0 Then
 				Return strTableName.Substring(0, intCharIndex)
 			Else
@@ -1108,12 +1060,6 @@ Public Class frmMain
 	End Sub
 
 	Private Sub UpdateDatabaseList()
-		Dim strDatabaseList() As String = New String() {}
-		Dim intIndex As Integer
-		Dim intItemIndex As Integer
-
-		Dim htSelectedDatabaseNamesSaved As Hashtable
-		Dim objItem As Object
 
 		If mWorking Then Exit Sub
 
@@ -1126,28 +1072,32 @@ Public Class frmMain
 
 			If VerifyOrUpdateServerConnection(True) Then
 				' Cache the currently selected names so that we can re-highlight them below
-				htSelectedDatabaseNamesSaved = New Hashtable
+
+				Dim lstSelectedDatabaseNamesSaved = New SortedSet(Of String)
 				For Each objItem In lstDatabasesToProcess.SelectedItems
-					htSelectedDatabaseNamesSaved.Add(CStr(objItem), "")
+					lstSelectedDatabaseNamesSaved.Add(CStr(objItem))
 				Next
 
 				lstDatabasesToProcess.Items.Clear()
 
-				If mDBSchemaExporter.GetSqlServerDatabases(strDatabaseList) Then
-					For intIndex = 0 To strDatabaseList.Length - 1
-						If strDatabaseList(intIndex) Is Nothing Then Exit For
+				Dim lstDatabaseList = mDBSchemaExporter.GetSqlServerDatabases()
 
-						intItemIndex = lstDatabasesToProcess.Items.Add(strDatabaseList(intIndex))
+				If lstDatabaseList.Count > 0 Then
+					For Each databaseName In lstDatabaseList
 
-						If htSelectedDatabaseNamesSaved.Contains(strDatabaseList(intIndex)) Then
+						If String.IsNullOrWhiteSpace(databaseName) Then Continue For
+
+						Dim intItemIndex = lstDatabasesToProcess.Items.Add(databaseName)
+
+						If lstSelectedDatabaseNamesSaved.Contains(databaseName) Then
 							' Highlight this table name
 							lstDatabasesToProcess.SetSelected(intItemIndex, True)
 						End If
-					Next intIndex
+					Next
 				End If
 			End If
 		Catch ex As Exception
-			System.Windows.Forms.MessageBox.Show("Error in UpdateDatabaseList: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			Windows.Forms.MessageBox.Show("Error in UpdateDatabaseList: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
 		Finally
 			mWorking = False
 			EnableDisableControls()
@@ -1173,7 +1123,7 @@ Public Class frmMain
 		End Try
 	End Sub
 
-	Private Sub UpdateProgressBar(ByVal pbar As System.Windows.Forms.ProgressBar, ByVal sngPercentComplete As Single)
+	Private Sub UpdateProgressBar(ByVal pbar As Windows.Forms.ProgressBar, ByVal sngPercentComplete As Single)
 		Dim intPercentComplete As Integer = CInt(sngPercentComplete)
 
 		If intPercentComplete < pbar.Minimum Then intPercentComplete = pbar.Minimum
@@ -1185,16 +1135,12 @@ Public Class frmMain
 	Private Sub UpdateTableNamesInSelectedDB()
 
 		Dim strDatabaseName As String = String.Empty
-		Dim strTableList() As String = New String() {}
-		Dim lngRowCounts() As Long = New Long() {}
-		Dim blnIncludeTableRowCounts As Boolean
-
-		Dim intIndex As Integer
+				
 		If mWorking Then Exit Sub
 
 		Try
 			If lstDatabasesToProcess.Items.Count = 0 Then
-				System.Windows.Forms.MessageBox.Show("The database list is currently empty; unable to continue", "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+				Windows.Forms.MessageBox.Show("The database list is currently empty; unable to continue", "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
 				Exit Try
 			ElseIf lstDatabasesToProcess.SelectedIndex < 0 Then
 				' Auto-select the first database
@@ -1203,7 +1149,7 @@ Public Class frmMain
 			strDatabaseName = CStr(lstDatabasesToProcess.Items(lstDatabasesToProcess.SelectedIndex))
 
 		Catch ex As Exception
-			System.Windows.Forms.MessageBox.Show("Error determining selected database name in UpdateTableNamesInSelectedDB: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			Windows.Forms.MessageBox.Show("Error determining selected database name in UpdateTableNamesInSelectedDB: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
 		End Try
 
 		If strDatabaseName Is Nothing OrElse strDatabaseName.Length = 0 Then
@@ -1219,32 +1165,18 @@ Public Class frmMain
 
 			If VerifyOrUpdateServerConnection(True) Then
 
-				blnIncludeTableRowCounts = mnuEditIncludeTableRowCounts.Checked
-				If mDBSchemaExporter.GetSqlServerDatabaseTableNames(strDatabaseName, strTableList, lngRowCounts, blnIncludeTableRowCounts, mnuEditIncludeSystemObjects.Checked) Then
-					mCachedTableListCount = 0
+				Dim blnIncludeTableRowCounts = mnuEditIncludeTableRowCounts.Checked
+
+				mCachedTableList = mDBSchemaExporter.GetSqlServerDatabaseTableNames(strDatabaseName, blnIncludeTableRowCounts, mnuEditIncludeSystemObjects.Checked)
+
+				If mCachedTableList.Count > 0 Then
 					mCachedTableListIncludesRowCounts = blnIncludeTableRowCounts
-					ReDim mCachedTableList(strTableList.Length - 1)
-					ReDim mCachedTableListRowCounts(strTableList.Length - 1)
-
-					For intIndex = 0 To strTableList.Length - 1
-						If strTableList(mCachedTableListCount) Is Nothing Then Exit For
-						mCachedTableList(mCachedTableListCount) = strTableList(mCachedTableListCount)
-						mCachedTableListRowCounts(mCachedTableListCount) = lngRowCounts(mCachedTableListCount)
-						mCachedTableListCount += 1
-					Next intIndex
-
-					If mCachedTableListCount < mCachedTableList.Length Then
-						ReDim Preserve mCachedTableList(mCachedTableListCount - 1)
-						ReDim Preserve mCachedTableListRowCounts(mCachedTableListCount - 1)
-					End If
-
-					Array.Sort(mCachedTableList, mCachedTableListRowCounts)
 
 					PopulateTableNamesToExport(True)
 				End If
 			End If
 		Catch ex As Exception
-			System.Windows.Forms.MessageBox.Show("Error in UpdateTableNamesInSelectedDB: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			Windows.Forms.MessageBox.Show("Error in UpdateTableNamesInSelectedDB: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
 		Finally
 			mWorking = False
 			EnableDisableControls()
@@ -1287,7 +1219,7 @@ Public Class frmMain
 			If txtServerName.TextLength = 0 Then
 				strMessage = "Please enter the server name"
 				If blnInformUserOnFailure Then
-					System.Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+					Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
 				End If
 			Else
 				With udtConnectionInfo
@@ -1309,12 +1241,12 @@ Public Class frmMain
 					If mDBSchemaExporter.StatusMessage.Length > 0 Then
 						strMessage &= "; " & mDBSchemaExporter.StatusMessage
 					End If
-					System.Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+					Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
 				End If
 			End If
 
 		Catch ex As Exception
-			System.Windows.Forms.MessageBox.Show("Error in VerifyOrUpdateServerConnection: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+			Windows.Forms.MessageBox.Show("Error in VerifyOrUpdateServerConnection: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
 			blnConnected = False
 		End Try
 
@@ -1373,12 +1305,12 @@ Public Class frmMain
 		Me.Close()
 	End Sub
 
-	Private Sub lstDatabasesToProcess_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles lstDatabasesToProcess.KeyPress
+	Private Sub lstDatabasesToProcess_KeyPress(ByVal sender As Object, ByVal e As Windows.Forms.KeyPressEventArgs) Handles lstDatabasesToProcess.KeyPress
 		' Always mark e as handled to allow Ctrl+A to be used to select all the entries in the listbox
 		e.Handled = True
 	End Sub
 
-	Private Sub lstDatabasesToProcess_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles lstDatabasesToProcess.KeyDown
+	Private Sub lstDatabasesToProcess_KeyDown(ByVal sender As Object, ByVal e As Windows.Forms.KeyEventArgs) Handles lstDatabasesToProcess.KeyDown
 		If e.Control Then
 			If e.KeyCode = Keys.A Then
 				' Ctrl+A - Select All
@@ -1388,12 +1320,12 @@ Public Class frmMain
 		End If
 	End Sub
 
-	Private Sub lstObjectTypesToScript_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles lstObjectTypesToScript.KeyPress
+	Private Sub lstObjectTypesToScript_KeyPress(ByVal sender As Object, ByVal e As Windows.Forms.KeyPressEventArgs) Handles lstObjectTypesToScript.KeyPress
 		' Always mark e as handled to allow Ctrl+A to be used to select all the entries in the listbox
 		e.Handled = True
 	End Sub
 
-	Private Sub lstObjectTypesToScript_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles lstObjectTypesToScript.KeyDown
+	Private Sub lstObjectTypesToScript_KeyDown(ByVal sender As Object, ByVal e As Windows.Forms.KeyEventArgs) Handles lstObjectTypesToScript.KeyDown
 		If e.Control Then
 			If e.KeyCode = Keys.A Then
 				' Ctrl+A - Select All
@@ -1403,12 +1335,12 @@ Public Class frmMain
 		End If
 	End Sub
 
-	Private Sub lstTableNamesToExportData_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles lstTableNamesToExportData.KeyPress
+	Private Sub lstTableNamesToExportData_KeyPress(ByVal sender As Object, ByVal e As Windows.Forms.KeyPressEventArgs) Handles lstTableNamesToExportData.KeyPress
 		' Always mark e as handled to allow Ctrl+A to be used to select all the entries in the listbox
 		e.Handled = True
 	End Sub
 
-	Private Sub lstTableNamesToExportData_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles lstTableNamesToExportData.KeyDown
+	Private Sub lstTableNamesToExportData_KeyDown(ByVal sender As Object, ByVal e As Windows.Forms.KeyEventArgs) Handles lstTableNamesToExportData.KeyDown
 		If e.Control Then
 			If e.KeyCode = Keys.A Then
 				' Ctrl+A - Select All

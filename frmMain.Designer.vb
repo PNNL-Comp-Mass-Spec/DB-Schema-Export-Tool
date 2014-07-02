@@ -119,9 +119,9 @@ Partial Class frmMain
 		Me.fraConnectionSettings.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.fraConnectionSettings.ForeColor = System.Drawing.SystemColors.ControlText
 		Me.fraConnectionSettings.Location = New System.Drawing.Point(16, 15)
-		Me.fraConnectionSettings.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.fraConnectionSettings.Margin = New System.Windows.Forms.Padding(4)
 		Me.fraConnectionSettings.Name = "fraConnectionSettings"
-		Me.fraConnectionSettings.Padding = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.fraConnectionSettings.Padding = New System.Windows.Forms.Padding(4)
 		Me.fraConnectionSettings.RightToLeft = System.Windows.Forms.RightToLeft.No
 		Me.fraConnectionSettings.Size = New System.Drawing.Size(356, 155)
 		Me.fraConnectionSettings.TabIndex = 0
@@ -151,7 +151,7 @@ Partial Class frmMain
 		Me.chkUseIntegratedAuthentication.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.chkUseIntegratedAuthentication.ForeColor = System.Drawing.SystemColors.ControlText
 		Me.chkUseIntegratedAuthentication.Location = New System.Drawing.Point(11, 49)
-		Me.chkUseIntegratedAuthentication.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.chkUseIntegratedAuthentication.Margin = New System.Windows.Forms.Padding(4)
 		Me.chkUseIntegratedAuthentication.Name = "chkUseIntegratedAuthentication"
 		Me.chkUseIntegratedAuthentication.RightToLeft = System.Windows.Forms.RightToLeft.No
 		Me.chkUseIntegratedAuthentication.Size = New System.Drawing.Size(288, 20)
@@ -167,7 +167,7 @@ Partial Class frmMain
 		Me.txtPassword.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.txtPassword.ForeColor = System.Drawing.SystemColors.WindowText
 		Me.txtPassword.Location = New System.Drawing.Point(192, 101)
-		Me.txtPassword.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.txtPassword.Margin = New System.Windows.Forms.Padding(4)
 		Me.txtPassword.MaxLength = 0
 		Me.txtPassword.Name = "txtPassword"
 		Me.txtPassword.PasswordChar = Global.Microsoft.VisualBasic.ChrW(42)
@@ -184,7 +184,7 @@ Partial Class frmMain
 		Me.txtUsername.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.txtUsername.ForeColor = System.Drawing.SystemColors.WindowText
 		Me.txtUsername.Location = New System.Drawing.Point(192, 71)
-		Me.txtUsername.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.txtUsername.Margin = New System.Windows.Forms.Padding(4)
 		Me.txtUsername.MaxLength = 0
 		Me.txtUsername.Name = "txtUsername"
 		Me.txtUsername.RightToLeft = System.Windows.Forms.RightToLeft.No
@@ -200,7 +200,7 @@ Partial Class frmMain
 		Me.txtServerName.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.txtServerName.ForeColor = System.Drawing.SystemColors.WindowText
 		Me.txtServerName.Location = New System.Drawing.Point(192, 17)
-		Me.txtServerName.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.txtServerName.Margin = New System.Windows.Forms.Padding(4)
 		Me.txtServerName.MaxLength = 0
 		Me.txtServerName.Name = "txtServerName"
 		Me.txtServerName.RightToLeft = System.Windows.Forms.RightToLeft.No
@@ -345,7 +345,7 @@ Partial Class frmMain
 		Me.cmdUpdateTableNames.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.cmdUpdateTableNames.ForeColor = System.Drawing.SystemColors.ControlText
 		Me.cmdUpdateTableNames.Location = New System.Drawing.Point(352, 73)
-		Me.cmdUpdateTableNames.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.cmdUpdateTableNames.Margin = New System.Windows.Forms.Padding(4)
 		Me.cmdUpdateTableNames.Name = "cmdUpdateTableNames"
 		Me.cmdUpdateTableNames.RightToLeft = System.Windows.Forms.RightToLeft.No
 		Me.cmdUpdateTableNames.Size = New System.Drawing.Size(195, 31)
@@ -363,7 +363,7 @@ Partial Class frmMain
 		Me.chkCreateFolderForEachDB.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.chkCreateFolderForEachDB.ForeColor = System.Drawing.SystemColors.ControlText
 		Me.chkCreateFolderForEachDB.Location = New System.Drawing.Point(15, 377)
-		Me.chkCreateFolderForEachDB.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.chkCreateFolderForEachDB.Margin = New System.Windows.Forms.Padding(4)
 		Me.chkCreateFolderForEachDB.Name = "chkCreateFolderForEachDB"
 		Me.chkCreateFolderForEachDB.RightToLeft = System.Windows.Forms.RightToLeft.No
 		Me.chkCreateFolderForEachDB.Size = New System.Drawing.Size(223, 25)
@@ -374,7 +374,7 @@ Partial Class frmMain
 		'pbarProgress
 		'
 		Me.pbarProgress.Location = New System.Drawing.Point(11, 17)
-		Me.pbarProgress.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.pbarProgress.Margin = New System.Windows.Forms.Padding(4)
 		Me.pbarProgress.Name = "pbarProgress"
 		Me.pbarProgress.Size = New System.Drawing.Size(300, 25)
 		Me.pbarProgress.Style = System.Windows.Forms.ProgressBarStyle.Continuous
@@ -387,7 +387,7 @@ Partial Class frmMain
 		Me.cmdRefreshDBList.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.cmdRefreshDBList.ForeColor = System.Drawing.SystemColors.ControlText
 		Me.cmdRefreshDBList.Location = New System.Drawing.Point(8, 73)
-		Me.cmdRefreshDBList.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.cmdRefreshDBList.Margin = New System.Windows.Forms.Padding(4)
 		Me.cmdRefreshDBList.Name = "cmdRefreshDBList"
 		Me.cmdRefreshDBList.RightToLeft = System.Windows.Forms.RightToLeft.No
 		Me.cmdRefreshDBList.Size = New System.Drawing.Size(195, 31)
@@ -431,9 +431,9 @@ Partial Class frmMain
 		Me.fraOutputOptions.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.fraOutputOptions.ForeColor = System.Drawing.SystemColors.ControlText
 		Me.fraOutputOptions.Location = New System.Drawing.Point(16, 177)
-		Me.fraOutputOptions.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.fraOutputOptions.Margin = New System.Windows.Forms.Padding(4)
 		Me.fraOutputOptions.Name = "fraOutputOptions"
-		Me.fraOutputOptions.Padding = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.fraOutputOptions.Padding = New System.Windows.Forms.Padding(4)
 		Me.fraOutputOptions.RightToLeft = System.Windows.Forms.RightToLeft.No
 		Me.fraOutputOptions.Size = New System.Drawing.Size(757, 438)
 		Me.fraOutputOptions.TabIndex = 3
@@ -464,7 +464,7 @@ Partial Class frmMain
 		Me.txtServerOutputFolderNamePrefix.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.txtServerOutputFolderNamePrefix.ForeColor = System.Drawing.SystemColors.WindowText
 		Me.txtServerOutputFolderNamePrefix.Location = New System.Drawing.Point(516, 400)
-		Me.txtServerOutputFolderNamePrefix.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.txtServerOutputFolderNamePrefix.Margin = New System.Windows.Forms.Padding(4)
 		Me.txtServerOutputFolderNamePrefix.MaxLength = 0
 		Me.txtServerOutputFolderNamePrefix.Name = "txtServerOutputFolderNamePrefix"
 		Me.txtServerOutputFolderNamePrefix.RightToLeft = System.Windows.Forms.RightToLeft.No
@@ -482,7 +482,7 @@ Partial Class frmMain
 		Me.chkExportServerSettingsLoginsAndJobs.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.chkExportServerSettingsLoginsAndJobs.ForeColor = System.Drawing.SystemColors.ControlText
 		Me.chkExportServerSettingsLoginsAndJobs.Location = New System.Drawing.Point(352, 377)
-		Me.chkExportServerSettingsLoginsAndJobs.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.chkExportServerSettingsLoginsAndJobs.Margin = New System.Windows.Forms.Padding(4)
 		Me.chkExportServerSettingsLoginsAndJobs.Name = "chkExportServerSettingsLoginsAndJobs"
 		Me.chkExportServerSettingsLoginsAndJobs.RightToLeft = System.Windows.Forms.RightToLeft.No
 		Me.chkExportServerSettingsLoginsAndJobs.Size = New System.Drawing.Size(311, 25)
@@ -513,7 +513,7 @@ Partial Class frmMain
 		Me.cmdSelectDefaultDMSDBs.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.cmdSelectDefaultDMSDBs.ForeColor = System.Drawing.SystemColors.ControlText
 		Me.cmdSelectDefaultDMSDBs.Location = New System.Drawing.Point(124, 338)
-		Me.cmdSelectDefaultDMSDBs.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.cmdSelectDefaultDMSDBs.Margin = New System.Windows.Forms.Padding(4)
 		Me.cmdSelectDefaultDMSDBs.Name = "cmdSelectDefaultDMSDBs"
 		Me.cmdSelectDefaultDMSDBs.RightToLeft = System.Windows.Forms.RightToLeft.No
 		Me.cmdSelectDefaultDMSDBs.Size = New System.Drawing.Size(100, 31)
@@ -529,7 +529,7 @@ Partial Class frmMain
 		Me.cmdSelectDefaultMTSDBs.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.cmdSelectDefaultMTSDBs.ForeColor = System.Drawing.SystemColors.ControlText
 		Me.cmdSelectDefaultMTSDBs.Location = New System.Drawing.Point(235, 338)
-		Me.cmdSelectDefaultMTSDBs.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.cmdSelectDefaultMTSDBs.Margin = New System.Windows.Forms.Padding(4)
 		Me.cmdSelectDefaultMTSDBs.Name = "cmdSelectDefaultMTSDBs"
 		Me.cmdSelectDefaultMTSDBs.RightToLeft = System.Windows.Forms.RightToLeft.No
 		Me.cmdSelectDefaultMTSDBs.Size = New System.Drawing.Size(100, 31)
@@ -561,7 +561,7 @@ Partial Class frmMain
 		Me.txtOutputFolderNamePrefix.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.txtOutputFolderNamePrefix.ForeColor = System.Drawing.SystemColors.WindowText
 		Me.txtOutputFolderNamePrefix.Location = New System.Drawing.Point(179, 404)
-		Me.txtOutputFolderNamePrefix.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.txtOutputFolderNamePrefix.Margin = New System.Windows.Forms.Padding(4)
 		Me.txtOutputFolderNamePrefix.MaxLength = 0
 		Me.txtOutputFolderNamePrefix.Name = "txtOutputFolderNamePrefix"
 		Me.txtOutputFolderNamePrefix.RightToLeft = System.Windows.Forms.RightToLeft.No
@@ -575,7 +575,7 @@ Partial Class frmMain
 		Me.cboTableNamesToExportSortOrder.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
 		Me.cboTableNamesToExportSortOrder.FormattingEnabled = True
 		Me.cboTableNamesToExportSortOrder.Location = New System.Drawing.Point(353, 338)
-		Me.cboTableNamesToExportSortOrder.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.cboTableNamesToExportSortOrder.Margin = New System.Windows.Forms.Padding(4)
 		Me.cboTableNamesToExportSortOrder.Name = "cboTableNamesToExportSortOrder"
 		Me.cboTableNamesToExportSortOrder.Size = New System.Drawing.Size(211, 24)
 		Me.cboTableNamesToExportSortOrder.TabIndex = 6
@@ -587,7 +587,7 @@ Partial Class frmMain
 				  Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
 		Me.lstTableNamesToExportData.ItemHeight = 16
 		Me.lstTableNamesToExportData.Location = New System.Drawing.Point(352, 112)
-		Me.lstTableNamesToExportData.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.lstTableNamesToExportData.Margin = New System.Windows.Forms.Padding(4)
 		Me.lstTableNamesToExportData.Name = "lstTableNamesToExportData"
 		Me.lstTableNamesToExportData.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended
 		Me.lstTableNamesToExportData.Size = New System.Drawing.Size(392, 196)
@@ -603,7 +603,7 @@ Partial Class frmMain
 		Me.txtOutputFolderPath.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.txtOutputFolderPath.ForeColor = System.Drawing.SystemColors.WindowText
 		Me.txtOutputFolderPath.Location = New System.Drawing.Point(11, 39)
-		Me.txtOutputFolderPath.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.txtOutputFolderPath.Margin = New System.Windows.Forms.Padding(4)
 		Me.txtOutputFolderPath.MaxLength = 0
 		Me.txtOutputFolderPath.Name = "txtOutputFolderPath"
 		Me.txtOutputFolderPath.RightToLeft = System.Windows.Forms.RightToLeft.No
@@ -631,7 +631,7 @@ Partial Class frmMain
 				  Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
 		Me.lstDatabasesToProcess.ItemHeight = 16
 		Me.lstDatabasesToProcess.Location = New System.Drawing.Point(12, 112)
-		Me.lstDatabasesToProcess.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.lstDatabasesToProcess.Margin = New System.Windows.Forms.Padding(4)
 		Me.lstDatabasesToProcess.Name = "lstDatabasesToProcess"
 		Me.lstDatabasesToProcess.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended
 		Me.lstDatabasesToProcess.Size = New System.Drawing.Size(321, 196)
@@ -669,9 +669,9 @@ Partial Class frmMain
 		Me.fraStatus.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.fraStatus.ForeColor = System.Drawing.SystemColors.ControlText
 		Me.fraStatus.Location = New System.Drawing.Point(16, 617)
-		Me.fraStatus.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.fraStatus.Margin = New System.Windows.Forms.Padding(4)
 		Me.fraStatus.Name = "fraStatus"
-		Me.fraStatus.Padding = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.fraStatus.Padding = New System.Windows.Forms.Padding(4)
 		Me.fraStatus.RightToLeft = System.Windows.Forms.RightToLeft.No
 		Me.fraStatus.Size = New System.Drawing.Size(756, 96)
 		Me.fraStatus.TabIndex = 4
@@ -680,7 +680,7 @@ Partial Class frmMain
 		'pbarSubtaskProgress
 		'
 		Me.pbarSubtaskProgress.Location = New System.Drawing.Point(11, 57)
-		Me.pbarSubtaskProgress.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.pbarSubtaskProgress.Margin = New System.Windows.Forms.Padding(4)
 		Me.pbarSubtaskProgress.Name = "pbarSubtaskProgress"
 		Me.pbarSubtaskProgress.Size = New System.Drawing.Size(300, 25)
 		Me.pbarSubtaskProgress.Style = System.Windows.Forms.ProgressBarStyle.Continuous
@@ -728,9 +728,9 @@ Partial Class frmMain
 		Me.fraControls.Font = New System.Drawing.Font("Arial", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.fraControls.ForeColor = System.Drawing.SystemColors.ControlText
 		Me.fraControls.Location = New System.Drawing.Point(640, 15)
-		Me.fraControls.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.fraControls.Margin = New System.Windows.Forms.Padding(4)
 		Me.fraControls.Name = "fraControls"
-		Me.fraControls.Padding = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.fraControls.Padding = New System.Windows.Forms.Padding(4)
 		Me.fraControls.Size = New System.Drawing.Size(128, 155)
 		Me.fraControls.TabIndex = 2
 		Me.fraControls.TabStop = False
@@ -743,7 +743,7 @@ Partial Class frmMain
 		Me.cmdGo.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.cmdGo.ForeColor = System.Drawing.SystemColors.ControlText
 		Me.cmdGo.Location = New System.Drawing.Point(8, 20)
-		Me.cmdGo.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.cmdGo.Margin = New System.Windows.Forms.Padding(4)
 		Me.cmdGo.Name = "cmdGo"
 		Me.cmdGo.RightToLeft = System.Windows.Forms.RightToLeft.No
 		Me.cmdGo.Size = New System.Drawing.Size(108, 31)
@@ -758,7 +758,7 @@ Partial Class frmMain
 		Me.cmdExit.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.cmdExit.ForeColor = System.Drawing.SystemColors.ControlText
 		Me.cmdExit.Location = New System.Drawing.Point(8, 59)
-		Me.cmdExit.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.cmdExit.Margin = New System.Windows.Forms.Padding(4)
 		Me.cmdExit.Name = "cmdExit"
 		Me.cmdExit.RightToLeft = System.Windows.Forms.RightToLeft.No
 		Me.cmdExit.Size = New System.Drawing.Size(108, 31)
@@ -773,7 +773,7 @@ Partial Class frmMain
 		Me.cmdAbort.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.cmdAbort.ForeColor = System.Drawing.SystemColors.ControlText
 		Me.cmdAbort.Location = New System.Drawing.Point(8, 59)
-		Me.cmdAbort.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.cmdAbort.Margin = New System.Windows.Forms.Padding(4)
 		Me.cmdAbort.Name = "cmdAbort"
 		Me.cmdAbort.RightToLeft = System.Windows.Forms.RightToLeft.No
 		Me.cmdAbort.Size = New System.Drawing.Size(108, 31)
@@ -788,7 +788,7 @@ Partial Class frmMain
 		Me.cmdPauseUnpause.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.cmdPauseUnpause.ForeColor = System.Drawing.SystemColors.ControlText
 		Me.cmdPauseUnpause.Location = New System.Drawing.Point(8, 20)
-		Me.cmdPauseUnpause.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.cmdPauseUnpause.Margin = New System.Windows.Forms.Padding(4)
 		Me.cmdPauseUnpause.Name = "cmdPauseUnpause"
 		Me.cmdPauseUnpause.RightToLeft = System.Windows.Forms.RightToLeft.No
 		Me.cmdPauseUnpause.Size = New System.Drawing.Size(108, 31)
@@ -802,7 +802,7 @@ Partial Class frmMain
 				  Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
 		Me.lstObjectTypesToScript.ItemHeight = 16
 		Me.lstObjectTypesToScript.Location = New System.Drawing.Point(8, 23)
-		Me.lstObjectTypesToScript.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.lstObjectTypesToScript.Margin = New System.Windows.Forms.Padding(4)
 		Me.lstObjectTypesToScript.Name = "lstObjectTypesToScript"
 		Me.lstObjectTypesToScript.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended
 		Me.lstObjectTypesToScript.Size = New System.Drawing.Size(223, 116)
@@ -814,9 +814,9 @@ Partial Class frmMain
 		Me.fraObjectTypesToScript.Font = New System.Drawing.Font("Arial", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
 		Me.fraObjectTypesToScript.ForeColor = System.Drawing.SystemColors.ControlText
 		Me.fraObjectTypesToScript.Location = New System.Drawing.Point(392, 15)
-		Me.fraObjectTypesToScript.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.fraObjectTypesToScript.Margin = New System.Windows.Forms.Padding(4)
 		Me.fraObjectTypesToScript.Name = "fraObjectTypesToScript"
-		Me.fraObjectTypesToScript.Padding = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.fraObjectTypesToScript.Padding = New System.Windows.Forms.Padding(4)
 		Me.fraObjectTypesToScript.Size = New System.Drawing.Size(240, 155)
 		Me.fraObjectTypesToScript.TabIndex = 1
 		Me.fraObjectTypesToScript.TabStop = False
@@ -832,7 +832,7 @@ Partial Class frmMain
 		Me.Controls.Add(Me.fraConnectionSettings)
 		Me.Controls.Add(Me.fraOutputOptions)
 		Me.Controls.Add(Me.fraStatus)
-		Me.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+		Me.Margin = New System.Windows.Forms.Padding(4)
 		Me.Menu = Me.MainMenuControl
 		Me.Name = "frmMain"
 		Me.Text = "DB Schema Export Tool"

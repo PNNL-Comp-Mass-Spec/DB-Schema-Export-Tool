@@ -1,5 +1,11 @@
 DB Schema Export Tool
 
+Version 1.2.5295; July 1, 2014
+	- Updated to use Generic Lists
+
+Version 1.2.5254; May 21, 2014
+	- Removed obsolete server property AweEnabled
+
 Version 1.2.5185; March 13, 2014
 	- Fixed bug that failed to remove the script date when the script text started with SET statements
 
