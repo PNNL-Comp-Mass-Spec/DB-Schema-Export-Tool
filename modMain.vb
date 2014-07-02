@@ -11,7 +11,7 @@ Option Strict On
 ' See clsMTSAutomation for additional information
 
 Module modMain
-	Public Const PROGRAM_DATE As String = "May 21, 2014"
+	Public Const PROGRAM_DATE As String = "July 1, 2014"
 
 	Private mOutputFolderPath As String
 
@@ -21,20 +21,27 @@ Module modMain
 	Private mRecurseFoldersMaxLevels As Integer					' Not used in this app
 
 	Private mServer As String
-	Private mDatabase As String
+	Private mDatabaseList As SortedSet(Of String)
 
-	Private mAutoSelectTableDataToExport As Boolean			' Set to True to auto-select tables for which data should be exported
+	Private mDisableAutoDataExport As Boolean				' Set to True to auto-select tables for which data should be exported
 	Private mTableDataToExportFile As String				' File with table names for which data should be exported
-	
+
+	Private mDatabaseSubfolderPrefix As String
+	Private mCreateFolderForEachDB As Boolean
+
 	Private mSync As Boolean
 	Private mSyncFolderPath As String
 	Private mSvnCommit As Boolean
+	Private mGitCommit As Boolean
 
 	Private mLogMessagesToFile As Boolean
 	Private mLogFilePath As String = String.Empty
 	Private mLogFolderPath As String = String.Empty
 
 	Private mQuietMode As Boolean
+
+	Private mProgressDescription As String = String.Empty
+	Private mSubtaskDescription As String = String.Empty
 
 	Private WithEvents mProcessingClass As clsDBSchemaExportTool
 	Private mLastProgressReportTime As System.DateTime
@@ -63,14 +70,18 @@ Module modMain
 		mRecurseFoldersMaxLevels = 0			' Not used in this app    
 
 		mServer = String.Empty
-		mDatabase = String.Empty
+		mDatabaseList = New SortedSet(Of String)
 
-		mAutoSelectTableDataToExport = True
+		mDisableAutoDataExport = False
 		mTableDataToExportFile = String.Empty
+
+		mDatabaseSubfolderPrefix = clsExportDBSchema.DEFAULT_DB_OUTPUT_FOLDER_NAME_PREFIX
+		mCreateFolderForEachDB = True
 
 		mSync = False
 		mSyncFolderPath = String.Empty
 		mSvnCommit = False
+		mGitCommit = False
 
 		Try
 			blnProceed = False
@@ -96,6 +107,22 @@ Module modMain
 				intReturnCode = -1
 			Else
 
+				If String.IsNullOrWhiteSpace(mServer) Then
+					ShowErrorMessage("Server must be defined using /Server")
+					Return -5
+				End If
+
+
+				If mDatabaseList.Count = 0 Then
+					ShowErrorMessage("Database must be defined using /DB or /DBList")
+					Return -6
+				End If
+
+				If mSync AndAlso String.IsNullOrWhiteSpace(mSyncFolderPath) Then
+					ShowErrorMessage("Sync folder must be defined when using /Sync")
+					Return -7
+				End If
+
 				mProcessingClass = New clsDBSchemaExportTool
 
 				With mProcessingClass
@@ -104,16 +131,20 @@ Module modMain
 					.LogFilePath = mLogFilePath
 					.LogFolderPath = mLogFolderPath
 
-					.AutoSelectTableDataToExport = mAutoSelectTableDataToExport
+					.AutoSelectTableDataToExport = Not mDisableAutoDataExport
 					.TableDataToExportFile = mTableDataToExportFile
+
+					.DatabaseSubfolderPrefix = mDatabaseSubfolderPrefix
+					.CreateFolderForEachDB = mCreateFolderForEachDB
 
 					.Sync = mSync
 					.SyncFolderPath = mSyncFolderPath
 
 					.SvnCommit = mSvnCommit
+					.GitCommit = mGitCommit
 				End With
 
-				blnSuccess = mProcessingClass.ProcessDatabase(mOutputFolderPath, mServer, mDatabase)
+				blnSuccess = mProcessingClass.ProcessDatabase(mOutputFolderPath, mServer, mDatabaseList)
 
 				If Not blnSuccess And Not mQuietMode Then
 					intReturnCode = mProcessingClass.ErrorCode
@@ -123,6 +154,8 @@ Module modMain
 						ShowErrorMessage("Error while processing   : " & mProcessingClass.GetErrorMessage())
 					End If
 				End If
+
+				System.Threading.Thread.Sleep(2000)
 
 			End If
 
@@ -155,7 +188,8 @@ Module modMain
 
 		Dim strValue As String = String.Empty
 		Dim lstValidParameters As Generic.List(Of String) = New Generic.List(Of String) From {
-		  "O", "Server", "DB", "AutoData", "DataTableFile", "Sync", "SvnCommit",
+		  "O", "Server", "DB", "DBList", "FolderPrefix", "NoSubfolder", "NoAutoData", "Data",
+		  "Sync", "SvnCommit", "GitCommit",
 		  "P", "L", "LogFolder", "Q"}
 
 		Try
@@ -174,10 +208,28 @@ Module modMain
 					End If
 
 					If .RetrieveValueForParameter("Server", strValue) Then mServer = strValue
-					If .RetrieveValueForParameter("DB", strValue) Then mDatabase = strValue
 
-					If .RetrieveValueForParameter("AutoData", strValue) Then mAutoSelectTableDataToExport = True
-					If .RetrieveValueForParameter("DataTableFile", strValue) Then mTableDataToExportFile = strValue
+					If .RetrieveValueForParameter("DB", strValue) Then
+						If Not mDatabaseList.Contains(strValue) Then
+							mDatabaseList.Add(strValue)
+						End If
+					End If
+
+					If .RetrieveValueForParameter("DBList", strValue) Then
+						Dim lstDatabaseNames = strValue.Split(","c).ToList()
+
+						For Each databaseName In lstDatabaseNames
+							If Not mDatabaseList.Contains(databaseName) Then
+								mDatabaseList.Add(databaseName)
+							End If
+						Next
+					End If
+
+					If .RetrieveValueForParameter("FolderPrefix", strValue) Then mDatabaseSubfolderPrefix = strValue
+					If .RetrieveValueForParameter("NoSubfolder", strValue) Then mCreateFolderForEachDB = False
+
+					If .RetrieveValueForParameter("NoAutoData", strValue) Then mDisableAutoDataExport = True
+					If .RetrieveValueForParameter("Data", strValue) Then mTableDataToExportFile = strValue
 
 					If .RetrieveValueForParameter("Sync", strValue) Then
 						mSync = True
@@ -185,6 +237,8 @@ Module modMain
 					End If
 
 					If .IsParameterPresent("SvnCommit") Then mSvnCommit = True
+
+					If .IsParameterPresent("GitCommit") Then mGitCommit = True
 
 					If .RetrieveValueForParameter("P", strValue) Then mParameterFilePath = strValue
 
@@ -252,15 +306,32 @@ Module modMain
 
 		Try
 
-			Console.WriteLine("This program exports database objects as schema files. Starting this program without any parameters will show the GUI")
+			Console.WriteLine("This program exports Sql Server database objects as schema files. Starting this program without any parameters will show the GUI")
 			Console.WriteLine()
 			Console.WriteLine("Command line syntax:" & Environment.NewLine & IO.Path.GetFileName(Reflection.Assembly.GetExecutingAssembly().Location))
-			Console.WriteLine(" SchemaFileFolder [/Server:ServerName] [/DB:Database]")
-			Console.WriteLine(" [/AutoData] [/DataTableFile:TableDataToExport.txt]")
-			Console.WriteLine(" [/Sync:TargetFolderPath] [/SvnCommit]")
-
+			Console.WriteLine(" SchemaFileFolder /Server:ServerName")
+			Console.WriteLine(" /DB:Database /DBList:CommaSeparatedDatabaseName")
+			Console.WriteLine(" [/FolderPrefix:PrefixText] [/NoSubfolder]")
+			Console.WriteLine(" [/Data:TableDataToExport.txt] [/NoAutoData] ")
+			Console.WriteLine(" [/Sync:TargetFolderPath] [/SvnCommit] [/GitCommit]")
 			Console.WriteLine(" [/L[:LogFilePath]] [/LogFolder:LogFolderPath]")
 			Console.WriteLine()
+			Console.WriteLine("SchemaFileFolder is the path to the folder where the schema files will be saved")
+			Console.WriteLine("To process a single database, use /Server and /DB")
+			Console.WriteLine("Use /DBList to process several databases (separate names with commas)")
+			Console.WriteLine()
+			Console.WriteLine("By default, a subfolder named DBSchema__DatabaseName will be created below SchemaFileFolder")
+			Console.WriteLine("Customize this the prefix text using /FolderPrefix")
+			Console.WriteLine("Use /NoSubfolder to disable auto creating a subfolder for the database being exported")
+			Console.WriteLine()
+			Console.WriteLine("Use /Data to define a text file with table names (one name per line) for which the data should be exported. " &
+			  "In addition to table names defined in /Data, there are default tables which will have their data exported; disable the defaults using /NoAutoData")
+			Console.WriteLine()
+			Console.WriteLine("Use /Sync to copy new/changed files from the output folder to an alternative folder.  This is advantageous to prevent file timestamps from getting updated every time the schema is exported")
+			Console.WriteLine()
+			Console.WriteLine("Use /SvnCommit to auto-commit any new or changed files to Svn")
+			Console.WriteLine("Use /GitCommit to auto-commit any new or changed files to Git")
+
 			Console.WriteLine("Use /L to log messages to a file; you can optionally specify a log file name using /L:LogFilePath.")
 			Console.WriteLine("Use /LogFolder to specify the folder to save the log file in. By default, the log file is created in the current working directory.")
 			Console.WriteLine()
@@ -281,6 +352,13 @@ Module modMain
 
 	End Sub
 
+	Private Sub ShowProgressDescriptionIfChanged(taskDescription As String)
+		If Not String.Equals(taskDescription, mProgressDescription) Then
+			mProgressDescription = String.Copy(taskDescription)
+			Console.WriteLine(taskDescription)
+		End If
+	End Sub
+
 	Private Sub WriteToErrorStream(strErrorMessage As String)
 		Try
 			Using swErrorStream As System.IO.StreamWriter = New System.IO.StreamWriter(Console.OpenStandardError())
@@ -291,41 +369,24 @@ Module modMain
 		End Try
 	End Sub
 
-	Private Sub mProcessingClass_ProgressChanged(ByVal taskDescription As String, ByVal percentComplete As Single) Handles mProcessingClass.ProgressChanged
-		Const PERCENT_REPORT_INTERVAL As Integer = 25
-		Const PROGRESS_DOT_INTERVAL_MSEC As Integer = 250
+	Private Sub mProcessingClass_ProgressChanged(taskDescription As String, percentComplete As Single) Handles mProcessingClass.ProgressChanged
+		ShowProgressDescriptionIfChanged(taskDescription)
+	End Sub
 
-		If percentComplete >= mLastProgressReportValue Then
-			If mLastProgressReportValue > 0 Then
-				Console.WriteLine()
-			End If
-			DisplayProgressPercent(mLastProgressReportValue, False)
-			mLastProgressReportValue += PERCENT_REPORT_INTERVAL
-			mLastProgressReportTime = DateTime.UtcNow
-		Else
-			If DateTime.UtcNow.Subtract(mLastProgressReportTime).TotalMilliseconds > PROGRESS_DOT_INTERVAL_MSEC Then
-				mLastProgressReportTime = DateTime.UtcNow
-				Console.Write(".")
-			End If
-		End If
+	Private Sub mProcessingClass_ProgressComplete() Handles mProcessingClass.ProgressComplete
+		Console.WriteLine("Processing complete")
 	End Sub
 
 	Private Sub mProcessingClass_ProgressReset() Handles mProcessingClass.ProgressReset
-		mLastProgressReportTime = DateTime.UtcNow
-		mLastProgressReportValue = 0
+		ShowProgressDescriptionIfChanged(mProcessingClass.ProgressStepDescription)
 	End Sub
 
-	Private Sub mProcessingClass_ErrorEvent(ByVal strMessage As String) Handles mProcessingClass.ErrorEvent
-		' LogMessageNow(strSessage, eError)
-	End Sub
+	Private Sub mProcessingClass_SubtaskProgressChanged(taskDescription As String, percentComplete As Single) Handles mProcessingClass.SubtaskProgressChanged
 
-	Private Sub mProcessingClass_MessageEvent(ByVal strMessage As String) Handles mProcessingClass.MessageEvent
-		' If m_DebugLevel >= 2 Then
-		'    LogMessageNow(strSessage, eNormal)
-		' End If
-	End Sub
+		If Not String.Equals(taskDescription, mSubtaskDescription) Then
+			mSubtaskDescription = String.Copy(taskDescription)
+			Console.WriteLine("  " & taskDescription)
+		End If
 
-	Private Sub mProcessingClass_WarningEvent(ByVal strMessage As String) Handles mProcessingClass.WarningEvent
-		' LogMessageNow(strSessage, eWarning)
 	End Sub
 End Module

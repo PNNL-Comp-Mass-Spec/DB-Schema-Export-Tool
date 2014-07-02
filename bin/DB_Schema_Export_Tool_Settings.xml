@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <sections>
   <section name="DBSchemaExportOptions">
-    <item key="WindowWidth" value="600" />
-    <item key="WindowHeight" value="580" />
+    <item key="WindowWidth" value="932" />
+    <item key="WindowHeight" value="795" />
     <item key="OutputFolderPath" value="C:\Temp\" />
     <item key="ScriptObjectsThreaded" value="False" />
     <item key="PauseAfterEachDatabase" value="False" />
@@ -13,6 +13,8 @@
     <item key="WarnOnHighTableRowCount" value="True" />
     <item key="OutputFolderNamePrefix" value="DBSchema__" />
     <item key="IncludeTimestampInScriptFileHeader" value="False" />
+    <item key="ExportServerSettingsLoginsAndJobs" value="False" />
+    <item key="ServerOutputFolderNamePrefix" value="ServerSchema__" />
   </section>
   <section name="DBSchemaExportDatabaseSettings">
     <item key="ServerName" value="Albert" />

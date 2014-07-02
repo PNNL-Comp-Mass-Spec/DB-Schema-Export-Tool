@@ -916,6 +916,10 @@ Public Class frmMain
 
 			mDefaultDMSDatabaseList.Clear()
 			mDefaultDMSDatabaseList.Add("DMS5")
+			mDefaultDMSDatabaseList.Add("DMS_Capture")
+			mDefaultDMSDatabaseList.Add("DMS_Data_Package")
+			mDefaultDMSDatabaseList.Add("DMS_Pipeline")
+			mDefaultDMSDatabaseList.Add("Ontology_Lookup")			
 			mDefaultDMSDatabaseList.Add("Protein_Sequences")
 			mDefaultDMSDatabaseList.Add("DMSHistoricLog1")
 

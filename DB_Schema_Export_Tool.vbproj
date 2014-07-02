@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -64,11 +64,11 @@
     <Reference Include="Microsoft.SqlServer.WmiEnum, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL" />
     <Reference Include="PRISM, Version=2.1.4643.28167, Culture=neutral, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>bin\PRISM.dll</HintPath>
+      <HintPath>Lib\PRISM.dll</HintPath>
     </Reference>
     <Reference Include="SharedVBNetRoutines, Version=1.0.2133.21128, Culture=neutral">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>bin\SharedVBNetRoutines.dll</HintPath>
+      <HintPath>Lib\SharedVBNetRoutines.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />

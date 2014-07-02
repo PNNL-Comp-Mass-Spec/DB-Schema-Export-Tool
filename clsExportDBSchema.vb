@@ -180,6 +180,10 @@ Public Class clsExportDBSchema
 	' Note: Must contain valid RegEx statements (tested case-insensitive)
 	Protected mTableNameAutoSelectRegEx As List(Of String)
 
+	' Keys in the dictionary are DatabaseName
+	' Values are the output folder path that was used
+	Protected mSchemaOutputFolders As Dictionary(Of String, String)
+
 	Private mErrorCode As eDBSchemaExportErrorCodes
 	Private mStatusMessage As String
 
@@ -240,6 +244,12 @@ Public Class clsExportDBSchema
 	Public ReadOnly Property PauseStatus() As ePauseStatusConstants
 		Get
 			Return mPauseStatus
+		End Get
+	End Property
+
+	Public ReadOnly Property SchemaOutputFolders() As Dictionary(Of String, String)
+		Get
+			Return mSchemaOutputFolders
 		End Get
 	End Property
 
@@ -559,6 +569,12 @@ Public Class clsExportDBSchema
 				Directory.CreateDirectory(udtWorkingParams.OutputFolderPathCurrentDB)
 			End If
 
+			If mSchemaOutputFolders.ContainsKey(strDatabaseName) Then
+				mSchemaOutputFolders(strDatabaseName) = udtWorkingParams.OutputFolderPathCurrentDB
+			Else
+				mSchemaOutputFolders.Add(strDatabaseName, udtWorkingParams.OutputFolderPathCurrentDB)
+			End If
+
 			If udtSchemaExportOptions.AutoSelectTableNamesForDataExport Then
 				dctTablesToExport = AutoSelectTableNamesForDataExport(objDatabase, lstTableNamesForDataExport)
 			Else
@@ -746,10 +762,6 @@ Public Class clsExportDBSchema
 				If blnIncludeTable Then
 					mSubtaskProgressStepDescription = objTable.Name
 					UpdateSubtaskProgress(udtWorkingParams.ProcessCount, udtWorkingParams.ProcessCountExpected)
-
-					If objTable.Name = "T_Job_Steps_History" Then
-						Console.WriteLine("Check This")
-					End If
 
 					objSMOObject(0) = objTable
 					WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB, objTable.Name, _
@@ -1778,6 +1790,8 @@ Public Class clsExportDBSchema
 		mTableNamesToAutoSelect = clsDBSchemaExportTool.GetTableNamesToAutoExportData()
 		mTableNameAutoSelectRegEx = clsDBSchemaExportTool.GetTableRegExToAutoExportData()
 
+		mSchemaOutputFolders = New Dictionary(Of String, String)
+
 		mAbortProcessing = False
 		SetPauseStatus(ePauseStatusConstants.Unpaused)
 	End Sub
@@ -1949,6 +1963,8 @@ Public Class clsExportDBSchema
 
 			' Process each database in lstDatabaseListToProcess			
 			ResetProgress("Exporting DB objects to: " & VBNetRoutines.CompactPathString(udtSchemaExportOptions.OutputFolderPath), lstDatabaseListToProcess.Count)
+
+			mSchemaOutputFolders.Clear()
 
 			For Each strCurrentDB In lstDatabaseListToProcess
 				Dim blnDBNotFoundReturn = True
