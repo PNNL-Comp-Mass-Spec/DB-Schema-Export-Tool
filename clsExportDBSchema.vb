@@ -43,7 +43,7 @@ Public Class clsExportDBSchema
     ''' </summary>
     ''' <remarks>use ConnectToServer to connect to the server</remarks>
     Public Sub New()
-        InitializeLocalVariables(True)
+        InitializeLocalVariables(True)        
     End Sub
 
     ''' <summary>
@@ -195,6 +195,8 @@ Public Class clsExportDBSchema
 	' Values are the output folder path that was used
 	Protected mSchemaOutputFolders As Dictionary(Of String, String)
 
+    Private mShowStats As Boolean
+
 	Private mErrorCode As eDBSchemaExportErrorCodes
 	Private mStatusMessage As String
 
@@ -263,6 +265,15 @@ Public Class clsExportDBSchema
 			Return mSchemaOutputFolders
 		End Get
 	End Property
+
+    Public Property ShowStats() As Boolean
+        Get
+            Return mShowStats
+        End Get
+        Set(value As Boolean)
+            mShowStats = value
+        End Set
+    End Property
 
 	Public ReadOnly Property StatusMessage() As String
 		Get
@@ -757,42 +768,49 @@ Public Class clsExportDBSchema
 			' Note: objDatabase.Tables includes system tables, so udtWorkingParams.ProcessCount will be 
 			'       an overestimate if udtSchemaExportOptions.IncludeSystemObjects = False
 			udtWorkingParams.ProcessCount += objDatabase.Tables.Count
-		Else
-			' Initialize the scripter and objSMOObject()
-			objScripter = New Scripter(mSqlServer)
-			objScripter.Options = objScriptOptions
-			ReDim objSMOObject(0)
+        Else
+            Dim dtStartTime = DateTime.UtcNow
 
-			For Each objTable In objDatabase.Tables
-				blnIncludeTable = True
-				If Not udtSchemaExportOptions.IncludeSystemObjects Then
-					If objTable.IsSystemObject Then
-						blnIncludeTable = False
-					Else
-						If objTable.Name.Length >= SYNC_OBJ_TABLE_PREFIX.Length Then
-							If objTable.Name.ToLower.Substring(0, SYNC_OBJ_TABLE_PREFIX.Length) = SYNC_OBJ_TABLE_PREFIX.ToLower Then
-								blnIncludeTable = False
-							End If
-						End If
-					End If
-				End If
+            ' Initialize the scripter and objSMOObject()
+            objScripter = New Scripter(mSqlServer)
+            objScripter.Options = objScriptOptions
+            ReDim objSMOObject(0)
 
-				If blnIncludeTable Then
-					mSubtaskProgressStepDescription = objTable.Name
-					UpdateSubtaskProgress(udtWorkingParams.ProcessCount, udtWorkingParams.ProcessCountExpected)
+            For Each objTable In objDatabase.Tables
+                blnIncludeTable = True
+                If Not udtSchemaExportOptions.IncludeSystemObjects Then
+                    If objTable.IsSystemObject Then
+                        blnIncludeTable = False
+                    Else
+                        If objTable.Name.Length >= SYNC_OBJ_TABLE_PREFIX.Length Then
+                            If objTable.Name.ToLower.Substring(0, SYNC_OBJ_TABLE_PREFIX.Length) = SYNC_OBJ_TABLE_PREFIX.ToLower Then
+                                blnIncludeTable = False
+                            End If
+                        End If
+                    End If
+                End If
 
-					objSMOObject(0) = objTable
-					WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB, objTable.Name, _
-					 CleanSqlScript(StringCollectionToList(objScripter.Script(objSMOObject)), udtSchemaExportOptions))
-				End If
+                If blnIncludeTable Then
+                    mSubtaskProgressStepDescription = objTable.Name
+                    UpdateSubtaskProgress(udtWorkingParams.ProcessCount, udtWorkingParams.ProcessCountExpected)
 
-				udtWorkingParams.ProcessCount += 1
-				CheckPauseStatus()
-				If mAbortProcessing Then
-					UpdateProgress("Aborted processing")
-					Exit Sub
-				End If
-			Next objTable
+                    objSMOObject(0) = objTable
+                    WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB, objTable.Name, _
+                     CleanSqlScript(StringCollectionToList(objScripter.Script(objSMOObject)), udtSchemaExportOptions))
+                End If
+
+                udtWorkingParams.ProcessCount += 1
+                CheckPauseStatus()
+                If mAbortProcessing Then
+                    UpdateProgress("Aborted processing")
+                    Exit Sub
+                End If
+            Next objTable
+
+            If mShowStats Then
+                Console.WriteLine("Exported " & objDatabase.Tables.Count & " tables in " & DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds.ToString("0.0") & " seconds")
+            End If
+
 		End If
 	End Sub
 
@@ -952,81 +970,93 @@ Public Class clsExportDBSchema
 
 		ReDim objSMOObject(0)
 
-		For intObjectIterator = 0 To 2
-			strSql = String.Empty
-			Select Case intObjectIterator
-				Case 0
-					' Views
-					If udtSchemaExportOptions.ExportViews Then
-						strSql = "SELECT table_schema, table_name FROM INFORMATION_SCHEMA.tables WHERE table_type = 'view' "
-						If Not udtSchemaExportOptions.IncludeSystemObjects Then
-							strSql &= " AND table_name NOT IN ('sysconstraints', 'syssegments') "
-						End If
-						strSql &= " ORDER BY table_name"
-					End If
-				Case 1
-					' Stored procedures
-					If udtSchemaExportOptions.ExportStoredProcedures Then
-						strSql = "SELECT routine_schema, routine_name FROM INFORMATION_SCHEMA.routines WHERE routine_type = 'procedure' "
-						If Not udtSchemaExportOptions.IncludeSystemObjects Then
-							strSql &= " AND routine_name NOT LIKE 'dt[_]%' "
-						End If
-						strSql &= " ORDER BY routine_name"
-					End If
-				Case 2
-					' User defined functions
-					If udtSchemaExportOptions.ExportUserDefinedFunctions Then
-						strSql = "SELECT routine_schema, routine_name FROM INFORMATION_SCHEMA.routines WHERE routine_type = 'function' "
-						strSql &= " ORDER BY routine_name"
-					End If
-				Case Else
-					' Unknown value for intObjectIterator; skip it
-			End Select
+        For intObjectIterator = 0 To 2
+            Dim objectType As String = "unknown"
 
-			If strSql.Length > 0 Then
-				dsObjects = objDatabase.ExecuteWithResults(strSql)
+            strSql = String.Empty
+            Select Case intObjectIterator
+                Case 0
+                    ' Views
+                    objectType = "Views"
+                    If udtSchemaExportOptions.ExportViews Then
+                        strSql = "SELECT table_schema, table_name FROM INFORMATION_SCHEMA.tables WHERE table_type = 'view' "
+                        If Not udtSchemaExportOptions.IncludeSystemObjects Then
+                            strSql &= " AND table_name NOT IN ('sysconstraints', 'syssegments') "
+                        End If
+                        strSql &= " ORDER BY table_name"
+                    End If
+                Case 1
+                    ' Stored procedures
+                    objectType = "Stored procedures"
+                    If udtSchemaExportOptions.ExportStoredProcedures Then
+                        strSql = "SELECT routine_schema, routine_name FROM INFORMATION_SCHEMA.routines WHERE routine_type = 'procedure' "
+                        If Not udtSchemaExportOptions.IncludeSystemObjects Then
+                            strSql &= " AND routine_name NOT LIKE 'dt[_]%' "
+                        End If
+                        strSql &= " ORDER BY routine_name"
+                    End If
+                Case 2
+                    ' User defined functions
+                    objectType = "User defined functions"
+                    If udtSchemaExportOptions.ExportUserDefinedFunctions Then
+                        strSql = "SELECT routine_schema, routine_name FROM INFORMATION_SCHEMA.routines WHERE routine_type = 'function' "
+                        strSql &= " ORDER BY routine_name"
+                    End If
+                Case Else
+                    ' Unknown value for intObjectIterator; skip it
+            End Select
 
-				If udtWorkingParams.CountObjectsOnly Then
-					udtWorkingParams.ProcessCount += dsObjects.Tables(0).Rows.Count
-				Else
-					For Each objRow In dsObjects.Tables(0).Rows
-						' The first column is the schema
-						' The second column is the name
-						strObjectSchema = objRow.Item(0).ToString
-						strObjectName = objRow.Item(1).ToString
-						mSubtaskProgressStepDescription = strObjectName
-						UpdateSubtaskProgress(udtWorkingParams.ProcessCount, udtWorkingParams.ProcessCountExpected)
+            If String.IsNullOrWhiteSpace(strSql) Then Continue For
 
-						Select Case intObjectIterator
-							Case 0
-								' Views
-								objSMOObject(0) = objDatabase.Views(strObjectName, strObjectSchema)
-							Case 1
-								' Stored procedures
-								objSMOObject(0) = objDatabase.StoredProcedures(strObjectName, strObjectSchema)
-							Case 2
-								' User defined functions
-								objSMOObject(0) = objDatabase.UserDefinedFunctions(strObjectName, strObjectSchema)
-							Case Else
-								' Unknown value for intObjectIterator; skip it
-								objSMOObject(0) = Nothing
-						End Select
+            Dim dtStartTime = DateTime.UtcNow
 
-						If Not objSMOObject(0) Is Nothing Then
-							WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB, strObjectName, _
-							 CleanSqlScript(StringCollectionToList(objScripter.Script(objSMOObject)), udtSchemaExportOptions))
-						End If
+            dsObjects = objDatabase.ExecuteWithResults(strSql)
 
-						udtWorkingParams.ProcessCount += 1
-						CheckPauseStatus()
-						If mAbortProcessing Then
-							UpdateProgress("Aborted processing")
-							Exit Sub
-						End If
-					Next objRow
-				End If
-			End If
-		Next intObjectIterator
+            If udtWorkingParams.CountObjectsOnly Then
+                udtWorkingParams.ProcessCount += dsObjects.Tables(0).Rows.Count
+            Else
+
+                For Each objRow In dsObjects.Tables(0).Rows
+                    ' The first column is the schema
+                    ' The second column is the name
+                    strObjectSchema = objRow.Item(0).ToString
+                    strObjectName = objRow.Item(1).ToString
+                    mSubtaskProgressStepDescription = strObjectName
+                    UpdateSubtaskProgress(udtWorkingParams.ProcessCount, udtWorkingParams.ProcessCountExpected)
+
+                    Select Case intObjectIterator
+                        Case 0
+                            ' Views
+                            objSMOObject(0) = objDatabase.Views(strObjectName, strObjectSchema)
+                        Case 1
+                            ' Stored procedures
+                            objSMOObject(0) = objDatabase.StoredProcedures(strObjectName, strObjectSchema)
+                        Case 2
+                            ' User defined functions
+                            objSMOObject(0) = objDatabase.UserDefinedFunctions(strObjectName, strObjectSchema)
+                        Case Else
+                            ' Unknown value for intObjectIterator; skip it
+                            objSMOObject(0) = Nothing
+                    End Select
+
+                    If Not objSMOObject(0) Is Nothing Then
+                        WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB, strObjectName, _
+                         CleanSqlScript(StringCollectionToList(objScripter.Script(objSMOObject)), udtSchemaExportOptions))
+                    End If
+
+                    udtWorkingParams.ProcessCount += 1
+                    CheckPauseStatus()
+                    If mAbortProcessing Then
+                        UpdateProgress("Aborted processing")
+                        Exit Sub
+                    End If
+                Next objRow
+
+                If mShowStats Then
+                    Console.WriteLine("Exported " & dsObjects.Tables(0).Rows.Count & " " & objectType & " in " & DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds.ToString("0.0") & " seconds")
+                End If
+            End If
+        Next intObjectIterator
 	End Sub
 
 	Private Function ExportDBTableData(
@@ -1808,6 +1838,14 @@ Public Class clsExportDBSchema
 		mErrorCode = eDBSchemaExportErrorCodes.NoError
 		mStatusMessage = String.Empty
 
+        If mTableNamesToAutoSelect Is Nothing Then
+            mTableNamesToAutoSelect = clsDBSchemaExportTool.GetTableNamesToAutoExportData()
+        End If
+
+        If mTableNameAutoSelectRegEx Is Nothing Then
+            mTableNameAutoSelectRegEx = clsDBSchemaExportTool.GetTableRegExToAutoExportData()
+        End If
+
 		Dim objRegExOptions As RegexOptions
 		objRegExOptions = RegexOptions.Compiled Or _
 		   RegexOptions.IgnoreCase Or _
@@ -1821,10 +1859,7 @@ Public Class clsExportDBSchema
 			ResetSqlServerConnection(mSqlServerOptionsCurrent)
 		End If
 
-		mTableNamesToAutoSelect = clsDBSchemaExportTool.GetTableNamesToAutoExportData()
-		mTableNameAutoSelectRegEx = clsDBSchemaExportTool.GetTableRegExToAutoExportData()
-
-		mSchemaOutputFolders = New Dictionary(Of String, String)
+        mSchemaOutputFolders = New Dictionary(Of String, String)
 
 		mAbortProcessing = False
 		SetPauseStatus(ePauseStatusConstants.Unpaused)
@@ -2159,7 +2194,7 @@ Public Class clsExportDBSchema
 
 		Dim blnSuccess As Boolean = False
 
-		InitializeLocalVariables(False)
+        InitializeLocalVariables(False)
 
 		Try
 			blnSuccess = False

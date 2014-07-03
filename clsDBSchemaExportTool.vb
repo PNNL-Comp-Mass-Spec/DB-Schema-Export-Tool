@@ -78,13 +78,15 @@ Public Class clsDBSchemaExportTool
 
 #Region "Properties"
 
-    Public Property AutoSelectTableDataToExport As Boolean
+    Public Property AutoSelectTableDataToExport() As Boolean
 
     Public Property TableDataToExportFile As String
 
-    Public Property CreateFolderForEachDB() As Boolean
+    Public Property CreateFolderForEachDB As Boolean
 
-    Public Property DatabaseSubfolderPrefix() As String
+    Public Property DatabaseSubfolderPrefix As String
+
+    Public Property ShowStats As Boolean
 
     Public Property Sync As Boolean
 
@@ -92,11 +94,11 @@ Public Class clsDBSchemaExportTool
 
     Public Property GitUpdate As Boolean
 
-    Public Property HgUpdate() As Boolean
+    Public Property HgUpdate As Boolean
 
     Public Property SvnUpdate As Boolean
 
-    Public Property CommitUpdates() As Boolean
+    Public Property CommitUpdates As Boolean
 
 
 #End Region
@@ -189,6 +191,8 @@ Public Class clsDBSchemaExportTool
         End Try
 
         Try
+            Dim dtStartTime = DateTime.UtcNow
+
             If mDBSchemaExporter Is Nothing Then
                 mDBSchemaExporter = New clsExportDBSchema
             End If
@@ -208,6 +212,8 @@ Public Class clsDBSchemaExportTool
                 lstTableNamesForDataExport = LoadTableNamesForDataExport(Me.TableDataToExportFile)
             End If
 
+            mDBSchemaExporter.ShowStats = Me.ShowStats
+
             Dim blnSuccess = mDBSchemaExporter.ScriptServerAndDBObjects(mSchemaExportOptions, lstDatabaseList, lstTableNamesForDataExport)
 
             ' Populate a dictionary with the database names (properly capitalized) and the output folder path used for each
@@ -226,6 +232,10 @@ Public Class clsDBSchemaExportTool
 
             ' Now update dctDatabaseNamesAndOutputPaths to match dctdatabaseNameLookup (which has properly capitalized database names)
             dctDatabaseNamesAndOutputPaths = dctdatabaseNameLookup
+
+            If Me.ShowStats Then
+                Console.WriteLine("Exported database schema in " & DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds.ToString("0.0") & " seconds")
+            End If
 
             Return blnSuccess
 
@@ -509,6 +519,7 @@ Public Class clsDBSchemaExportTool
 
         Me.DatabaseSubfolderPrefix = clsExportDBSchema.DEFAULT_DB_OUTPUT_FOLDER_NAME_PREFIX
 
+        Me.ShowStats = False
         Me.Sync = False
 
         Me.SyncFolderPath = String.Empty
@@ -908,6 +919,8 @@ Public Class clsDBSchemaExportTool
 
     Private Function SyncSchemaFiles(ByVal lstDatabaseNamesAndOutputPaths As ICollection(Of KeyValuePair(Of String, String)), ByVal folderPathForSync As String) As Boolean
         Try
+            Dim dtStartTime = DateTime.UtcNow
+
             ResetProgress("Synchronizing with " & folderPathForSync)
 
             Dim intDBsProcessed As Integer = 0
@@ -1012,6 +1025,10 @@ Public Class clsDBSchemaExportTool
 
                 intDBsProcessed += 1
             Next
+
+            If Me.ShowStats Then
+                Console.WriteLine("Synchronized schema files in " & DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds.ToString("0.0") & " seconds")
+            End If
 
             Return True
 

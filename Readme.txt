@@ -15,7 +15,7 @@ DB_Schema_Export_Tool.exe
  [/FolderPrefix:PrefixText] [/NoSubfolder]
  [/Data:TableDataToExport.txt] [/NoAutoData] 
  [/Sync:TargetFolderPath] [/Svn] [/Git] [/Hg] [/Commit]
- [/L[:LogFilePath]] [/LogFolder:LogFolderPath]
+ [/L[:LogFilePath]] [/LogFolder:LogFolderPath] [/Stats]
 
 SchemaFileFolder is the path to the folder where the schema files will be saved
 To process a single database, use /Server and /DB
@@ -41,6 +41,8 @@ Use /Commit to commit any updates to the repository
 Use /L to log messages to a file; you can optionally specify a log file name using /L:LogFilePath.
 Use /LogFolder to specify the folder to save the log file in. 
 By default, the log file is created in the current working directory.
+
+Use /Stats to show (but not log) export stats
 
 == Software Dependencies ==
 

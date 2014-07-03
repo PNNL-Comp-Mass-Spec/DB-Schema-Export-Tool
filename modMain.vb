@@ -41,7 +41,7 @@ Module modMain
     Private mLogFilePath As String = String.Empty
     Private mLogFolderPath As String = String.Empty
 
-    Private mQuietMode As Boolean
+    Private mShowStats As Boolean
 
     Private mProgressDescription As String = String.Empty
     Private mSubtaskDescription As String = String.Empty
@@ -88,6 +88,8 @@ Module modMain
 
         mCommitUpdates = False
 
+        mShowStats = False
+
         Try
             blnProceed = False
             If objParseCommandLine.ParseCommandLine Then
@@ -128,15 +130,25 @@ Module modMain
                 mProcessingClass = New clsDBSchemaExportTool
 
                 With mProcessingClass
-                    .ShowMessages = Not mQuietMode
+                    .ShowMessages = True
                     .LogMessagesToFile = mLogMessagesToFile
                     .LogFilePath = mLogFilePath
                     .LogFolderPath = mLogFolderPath
+
+                    .ShowStats = mShowStats
 
                     .AutoSelectTableDataToExport = Not mDisableAutoDataExport
                     .TableDataToExportFile = mTableDataToExportFile
 
                     .DatabaseSubfolderPrefix = mDatabaseSubfolderPrefix
+
+                    If mDatabaseList.Count = 1 AndAlso mCreateFolderForEachDB Then
+                        If mSync AndAlso mSyncFolderPath.ToLower().EndsWith("\" & mDatabaseList.First.ToLower()) Then
+                            ' Auto-disable mCreateFolderForEachDB
+                            mCreateFolderForEachDB = False
+                        End If
+                    End If
+
                     .CreateFolderForEachDB = mCreateFolderForEachDB
 
                     .Sync = mSync
@@ -150,9 +162,10 @@ Module modMain
 
                 End With
 
+                
                 blnSuccess = mProcessingClass.ProcessDatabase(mOutputFolderPath, mServer, mDatabaseList)
 
-                If Not blnSuccess And Not mQuietMode Then
+                If Not blnSuccess Then
                     intReturnCode = mProcessingClass.ErrorCode
                     If intReturnCode = 0 Then
                         ShowErrorMessage("Error while processing   : Unknown error (return code is 0)")
@@ -196,7 +209,7 @@ Module modMain
         Dim lstValidParameters As List(Of String) = New List(Of String) From {
           "O", "Server", "DB", "DBList", "FolderPrefix", "NoSubfolder", "NoAutoData", "Data",
           "Sync", "Svn", "Git", "Hg", "Commit",
-          "P", "L", "LogFolder", "Q"}
+          "P", "L", "LogFolder", "Stats"}
 
         Try
             ' Make sure no invalid parameters are present
@@ -266,7 +279,7 @@ Module modMain
                         End If
                     End If
 
-                    If .RetrieveValueForParameter("Q", strValue) Then mQuietMode = True
+                    If .RetrieveValueForParameter("Stats", strValue) Then mShowStats = True
                 End With
 
                 Return True
@@ -324,7 +337,7 @@ Module modMain
             Console.WriteLine(" [/FolderPrefix:PrefixText] [/NoSubfolder]")
             Console.WriteLine(" [/Data:TableDataToExport.txt] [/NoAutoData] ")
             Console.WriteLine(" [/Sync:TargetFolderPath] [/Svn] [/Git] [/Hg] [/Commit]")
-            Console.WriteLine(" [/L[:LogFilePath]] [/LogFolder:LogFolderPath]")
+            Console.WriteLine(" [/L[:LogFilePath]] [/LogFolder:LogFolderPath] [/Stats]")
             Console.WriteLine()
             Console.WriteLine("SchemaFileFolder is the path to the folder where the schema files will be saved")
             Console.WriteLine("To process a single database, use /Server and /DB")
@@ -350,6 +363,8 @@ Module modMain
 
             Console.WriteLine("Use /L to log messages to a file; you can optionally specify a log file name using /L:LogFilePath.")
             Console.WriteLine("Use /LogFolder to specify the folder to save the log file in. By default, the log file is created in the current working directory.")
+            Console.WriteLine()
+            Console.WriteLine("Use /Stats to show (but not log) export stats")
             Console.WriteLine()
             Console.WriteLine("Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in 2006")
             Console.WriteLine("Command line interface added in 2014")
