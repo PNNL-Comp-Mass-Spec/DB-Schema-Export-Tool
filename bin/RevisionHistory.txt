@@ -1,5 +1,8 @@
 DB Schema Export Tool
 
+Version 1.2.5296; July 2, 2014
+	- Implemented committing new/changed files to Svn and Hg
+
 Version 1.2.5295; July 1, 2014
 	- Updated to use Generic Lists
 

@@ -15,6 +15,9 @@ Imports System.Text.RegularExpressions
 
 Public Class frmMain
 
+    ''' <summary>
+    ''' Constructor
+    ''' </summary>
     Public Sub New()
         ' This call is required by the Windows Form Designer.
         InitializeComponent()
@@ -640,7 +643,7 @@ Public Class frmMain
 					.Insert(eTableNameSortModeConstants.Name, "Sort by Name")
 					.Insert(eTableNameSortModeConstants.RowCount, "Sort by Row Count")
 				End With
-				.SelectedIndex = eTableNameSortModeConstants.Name
+                .SelectedIndex = eTableNameSortModeConstants.RowCount
 			End With
 
 			With lstObjectTypesToScript
