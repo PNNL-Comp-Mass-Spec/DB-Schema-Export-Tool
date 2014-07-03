@@ -94,23 +94,20 @@ Module modMain
                 If SetOptionsUsingCommandLineParameters(objParseCommandLine) Then blnProceed = True
             End If
 
-            If objParseCommandLine.ParameterCount + objParseCommandLine.NonSwitchParameterCount = 0 Then
-                ' Show the GUI
-
-                ' This could be used to show frmMain
-                ' Instead, frmMain has been set as the startup object
-
-                Dim objMain As New frmMain
-                objMain.ShowDialog()
-
-                Return 0
-            End If
-
             If Not blnProceed OrElse _
                objParseCommandLine.NeedToShowHelp Then
                 ShowProgramHelp()
                 intReturnCode = -1
             Else
+
+                If objParseCommandLine.ParameterCount + objParseCommandLine.NonSwitchParameterCount = 0 Then
+                    ' Show the GUI
+
+                    Dim objMain As New frmMain
+                    objMain.ShowDialog()
+
+                    Return 0
+                End If
 
                 If String.IsNullOrWhiteSpace(mServer) Then
                     ShowErrorMessage("Server must be defined using /Server")
@@ -335,7 +332,9 @@ Module modMain
             Console.WriteLine()
             Console.WriteLine("By default, a subfolder named " & clsExportDBSchema.DEFAULT_DB_OUTPUT_FOLDER_NAME_PREFIX & "DatabaseName will be created below SchemaFileFolder")
             Console.WriteLine("Customize this the prefix text using /FolderPrefix")
-            Console.WriteLine("Use /NoSubfolder to disable auto creating a subfolder for the database being exported")
+            Console.WriteLine()
+            Console.WriteLine("Use /NoSubfolder to disable auto creating a subfolder for the database being exported.")
+            Console.WriteLine("Note: subfolders will always be created if you use /DBList and specify more than one database")
             Console.WriteLine()
             Console.WriteLine("Use /Data to define a text file with table names (one name per line) for which the data should be exported. " &
               "In addition to table names defined in /Data, there are default tables which will have their data exported; disable the defaults using /NoAutoData")
@@ -346,6 +345,7 @@ Module modMain
             Console.WriteLine("Use /Git to auto-update any new or changed files to Git")
             Console.WriteLine("Use /Hg to auto-update any new or changed files to Mercurial")
             Console.WriteLine("Use /Commit to commit any updates to the repository")
+            Console.WriteLine()
 
             Console.WriteLine("Use /L to log messages to a file; you can optionally specify a log file name using /L:LogFilePath.")
             Console.WriteLine("Use /LogFolder to specify the folder to save the log file in. By default, the log file is created in the current working directory.")
@@ -399,8 +399,13 @@ Module modMain
 	Private Sub mProcessingClass_SubtaskProgressChanged(taskDescription As String, percentComplete As Single) Handles mProcessingClass.SubtaskProgressChanged
 
 		If Not String.Equals(taskDescription, mSubtaskDescription) Then
-			mSubtaskDescription = String.Copy(taskDescription)
-			Console.WriteLine("  " & taskDescription)
+            mSubtaskDescription = String.Copy(taskDescription)
+            If taskDescription.StartsWith("  ") Then
+                Console.WriteLine(taskDescription)
+            Else
+                Console.WriteLine("  " & taskDescription)
+            End If
+
 		End If
 
 	End Sub

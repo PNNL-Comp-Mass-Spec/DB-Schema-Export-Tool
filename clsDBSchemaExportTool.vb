@@ -405,7 +405,6 @@ Public Class clsDBSchemaExportTool
         lstTableNames.Add("T_SP_Column_Direction_Types")
         lstTableNames.Add("T_SP_Glossary")
         lstTableNames.Add("T_SP_List")
-        lstTableNames.Add("T_Usage_Stats")
 
         ' Prism_RPT
         lstTableNames.Add("T_Analysis_Job_Processor_Tools")
@@ -447,13 +446,11 @@ Public Class clsDBSchemaExportTool
         ' DMS_Pipeline and DMS_Capture
         lstTableNames.Add("T_Automatic_Jobs")
         lstTableNames.Add("T_Default_SP_Params")
-        lstTableNames.Add("T_Machines")
         lstTableNames.Add("T_Processor_Instrument")
         lstTableNames.Add("T_Processor_Tool")
         lstTableNames.Add("T_Scripts")
         lstTableNames.Add("T_Scripts_History")
         lstTableNames.Add("T_Signatures")
-        lstTableNames.Add("T_Step_Tool_Versions")
         lstTableNames.Add("T_Step_Tools")
 
         ' Protein Sequences
@@ -909,13 +906,14 @@ Public Class clsDBSchemaExportTool
 
     End Function
 
-    Private Function SyncSchemaFiles(ByVal dctDatabaseNamesAndOutputPaths As Dictionary(Of String, String), ByVal folderPathForSync As String) As Boolean
+    Private Function SyncSchemaFiles(ByVal lstDatabaseNamesAndOutputPaths As ICollection(Of KeyValuePair(Of String, String)), ByVal folderPathForSync As String) As Boolean
         Try
             ResetProgress("Synchronizing with " & folderPathForSync)
 
             Dim intDBsProcessed As Integer = 0
+            Dim includeDbNameInCommitMessage = (lstDatabaseNamesAndOutputPaths.Count > 1)
 
-            For Each dbEntry In dctDatabaseNamesAndOutputPaths
+            For Each dbEntry In lstDatabaseNamesAndOutputPaths
 
                 Dim databaseName = dbEntry.Key
                 Dim schemaOutputFolder = dbEntry.Value
@@ -925,14 +923,14 @@ Public Class clsDBSchemaExportTool
                     Continue For
                 End If
 
-                Dim percentComplete As Single = intDBsProcessed / CSng(dctDatabaseNamesAndOutputPaths.Count) * 100
+                Dim percentComplete As Single = intDBsProcessed / CSng(lstDatabaseNamesAndOutputPaths.Count) * 100
 
                 UpdateProgress("Synchronizing database " & databaseName, percentComplete)
 
                 Dim diSourceFolder = New DirectoryInfo(schemaOutputFolder)
 
                 Dim targetFolderPath = String.Copy(folderPathForSync)
-                If dctDatabaseNamesAndOutputPaths.Count > 1 OrElse CreateFolderForEachDB Then
+                If lstDatabaseNamesAndOutputPaths.Count > 1 OrElse CreateFolderForEachDB Then
                     targetFolderPath = Path.Combine(targetFolderPath, databaseName)
                 End If
 
@@ -995,16 +993,21 @@ Public Class clsDBSchemaExportTool
                     fileProcessCount += 1
                 Next
 
+                Dim commitMessageAppend = String.Empty
+                If includeDbNameInCommitMessage Then
+                    commitMessageAppend = databaseName
+                End If
+
                 If Me.SvnUpdate Then
-                    UpdateRepoChanges(diTargetFolder, fileCopyCount, lstNewFilePaths, eRepoManagerType.Svn)
+                    UpdateRepoChanges(diTargetFolder, fileCopyCount, lstNewFilePaths, eRepoManagerType.Svn, commitMessageAppend)
                 End If
 
                 If Me.HgUpdate Then
-                    UpdateRepoChanges(diTargetFolder, fileCopyCount, lstNewFilePaths, eRepoManagerType.Hg)
+                    UpdateRepoChanges(diTargetFolder, fileCopyCount, lstNewFilePaths, eRepoManagerType.Hg, commitMessageAppend)
                 End If
 
                 If Me.GitUpdate Then
-                    UpdateRepoChanges(diTargetFolder, fileCopyCount, lstNewFilePaths, eRepoManagerType.Git)
+                    UpdateRepoChanges(diTargetFolder, fileCopyCount, lstNewFilePaths, eRepoManagerType.Git, commitMessageAppend)
                 End If
 
                 intDBsProcessed += 1
@@ -1023,7 +1026,8 @@ Public Class clsDBSchemaExportTool
       ByVal diTargetFolder As DirectoryInfo,
       ByVal fileCopyCount As Integer,
       ByVal lstNewFilePaths As List(Of String),
-      ByVal eRepoManager As eRepoManagerType) As Boolean
+      ByVal eRepoManager As eRepoManagerType,
+      ByVal commitMessageAppend As String) As Boolean
 
         Const SVN_EXE_PATH = "C:\Program Files\TortoiseSVN\bin\svn.exe"
         Const SVN_SOURCE = "Installed with 64-bit Tortoise SVN, available at http://tortoisesvn.net/downloads.html"
@@ -1053,7 +1057,7 @@ Public Class clsDBSchemaExportTool
 
                 Case eRepoManagerType.Git
                     fiRepoExe = New FileInfo(GIT_EXE_PATH)
-                    strRepoSource = git_source
+                    strRepoSource = GIT_SOURCE
                     strToolName = "Git"
 
                 Case Else
@@ -1094,7 +1098,7 @@ Public Class clsDBSchemaExportTool
                     End If
 
                 Next
-                Console.WriteLine()            
+                Console.WriteLine()
             End If
 
             UpdateProgress("Looking for modified files tracked by " & strToolName & " at " & diTargetFolder.FullName)
@@ -1134,6 +1138,13 @@ Public Class clsDBSchemaExportTool
                 End If
 
                 Dim commitMessage = DateTime.Now.ToString("yyyy-MM-dd") & " auto-commit"
+                If Not String.IsNullOrWhiteSpace(commitMessageAppend) Then
+                    If commitMessageAppend.StartsWith(" ") Then
+                        commitMessage &= commitMessageAppend
+                    Else
+                        commitMessage &= " " & commitMessageAppend
+                    End If
+                End If
 
                 If Not Me.CommitUpdates Then
                     ShowMessage("Use /Commit to commit changes with commit message: " & commitMessage)
@@ -1217,7 +1228,7 @@ Public Class clsDBSchemaExportTool
     End Sub
 
     Private Sub mDBSchemaExporter_SubtaskProgressChanged(taskDescription As String, percentComplete As Single) Handles mDBSchemaExporter.SubtaskProgressChanged
-        UpdateSubtaskProgress(taskDescription, percentComplete)
+        UpdateSubtaskProgress("  " & taskDescription, percentComplete)
     End Sub
 
     Private Sub mDBSchemaExporter_SubtaskProgressReset() Handles mDBSchemaExporter.SubtaskProgressReset
