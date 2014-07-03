@@ -2018,7 +2018,7 @@ Public Class clsExportDBSchema
 
             Dim lstDatabasesOnServer As List(Of String) = GetSqlserverDatabasesWork(False)
 
-            ' Populate a dictionary of the lower case database name and the properly capitalized name
+            ' Populate a dictionary where keys are lower case database names and values are the properly capitalized database names
             Dim dctDatabasesOnServer = New Dictionary(Of String, String)
             For Each dbItem In lstDatabasesOnServer
                 dctDatabasesOnServer.Add(dbItem.ToLower(), dbItem)
@@ -2039,7 +2039,7 @@ Public Class clsExportDBSchema
 
                 lstProcessedDBList.Add(strCurrentDB)
                 Dim blnSuccess As Boolean
-                Dim currentDbName As String
+                Dim currentDbName As String = String.Empty
 
                 If dctDatabasesOnServer.TryGetValue(strCurrentDB.ToLower(), currentDbName) Then
 

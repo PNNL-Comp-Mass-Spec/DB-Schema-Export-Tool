@@ -1,5 +1,10 @@
 DB Schema Export Tool
 
+Version 1.2.5296; July 3, 2014
+	- Implemented committing new/changed files to Git
+	- Now only adding new files to repositories if the file was added during synchronization
+	- Expanded the list of auto-selected table names
+
 Version 1.2.5296; July 2, 2014
 	- Implemented committing new/changed files to Svn and Hg
 

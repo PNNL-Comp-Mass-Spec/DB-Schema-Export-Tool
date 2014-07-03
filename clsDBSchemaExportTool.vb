@@ -12,6 +12,7 @@
 
 Imports PRISM.Files
 Imports System.IO
+Imports System.Text.RegularExpressions
 
 Public Class clsDBSchemaExportTool
     Inherits clsProcessFoldersBaseClass
@@ -20,7 +21,7 @@ Public Class clsDBSchemaExportTool
     ''' Constructor
     ''' </summary>
     Public Sub New()
-        MyBase.mFileDate = "July 2, 2014"
+        MyBase.mFileDate = "July 3, 2014"
         InitializeLocalVariables()
     End Sub
 
@@ -236,17 +237,22 @@ Public Class clsDBSchemaExportTool
     End Function
 
     ''' <summary>
-    ''' Compare the contents of the two files
+    ''' Compare the contents of the two files using a line-by-line comparison
     ''' </summary>
-    ''' <param name="fiBase"></param>
-    ''' <param name="fiComparison"></param>
+    ''' <param name="fiBase">Base file</param>
+    ''' <param name="fiComparison">Comparison file</param>
     ''' <param name="eDifferenceReason">Output parameter: reason for the difference, or eDifferenceReasonType.Unchanged if identical</param>
     ''' <returns>True if the files differ (i.e. if they do not match)</returns>
-    ''' <remarks>Files that begin with DBDefinition are treated specially in that the database Size values are ignored when looking for differences</remarks>
+    ''' <remarks>
+    ''' Files that begin with DBDefinition are treated specially in that the database size values are ignored when looking for differences
+    ''' Files named T_Process_Step_Control_Data are treated specially in that for Insert Into lines, any date values or text after a date value is ignored
+    ''' </remarks>
     Private Function FilesDiffer(
       ByVal fiBase As FileInfo,
       ByVal fiComparison As FileInfo,
       ByRef eDifferenceReason As eDifferenceReasonType) As Boolean
+
+        Static reDate As Regex = New Regex("'\d+/\d+/\d+ \d+:\d+:\d+ [AP]M'", RegexOptions.Compiled Or RegexOptions.IgnoreCase)
 
         Try
             eDifferenceReason = eDifferenceReasonType.Unchanged
@@ -259,10 +265,14 @@ Public Class clsDBSchemaExportTool
             End If
 
             Dim dbDefinitionFile = False
+            Dim processStepControlFile = False
 
             If fiBase.Name.StartsWith(clsExportDBSchema.DB_DEFINITION_FILE_PREFIX) Then
                 ' DB Definition file; don't worry if file lengths differ
                 dbDefinitionFile = True
+            ElseIf String.Compare(fiBase.Name, "T_Process_Step_Control_Data.sql", True) = 0 Then
+                ' Process_Step_Control file; don't worry if file lengths differ
+                processStepControlFile = True
             Else
                 If fiBase.Length <> fiComparison.Length Then
                     eDifferenceReason = eDifferenceReasonType.Changed
@@ -270,9 +280,7 @@ Public Class clsDBSchemaExportTool
                 End If
             End If
 
-
             ' Perform a line-by-line comparison
-
             Using srBaseFile = New StreamReader(New FileStream(fiBase.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
 
                 Using srComparisonFile = New StreamReader(New FileStream(fiComparison.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
@@ -288,6 +296,7 @@ Public Class clsDBSchemaExportTool
                             If linesMatch Then Continue While
 
                             If dbDefinitionFile AndAlso strLineIn.StartsWith("( NAME =") AndAlso strComparisonLine.StartsWith("( NAME =") Then
+                                ' DBDefinition file
                                 Dim lstSourceCols = strLineIn.Split(","c).ToList()
                                 Dim lstComparisonCols = strComparisonLine.Split(","c).ToList()
 
@@ -306,6 +315,19 @@ Public Class clsDBSchemaExportTool
                                     Next
                                 End If
 
+                            End If
+
+                            If processStepControlFile AndAlso strLineIn.StartsWith("INSERT INTO ") AndAlso strComparisonLine.StartsWith("INSERT INTO ") Then
+                                ' Process_Step_Control File
+                                ' Truncate each of the data lines at the first occurrence of a date
+                                Dim matchBaseFile = reDate.Match(strLineIn)
+                                Dim matchComparisonFile = reDate.Match(strComparisonLine)
+
+                                If matchBaseFile.Success AndAlso matchComparisonFile.Success Then
+                                    strLineIn = strLineIn.Substring(0, matchBaseFile.Index)
+                                    strComparisonLine = strComparisonLine.Substring(0, matchComparisonFile.Index)
+                                    linesMatch = (String.Compare(strLineIn, strComparisonLine) = 0)
+                                End If
                             End If
 
                             If Not linesMatch Then
@@ -357,17 +379,97 @@ Public Class clsDBSchemaExportTool
     Public Shared Function GetTableNamesToAutoExportData() As List(Of String)
         Dim lstTableNames = New List(Of String)
 
-        lstTableNames.Add("T_Dataset_Process_State")
-        lstTableNames.Add("T_Process_State")
-        lstTableNames.Add("T_Event_Target")
+        ' MT_Main
+        lstTableNames.Add("T_Folder_Paths")
+        lstTableNames.Add("T_Process_Step_Control")
+
+        ' MT DBs
+        lstTableNames.Add("T_Peak_Matching_Defaults")
         lstTableNames.Add("T_Process_Config")
         lstTableNames.Add("T_Process_Config_Parameters")
-        lstTableNames.Add("T_Process_Step_Control")
-        lstTableNames.Add("T_Process_Step_Control_States")
-        lstTableNames.Add("T_Histogram_Mode_Name")
-        lstTableNames.Add("T_Peak_Matching_Defaults")
         lstTableNames.Add("T_Quantitation_Defaults")
-        lstTableNames.Add("T_Folder_Paths")
+
+        ' MTS_Master
+        lstTableNames.Add("T_MTS_DB_Types")
+        lstTableNames.Add("T_MTS_MT_DBs")
+        lstTableNames.Add("T_MTS_Peptide_DBs")
+        lstTableNames.Add("T_MTS_Servers")
+        lstTableNames.Add("T_MyEMSL_Cache_Paths")
+
+        ' Peptide DB
+        lstTableNames.Add("T_Dataset_Scan_Type_Name")
+
+        ' Prism_IFC
+        lstTableNames.Add("T_Match_Methods")
+        lstTableNames.Add("T_SP_Categories")
+        lstTableNames.Add("T_SP_Column_Direction_Types")
+        lstTableNames.Add("T_SP_Glossary")
+        lstTableNames.Add("T_SP_List")
+        lstTableNames.Add("T_Usage_Stats")
+
+        ' Prism_RPT
+        lstTableNames.Add("T_Analysis_Job_Processor_Tools")
+        lstTableNames.Add("T_Analysis_Job_Processors")
+        lstTableNames.Add("T_Analysis_Tool")
+        lstTableNames.Add("T_Status")
+
+        ' DMS5
+        lstTableNames.Add("T_Dataset_Rating_Name")
+        lstTableNames.Add("T_Default_PSM_Job_Types")
+        lstTableNames.Add("T_Enzymes")
+        lstTableNames.Add("T_Instrument_Ops_Role")
+        lstTableNames.Add("T_MiscPaths")
+        lstTableNames.Add("T_Modification_Types")
+        lstTableNames.Add("T_MyEMSLState")
+        lstTableNames.Add("T_Predefined_Analysis_Scheduling_Rules")
+        lstTableNames.Add("T_Research_Team_Roles")
+        lstTableNames.Add("T_Residues")
+        lstTableNames.Add("T_User_Operations")
+
+        ' Data_Package
+        lstTableNames.Add("T_Properties")
+        lstTableNames.Add("T_URI_Paths")
+
+        ' Manager Control
+        lstTableNames.Add("T_Event_Target")
+        lstTableNames.Add("T_Mgrs")
+        lstTableNames.Add("T_MgrState")
+        lstTableNames.Add("T_MgrType_ParamType_Map")
+        lstTableNames.Add("T_MgrTypes")
+        lstTableNames.Add("T_ParamType")
+
+        ' Ontology_Lookup
+        lstTableNames.Add("ontology")
+        lstTableNames.Add("T_Unimod_AminoAcids")
+        lstTableNames.Add("T_Unimod_Bricks")
+        lstTableNames.Add("T_Unimod_Specificity_NL")
+
+        ' DMS_Pipeline and DMS_Capture
+        lstTableNames.Add("T_Automatic_Jobs")
+        lstTableNames.Add("T_Default_SP_Params")
+        lstTableNames.Add("T_Machines")
+        lstTableNames.Add("T_Processor_Instrument")
+        lstTableNames.Add("T_Processor_Tool")
+        lstTableNames.Add("T_Scripts")
+        lstTableNames.Add("T_Scripts_History")
+        lstTableNames.Add("T_Signatures")
+        lstTableNames.Add("T_Step_Tool_Versions")
+        lstTableNames.Add("T_Step_Tools")
+
+        ' Protein Sequences
+        lstTableNames.Add("T_Annotation_Types")
+        lstTableNames.Add("T_Archived_File_Types")
+        lstTableNames.Add("T_Collection_Organism_Xref")
+        lstTableNames.Add("T_Creation_Option_Keywords")
+        lstTableNames.Add("T_Creation_Option_Values")
+        lstTableNames.Add("T_Naming_Authorities")
+        lstTableNames.Add("T_Output_Sequence_Types")
+        lstTableNames.Add("T_Protein_Collection_Types")
+        lstTableNames.Add("T_Protein_Collections")
+
+        ' dba
+        lstTableNames.Add("AlertContacts")
+        lstTableNames.Add("AlertSettings")
 
         Return lstTableNames
 
@@ -378,6 +480,7 @@ Public Class clsDBSchemaExportTool
         lstRegExSpecs.Add(".*_?Type_?Name")
         lstRegExSpecs.Add(".*_?State_?Name")
         lstRegExSpecs.Add(".*_State")
+        lstRegExSpecs.Add(".*_States")
 
         Return lstRegExSpecs
     End Function
@@ -511,13 +614,11 @@ Public Class clsDBSchemaExportTool
         Return lstTableNames.ToList()
 
     End Function
-
-
+    
     Private Function ParseGitStatus(
      ByVal diTargetFolder As DirectoryInfo,
      ByVal standardOutput As String,
-     ByRef intModifiedFileCount As Integer,
-     ByRef lstNewFiles As List(Of String)) As Boolean
+     ByRef intModifiedFileCount As Integer) As Boolean
 
         ' Example output for Git with verbose output
         ' 	# On branch master
@@ -542,14 +643,6 @@ Public Class clsDBSchemaExportTool
 
         Dim lstNewOrModifiedStatusSymbols = New List(Of Char) From {"M"c, "A"c, "R"c}
 
-        If lstNewFiles Is Nothing Then
-            lstNewFiles = New List(Of String)
-        Else
-            lstNewFiles.Clear()
-        End If
-
-        Dim blnParsingUntrackedFiles = False
-
         Using srReader = New StringReader(standardOutput)
             While srReader.Peek > -1
                 Dim statusLine = srReader.ReadLine()
@@ -563,10 +656,10 @@ Public Class clsDBSchemaExportTool
 
                 Dim fileIndexStatus As Char = statusLine.Chars(0)
                 Dim fileWorktreeStatus As Char = statusLine.Chars(1)
-                Dim filePath = statusLine.Substring(3)
+                ' Dim filePath = statusLine.Substring(3)
 
                 If fileIndexStatus = "?"c Then
-                    lstNewFiles.Add(filePath)
+                    ' New file; added by the calling function
                 ElseIf lstNewOrModifiedStatusSymbols.Contains(fileIndexStatus) OrElse lstNewOrModifiedStatusSymbols.Contains(fileWorktreeStatus) Then
                     intModifiedFileCount += 1
                 End If
@@ -582,16 +675,16 @@ Public Class clsDBSchemaExportTool
       ByVal diTargetFolder As DirectoryInfo,
       ByVal standardOutput As String,
       ByVal eRepoManager As eRepoManagerType,
-      ByRef intModifiedFileCount As Integer,
-      ByRef lstNewFiles As List(Of String)) As Boolean
+      ByRef intModifiedFileCount As Integer) As Boolean
 
-        ' Example output for Svn where M is modified and ? is new
+        ' Example output for Svn where M is modified, ? is new, and ! means deleted
         '	    M       F:\My Documents\Projects\DataMining\Database_Schema\DMS\DMS5\UpdateAnalysisJobStateNameCached.sql
         '	    ?       F:\My Documents\Projects\DataMining\Database_Schema\DMS\DMS5\UpdateAnalysisJobToolNameCached.sql
         '	    M       F:\My Documents\Projects\DataMining\Database_Schema\DMS\DMS5\V_Analysis_Job_List_Report_2.sql
         '	    M       F:\My Documents\Projects\DataMining\Database_Schema\DMS\DMS5\V_GetPipelineJobParameters.sql
+        '	    !       F:\My Documents\Projects\DataMining\Database_Schema\DMS\DMS5\x_V_Analysis_Job.sql
 
-        ' Example output for Hg where M is modified and ? is new
+        ' Example output for Hg where M is modified, ? is new, and ! means deleted
         '	    M F:\My Documents\Projects\DataMining\Database_Schema\DMS\DMS5\UpdateAnalysisJobStateNameCached.sql
         '	    ? F:\My Documents\Projects\DataMining\Database_Schema\DMS\DMS5\UpdateAnalysisJobToolNameCached.sql
         '	    M F:\My Documents\Projects\DataMining\Database_Schema\DMS\DMS5\V_Analysis_Job_List_Report_2.sql
@@ -600,12 +693,6 @@ Public Class clsDBSchemaExportTool
 
         Dim lstNewOrModifiedStatusSymbols = New List(Of Char) From {"M"c, "A"c, "R"c}
         Dim minimumLineLength As Integer
-
-        If lstNewFiles Is Nothing Then
-            lstNewFiles = New List(Of String)
-        Else
-            lstNewFiles.Clear()
-        End If
 
         If eRepoManager = eRepoManagerType.Svn Then
             minimumLineLength = 8
@@ -629,13 +716,12 @@ Public Class clsDBSchemaExportTool
 
                 Dim fileModStatus As Char = statusLine.Chars(0)
                 Dim filePropertyStatus As Char = " "c
-                Dim filePath As String
 
                 If eRepoManager = eRepoManagerType.Svn Then
                     filePropertyStatus = statusLine.Chars(1)
-                    filePath = statusLine.Substring(8).Trim()
+                    ' Dim filePath = statusLine.Substring(8).Trim()
                 Else
-                    filePath = statusLine.Substring(2).Trim()
+                    ' Dim filePath = statusLine.Substring(2).Trim()
                 End If
 
                 If lstNewOrModifiedStatusSymbols.Contains(fileModStatus) Then
@@ -645,7 +731,7 @@ Public Class clsDBSchemaExportTool
                     intModifiedFileCount += 1
 
                 ElseIf fileModStatus = "?"c Then
-                    lstNewFiles.Add(filePath)
+                    ' New file; added by the calling function
                 End If
 
             End While
@@ -743,9 +829,16 @@ Public Class clsDBSchemaExportTool
 
     End Function
 
-    Private Function RunCommand(ByVal exePath As String, ByVal cmdArgs As String, ByRef standardOutput As String, ByVal maxRuntimeSeconds As Integer) As Boolean
+    Private Function RunCommand(
+      ByVal exePath As String,
+      ByVal cmdArgs As String,
+      ByVal workDirPath As String,
+      ByRef standardOutput As String,
+      ByRef errorOutput As String,
+      ByVal maxRuntimeSeconds As Integer) As Boolean
 
         standardOutput = String.Empty
+        errorOutput = String.Empty
 
         Try
 
@@ -758,7 +851,7 @@ Public Class clsDBSchemaExportTool
                 .Program = exePath
                 .Repeat = False
                 .RepeatHoldOffTime = 0
-                .WorkDir = GetAppFolderPath()
+                .WorkDir = workDirPath
                 .CacheStandardOutput = True
                 .EchoOutputToConsole = True
                 .WriteConsoleOutputToFile = False
@@ -805,6 +898,7 @@ Public Class clsDBSchemaExportTool
                 Return True
             Else
                 standardOutput = m_ProgRunner.CachedConsoleOutput
+                errorOutput = m_ProgRunner.CachedConsoleError
                 Return True
             End If
 
@@ -859,8 +953,11 @@ Public Class clsDBSchemaExportTool
                     Return False
                 End If
 
-                Dim intFilesProcessed As Integer = 0
-                Dim intFilesCopied As Integer = 0
+                Dim fileProcessCount As Integer = 0
+                Dim fileCopyCount As Integer = 0
+
+                ' This list holds the the files that are copied from diSourceFolder to diTargetFolder
+                Dim lstNewFilePaths = New List(Of String)
 
                 Dim lstfilesToCopy = diSourceFolder.GetFiles()
 
@@ -878,11 +975,12 @@ Public Class clsDBSchemaExportTool
 
                     If FilesDiffer(fiFile, fiTargetFile, eDifferenceReason) Then
 
-                        Dim subtaskPercentComplete As Single = intFilesProcessed / CSng(lstfilesToCopy.Count) * 100
+                        Dim subtaskPercentComplete As Single = fileProcessCount / CSng(lstfilesToCopy.Count) * 100
 
                         Select Case eDifferenceReason
                             Case eDifferenceReasonType.NewFile
                                 UpdateSubtaskProgress("  Copying new file " & fiFile.Name, subtaskPercentComplete)
+                                lstNewFilePaths.Add(fiTargetFile.FullName)
                             Case eDifferenceReasonType.Changed
                                 UpdateSubtaskProgress("  Copying changed file " & fiFile.Name, subtaskPercentComplete)
                             Case Else
@@ -890,23 +988,23 @@ Public Class clsDBSchemaExportTool
                         End Select
 
                         fiFile.CopyTo(fiTargetFile.FullName, True)
-                        intFilesCopied += 1
+                        fileCopyCount += 1
 
                     End If
 
-                    intFilesProcessed += 1
+                    fileProcessCount += 1
                 Next
 
                 If Me.SvnUpdate Then
-                    UpdateRepoChanges(diTargetFolder, eRepoManagerType.Svn)
+                    UpdateRepoChanges(diTargetFolder, fileCopyCount, lstNewFilePaths, eRepoManagerType.Svn)
                 End If
 
                 If Me.HgUpdate Then
-                    UpdateRepoChanges(diTargetFolder, eRepoManagerType.Hg)
+                    UpdateRepoChanges(diTargetFolder, fileCopyCount, lstNewFilePaths, eRepoManagerType.Hg)
                 End If
 
                 If Me.GitUpdate Then
-                    UpdateRepoChanges(diTargetFolder, eRepoManagerType.Git)
+                    UpdateRepoChanges(diTargetFolder, fileCopyCount, lstNewFilePaths, eRepoManagerType.Git)
                 End If
 
                 intDBsProcessed += 1
@@ -921,13 +1019,23 @@ Public Class clsDBSchemaExportTool
 
     End Function
 
-    Protected Function UpdateRepoChanges(ByVal diTargetFolder As DirectoryInfo, ByVal eRepoManager As eRepoManagerType) As Boolean
+    Protected Function UpdateRepoChanges(
+      ByVal diTargetFolder As DirectoryInfo,
+      ByVal fileCopyCount As Integer,
+      ByVal lstNewFilePaths As List(Of String),
+      ByVal eRepoManager As eRepoManagerType) As Boolean
 
         Const SVN_EXE_PATH = "C:\Program Files\TortoiseSVN\bin\svn.exe"
+        Const SVN_SOURCE = "Installed with 64-bit Tortoise SVN, available at http://tortoisesvn.net/downloads.html"
+
         Const HG_EXE_PATH = "C:\Program Files\TortoiseHg\hg.exe"
-        Const GIT_EXE_PATH = ""
+        Const HG_SOURCE = "Installed with 64-bit Tortoise Hg, available at http://tortoisehg.bitbucket.org/download/"
+
+        Const GIT_EXE_PATH = "C:\Program Files (x86)\Git\bin\git.exe"
+        Const GIT_SOURCE = "Installed with 32-bit Git for Windows, available at http://git-scm.com/download/win"
 
         Dim fiRepoExe As FileInfo = Nothing
+        Dim strRepoSource As String = Nothing
         Dim strToolName As String = "Unknown"
 
         Try
@@ -935,78 +1043,94 @@ Public Class clsDBSchemaExportTool
             Select Case eRepoManager
                 Case eRepoManagerType.Svn
                     fiRepoExe = New FileInfo(SVN_EXE_PATH)
+                    strRepoSource = SVN_SOURCE
                     strToolName = "SVN"
 
                 Case eRepoManagerType.Hg
                     fiRepoExe = New FileInfo(HG_EXE_PATH)
+                    strRepoSource = HG_SOURCE
                     strToolName = "Hg"
 
                 Case eRepoManagerType.Git
-                    If String.IsNullOrWhiteSpace(GIT_EXE_PATH) Then
-                        Throw New NotSupportedException("Not yet supported")
-                    End If
-
                     fiRepoExe = New FileInfo(GIT_EXE_PATH)
+                    strRepoSource = git_source
                     strToolName = "Git"
 
+                Case Else
+                    ShowErrorMessage("Unsupported RepoManager type: " & eRepoManager.ToString())
+                    Return False
             End Select
 
             If Not fiRepoExe.Exists Then
                 ShowErrorMessage("Repo exe not found at " & fiRepoExe.FullName)
+                ShowMessage(strRepoSource)
                 Return False
             End If
 
-            Console.WriteLine()
-            UpdateProgress("Looking for new / modified files tracked by " & strToolName & " at " & diTargetFolder.FullName)
-
+            Dim cmdArgs As String
+            Dim maxRuntimeSeconds As Integer = 90
             Dim standardOutput = String.Empty
-            Dim maxRuntimeSeconds As Integer = 900
+            Dim errorOutput = String.Empty
             Dim blnSuccess As Boolean
 
-            Dim cmdArgs As String = " status """ & diTargetFolder.FullName & """"
+            Console.WriteLine()
+            If lstNewFilePaths.Count > 0 Then
+                UpdateProgress("Adding " & lstNewFilePaths.Count & " new " & CheckPlural(lstNewFilePaths.Count, "file", "files") & " for tracking by " & strToolName)
+
+                ' Add each of the new files
+                For Each newFilePath In lstNewFilePaths
+                    Dim fiNewFile = New FileInfo(newFilePath)
+
+                    cmdArgs = " add """ & fiNewFile.FullName & """"
+                    maxRuntimeSeconds = 30
+
+                    blnSuccess = RunCommand(fiRepoExe.FullName, cmdArgs, fiNewFile.Directory.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
+
+                    If Not blnSuccess Then
+                        ShowMessage("Error reported for " & strToolName & ": " & standardOutput)
+                        Return False
+                    ElseIf eRepoManager = eRepoManagerType.Git AndAlso errorOutput.StartsWith("fatal") Then
+                        ShowMessage("Error reported for " & strToolName & ": " & errorOutput)
+                    End If
+
+                Next
+                Console.WriteLine()            
+            End If
+
+            UpdateProgress("Looking for modified files tracked by " & strToolName & " at " & diTargetFolder.FullName)
+
+            ' Count the number of new or modified files
+            cmdArgs = " status """ & diTargetFolder.FullName & """"
+            maxRuntimeSeconds = 300
             If eRepoManager = eRepoManagerType.Git Then cmdArgs &= " -s -u"
 
-            blnSuccess = RunCommand(fiRepoExe.FullName, cmdArgs, standardOutput, maxRuntimeSeconds)
-
-
+            blnSuccess = RunCommand(fiRepoExe.FullName, cmdArgs, diTargetFolder.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
             If Not blnSuccess Then Return False
+            If eRepoManager = eRepoManagerType.Git AndAlso errorOutput.StartsWith("fatal") Then
+                ShowMessage("Error reported for " & strToolName & ": " & errorOutput)
+            End If
+            Console.WriteLine()
 
-            ' Look for modified or new files in standardOutput
-
-            Dim intModifiedFileCount As Integer = 0
-            Dim lstNewFiles As New List(Of String)
+            Dim modifiedFileCount As Integer = 0
 
             If eRepoManager = eRepoManagerType.Svn Or eRepoManager = eRepoManagerType.Hg Then
-                blnSuccess = ParseSvnHgStatus(diTargetFolder, standardOutput, eRepoManager, intModifiedFileCount, lstNewFiles)
+                blnSuccess = ParseSvnHgStatus(diTargetFolder, standardOutput, eRepoManager, modifiedFileCount)
             Else
                 ' Git 
-                blnSuccess = ParseGitStatus(diTargetFolder, standardOutput, intModifiedFileCount, lstNewFiles)
+                blnSuccess = ParseGitStatus(diTargetFolder, standardOutput, modifiedFileCount)
             End If
 
             If Not blnSuccess Then Return False
 
-            If intModifiedFileCount > 0 OrElse lstNewFiles.Count > 0 Then
+            If fileCopyCount > 0 And modifiedFileCount = 0 Then
+                Console.WriteLine("Note: fileCopyCount is " & fileCopyCount & " yet the Modified File Count reported by " & strToolName & " is zero; this may indicate a problem")
+                Console.WriteLine()
+            End If
 
-                If intModifiedFileCount > 0 Then
-                    UpdateProgress("Found " & intModifiedFileCount & " modified " & CheckPlural(intModifiedFileCount, "file", "files"))
-                End If
+            If modifiedFileCount > 0 OrElse lstNewFilePaths.Count > 0 Then
 
-                If lstNewFiles.Count > 0 Then
-                    UpdateProgress("Adding " & lstNewFiles.Count & " new " & CheckPlural(lstNewFiles.Count, "file", "files") & " to " & strToolName)
-
-                    ' Add each of the new files
-                    For Each newFilePath In lstNewFiles
-                        cmdArgs = " add """ & newFilePath & """"
-                        maxRuntimeSeconds = 30
-
-                        blnSuccess = RunCommand(fiRepoExe.FullName, cmdArgs, standardOutput, maxRuntimeSeconds)
-
-                        If Not blnSuccess Then
-                            ShowErrorMessage("Aborting " & strToolName & " commit due to error reported by " & fiRepoExe.Name & ControlChars.NewLine & standardOutput)
-                            Return False
-                        End If
-
-                    Next
+                If modifiedFileCount > 0 Then
+                    UpdateProgress("Found " & modifiedFileCount & " modified " & CheckPlural(modifiedFileCount, "file", "files"))
                 End If
 
                 Dim commitMessage = DateTime.Now.ToString("yyyy-MM-dd") & " auto-commit"
@@ -1020,10 +1144,13 @@ Public Class clsDBSchemaExportTool
                     cmdArgs = " commit """ & diTargetFolder.FullName & """ --message """ & commitMessage & """"
                     maxRuntimeSeconds = 120
 
-                    blnSuccess = RunCommand(fiRepoExe.FullName, cmdArgs, standardOutput, maxRuntimeSeconds)
+                    blnSuccess = RunCommand(fiRepoExe.FullName, cmdArgs, diTargetFolder.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
 
                     If Not blnSuccess Then
                         ShowErrorMessage("Commit error" & ControlChars.NewLine & standardOutput)
+                        Return False
+                    ElseIf eRepoManager = eRepoManagerType.Git AndAlso errorOutput.StartsWith("fatal") Then
+                        ShowMessage("Error reported for " & strToolName & ": " & errorOutput)
                         Return False
                     End If
 
@@ -1033,9 +1160,12 @@ Public Class clsDBSchemaExportTool
                         cmdArgs = " push"
                         maxRuntimeSeconds = 300
 
-                        blnSuccess = RunCommand(fiRepoExe.FullName, cmdArgs, standardOutput, maxRuntimeSeconds)
+                        blnSuccess = RunCommand(fiRepoExe.FullName, cmdArgs, diTargetFolder.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
 
                     End If
+
+                    Console.WriteLine()
+
                 End If
 
             End If
