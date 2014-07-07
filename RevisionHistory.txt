@@ -1,5 +1,10 @@
 DB Schema Export Tool
 
+Version 1.2.5296; July 7, 2014
+	- Now ignoring dates in the data files for both T_Process_Step_Control and T_Signatures
+	- Removed T_Analysis_Tool from the set of auto-selected tables
+	- Added switch /Preview
+
 Version 1.2.5296; July 3, 2014
 	- Implemented committing new/changed files to Git
 	- Now only adding new files to repositories if the file was added during synchronization

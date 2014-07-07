@@ -11,7 +11,7 @@ Option Strict On
 ' See clsMTSAutomation for additional information
 
 Module modMain
-    Public Const PROGRAM_DATE As String = "July 3, 2014"
+    Public Const PROGRAM_DATE As String = "July 7, 2014"
 
 	Private mOutputFolderPath As String
 
@@ -41,6 +41,7 @@ Module modMain
     Private mLogFilePath As String = String.Empty
     Private mLogFolderPath As String = String.Empty
 
+    Private mPreviewExport As Boolean
     Private mShowStats As Boolean
 
     Private mProgressDescription As String = String.Empty
@@ -88,6 +89,7 @@ Module modMain
 
         mCommitUpdates = False
 
+        mPreviewExport = False
         mShowStats = False
 
         Try
@@ -135,6 +137,7 @@ Module modMain
                     .LogFilePath = mLogFilePath
                     .LogFolderPath = mLogFolderPath
 
+                    .PreviewExport = mPreviewExport
                     .ShowStats = mShowStats
 
                     .AutoSelectTableDataToExport = Not mDisableAutoDataExport
@@ -209,7 +212,7 @@ Module modMain
         Dim lstValidParameters As List(Of String) = New List(Of String) From {
           "O", "Server", "DB", "DBList", "FolderPrefix", "NoSubfolder", "NoAutoData", "Data",
           "Sync", "Svn", "Git", "Hg", "Commit",
-          "P", "L", "LogFolder", "Stats"}
+          "P", "L", "LogFolder", "Preview", "Stats"}
 
         Try
             ' Make sure no invalid parameters are present
@@ -279,6 +282,8 @@ Module modMain
                         End If
                     End If
 
+                    If .RetrieveValueForParameter("Preview", strValue) Then mPreviewExport = True
+
                     If .RetrieveValueForParameter("Stats", strValue) Then mShowStats = True
                 End With
 
@@ -337,7 +342,7 @@ Module modMain
             Console.WriteLine(" [/FolderPrefix:PrefixText] [/NoSubfolder]")
             Console.WriteLine(" [/Data:TableDataToExport.txt] [/NoAutoData] ")
             Console.WriteLine(" [/Sync:TargetFolderPath] [/Svn] [/Git] [/Hg] [/Commit]")
-            Console.WriteLine(" [/L[:LogFilePath]] [/LogFolder:LogFolderPath] [/Stats]")
+            Console.WriteLine(" [/L[:LogFilePath]] [/LogFolder:LogFolderPath] [/Preview] [/Stats]")
             Console.WriteLine()
             Console.WriteLine("SchemaFileFolder is the path to the folder where the schema files will be saved")
             Console.WriteLine("To process a single database, use /Server and /DB")
@@ -364,6 +369,7 @@ Module modMain
             Console.WriteLine("Use /L to log messages to a file; you can optionally specify a log file name using /L:LogFilePath.")
             Console.WriteLine("Use /LogFolder to specify the folder to save the log file in. By default, the log file is created in the current working directory.")
             Console.WriteLine()
+            Console.WriteLine("Use /Preview to count the number of database objects that would be exported")
             Console.WriteLine("Use /Stats to show (but not log) export stats")
             Console.WriteLine()
             Console.WriteLine("Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in 2006")

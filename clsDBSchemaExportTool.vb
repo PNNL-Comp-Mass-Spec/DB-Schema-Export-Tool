@@ -21,7 +21,7 @@ Public Class clsDBSchemaExportTool
     ''' Constructor
     ''' </summary>
     Public Sub New()
-        MyBase.mFileDate = "July 3, 2014"
+        MyBase.mFileDate = "July 7, 2014"
         InitializeLocalVariables()
     End Sub
 
@@ -85,6 +85,8 @@ Public Class clsDBSchemaExportTool
     Public Property CreateFolderForEachDB As Boolean
 
     Public Property DatabaseSubfolderPrefix As String
+
+    Public Property PreviewExport As Boolean
 
     Public Property ShowStats As Boolean
 
@@ -213,6 +215,7 @@ Public Class clsDBSchemaExportTool
             End If
 
             mDBSchemaExporter.ShowStats = Me.ShowStats
+            mDBSchemaExporter.PreviewExport = Me.PreviewExport
 
             Dim blnSuccess = mDBSchemaExporter.ScriptServerAndDBObjects(mSchemaExportOptions, lstDatabaseList, lstTableNamesForDataExport)
 
@@ -254,8 +257,10 @@ Public Class clsDBSchemaExportTool
     ''' <param name="eDifferenceReason">Output parameter: reason for the difference, or eDifferenceReasonType.Unchanged if identical</param>
     ''' <returns>True if the files differ (i.e. if they do not match)</returns>
     ''' <remarks>
-    ''' Files that begin with DBDefinition are treated specially in that the database size values are ignored when looking for differences
-    ''' Files named T_Process_Step_Control_Data are treated specially in that for Insert Into lines, any date values or text after a date value is ignored
+    ''' Several files are treated specially to ignore changing dates or numbers, in particular:
+    ''' In DBDefinition files, the database size values are ignored
+    ''' In T_Process_Step_Control_Data files, in the Insert Into lines, any date values or text after a date value is ignored
+    ''' In T_Signatures_Data files, in the Insert Into lines, any date values are ignored
     ''' </remarks>
     Private Function FilesDiffer(
       ByVal fiBase As FileInfo,
@@ -275,14 +280,20 @@ Public Class clsDBSchemaExportTool
             End If
 
             Dim dbDefinitionFile = False
-            Dim processStepControlFile = False
+
+            Dim lstDateIgnoreFiles = New SortedSet(Of String)(StringComparer.CurrentCultureIgnoreCase)
+            lstDateIgnoreFiles.Add("T_Process_Step_Control_Data.sql")
+            lstDateIgnoreFiles.Add("T_Signatures_Data.sql")
+
+            Dim ignoreInsertIntoDates = False
 
             If fiBase.Name.StartsWith(clsExportDBSchema.DB_DEFINITION_FILE_PREFIX) Then
                 ' DB Definition file; don't worry if file lengths differ
                 dbDefinitionFile = True
-            ElseIf String.Compare(fiBase.Name, "T_Process_Step_Control_Data.sql", True) = 0 Then
-                ' Process_Step_Control file; don't worry if file lengths differ
-                processStepControlFile = True
+            ElseIf lstDateIgnoreFiles.Contains(fiBase.Name) Then
+                ' Files where date values are being ignored; don't worry if file lengths differ
+                ShowMessage("Ignoring date values in file " & fiBase.Name)
+                ignoreInsertIntoDates = True
             Else
                 If fiBase.Length <> fiComparison.Length Then
                     eDifferenceReason = eDifferenceReasonType.Changed
@@ -301,7 +312,7 @@ Public Class clsDBSchemaExportTool
                         If srComparisonFile.Peek > -1 Then
                             Dim strComparisonLine = srComparisonFile.ReadLine()
 
-                            Dim linesMatch = (String.Compare(strLineIn, strComparisonLine) = 0)
+                            Dim linesMatch = StringMatchIgnoreCase(strLineIn, strComparisonLine)
 
                             If linesMatch Then Continue While
 
@@ -318,7 +329,7 @@ Public Class clsDBSchemaExportTool
 
                                         If sourceValue.StartsWith("SIZE") AndAlso comparisonValue.StartsWith("SIZE") Then
                                             ' Don't worry if these values differ
-                                        ElseIf String.Compare(sourceValue, comparisonValue) <> 0 Then
+                                        ElseIf Not StringMatchIgnoreCase(sourceValue, comparisonValue) Then
                                             linesMatch = False
                                             Exit For
                                         End If
@@ -327,8 +338,8 @@ Public Class clsDBSchemaExportTool
 
                             End If
 
-                            If processStepControlFile AndAlso strLineIn.StartsWith("INSERT INTO ") AndAlso strComparisonLine.StartsWith("INSERT INTO ") Then
-                                ' Process_Step_Control File
+                            If ignoreInsertIntoDates AndAlso strLineIn.StartsWith("INSERT INTO ") AndAlso strComparisonLine.StartsWith("INSERT INTO ") Then
+                                ' Data file where we're ignoring dates
                                 ' Truncate each of the data lines at the first occurrence of a date
                                 Dim matchBaseFile = reDate.Match(strLineIn)
                                 Dim matchComparisonFile = reDate.Match(strComparisonLine)
@@ -336,7 +347,7 @@ Public Class clsDBSchemaExportTool
                                 If matchBaseFile.Success AndAlso matchComparisonFile.Success Then
                                     strLineIn = strLineIn.Substring(0, matchBaseFile.Index)
                                     strComparisonLine = strComparisonLine.Substring(0, matchComparisonFile.Index)
-                                    linesMatch = (String.Compare(strLineIn, strComparisonLine) = 0)
+                                    linesMatch = StringMatchIgnoreCase(strLineIn, strComparisonLine)
                                 End If
                             End If
 
@@ -419,7 +430,6 @@ Public Class clsDBSchemaExportTool
         ' Prism_RPT
         lstTableNames.Add("T_Analysis_Job_Processor_Tools")
         lstTableNames.Add("T_Analysis_Job_Processors")
-        lstTableNames.Add("T_Analysis_Tool")
         lstTableNames.Add("T_Status")
 
         ' DMS5
@@ -519,6 +529,7 @@ Public Class clsDBSchemaExportTool
 
         Me.DatabaseSubfolderPrefix = clsExportDBSchema.DEFAULT_DB_OUTPUT_FOLDER_NAME_PREFIX
 
+        Me.PreviewExport = False
         Me.ShowStats = False
         Me.Sync = False
 
@@ -914,6 +925,16 @@ Public Class clsDBSchemaExportTool
             HandleException("Error in RunCommand", ex)
             Return False
         End Try
+
+    End Function
+
+    Private Shared Function StringMatchIgnoreCase(ByVal text1 As String, ByVal text2 As String) As Boolean
+
+        If String.Compare(text1, text2) = 0 Then
+            Return True
+        Else
+            Return False
+        End If
 
     End Function
 
