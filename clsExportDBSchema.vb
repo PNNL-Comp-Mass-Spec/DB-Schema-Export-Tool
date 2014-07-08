@@ -25,7 +25,7 @@ Option Strict On
 ' SOFTWARE.  This notice including this sentence must appear on any copies of 
 ' this computer software.
 '
-' Last updated May 21, 2014
+' Last updated June 7, 2014
 
 Imports System.IO
 Imports Microsoft.SqlServer.Management.Common

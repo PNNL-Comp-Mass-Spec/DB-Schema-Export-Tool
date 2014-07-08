@@ -21,7 +21,7 @@ Public Class clsDBSchemaExportTool
     ''' Constructor
     ''' </summary>
     Public Sub New()
-        MyBase.mFileDate = "July 7, 2014"
+		MyBase.mFileDate = "July 8, 2014"
         InitializeLocalVariables()
     End Sub
 
@@ -283,7 +283,9 @@ Public Class clsDBSchemaExportTool
 
             Dim lstDateIgnoreFiles = New SortedSet(Of String)(StringComparer.CurrentCultureIgnoreCase)
             lstDateIgnoreFiles.Add("T_Process_Step_Control_Data.sql")
-            lstDateIgnoreFiles.Add("T_Signatures_Data.sql")
+			lstDateIgnoreFiles.Add("T_Signatures_Data.sql")
+			lstDateIgnoreFiles.Add("T_MTS_Peptide_DBs_Data.sql")
+			lstDateIgnoreFiles.Add("T_MTS_MT_DBs_Data.sql")
 
             Dim ignoreInsertIntoDates = False
 
@@ -402,7 +404,6 @@ Public Class clsDBSchemaExportTool
 
         ' MT_Main
         lstTableNames.Add("T_Folder_Paths")
-        lstTableNames.Add("T_Process_Step_Control")
 
         ' MT DBs
         lstTableNames.Add("T_Peak_Matching_Defaults")
