@@ -11,7 +11,7 @@ Option Strict On
 ' See clsMTSAutomation for additional information
 
 Module modMain
-	Public Const PROGRAM_DATE As String = "July 8, 2014"
+    Public Const PROGRAM_DATE As String = "January 23, 2015"
 
 	Private mOutputFolderPath As String
 
@@ -96,6 +96,8 @@ Module modMain
             blnProceed = False
             If objParseCommandLine.ParseCommandLine Then
                 If SetOptionsUsingCommandLineParameters(objParseCommandLine) Then blnProceed = True
+            Else
+                blnProceed = True
             End If
 
             If Not blnProceed OrElse _

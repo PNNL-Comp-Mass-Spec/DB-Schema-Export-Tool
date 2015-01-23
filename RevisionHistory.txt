@@ -1,5 +1,8 @@
 DB Schema Export Tool
 
+Version 1.2.5501; January 23, 2015
+	- Fixed bug that prevented seeing the GUI
+
 Version 1.2.5297; July 8, 2014
 	- Now ignoring dates in the data files for T_MTS_Peptide_DBs and T_MTS_MT_DBs
 	- Removed T_Process_Step_Control from the set of auto-selected tables
