@@ -21,25 +21,27 @@ Public Class clsDBSchemaExportTool
     ''' Constructor
     ''' </summary>
     Public Sub New()
-		MyBase.mFileDate = "July 8, 2014"
+        MyBase.mFileDate = "October 29, 2015"
+        mDateMatcher = New Regex("'\d+/\d+/\d+ \d+:\d+:\d+ [AP]M'", RegexOptions.Compiled Or RegexOptions.IgnoreCase)
+
         InitializeLocalVariables()
     End Sub
 
 #Region "Constants and Enums"
 
     ' Error codes specialized for this class
-    Protected Enum eDBSchemaExportTool As Integer
+    Private Enum eDBSchemaExportTool As Integer
         NoError = 0
         UnspecifiedError = -1
     End Enum
 
-    Protected Enum eDifferenceReasonType
+    Private Enum eDifferenceReasonType
         Unchanged = 0
         NewFile = 1
         Changed = 2
     End Enum
 
-    Protected Enum eRepoManagerType
+    Private Enum eRepoManagerType
         Svn = 0
         Hg = 1
         Git = 2
@@ -53,23 +55,21 @@ Public Class clsDBSchemaExportTool
 
 #Region "Classwide Variables"
 
-    Protected mServer As String
-    Protected mDatabase As String
+    Private mServer As String
+    Private mDatabase As String
 
-    'Protected mUseIntegratedAuthentication As Boolean
-    'Protected mUsername As String
-    'Protected mPassword As String
+    Private mSchemaExportOptions As clsExportDBSchema.udtSchemaExportOptionsType
 
-    Protected mSchemaExportOptions As clsExportDBSchema.udtSchemaExportOptionsType
-
-    Protected mSubtaskDescription As String
-    Protected mSubtaskPercentComplete As Single
+    Private mSubtaskDescription As String
+    Private mSubtaskPercentComplete As Single
 
     Public Event SubtaskProgressChanged(ByVal taskDescription As String, ByVal percentComplete As Single)      ' PercentComplete ranges from 0 to 100, but can contain decimal percentage values
 
-    Protected mLocalErrorCode As eDBSchemaExportTool
+    Private mLocalErrorCode As eDBSchemaExportTool
 
-    Protected WithEvents mDBSchemaExporter As clsExportDBSchema
+    Private WithEvents mDBSchemaExporter As clsExportDBSchema
+
+    Private ReadOnly mDateMatcher As Regex
 
     'Runs specified program
     Private WithEvents m_ProgRunner As PRISM.Processes.clsProgRunner
@@ -267,8 +267,6 @@ Public Class clsDBSchemaExportTool
       ByVal fiComparison As FileInfo,
       ByRef eDifferenceReason As eDifferenceReasonType) As Boolean
 
-        Static reDate As Regex = New Regex("'\d+/\d+/\d+ \d+:\d+:\d+ [AP]M'", RegexOptions.Compiled Or RegexOptions.IgnoreCase)
-
         Try
             eDifferenceReason = eDifferenceReasonType.Unchanged
 
@@ -285,7 +283,9 @@ Public Class clsDBSchemaExportTool
             lstDateIgnoreFiles.Add("T_Process_Step_Control_Data.sql")
 			lstDateIgnoreFiles.Add("T_Signatures_Data.sql")
 			lstDateIgnoreFiles.Add("T_MTS_Peptide_DBs_Data.sql")
-			lstDateIgnoreFiles.Add("T_MTS_MT_DBs_Data.sql")
+            lstDateIgnoreFiles.Add("T_MTS_MT_DBs_Data.sql")
+            lstDateIgnoreFiles.Add("T_Processor_Tool_Data.sql")
+            lstDateIgnoreFiles.Add("T_Processor_Tool_Group_Details.sql")
 
             Dim ignoreInsertIntoDates = False
 
@@ -314,7 +314,7 @@ Public Class clsDBSchemaExportTool
                         If srComparisonFile.Peek > -1 Then
                             Dim strComparisonLine = srComparisonFile.ReadLine()
 
-                            Dim linesMatch = StringMatchIgnoreCase(strLineIn, strComparisonLine)
+                            Dim linesMatch = StringMatch(strLineIn, strComparisonLine)
 
                             If linesMatch Then Continue While
 
@@ -331,7 +331,7 @@ Public Class clsDBSchemaExportTool
 
                                         If sourceValue.StartsWith("SIZE") AndAlso comparisonValue.StartsWith("SIZE") Then
                                             ' Don't worry if these values differ
-                                        ElseIf Not StringMatchIgnoreCase(sourceValue, comparisonValue) Then
+                                        ElseIf Not StringMatch(sourceValue, comparisonValue) Then
                                             linesMatch = False
                                             Exit For
                                         End If
@@ -343,13 +343,13 @@ Public Class clsDBSchemaExportTool
                             If ignoreInsertIntoDates AndAlso strLineIn.StartsWith("INSERT INTO ") AndAlso strComparisonLine.StartsWith("INSERT INTO ") Then
                                 ' Data file where we're ignoring dates
                                 ' Truncate each of the data lines at the first occurrence of a date
-                                Dim matchBaseFile = reDate.Match(strLineIn)
-                                Dim matchComparisonFile = reDate.Match(strComparisonLine)
+                                Dim matchBaseFile = mDateMatcher.Match(strLineIn)
+                                Dim matchComparisonFile = mDateMatcher.Match(strComparisonLine)
 
                                 If matchBaseFile.Success AndAlso matchComparisonFile.Success Then
                                     strLineIn = strLineIn.Substring(0, matchBaseFile.Index)
                                     strComparisonLine = strComparisonLine.Substring(0, matchComparisonFile.Index)
-                                    linesMatch = StringMatchIgnoreCase(strLineIn, strComparisonLine)
+                                    linesMatch = StringMatch(strLineIn, strComparisonLine)
                                 End If
                             End If
 
@@ -469,6 +469,8 @@ Public Class clsDBSchemaExportTool
         lstTableNames.Add("T_Default_SP_Params")
         lstTableNames.Add("T_Processor_Instrument")
         lstTableNames.Add("T_Processor_Tool")
+        lstTableNames.Add("T_Processor_Tool_Group_Details")
+        lstTableNames.Add("T_Processor_Tool_Groups")
         lstTableNames.Add("T_Scripts")
         lstTableNames.Add("T_Scripts_History")
         lstTableNames.Add("T_Signatures")
@@ -634,7 +636,7 @@ Public Class clsDBSchemaExportTool
         Return lstTableNames.ToList()
 
     End Function
-    
+
     Private Function ParseGitStatus(
      ByVal diTargetFolder As DirectoryInfo,
      ByVal standardOutput As String,
@@ -867,7 +869,7 @@ Public Class clsDBSchemaExportTool
                 .Arguments = cmdArgs
                 .CreateNoWindow = True
                 .MonitoringInterval = 100
-                .Name = IO.Path.GetFileNameWithoutExtension(exePath)
+                .Name = Path.GetFileNameWithoutExtension(exePath)
                 .Program = exePath
                 .Repeat = False
                 .RepeatHoldOffTime = 0
@@ -880,7 +882,7 @@ Public Class clsDBSchemaExportTool
 
             Dim dtStartTime = DateTime.UtcNow
             Dim dtLastStatus = DateTime.UtcNow
-            Dim executionAborted As Boolean = False
+            Dim executionAborted = False
 
             ' Start the program executing
             m_ProgRunner.StartAndMonitorProgram()
@@ -929,7 +931,14 @@ Public Class clsDBSchemaExportTool
 
     End Function
 
-    Private Shared Function StringMatchIgnoreCase(ByVal text1 As String, ByVal text2 As String) As Boolean
+    ''' <summary>
+    ''' Compare two strings
+    ''' </summary>
+    ''' <param name="text1"></param>
+    ''' <param name="text2"></param>
+    ''' <returns>True if the strings match, otherwise false</returns>
+    ''' <remarks>Case sensitive comparison</remarks>
+    Private Shared Function StringMatch(ByVal text1 As String, ByVal text2 As String) As Boolean
 
         If String.Compare(text1, text2) = 0 Then
             Return True
@@ -1061,10 +1070,10 @@ Public Class clsDBSchemaExportTool
 
     End Function
 
-    Protected Function UpdateRepoChanges(
+    Private Function UpdateRepoChanges(
       ByVal diTargetFolder As DirectoryInfo,
       ByVal fileCopyCount As Integer,
-      ByVal lstNewFilePaths As List(Of String),
+      ByVal lstNewFilePaths As ICollection(Of String),
       ByVal eRepoManager As eRepoManagerType,
       ByVal commitMessageAppend As String) As Boolean
 
@@ -1077,9 +1086,9 @@ Public Class clsDBSchemaExportTool
         Const GIT_EXE_PATH = "C:\Program Files (x86)\Git\bin\git.exe"
         Const GIT_SOURCE = "Installed with 32-bit Git for Windows, available at http://git-scm.com/download/win"
 
-        Dim fiRepoExe As FileInfo = Nothing
-        Dim strRepoSource As String = Nothing
-        Dim strToolName As String = "Unknown"
+        Dim fiRepoExe As FileInfo
+        Dim strRepoSource As String
+        Dim strToolName = "Unknown"
 
         Try
 
@@ -1111,7 +1120,7 @@ Public Class clsDBSchemaExportTool
             End If
 
             Dim cmdArgs As String
-            Dim maxRuntimeSeconds As Integer = 90
+            Dim maxRuntimeSeconds As Integer
             Dim standardOutput = String.Empty
             Dim errorOutput = String.Empty
             Dim blnSuccess As Boolean
@@ -1220,7 +1229,7 @@ Public Class clsDBSchemaExportTool
 
             End If
 
-            Return True
+            Return blnSuccess
 
         Catch ex As Exception
             HandleException("Error in UpdateRepoChanges for tool " & strToolName, ex)
@@ -1229,7 +1238,7 @@ Public Class clsDBSchemaExportTool
 
     End Function
 
-    Protected Sub UpdateSubtaskProgress(ByVal taskDescription As String, ByVal percentComplete As Single)
+    Private Sub UpdateSubtaskProgress(ByVal taskDescription As String, ByVal percentComplete As Single)
         Dim blnDescriptionChanged = Not String.Equals(taskDescription, mSubtaskDescription)
 
         mSubtaskDescription = String.Copy(taskDescription)

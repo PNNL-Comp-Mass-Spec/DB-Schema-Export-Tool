@@ -1,5 +1,8 @@
 DB Schema Export Tool
 
+Version 1.2.5780; October 29, 2015
+	- Export data from tables T_Processor_Tool_Groups and T_Processor_Tool_Group_Details 
+
 Version 1.2.5501; January 23, 2015
 	- Fixed bug that prevented seeing the GUI
 

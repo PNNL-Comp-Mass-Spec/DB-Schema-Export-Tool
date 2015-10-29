@@ -186,97 +186,88 @@ Public Class clsExportDBSchema
 	Private mColumnCharNonStandardRegEx As Regex
 	Private mNonStandardOSChars As Regex
 
-	Protected mTableNamesToAutoSelect As List(Of String)
+    Private mTableNamesToAutoSelect As List(Of String)
 
 	' Note: Must contain valid RegEx statements (tested case-insensitive)
-	Protected mTableNameAutoSelectRegEx As List(Of String)
+    Private mTableNameAutoSelectRegEx As List(Of String)
 
 	' Keys in the dictionary are DatabaseName
 	' Values are the output folder path that was used
-	Protected mSchemaOutputFolders As Dictionary(Of String, String)
+    Private mSchemaOutputFolders As Dictionary(Of String, String)
 
     Private mShowStats As Boolean
 
 	Private mErrorCode As eDBSchemaExportErrorCodes
-	Private mStatusMessage As String
+    Private mStatusMessage As String
 
-    Private mPreviewExport As Boolean
-
-	Private mAbortProcessing As Boolean
+    Private mAbortProcessing As Boolean
     Private mPauseStatus As ePauseStatusConstants
 
 #End Region
 
 #Region "Progress Events and Variables"
-	Public Event ProgressReset()
-	Public Event ProgressChanged(ByVal taskDescription As String, ByVal percentComplete As Single)	   ' PercentComplete ranges from 0 to 100, but can contain decimal percentage values
-	Public Event ProgressComplete()
+    Public Event ProgressReset()
+    Public Event ProgressChanged(ByVal taskDescription As String, ByVal percentComplete As Single)     ' PercentComplete ranges from 0 to 100, but can contain decimal percentage values
+    Public Event ProgressComplete()
 
-	Public Event SubtaskProgressReset()
-	Public Event SubtaskProgressChanged(ByVal taskDescription As String, ByVal percentComplete As Single)	  ' PercentComplete ranges from 0 to 100, but can contain decimal percentage values
-	Public Event SubtaskProgressComplete()
+    Public Event SubtaskProgressReset()
+    Public Event SubtaskProgressChanged(ByVal taskDescription As String, ByVal percentComplete As Single)     ' PercentComplete ranges from 0 to 100, but can contain decimal percentage values
+    Public Event SubtaskProgressComplete()
 
-	Protected mProgressStepDescription As String = String.Empty
-	Protected mProgressPercentComplete As Single				' Ranges from 0 to 100, but can contain decimal percentage values
-	Protected mProgressStep As Integer
-	Protected mProgressStepCount As Integer
+    Private mProgressStepDescription As String = String.Empty
+    Private mProgressPercentComplete As Single              ' Ranges from 0 to 100, but can contain decimal percentage values
+    Private mProgressStep As Integer
+    Private mProgressStepCount As Integer
 
-	Protected mSubtaskProgressStepDescription As String = String.Empty
-	Protected mSubtaskProgressPercentComplete As Single			' Ranges from 0 to 100, but can contain decimal percentage values
+    Private mSubtaskProgressStepDescription As String = String.Empty
+    Private mSubtaskProgressPercentComplete As Single           ' Ranges from 0 to 100, but can contain decimal percentage values
 #End Region
 
 #Region "Properties"
 
-	Public Property TableNamesToAutoSelect() As List(Of String)
-		Get
-			Return mTableNamesToAutoSelect
-		End Get
-		Set(ByVal value As List(Of String))
-			mTableNamesToAutoSelect = value
-		End Set
-	End Property
-
-	Public Property TableNameAutoSelectRegEx() As List(Of String)
-		Get
-			Return mTableNameAutoSelectRegEx
-		End Get
-		Set(ByVal value As List(Of String))
-			mTableNameAutoSelectRegEx = value
-		End Set
-	End Property
-
-	Public ReadOnly Property ConnectedToServer() As Boolean
-		Get
-			Return mSqlServerOptionsCurrent.Connected
-		End Get
-	End Property
-
-	Public ReadOnly Property ErrorCode() As eDBSchemaExportErrorCodes
-		Get
-			Return mErrorCode
-		End Get
-	End Property
-
-	Public ReadOnly Property PauseStatus() As ePauseStatusConstants
-		Get
-            Return mPauseStatus
-		End Get
-	End Property
-
-    Public Property PreviewExport() As Boolean
+    Public Property TableNamesToAutoSelect() As List(Of String)
         Get
-            Return mPreviewExport
+            Return mTableNamesToAutoSelect
         End Get
-        Set(ByVal value As Boolean)
-            mPreviewExport = value
+        Set(ByVal value As List(Of String))
+            mTableNamesToAutoSelect = value
         End Set
     End Property
 
-	Public ReadOnly Property SchemaOutputFolders() As Dictionary(Of String, String)
-		Get
-			Return mSchemaOutputFolders
-		End Get
-	End Property
+    Public Property TableNameAutoSelectRegEx() As List(Of String)
+        Get
+            Return mTableNameAutoSelectRegEx
+        End Get
+        Set(ByVal value As List(Of String))
+            mTableNameAutoSelectRegEx = value
+        End Set
+    End Property
+
+    Public ReadOnly Property ConnectedToServer() As Boolean
+        Get
+            Return mSqlServerOptionsCurrent.Connected
+        End Get
+    End Property
+
+    Public ReadOnly Property ErrorCode() As eDBSchemaExportErrorCodes
+        Get
+            Return mErrorCode
+        End Get
+    End Property
+
+    Public ReadOnly Property PauseStatus() As ePauseStatusConstants
+        Get
+            Return mPauseStatus
+        End Get
+    End Property
+
+    Public Property PreviewExport As Boolean
+
+    Public ReadOnly Property SchemaOutputFolders() As Dictionary(Of String, String)
+        Get
+            Return mSchemaOutputFolders
+        End Get
+    End Property
 
     Public Property ShowStats() As Boolean
         Get
@@ -287,53 +278,53 @@ Public Class clsExportDBSchema
         End Set
     End Property
 
-	Public ReadOnly Property StatusMessage() As String
-		Get
-			If mStatusMessage Is Nothing Then
-				Return String.Empty
-			Else
-				Return mStatusMessage
-			End If
-		End Get
-	End Property
+    Public ReadOnly Property StatusMessage() As String
+        Get
+            If mStatusMessage Is Nothing Then
+                Return String.Empty
+            Else
+                Return mStatusMessage
+            End If
+        End Get
+    End Property
 
-	Public ReadOnly Property ProgressStep() As Integer
-		Get
-			Return mProgressStep
-		End Get
-	End Property
+    Public ReadOnly Property ProgressStep() As Integer
+        Get
+            Return mProgressStep
+        End Get
+    End Property
 
-	Public ReadOnly Property ProgressStepCount() As Integer
-		Get
-			Return mProgressStepCount
-		End Get
-	End Property
+    Public ReadOnly Property ProgressStepCount() As Integer
+        Get
+            Return mProgressStepCount
+        End Get
+    End Property
 
-	Public ReadOnly Property ProgressStepDescription() As String
-		Get
-			Return mProgressStepDescription
-		End Get
-	End Property
+    Public ReadOnly Property ProgressStepDescription() As String
+        Get
+            Return mProgressStepDescription
+        End Get
+    End Property
 
-	' ProgressPercentComplete ranges from 0 to 100, but can contain decimal percentage values
-	Public ReadOnly Property ProgressPercentComplete() As Single
-		Get
-			Return CType(Math.Round(mProgressPercentComplete, 2), Single)
-		End Get
-	End Property
+    ' ProgressPercentComplete ranges from 0 to 100, but can contain decimal percentage values
+    Public ReadOnly Property ProgressPercentComplete() As Single
+        Get
+            Return CType(Math.Round(mProgressPercentComplete, 2), Single)
+        End Get
+    End Property
 
-	Public ReadOnly Property SubtaskProgressStepDescription() As String
-		Get
-			Return mSubtaskProgressStepDescription
-		End Get
-	End Property
+    Public ReadOnly Property SubtaskProgressStepDescription() As String
+        Get
+            Return mSubtaskProgressStepDescription
+        End Get
+    End Property
 
-	' SubtaskProgressPercentComplete ranges from 0 to 100, but can contain decimal percentage values
-	Public ReadOnly Property SubtaskProgressPercentComplete() As Single
-		Get
-			Return CType(Math.Round(mSubtaskProgressPercentComplete, 2), Single)
-		End Get
-	End Property
+    ' SubtaskProgressPercentComplete ranges from 0 to 100, but can contain decimal percentage values
+    Public ReadOnly Property SubtaskProgressPercentComplete() As Single
+        Get
+            Return CType(Math.Round(mSubtaskProgressPercentComplete, 2), Single)
+        End Get
+    End Property
 
 #End Region
 
@@ -375,9 +366,9 @@ Public Class clsExportDBSchema
 			End If
 
 			' Initialize lstRegEx (we'll fill it below if blnAutoHiglightRows = True)
-			Const objRegExOptions As RegexOptions = RegexOptions.Compiled Or _
-			 RegexOptions.IgnoreCase Or _
-			 RegexOptions.Singleline
+            Const objRegExOptions As RegexOptions = RegexOptions.Compiled Or
+             RegexOptions.IgnoreCase Or
+             RegexOptions.Singleline
 
 			If Not mTableNameAutoSelectRegEx Is Nothing Then
 				Dim lstRegExSpecs = New List(Of Regex)
@@ -386,7 +377,7 @@ Public Class clsExportDBSchema
 					lstRegExSpecs.Add(New Regex(regexItem, objRegExOptions))
 				Next
 
-				' Step through the table names for this DB and compare to the RegEx values
+                ' Step through the table names for this DB and compare to the RegEx values
 				Dim dtTables = objDatabase.EnumObjects(DatabaseObjectTypes.Table, SortOrder.Name)
 
 				For Each objRow As DataRow In dtTables.Rows
@@ -687,12 +678,12 @@ Public Class clsExportDBSchema
 			If mAbortProcessing Then Exit Sub
 		End If
 
-		If udtSchemaExportOptions.ExportViews Or _
-		   udtSchemaExportOptions.ExportUserDefinedFunctions Or _
-		   udtSchemaExportOptions.ExportStoredProcedures Then
-			ExportDBViewsProcsAndUDFs(objDatabase, udtSchemaExportOptions, objScriptOptions, udtWorkingParams)
-			If mAbortProcessing Then Exit Sub
-		End If
+        If udtSchemaExportOptions.ExportViews Or
+           udtSchemaExportOptions.ExportUserDefinedFunctions Or
+           udtSchemaExportOptions.ExportStoredProcedures Then
+            ExportDBViewsProcsAndUDFs(objDatabase, udtSchemaExportOptions, objScriptOptions, udtWorkingParams)
+            If mAbortProcessing Then Exit Sub
+        End If
 
 		If udtSchemaExportOptions.ExportUserDefinedDataTypes Then
 			ExportDBUserDefinedDataTypes(objDatabase, udtSchemaExportOptions, objScriptOptions, udtWorkingParams)
@@ -706,33 +697,33 @@ Public Class clsExportDBSchema
 
 	End Sub
 
-	Private Sub ExportDBSchemasAndRoles(ByRef objDatabase As Database, _
-	   ByRef udtSchemaExportOptions As udtSchemaExportOptionsType, _
-	   ByRef objScriptOptions As ScriptingOptions, _
-	   ByRef udtWorkingParams As udtDBExportWorkingParamsType)
-		Dim intIndex As Integer
+    Private Sub ExportDBSchemasAndRoles(ByRef objDatabase As Database,
+       ByRef udtSchemaExportOptions As udtSchemaExportOptionsType,
+       ByRef objScriptOptions As ScriptingOptions,
+       ByRef udtWorkingParams As udtDBExportWorkingParamsType)
+        Dim intIndex As Integer
 
-		If udtWorkingParams.CountObjectsOnly Then
+        If udtWorkingParams.CountObjectsOnly Then
             udtWorkingParams.ProcessCount += 1
 
-			If SqlServer2005OrNewer(objDatabase) Then
-				For intIndex = 0 To objDatabase.Schemas.Count - 1
-					If ExportSchema(objDatabase.Schemas(intIndex)) Then
-						udtWorkingParams.ProcessCount += 1
-					End If
-				Next intIndex
-			End If
+            If SqlServer2005OrNewer(objDatabase) Then
+                For intIndex = 0 To objDatabase.Schemas.Count - 1
+                    If ExportSchema(objDatabase.Schemas(intIndex)) Then
+                        udtWorkingParams.ProcessCount += 1
+                    End If
+                Next intIndex
+            End If
 
-			For intIndex = 0 To objDatabase.Roles.Count - 1
-				If ExportRole(objDatabase.Roles(intIndex)) Then
-					udtWorkingParams.ProcessCount += 1
-				End If
+            For intIndex = 0 To objDatabase.Roles.Count - 1
+                If ExportRole(objDatabase.Roles(intIndex)) Then
+                    udtWorkingParams.ProcessCount += 1
+                End If
             Next intIndex
             Exit Sub
         End If
 
         Try
-            WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB, DB_DEFINITION_FILE_PREFIX & objDatabase.Name, _
+            WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB, DB_DEFINITION_FILE_PREFIX & objDatabase.Name,
              CleanSqlScript(StringCollectionToList(objDatabase.Script(objScriptOptions)), udtSchemaExportOptions))
         Catch ex As Exception
             ' User likely doesn't have privilege to script the DB; ignore the error
@@ -743,7 +734,7 @@ Public Class clsExportDBSchema
         If SqlServer2005OrNewer(objDatabase) Then
             For intIndex = 0 To objDatabase.Schemas.Count - 1
                 If ExportSchema(objDatabase.Schemas(intIndex)) Then
-                    WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB, "Schema_" & objDatabase.Schemas(intIndex).Name, _
+                    WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB, "Schema_" & objDatabase.Schemas(intIndex).Name,
                      CleanSqlScript(StringCollectionToList(objDatabase.Schemas(intIndex).Script(objScriptOptions)), udtSchemaExportOptions))
 
                     udtWorkingParams.ProcessCount += 1
@@ -758,7 +749,7 @@ Public Class clsExportDBSchema
 
         For intIndex = 0 To objDatabase.Roles.Count - 1
             If ExportRole(objDatabase.Roles(intIndex)) Then
-                WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB, "Role_" & objDatabase.Roles(intIndex).Name, _
+                WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB, "Role_" & objDatabase.Roles(intIndex).Name,
                  CleanSqlScript(StringCollectionToList(objDatabase.Roles(intIndex).Script(objScriptOptions)), udtSchemaExportOptions))
 
                 udtWorkingParams.ProcessCount += 1
@@ -770,25 +761,25 @@ Public Class clsExportDBSchema
             End If
         Next intIndex
 
-	End Sub
+    End Sub
 
-	Private Sub ExportDBTables(ByRef objDatabase As Database, _
-	   ByRef udtSchemaExportOptions As udtSchemaExportOptionsType, _
-	   ByRef objScriptOptions As ScriptingOptions, _
-	   ByRef udtWorkingParams As udtDBExportWorkingParamsType)
+    Private Sub ExportDBTables(ByRef objDatabase As Database,
+       ByRef udtSchemaExportOptions As udtSchemaExportOptionsType,
+       ByRef objScriptOptions As ScriptingOptions,
+       ByRef udtWorkingParams As udtDBExportWorkingParamsType)
 
-		Const SYNC_OBJ_TABLE_PREFIX As String = "syncobj_0x"
+        Const SYNC_OBJ_TABLE_PREFIX As String = "syncobj_0x"
 
-		Dim objScripter As Scripter
-		Dim objSMOObject() As SqlSmoObject
-		Dim objTable As Table
+        Dim objScripter As Scripter
+        Dim objSMOObject() As SqlSmoObject
+        Dim objTable As Table
 
-		Dim blnIncludeTable As Boolean
+        Dim blnIncludeTable As Boolean
 
-		If udtWorkingParams.CountObjectsOnly Then
-			' Note: objDatabase.Tables includes system tables, so udtWorkingParams.ProcessCount will be 
-			'       an overestimate if udtSchemaExportOptions.IncludeSystemObjects = False
-			udtWorkingParams.ProcessCount += objDatabase.Tables.Count
+        If udtWorkingParams.CountObjectsOnly Then
+            ' Note: objDatabase.Tables includes system tables, so udtWorkingParams.ProcessCount will be 
+            '       an overestimate if udtSchemaExportOptions.IncludeSystemObjects = False
+            udtWorkingParams.ProcessCount += objDatabase.Tables.Count
         Else
             Dim dtStartTime = DateTime.UtcNow
 
@@ -816,7 +807,7 @@ Public Class clsExportDBSchema
                     UpdateSubtaskProgress(udtWorkingParams.ProcessCount, udtWorkingParams.ProcessCountExpected)
 
                     objSMOObject(0) = objTable
-                    WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB, objTable.Name, _
+                    WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB, objTable.Name,
                      CleanSqlScript(StringCollectionToList(objScripter.Script(objSMOObject)), udtSchemaExportOptions))
                 End If
 
@@ -832,164 +823,164 @@ Public Class clsExportDBSchema
                 Console.WriteLine("Exported " & objDatabase.Tables.Count & " tables in " & DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds.ToString("0.0") & " seconds")
             End If
 
-		End If
-	End Sub
+        End If
+    End Sub
 
-	Private Sub ExportDBUserDefinedDataTypes(ByRef objDatabase As Database, _
-	  ByRef udtSchemaExportOptions As udtSchemaExportOptionsType, _
-	  ByRef objScriptOptions As ScriptingOptions, _
-	  ByRef udtWorkingParams As udtDBExportWorkingParamsType)
+    Private Sub ExportDBUserDefinedDataTypes(ByRef objDatabase As Database,
+      ByRef udtSchemaExportOptions As udtSchemaExportOptionsType,
+      ByRef objScriptOptions As ScriptingOptions,
+      ByRef udtWorkingParams As udtDBExportWorkingParamsType)
 
-		Dim intItemCount As Integer
+        Dim intItemCount As Integer
 
-		If udtWorkingParams.CountObjectsOnly Then
-			udtWorkingParams.ProcessCount += objDatabase.UserDefinedDataTypes.Count
-		Else
-			intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedDataTypes, udtSchemaExportOptions, objScriptOptions, udtWorkingParams.ProcessCountExpected, udtWorkingParams.OutputFolderPathCurrentDB)
-			udtWorkingParams.ProcessCount += intItemCount
-		End If
-	End Sub
+        If udtWorkingParams.CountObjectsOnly Then
+            udtWorkingParams.ProcessCount += objDatabase.UserDefinedDataTypes.Count
+        Else
+            intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedDataTypes, udtSchemaExportOptions, objScriptOptions, udtWorkingParams.ProcessCountExpected, udtWorkingParams.OutputFolderPathCurrentDB)
+            udtWorkingParams.ProcessCount += intItemCount
+        End If
+    End Sub
 
-	Private Sub ExportDBUserDefinedTypes(ByRef objDatabase As Database, _
-	 ByRef udtSchemaExportOptions As udtSchemaExportOptionsType, _
-	 ByRef objScriptOptions As ScriptingOptions, _
-	 ByRef udtWorkingParams As udtDBExportWorkingParamsType)
-		Dim intItemCount As Integer
+    Private Sub ExportDBUserDefinedTypes(ByRef objDatabase As Database,
+     ByRef udtSchemaExportOptions As udtSchemaExportOptionsType,
+     ByRef objScriptOptions As ScriptingOptions,
+     ByRef udtWorkingParams As udtDBExportWorkingParamsType)
+        Dim intItemCount As Integer
 
-		If SqlServer2005OrNewer(objDatabase) Then
-			If udtWorkingParams.CountObjectsOnly Then
-				udtWorkingParams.ProcessCount += objDatabase.UserDefinedTypes.Count
-			Else
-				intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedTypes, udtSchemaExportOptions, objScriptOptions, udtWorkingParams.ProcessCountExpected, udtWorkingParams.OutputFolderPathCurrentDB)
-				udtWorkingParams.ProcessCount += intItemCount
-			End If
-		End If
+        If SqlServer2005OrNewer(objDatabase) Then
+            If udtWorkingParams.CountObjectsOnly Then
+                udtWorkingParams.ProcessCount += objDatabase.UserDefinedTypes.Count
+            Else
+                intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedTypes, udtSchemaExportOptions, objScriptOptions, udtWorkingParams.ProcessCountExpected, udtWorkingParams.OutputFolderPathCurrentDB)
+                udtWorkingParams.ProcessCount += intItemCount
+            End If
+        End If
 
-	End Sub
+    End Sub
 
-	Private Sub ExportDBViewsProcsAndUDFs(ByRef objDatabase As Database, _
-	  ByRef udtSchemaExportOptions As udtSchemaExportOptionsType, _
-	  ByRef objScriptOptions As ScriptingOptions, _
-	  ByRef udtWorkingParams As udtDBExportWorkingParamsType)
+    Private Sub ExportDBViewsProcsAndUDFs(ByRef objDatabase As Database,
+      ByRef udtSchemaExportOptions As udtSchemaExportOptionsType,
+      ByRef objScriptOptions As ScriptingOptions,
+      ByRef udtWorkingParams As udtDBExportWorkingParamsType)
 
-		' Option 1) obtain the list of views, stored procedures, and UDFs is to use objDatabase.EnumObjects
-		' However, this only returns the object name, type, and URN, not whether or not it is a system object
-		'
-		' Option 2) use objDatabase.Views, objDatabase.StoredProcedures, etc.
-		' However, on Sql Server 2005 this returns many system views and system procedures that we typically don't want to export
-		'
-		' Option 3) query the sysobjects table and filter on the xtype field
-		' Possible values for XType:
-		'   C = CHECK constraint
-		'   D = Default or DEFAULT constraint
-		'   F = FOREIGN KEY constraint
-		'   IF = Inline Function
-		'   FN = User Defined Function
-		'   TF = Table Valued Function
-		'   L = Log
-		'   P = Stored procedure
-		'   PK = PRIMARY KEY constraint (type is K)
-		'   RF = Replication filter stored procedure
-		'   S = System table
-		'   TR = Trigger
-		'   U = User table
-		'   UQ = UNIQUE constraint (type is K)
-		'   V = View
-		'   X = Extended stored procedure
+        ' Option 1) obtain the list of views, stored procedures, and UDFs is to use objDatabase.EnumObjects
+        ' However, this only returns the object name, type, and URN, not whether or not it is a system object
+        '
+        ' Option 2) use objDatabase.Views, objDatabase.StoredProcedures, etc.
+        ' However, on Sql Server 2005 this returns many system views and system procedures that we typically don't want to export
+        '
+        ' Option 3) query the sysobjects table and filter on the xtype field
+        ' Possible values for XType:
+        '   C = CHECK constraint
+        '   D = Default or DEFAULT constraint
+        '   F = FOREIGN KEY constraint
+        '   IF = Inline Function
+        '   FN = User Defined Function
+        '   TF = Table Valued Function
+        '   L = Log
+        '   P = Stored procedure
+        '   PK = PRIMARY KEY constraint (type is K)
+        '   RF = Replication filter stored procedure
+        '   S = System table
+        '   TR = Trigger
+        '   U = User table
+        '   UQ = UNIQUE constraint (type is K)
+        '   V = View
+        '   X = Extended stored procedure
 
-		''Dim strXType As String
-		''For intObjectIterator = 0 To 2
-		''    strXType = String.Empty
-		''    Select Case intObjectIterator
-		''        Case 0
-		''            ' Views
-		''            If udtSchemaExportOptions.ExportViews Then
-		''                strXType = " = 'V'"
-		''            End If
-		''        Case 1
-		''            ' Stored procedures
-		''            If udtSchemaExportOptions.ExportStoredProcedures Then
-		''                strXType = " = 'P'"
-		''            End If
-		''        Case 2
-		''            ' User defined functions
-		''            If udtSchemaExportOptions.ExportUserDefinedFunctions Then
-		''                strXType = " IN ('IF', 'FN', 'TF')"
-		''            End If
-		''        Case Else
-		''            ' Unknown value for intObjectIterator; skip it
-		''    End Select
+        ''Dim strXType As String
+        ''For intObjectIterator = 0 To 2
+        ''    strXType = String.Empty
+        ''    Select Case intObjectIterator
+        ''        Case 0
+        ''            ' Views
+        ''            If udtSchemaExportOptions.ExportViews Then
+        ''                strXType = " = 'V'"
+        ''            End If
+        ''        Case 1
+        ''            ' Stored procedures
+        ''            If udtSchemaExportOptions.ExportStoredProcedures Then
+        ''                strXType = " = 'P'"
+        ''            End If
+        ''        Case 2
+        ''            ' User defined functions
+        ''            If udtSchemaExportOptions.ExportUserDefinedFunctions Then
+        ''                strXType = " IN ('IF', 'FN', 'TF')"
+        ''            End If
+        ''        Case Else
+        ''            ' Unknown value for intObjectIterator; skip it
+        ''    End Select
 
-		''    If strXType.Length > 0 Then
-		''        strSql = "SELECT name FROM sysobjects WHERE xtype " & strXType
-		''        If Not udtSchemaExportOptions.IncludeSystemObjects Then
-		''            strSql &= " AND category = 0"
-		''        End If
-		''        strSql &= " ORDER BY Name"
-		''        dsObjects = objDatabase.ExecuteWithResults(strSql)
+        ''    If strXType.Length > 0 Then
+        ''        strSql = "SELECT name FROM sysobjects WHERE xtype " & strXType
+        ''        If Not udtSchemaExportOptions.IncludeSystemObjects Then
+        ''            strSql &= " AND category = 0"
+        ''        End If
+        ''        strSql &= " ORDER BY Name"
+        ''        dsObjects = objDatabase.ExecuteWithResults(strSql)
 
-		''        If udtWorkingParams.CountObjectsOnly Then
-		''            udtWorkingParams.ProcessCount += dsObjects.Tables(0).Rows.Count
-		''        Else
-		''            For Each objRow In dsObjects.Tables(0).Rows
-		''                strObjectName = objRow.Item(0).ToString
-		''                mSubtaskProgressStepDescription = strObjectName
-		''                UpdateSubtaskProgress(udtWorkingParams.ProcessCount, udtWorkingParams.ProcessCountExpected)
+        ''        If udtWorkingParams.CountObjectsOnly Then
+        ''            udtWorkingParams.ProcessCount += dsObjects.Tables(0).Rows.Count
+        ''        Else
+        ''            For Each objRow In dsObjects.Tables(0).Rows
+        ''                strObjectName = objRow.Item(0).ToString
+        ''                mSubtaskProgressStepDescription = strObjectName
+        ''                UpdateSubtaskProgress(udtWorkingParams.ProcessCount, udtWorkingParams.ProcessCountExpected)
 
-		''                Select Case intObjectIterator
-		''                    Case 0
-		''                        ' Views
-		''                        objSMOObject(0) = objDatabase.Views(strObjectName)
-		''                    Case 1
-		''                        ' Stored procedures
-		''                        objSMOObject(0) = objDatabase.StoredProcedures(strObjectName)
-		''                    Case 2
-		''                        ' User defined functions
-		''                        objSMOObject(0) = objDatabase.UserDefinedFunctions(strObjectName)
-		''                    Case Else
-		''                        ' Unknown value for intObjectIterator; skip it
-		''                        objSMOObject(0) = Nothing
-		''                End Select
+        ''                Select Case intObjectIterator
+        ''                    Case 0
+        ''                        ' Views
+        ''                        objSMOObject(0) = objDatabase.Views(strObjectName)
+        ''                    Case 1
+        ''                        ' Stored procedures
+        ''                        objSMOObject(0) = objDatabase.StoredProcedures(strObjectName)
+        ''                    Case 2
+        ''                        ' User defined functions
+        ''                        objSMOObject(0) = objDatabase.UserDefinedFunctions(strObjectName)
+        ''                    Case Else
+        ''                        ' Unknown value for intObjectIterator; skip it
+        ''                        objSMOObject(0) = Nothing
+        ''                End Select
 
-		''                If Not objSMOObject(0) Is Nothing Then
-		''                    WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB, strObjectName, _
-		''                                      CleanSqlScript(objScripter.Script(objSMOObject), udtSchemaExportOptions)))
-		''                End If
+        ''                If Not objSMOObject(0) Is Nothing Then
+        ''                    WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB, strObjectName,
+        ''                                      CleanSqlScript(objScripter.Script(objSMOObject), udtSchemaExportOptions)))
+        ''                End If
 
-		''                udtWorkingParams.ProcessCount += 1
-		''                CheckPauseStatus()
-		''                If mAbortProcessing Then
-		''                    UpdateProgress("Aborted processing")
-		''                    Exit Function
-		''                End If
-		''            Next objRow
-		''        End If
-		''    End If
-		''Next intObjectIterator
+        ''                udtWorkingParams.ProcessCount += 1
+        ''                CheckPauseStatus()
+        ''                If mAbortProcessing Then
+        ''                    UpdateProgress("Aborted processing")
+        ''                    Exit Function
+        ''                End If
+        ''            Next objRow
+        ''        End If
+        ''    End If
+        ''Next intObjectIterator
 
 
-		' Option 4) Query the INFORMATION_SCHEMA views
+        ' Option 4) Query the INFORMATION_SCHEMA views
 
-		Dim objScripter As Scripter
-		Dim objSMOObject() As SqlSmoObject
+        Dim objScripter As Scripter
+        Dim objSMOObject() As SqlSmoObject
 
-		''Dim objURNList() As Microsoft.SqlServer.Management.Smo.Urn
-		''ReDim objURNList(0)
+        ''Dim objURNList() As Microsoft.SqlServer.Management.Smo.Urn
+        ''ReDim objURNList(0)
 
-		Dim dsObjects As DataSet
-		Dim objRow As DataRow
-		Dim strObjectSchema As String
-		Dim strObjectName As String
+        Dim dsObjects As DataSet
+        Dim objRow As DataRow
+        Dim strObjectSchema As String
+        Dim strObjectName As String
 
-		Dim intObjectIterator As Integer
+        Dim intObjectIterator As Integer
 
-		Dim strSql As String
+        Dim strSql As String
 
-		' Initialize the scripter and objSMOObject()
-		objScripter = New Scripter(mSqlServer)
-		objScripter.Options = objScriptOptions
+        ' Initialize the scripter and objSMOObject()
+        objScripter = New Scripter(mSqlServer)
+        objScripter.Options = objScriptOptions
 
-		ReDim objSMOObject(0)
+        ReDim objSMOObject(0)
 
         For intObjectIterator = 0 To 2
             Dim objectType As String = "unknown"
@@ -1061,7 +1052,7 @@ Public Class clsExportDBSchema
                     End Select
 
                     If Not objSMOObject(0) Is Nothing Then
-                        WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB, strObjectName, _
+                        WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB, strObjectName,
                          CleanSqlScript(StringCollectionToList(objScripter.Script(objSMOObject)), udtSchemaExportOptions))
                     End If
 
@@ -1078,279 +1069,279 @@ Public Class clsExportDBSchema
                 End If
             End If
         Next intObjectIterator
-	End Sub
+    End Sub
 
-	Private Function ExportDBTableData(
-	  ByRef objDatabase As Database, _
-	  ByVal dctTablesToExport As Dictionary(Of String, Int64),
-	  ByVal udtSchemaExportOptions As udtSchemaExportOptionsType, _
-	  ByRef udtWorkingParams As udtDBExportWorkingParamsType) As Boolean
+    Private Function ExportDBTableData(
+      ByRef objDatabase As Database,
+      ByVal dctTablesToExport As Dictionary(Of String, Int64),
+      ByVal udtSchemaExportOptions As udtSchemaExportOptionsType,
+      ByRef udtWorkingParams As udtDBExportWorkingParamsType) As Boolean
 
-		Try
-			If dctTablesToExport Is Nothing OrElse dctTablesToExport.Count = 0 Then
-				Return True
-			End If
+        Try
+            If dctTablesToExport Is Nothing OrElse dctTablesToExport.Count = 0 Then
+                Return True
+            End If
 
-			Dim sbCurrentRow = New StringBuilder
+            Dim sbCurrentRow = New StringBuilder
 
-			For Each tableItem In dctTablesToExport
+            For Each tableItem In dctTablesToExport
 
-				Dim intMaximumDataRowsToExport = tableItem.Value
+                Dim intMaximumDataRowsToExport = tableItem.Value
 
-				mSubtaskProgressStepDescription = "Exporting data from " & tableItem.Key
-				UpdateSubtaskProgress(udtWorkingParams.ProcessCount, udtWorkingParams.ProcessCountExpected)
+                mSubtaskProgressStepDescription = "Exporting data from " & tableItem.Key
+                UpdateSubtaskProgress(udtWorkingParams.ProcessCount, udtWorkingParams.ProcessCountExpected)
 
-				Dim objTable As Table
+                Dim objTable As Table
 
-				If objDatabase.Tables.Contains(tableItem.Key) Then
-					objTable = objDatabase.Tables(tableItem.Key)
-				ElseIf objDatabase.Tables.Contains(tableItem.Key, "dbo") Then
-					objTable = objDatabase.Tables(tableItem.Key, "dbo")
-				Else
-					Continue For
-				End If
+                If objDatabase.Tables.Contains(tableItem.Key) Then
+                    objTable = objDatabase.Tables(tableItem.Key)
+                ElseIf objDatabase.Tables.Contains(tableItem.Key, "dbo") Then
+                    objTable = objDatabase.Tables(tableItem.Key, "dbo")
+                Else
+                    Continue For
+                End If
 
-				' See if any of the columns in the table is an identity column
-				Dim blnIdentityColumnFound = False
-				For Each objColumn As Column In objTable.Columns
-					If objColumn.Identity Then
-						blnIdentityColumnFound = True
-						Exit For
-					End If
-				Next
+                ' See if any of the columns in the table is an identity column
+                Dim blnIdentityColumnFound = False
+                For Each objColumn As Column In objTable.Columns
+                    If objColumn.Identity Then
+                        blnIdentityColumnFound = True
+                        Exit For
+                    End If
+                Next
 
-				' Export the data from objTable, possibly limiting the number of rows to export
-				Dim strSql = "SELECT "
+                ' Export the data from objTable, possibly limiting the number of rows to export
+                Dim strSql = "SELECT "
 
-				If intMaximumDataRowsToExport > 0 Then
-					strSql &= "TOP " & intMaximumDataRowsToExport.ToString
-				End If
+                If intMaximumDataRowsToExport > 0 Then
+                    strSql &= "TOP " & intMaximumDataRowsToExport.ToString
+                End If
 
-				strSql &= " * FROM [" & objTable.Name & "]"
+                strSql &= " * FROM [" & objTable.Name & "]"
 
-				' Read method #1: Populate a DataSet
-				Dim dsCurrentTable As DataSet = objDatabase.ExecuteWithResults(strSql)
+                ' Read method #1: Populate a DataSet
+                Dim dsCurrentTable As DataSet = objDatabase.ExecuteWithResults(strSql)
 
-				Dim lstTableRows = New List(Of String)
+                Dim lstTableRows = New List(Of String)
 
-				Dim strHeader = COMMENT_START_TEXT & "Object:  Table [" & objTable.Name & "]"
-				If udtSchemaExportOptions.IncludeTimestampInScriptFileHeader Then
-					strHeader &= "    " & COMMENT_SCRIPT_DATE_TEXT & GetTimeStamp()
-				End If
-				strHeader &= COMMENT_END_TEXT
-				lstTableRows.Add(strHeader)
+                Dim strHeader = COMMENT_START_TEXT & "Object:  Table [" & objTable.Name & "]"
+                If udtSchemaExportOptions.IncludeTimestampInScriptFileHeader Then
+                    strHeader &= "    " & COMMENT_SCRIPT_DATE_TEXT & GetTimeStamp()
+                End If
+                strHeader &= COMMENT_END_TEXT
+                lstTableRows.Add(strHeader)
 
-				lstTableRows.Add(COMMENT_START_TEXT & "RowCount: " & objTable.RowCount & COMMENT_END_TEXT)
+                lstTableRows.Add(COMMENT_START_TEXT & "RowCount: " & objTable.RowCount & COMMENT_END_TEXT)
 
-				Dim intColumnCount = dsCurrentTable.Tables(0).Columns.Count
-				Dim lstColumnTypes = New List(Of eDataColumnTypeConstants)
+                Dim intColumnCount = dsCurrentTable.Tables(0).Columns.Count
+                Dim lstColumnTypes = New List(Of eDataColumnTypeConstants)
 
-				' Construct the column name list and determine the column data types
-				sbCurrentRow.Clear()
-				For intColumnIndex As Integer = 0 To intColumnCount - 1
-					Dim objColumn As DataColumn = dsCurrentTable.Tables(0).Columns(intColumnIndex)
+                ' Construct the column name list and determine the column data types
+                sbCurrentRow.Clear()
+                For intColumnIndex As Integer = 0 To intColumnCount - 1
+                    Dim objColumn As DataColumn = dsCurrentTable.Tables(0).Columns(intColumnIndex)
 
-					' Initially assume the column's data type is numeric
-					Dim eDataColumnType = eDataColumnTypeConstants.Numeric
+                    ' Initially assume the column's data type is numeric
+                    Dim eDataColumnType = eDataColumnTypeConstants.Numeric
 
-					' Now check for other data types
-					If objColumn.DataType Is Type.GetType("System.String") Then
-						eDataColumnType = eDataColumnTypeConstants.Text
+                    ' Now check for other data types
+                    If objColumn.DataType Is Type.GetType("System.String") Then
+                        eDataColumnType = eDataColumnTypeConstants.Text
 
-					ElseIf objColumn.DataType Is Type.GetType("System.DateTime") Then
-						' Date column
-						eDataColumnType = eDataColumnTypeConstants.DateTime
+                    ElseIf objColumn.DataType Is Type.GetType("System.DateTime") Then
+                        ' Date column
+                        eDataColumnType = eDataColumnTypeConstants.DateTime
 
-					ElseIf objColumn.DataType Is Type.GetType("System.Byte[]") Then
-						Select Case objColumn.DataType.Name
-							Case "image"
-								eDataColumnType = eDataColumnTypeConstants.ImageObject
-							Case "timestamp"
-								eDataColumnType = eDataColumnTypeConstants.BinaryArray
-							Case Else
-								eDataColumnType = eDataColumnTypeConstants.BinaryArray
-						End Select
+                    ElseIf objColumn.DataType Is Type.GetType("System.Byte[]") Then
+                        Select Case objColumn.DataType.Name
+                            Case "image"
+                                eDataColumnType = eDataColumnTypeConstants.ImageObject
+                            Case "timestamp"
+                                eDataColumnType = eDataColumnTypeConstants.BinaryArray
+                            Case Else
+                                eDataColumnType = eDataColumnTypeConstants.BinaryArray
+                        End Select
 
-					ElseIf objColumn.DataType Is Type.GetType("System.Guid") Then
-						eDataColumnType = eDataColumnTypeConstants.GUID
+                    ElseIf objColumn.DataType Is Type.GetType("System.Guid") Then
+                        eDataColumnType = eDataColumnTypeConstants.GUID
 
-					ElseIf objColumn.DataType Is Type.GetType("System.Boolean") Then
-						' This may be a binary column
-						Select Case objColumn.DataType.Name
-							Case "binary", "bit"
-								eDataColumnType = eDataColumnTypeConstants.BinaryByte
-							Case Else
-								eDataColumnType = eDataColumnTypeConstants.Text
-						End Select
+                    ElseIf objColumn.DataType Is Type.GetType("System.Boolean") Then
+                        ' This may be a binary column
+                        Select Case objColumn.DataType.Name
+                            Case "binary", "bit"
+                                eDataColumnType = eDataColumnTypeConstants.BinaryByte
+                            Case Else
+                                eDataColumnType = eDataColumnTypeConstants.Text
+                        End Select
 
-					ElseIf objColumn.DataType Is Type.GetType("System.Object") Then
-						Select Case objColumn.DataType.Name
-							Case "sql_variant"
-								eDataColumnType = eDataColumnTypeConstants.SqlVariant
-							Case Else
-								eDataColumnType = eDataColumnTypeConstants.GeneralObject
-						End Select
+                    ElseIf objColumn.DataType Is Type.GetType("System.Object") Then
+                        Select Case objColumn.DataType.Name
+                            Case "sql_variant"
+                                eDataColumnType = eDataColumnTypeConstants.SqlVariant
+                            Case Else
+                                eDataColumnType = eDataColumnTypeConstants.GeneralObject
+                        End Select
 
-					End If
+                    End If
 
-					lstColumnTypes.Add(eDataColumnType)
+                    lstColumnTypes.Add(eDataColumnType)
 
-					If udtSchemaExportOptions.SaveDataAsInsertIntoStatements Then
-						sbCurrentRow.Append(PossiblyQuoteColumnName(objColumn.ColumnName))
-						If intColumnIndex < intColumnCount - 1 Then
-							sbCurrentRow.Append(", ")
-						End If
-					Else
-						sbCurrentRow.Append(objColumn.ColumnName)
-						If intColumnIndex < intColumnCount - 1 Then
-							sbCurrentRow.Append(ControlChars.Tab)
-						End If
-					End If
+                    If udtSchemaExportOptions.SaveDataAsInsertIntoStatements Then
+                        sbCurrentRow.Append(PossiblyQuoteColumnName(objColumn.ColumnName))
+                        If intColumnIndex < intColumnCount - 1 Then
+                            sbCurrentRow.Append(", ")
+                        End If
+                    Else
+                        sbCurrentRow.Append(objColumn.ColumnName)
+                        If intColumnIndex < intColumnCount - 1 Then
+                            sbCurrentRow.Append(ControlChars.Tab)
+                        End If
+                    End If
 
-				Next
+                Next
 
-				Dim strInsertIntoLine As String = String.Empty
-				Dim chColSepChar As Char
+                Dim strInsertIntoLine As String = String.Empty
+                Dim chColSepChar As Char
 
-				If udtSchemaExportOptions.SaveDataAsInsertIntoStatements Then
-					' Future capability:
-					''Select Case udtSchemaExportOptions.DatabaseTypeForInsertInto
-					''    Case eTargetDatabaseTypeConstants.SqlServer
-					''    Case Else
-					''        ' Unsupported mode
-					''End Select
+                If udtSchemaExportOptions.SaveDataAsInsertIntoStatements Then
+                    ' Future capability:
+                    ''Select Case udtSchemaExportOptions.DatabaseTypeForInsertInto
+                    ''    Case eTargetDatabaseTypeConstants.SqlServer
+                    ''    Case Else
+                    ''        ' Unsupported mode
+                    ''End Select
 
-					If blnIdentityColumnFound Then
-						strInsertIntoLine = "INSERT INTO [" & objTable.Name & "] (" & sbCurrentRow.ToString & ") VALUES ("
-						lstTableRows.Add("SET IDENTITY_INSERT [" & objTable.Name & "] ON")
-					Else
-						' Identity column not present; no need to explicitly list the column names
-						strInsertIntoLine = "INSERT INTO [" & objTable.Name & "] VALUES ("
+                    If blnIdentityColumnFound Then
+                        strInsertIntoLine = "INSERT INTO [" & objTable.Name & "] (" & sbCurrentRow.ToString & ") VALUES ("
+                        lstTableRows.Add("SET IDENTITY_INSERT [" & objTable.Name & "] ON")
+                    Else
+                        ' Identity column not present; no need to explicitly list the column names
+                        strInsertIntoLine = "INSERT INTO [" & objTable.Name & "] VALUES ("
 
-						' However, we'll display the column names in the output file
-						lstTableRows.Add(COMMENT_START_TEXT & "Columns: " & sbCurrentRow.ToString & COMMENT_END_TEXT)
-					End If
-					chColSepChar = ","c
-				Else
-					lstTableRows.Add(sbCurrentRow.ToString)
-					chColSepChar = ControlChars.Tab
-				End If
-
-
-				For Each objRow As DataRow In dsCurrentTable.Tables(0).Rows
-					sbCurrentRow.Clear()
-					If udtSchemaExportOptions.SaveDataAsInsertIntoStatements Then
-						sbCurrentRow.Append(strInsertIntoLine)
-					End If
-
-					For intColumnIndex = 0 To intColumnCount - 1
-						Select Case lstColumnTypes(intColumnIndex)
-							Case eDataColumnTypeConstants.Numeric
-								sbCurrentRow.Append(objRow.Item(intColumnIndex).ToString)
-							Case eDataColumnTypeConstants.Text, eDataColumnTypeConstants.DateTime, eDataColumnTypeConstants.GUID
-								If udtSchemaExportOptions.SaveDataAsInsertIntoStatements Then
-									sbCurrentRow.Append(PossiblyQuoteText(objRow.Item(intColumnIndex).ToString))
-								Else
-									sbCurrentRow.Append(objRow.Item(intColumnIndex).ToString)
-								End If
-
-							Case eDataColumnTypeConstants.BinaryArray
-								Try
-									Dim bytData() As Byte = CType(CType(objRow.Item(intColumnIndex), Array), Byte())
-
-									' Convert the bytes to a string; however, do not write any leading zeroes
-									' The string will be of the form '0x020D89'
-									sbCurrentRow.Append("0x")
-
-									Dim blnDataFound = False
-									For intByteIndex = 0 To bytData.Length - 1
-										If blnDataFound OrElse bytData(intByteIndex) <> 0 Then
-											blnDataFound = True
-											' Convert the byte to Hex (0 to 255 -> 00 to FF)
-											sbCurrentRow.Append(bytData(intByteIndex).ToString("X2"))
-										End If
-									Next intByteIndex
-
-									If Not blnDataFound Then
-										sbCurrentRow.Append("00")
-									End If
-
-								Catch ex As Exception
-									sbCurrentRow.Append("[Byte]")
-								End Try
-
-							Case eDataColumnTypeConstants.BinaryByte
-								Try
-									sbCurrentRow.Append("0x" & Convert.ToByte(objRow.Item(intColumnIndex)).ToString("X2"))
-								Catch ex As Exception
-									sbCurrentRow.Append("[Byte]")
-								End Try
-							Case eDataColumnTypeConstants.ImageObject
-								sbCurrentRow.Append("[Image]")
-							Case eDataColumnTypeConstants.GeneralObject
-								sbCurrentRow.Append("[Object]")
-							Case eDataColumnTypeConstants.SqlVariant
-								sbCurrentRow.Append("[Sql_Variant]")
-
-							Case Else
-								' No need to quote
-								sbCurrentRow.Append(objRow.Item(intColumnIndex).ToString)
-						End Select
-
-						If intColumnIndex < intColumnCount - 1 Then
-							sbCurrentRow.Append(chColSepChar)
-						End If
-					Next
-					If udtSchemaExportOptions.SaveDataAsInsertIntoStatements Then
-						sbCurrentRow.Append(")")
-					End If
-
-					lstTableRows.Add(sbCurrentRow.ToString)
-				Next
-
-				If blnIdentityColumnFound AndAlso udtSchemaExportOptions.SaveDataAsInsertIntoStatements Then
-					lstTableRows.Add("SET IDENTITY_INSERT [" & objTable.Name & "] OFF")
-				End If
-
-				' '' Read method #2: Use a SqlDataReader to read row-by-row
-				''objReader = objSqlServer.ConnectionContext.ExecuteReader(strSql)
-
-				''If objReader.HasRows Then
-				''    Do While objReader.Read
-				''        If objReader.FieldCount > 0 Then
-				''            strCurrentRow = objReader.GetValue(0).ToString
-				''            objReader.GetDataTypeName()
-				''        End If
-
-				''        For intColumnIndex = 1 To objReader.FieldCount - 1
-				''            strCurrentRow &= ControlChars.Tab & objReader.GetValue(intColumnIndex).ToString
-				''        Next intColumnIndex
-				''    Loop
-				''End If
-
-				WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB, _
-				 objTable.Name & "_Data", _
-				 lstTableRows, False)
+                        ' However, we'll display the column names in the output file
+                        lstTableRows.Add(COMMENT_START_TEXT & "Columns: " & sbCurrentRow.ToString & COMMENT_END_TEXT)
+                    End If
+                    chColSepChar = ","c
+                Else
+                    lstTableRows.Add(sbCurrentRow.ToString)
+                    chColSepChar = ControlChars.Tab
+                End If
 
 
-				udtWorkingParams.ProcessCount += 1
-				CheckPauseStatus()
-				If mAbortProcessing Then
-					UpdateProgress("Aborted processing")
-					Exit Function
-				End If
-			Next
+                For Each objRow As DataRow In dsCurrentTable.Tables(0).Rows
+                    sbCurrentRow.Clear()
+                    If udtSchemaExportOptions.SaveDataAsInsertIntoStatements Then
+                        sbCurrentRow.Append(strInsertIntoLine)
+                    End If
 
-			SetSubtaskProgressComplete()
+                    For intColumnIndex = 0 To intColumnCount - 1
+                        Select Case lstColumnTypes(intColumnIndex)
+                            Case eDataColumnTypeConstants.Numeric
+                                sbCurrentRow.Append(objRow.Item(intColumnIndex).ToString)
+                            Case eDataColumnTypeConstants.Text, eDataColumnTypeConstants.DateTime, eDataColumnTypeConstants.GUID
+                                If udtSchemaExportOptions.SaveDataAsInsertIntoStatements Then
+                                    sbCurrentRow.Append(PossiblyQuoteText(objRow.Item(intColumnIndex).ToString))
+                                Else
+                                    sbCurrentRow.Append(objRow.Item(intColumnIndex).ToString)
+                                End If
 
-			Return True
+                            Case eDataColumnTypeConstants.BinaryArray
+                                Try
+                                    Dim bytData() As Byte = CType(CType(objRow.Item(intColumnIndex), Array), Byte())
 
-		Catch ex As Exception
-			SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error in ExportDBTableData", ex)
-			Return False
-		End Try
+                                    ' Convert the bytes to a string; however, do not write any leading zeroes
+                                    ' The string will be of the form '0x020D89'
+                                    sbCurrentRow.Append("0x")
 
-	End Function
+                                    Dim blnDataFound = False
+                                    For intByteIndex = 0 To bytData.Length - 1
+                                        If blnDataFound OrElse bytData(intByteIndex) <> 0 Then
+                                            blnDataFound = True
+                                            ' Convert the byte to Hex (0 to 255 -> 00 to FF)
+                                            sbCurrentRow.Append(bytData(intByteIndex).ToString("X2"))
+                                        End If
+                                    Next intByteIndex
+
+                                    If Not blnDataFound Then
+                                        sbCurrentRow.Append("00")
+                                    End If
+
+                                Catch ex As Exception
+                                    sbCurrentRow.Append("[Byte]")
+                                End Try
+
+                            Case eDataColumnTypeConstants.BinaryByte
+                                Try
+                                    sbCurrentRow.Append("0x" & Convert.ToByte(objRow.Item(intColumnIndex)).ToString("X2"))
+                                Catch ex As Exception
+                                    sbCurrentRow.Append("[Byte]")
+                                End Try
+                            Case eDataColumnTypeConstants.ImageObject
+                                sbCurrentRow.Append("[Image]")
+                            Case eDataColumnTypeConstants.GeneralObject
+                                sbCurrentRow.Append("[Object]")
+                            Case eDataColumnTypeConstants.SqlVariant
+                                sbCurrentRow.Append("[Sql_Variant]")
+
+                            Case Else
+                                ' No need to quote
+                                sbCurrentRow.Append(objRow.Item(intColumnIndex).ToString)
+                        End Select
+
+                        If intColumnIndex < intColumnCount - 1 Then
+                            sbCurrentRow.Append(chColSepChar)
+                        End If
+                    Next
+                    If udtSchemaExportOptions.SaveDataAsInsertIntoStatements Then
+                        sbCurrentRow.Append(")")
+                    End If
+
+                    lstTableRows.Add(sbCurrentRow.ToString)
+                Next
+
+                If blnIdentityColumnFound AndAlso udtSchemaExportOptions.SaveDataAsInsertIntoStatements Then
+                    lstTableRows.Add("SET IDENTITY_INSERT [" & objTable.Name & "] OFF")
+                End If
+
+                ' '' Read method #2: Use a SqlDataReader to read row-by-row
+                ''objReader = objSqlServer.ConnectionContext.ExecuteReader(strSql)
+
+                ''If objReader.HasRows Then
+                ''    Do While objReader.Read
+                ''        If objReader.FieldCount > 0 Then
+                ''            strCurrentRow = objReader.GetValue(0).ToString
+                ''            objReader.GetDataTypeName()
+                ''        End If
+
+                ''        For intColumnIndex = 1 To objReader.FieldCount - 1
+                ''            strCurrentRow &= ControlChars.Tab & objReader.GetValue(intColumnIndex).ToString
+                ''        Next intColumnIndex
+                ''    Loop
+                ''End If
+
+                WriteTextToFile(udtWorkingParams.OutputFolderPathCurrentDB,
+                 objTable.Name & "_Data",
+                 lstTableRows, False)
+
+
+                udtWorkingParams.ProcessCount += 1
+                CheckPauseStatus()
+                If mAbortProcessing Then
+                    UpdateProgress("Aborted processing")
+                    Exit Function
+                End If
+            Next
+
+            SetSubtaskProgressComplete()
+
+            Return True
+
+        Catch ex As Exception
+            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error in ExportDBTableData", ex)
+            Return False
+        End Try
+
+    End Function
 
 	Private Function ExportRole(ByVal objDatabaseRole As DatabaseRole) As Boolean
 		Dim blnExportRole As Boolean
@@ -1430,212 +1421,212 @@ Public Class clsExportDBSchema
 		End If
 	End Sub
 
-	Private Sub ExportSQLServerConfiguration(ByRef objSqlServer As Server, _
-	  ByRef udtSchemaExportOptions As udtSchemaExportOptionsType, _
-	  ByRef objScriptOptions As ScriptingOptions, _
-	  ByVal strOutputFolderPathCurrentServer As String)
+    Private Sub ExportSQLServerConfiguration(ByRef objSqlServer As Server,
+      ByRef udtSchemaExportOptions As udtSchemaExportOptionsType,
+      ByRef objScriptOptions As ScriptingOptions,
+      ByVal strOutputFolderPathCurrentServer As String)
 
-		Dim lstInfo As New List(Of String)
+        Dim lstInfo As New List(Of String)
 
-		' Do not include a Try block in this Function; let the calling function handle errors
+        ' Do not include a Try block in this Function; let the calling function handle errors
 
-		' First save the Server Information to file ServerInformation
-		lstInfo.Clear()
-		With objSqlServer.Information
-			lstInfo.Add("[Server Information for " & objSqlServer.Name & "]")
-			AppendToList(lstInfo, "BuildClrVersion", .BuildClrVersionString)
-			AppendToList(lstInfo, "Collation", .Collation)
-			AppendToList(lstInfo, "Edition", .Edition)
-			AppendToList(lstInfo, "ErrorLogPath", .ErrorLogPath)
-			AppendToList(lstInfo, "IsCaseSensitive", .IsCaseSensitive)
-			AppendToList(lstInfo, "IsClustered", .IsClustered)
-			AppendToList(lstInfo, "IsFullTextInstalled", .IsFullTextInstalled)
-			AppendToList(lstInfo, "IsSingleUser", .IsSingleUser)
-			AppendToList(lstInfo, "Language", .Language)
-			AppendToList(lstInfo, "MasterDBLogPath", .MasterDBLogPath)
-			AppendToList(lstInfo, "MasterDBPath", .MasterDBPath)
-			AppendToList(lstInfo, "MaxPrecision", .MaxPrecision)
-			AppendToList(lstInfo, "NetName", .NetName)
-			AppendToList(lstInfo, "OSVersion", .OSVersion)
-			AppendToList(lstInfo, "PhysicalMemory", .PhysicalMemory)
-			AppendToList(lstInfo, "Platform", .Platform)
-			AppendToList(lstInfo, "Processors", .Processors)
-			AppendToList(lstInfo, "Product", .Product)
-			AppendToList(lstInfo, "ProductLevel", .ProductLevel)
-			AppendToList(lstInfo, "RootDirectory", .RootDirectory)
-			AppendToList(lstInfo, "VersionString", .VersionString)
-		End With
+        ' First save the Server Information to file ServerInformation
+        lstInfo.Clear()
+        With objSqlServer.Information
+            lstInfo.Add("[Server Information for " & objSqlServer.Name & "]")
+            AppendToList(lstInfo, "BuildClrVersion", .BuildClrVersionString)
+            AppendToList(lstInfo, "Collation", .Collation)
+            AppendToList(lstInfo, "Edition", .Edition)
+            AppendToList(lstInfo, "ErrorLogPath", .ErrorLogPath)
+            AppendToList(lstInfo, "IsCaseSensitive", .IsCaseSensitive)
+            AppendToList(lstInfo, "IsClustered", .IsClustered)
+            AppendToList(lstInfo, "IsFullTextInstalled", .IsFullTextInstalled)
+            AppendToList(lstInfo, "IsSingleUser", .IsSingleUser)
+            AppendToList(lstInfo, "Language", .Language)
+            AppendToList(lstInfo, "MasterDBLogPath", .MasterDBLogPath)
+            AppendToList(lstInfo, "MasterDBPath", .MasterDBPath)
+            AppendToList(lstInfo, "MaxPrecision", .MaxPrecision)
+            AppendToList(lstInfo, "NetName", .NetName)
+            AppendToList(lstInfo, "OSVersion", .OSVersion)
+            AppendToList(lstInfo, "PhysicalMemory", .PhysicalMemory)
+            AppendToList(lstInfo, "Platform", .Platform)
+            AppendToList(lstInfo, "Processors", .Processors)
+            AppendToList(lstInfo, "Product", .Product)
+            AppendToList(lstInfo, "ProductLevel", .ProductLevel)
+            AppendToList(lstInfo, "RootDirectory", .RootDirectory)
+            AppendToList(lstInfo, "VersionString", .VersionString)
+        End With
 
-		WriteTextToFile(strOutputFolderPathCurrentServer, "ServerInformation", lstInfo, False, ".ini")
-
-
-		' Next save the Server Configuration to file ServerConfiguration
-		lstInfo.Clear()
-		With objSqlServer.Configuration
-			lstInfo.Add("[Server Configuration for " & objSqlServer.Name & "]")
-			AppendToList(lstInfo, .AdHocDistributedQueriesEnabled)
-			AppendToList(lstInfo, .Affinity64IOMask)
-			AppendToList(lstInfo, .Affinity64Mask)
-			AppendToList(lstInfo, .AffinityIOMask)
-			AppendToList(lstInfo, .AffinityMask)
-			AppendToList(lstInfo, .AgentXPsEnabled)
-			AppendToList(lstInfo, .AllowUpdates)
-			AppendToList(lstInfo, .BlockedProcessThreshold)
-			AppendToList(lstInfo, .C2AuditMode)
-			AppendToList(lstInfo, .CommonCriteriaComplianceEnabled)
-			AppendToList(lstInfo, .CostThresholdForParallelism)
-			AppendToList(lstInfo, .CrossDBOwnershipChaining)
-			AppendToList(lstInfo, .CursorThreshold)
-			AppendToList(lstInfo, .DatabaseMailEnabled)
-			AppendToList(lstInfo, .DefaultBackupCompression)
-			AppendToList(lstInfo, .DefaultFullTextLanguage)
-			AppendToList(lstInfo, .DefaultLanguage)
-			AppendToList(lstInfo, .DefaultTraceEnabled)
-			AppendToList(lstInfo, .DisallowResultsFromTriggers)
-			AppendToList(lstInfo, .ExtensibleKeyManagementEnabled)
-			AppendToList(lstInfo, .FilestreamAccessLevel)
-			AppendToList(lstInfo, .FillFactor)
-			AppendToList(lstInfo, .IndexCreateMemory)
-			AppendToList(lstInfo, .InDoubtTransactionResolution)
-			AppendToList(lstInfo, .IsSqlClrEnabled)
-			AppendToList(lstInfo, .LightweightPooling)
-			AppendToList(lstInfo, .Locks)
-			AppendToList(lstInfo, .MaxDegreeOfParallelism)
-			AppendToList(lstInfo, .MaxServerMemory)
-			AppendToList(lstInfo, .MaxWorkerThreads)
-			AppendToList(lstInfo, .MediaRetention)
-			AppendToList(lstInfo, .MinMemoryPerQuery)
-			AppendToList(lstInfo, .MinServerMemory)
-			AppendToList(lstInfo, .NestedTriggers)
-			AppendToList(lstInfo, .NetworkPacketSize)
-			AppendToList(lstInfo, .OleAutomationProceduresEnabled)
-			AppendToList(lstInfo, .OpenObjects)
-			AppendToList(lstInfo, .OptimizeAdhocWorkloads)
-			AppendToList(lstInfo, .PrecomputeRank)
-			AppendToList(lstInfo, .PriorityBoost)
-			AppendToList(lstInfo, .ProtocolHandlerTimeout)
-			AppendToList(lstInfo, .QueryGovernorCostLimit)
-			AppendToList(lstInfo, .QueryWait)
-			AppendToList(lstInfo, .RecoveryInterval)
-			AppendToList(lstInfo, .RemoteAccess)
-			AppendToList(lstInfo, .RemoteDacConnectionsEnabled)
-			AppendToList(lstInfo, .RemoteLoginTimeout)
-			AppendToList(lstInfo, .RemoteProcTrans)
-			AppendToList(lstInfo, .RemoteQueryTimeout)
-			AppendToList(lstInfo, .ReplicationMaxTextSize)
-			AppendToList(lstInfo, .ReplicationXPsEnabled)
-			AppendToList(lstInfo, .ScanForStartupProcedures)
-			AppendToList(lstInfo, .ServerTriggerRecursionEnabled)
-			AppendToList(lstInfo, .SetWorkingSetSize)
-			AppendToList(lstInfo, .ShowAdvancedOptions)
-			AppendToList(lstInfo, .SmoAndDmoXPsEnabled)
-			AppendToList(lstInfo, .SqlMailXPsEnabled)
-			AppendToList(lstInfo, .TransformNoiseWords)
-			AppendToList(lstInfo, .TwoDigitYearCutoff)
-			AppendToList(lstInfo, .UserConnections)
-			AppendToList(lstInfo, .UserOptions)
-			AppendToList(lstInfo, .XPCmdShellEnabled)
-		End With
-
-		WriteTextToFile(strOutputFolderPathCurrentServer, "ServerConfiguration", lstInfo, False, ".ini")
+        WriteTextToFile(strOutputFolderPathCurrentServer, "ServerInformation", lstInfo, False, ".ini")
 
 
-		' Next save the Mail settings to file ServerMail
-		' Can only do this for Sql Server 2005 or newer
-		If SqlServer2005OrNewer(objSqlServer) Then
-			lstInfo = CleanSqlScript(StringCollectionToList(objSqlServer.Mail.Script(objScriptOptions)), udtSchemaExportOptions, False, False)
-			WriteTextToFile(strOutputFolderPathCurrentServer, "ServerMail", lstInfo, True)
-		End If
+        ' Next save the Server Configuration to file ServerConfiguration
+        lstInfo.Clear()
+        With objSqlServer.Configuration
+            lstInfo.Add("[Server Configuration for " & objSqlServer.Name & "]")
+            AppendToList(lstInfo, .AdHocDistributedQueriesEnabled)
+            AppendToList(lstInfo, .Affinity64IOMask)
+            AppendToList(lstInfo, .Affinity64Mask)
+            AppendToList(lstInfo, .AffinityIOMask)
+            AppendToList(lstInfo, .AffinityMask)
+            AppendToList(lstInfo, .AgentXPsEnabled)
+            AppendToList(lstInfo, .AllowUpdates)
+            AppendToList(lstInfo, .BlockedProcessThreshold)
+            AppendToList(lstInfo, .C2AuditMode)
+            AppendToList(lstInfo, .CommonCriteriaComplianceEnabled)
+            AppendToList(lstInfo, .CostThresholdForParallelism)
+            AppendToList(lstInfo, .CrossDBOwnershipChaining)
+            AppendToList(lstInfo, .CursorThreshold)
+            AppendToList(lstInfo, .DatabaseMailEnabled)
+            AppendToList(lstInfo, .DefaultBackupCompression)
+            AppendToList(lstInfo, .DefaultFullTextLanguage)
+            AppendToList(lstInfo, .DefaultLanguage)
+            AppendToList(lstInfo, .DefaultTraceEnabled)
+            AppendToList(lstInfo, .DisallowResultsFromTriggers)
+            AppendToList(lstInfo, .ExtensibleKeyManagementEnabled)
+            AppendToList(lstInfo, .FilestreamAccessLevel)
+            AppendToList(lstInfo, .FillFactor)
+            AppendToList(lstInfo, .IndexCreateMemory)
+            AppendToList(lstInfo, .InDoubtTransactionResolution)
+            AppendToList(lstInfo, .IsSqlClrEnabled)
+            AppendToList(lstInfo, .LightweightPooling)
+            AppendToList(lstInfo, .Locks)
+            AppendToList(lstInfo, .MaxDegreeOfParallelism)
+            AppendToList(lstInfo, .MaxServerMemory)
+            AppendToList(lstInfo, .MaxWorkerThreads)
+            AppendToList(lstInfo, .MediaRetention)
+            AppendToList(lstInfo, .MinMemoryPerQuery)
+            AppendToList(lstInfo, .MinServerMemory)
+            AppendToList(lstInfo, .NestedTriggers)
+            AppendToList(lstInfo, .NetworkPacketSize)
+            AppendToList(lstInfo, .OleAutomationProceduresEnabled)
+            AppendToList(lstInfo, .OpenObjects)
+            AppendToList(lstInfo, .OptimizeAdhocWorkloads)
+            AppendToList(lstInfo, .PrecomputeRank)
+            AppendToList(lstInfo, .PriorityBoost)
+            AppendToList(lstInfo, .ProtocolHandlerTimeout)
+            AppendToList(lstInfo, .QueryGovernorCostLimit)
+            AppendToList(lstInfo, .QueryWait)
+            AppendToList(lstInfo, .RecoveryInterval)
+            AppendToList(lstInfo, .RemoteAccess)
+            AppendToList(lstInfo, .RemoteDacConnectionsEnabled)
+            AppendToList(lstInfo, .RemoteLoginTimeout)
+            AppendToList(lstInfo, .RemoteProcTrans)
+            AppendToList(lstInfo, .RemoteQueryTimeout)
+            AppendToList(lstInfo, .ReplicationMaxTextSize)
+            AppendToList(lstInfo, .ReplicationXPsEnabled)
+            AppendToList(lstInfo, .ScanForStartupProcedures)
+            AppendToList(lstInfo, .ServerTriggerRecursionEnabled)
+            AppendToList(lstInfo, .SetWorkingSetSize)
+            AppendToList(lstInfo, .ShowAdvancedOptions)
+            AppendToList(lstInfo, .SmoAndDmoXPsEnabled)
+            AppendToList(lstInfo, .SqlMailXPsEnabled)
+            AppendToList(lstInfo, .TransformNoiseWords)
+            AppendToList(lstInfo, .TwoDigitYearCutoff)
+            AppendToList(lstInfo, .UserConnections)
+            AppendToList(lstInfo, .UserOptions)
+            AppendToList(lstInfo, .XPCmdShellEnabled)
+        End With
+
+        WriteTextToFile(strOutputFolderPathCurrentServer, "ServerConfiguration", lstInfo, False, ".ini")
 
 
-		' Next save the Registry Settings to file ServerRegistrySettings
-		lstInfo = CleanSqlScript(StringCollectionToList(objSqlServer.Settings.Script(objScriptOptions)), udtSchemaExportOptions, False, False)
-		lstInfo.Insert(0, "-- Registry Settings for " & objSqlServer.Name)
+        ' Next save the Mail settings to file ServerMail
+        ' Can only do this for Sql Server 2005 or newer
+        If SqlServer2005OrNewer(objSqlServer) Then
+            lstInfo = CleanSqlScript(StringCollectionToList(objSqlServer.Mail.Script(objScriptOptions)), udtSchemaExportOptions, False, False)
+            WriteTextToFile(strOutputFolderPathCurrentServer, "ServerMail", lstInfo, True)
+        End If
 
-		WriteTextToFile(strOutputFolderPathCurrentServer, "ServerRegistrySettings", lstInfo, False)
+
+        ' Next save the Registry Settings to file ServerRegistrySettings
+        lstInfo = CleanSqlScript(StringCollectionToList(objSqlServer.Settings.Script(objScriptOptions)), udtSchemaExportOptions, False, False)
+        lstInfo.Insert(0, "-- Registry Settings for " & objSqlServer.Name)
+
+        WriteTextToFile(strOutputFolderPathCurrentServer, "ServerRegistrySettings", lstInfo, False)
 
 
-	End Sub
+    End Sub
 
-	Private Sub ExportSQLServerLogins(ByRef objSqlServer As Server, _
-	 ByRef udtSchemaExportOptions As udtSchemaExportOptionsType, _
-	 ByRef objScriptOptions As ScriptingOptions, _
-	 ByVal strOutputFolderPathCurrentServer As String)
+    Private Sub ExportSQLServerLogins(ByRef objSqlServer As Server,
+     ByRef udtSchemaExportOptions As udtSchemaExportOptionsType,
+     ByRef objScriptOptions As ScriptingOptions,
+     ByVal strOutputFolderPathCurrentServer As String)
 
-		Dim intProcessCountExpected As Integer
-		Dim intIndex As Integer
+        Dim intProcessCountExpected As Integer
+        Dim intIndex As Integer
 
-		Dim strCurrentLogin As String
-		Dim blnSuccess As Boolean
+        Dim strCurrentLogin As String
+        Dim blnSuccess As Boolean
 
-		' Do not include a Try block in this Function; let the calling function handle errors
+        ' Do not include a Try block in this Function; let the calling function handle errors
 
-		' Export the server logins
-		intProcessCountExpected = objSqlServer.Logins.Count
-		ResetSubtaskProgress("Exporting SQL Server logins")
-		For intIndex = 0 To objSqlServer.Logins.Count - 1
-			strCurrentLogin = objSqlServer.Logins.Item(intIndex).Name
-			UpdateSubtaskProgress("Exporting login " & strCurrentLogin, mSubtaskProgressPercentComplete)
+        ' Export the server logins
+        intProcessCountExpected = objSqlServer.Logins.Count
+        ResetSubtaskProgress("Exporting SQL Server logins")
+        For intIndex = 0 To objSqlServer.Logins.Count - 1
+            strCurrentLogin = objSqlServer.Logins.Item(intIndex).Name
+            UpdateSubtaskProgress("Exporting login " & strCurrentLogin, mSubtaskProgressPercentComplete)
 
-			blnSuccess = WriteTextToFile(strOutputFolderPathCurrentServer, "Login_" & strCurrentLogin, _
-			 CleanSqlScript(StringCollectionToList(objSqlServer.Logins.Item(intIndex).Script(objScriptOptions)), udtSchemaExportOptions, True, True))
+            blnSuccess = WriteTextToFile(strOutputFolderPathCurrentServer, "Login_" & strCurrentLogin,
+             CleanSqlScript(StringCollectionToList(objSqlServer.Logins.Item(intIndex).Script(objScriptOptions)), udtSchemaExportOptions, True, True))
 
-			UpdateSubtaskProgress(intIndex + 1, intProcessCountExpected)
-			CheckPauseStatus()
-			If mAbortProcessing Then
-				UpdateProgress("Aborted processing")
-				Exit For
-			End If
+            UpdateSubtaskProgress(intIndex + 1, intProcessCountExpected)
+            CheckPauseStatus()
+            If mAbortProcessing Then
+                UpdateProgress("Aborted processing")
+                Exit For
+            End If
 
-			If blnSuccess Then
+            If blnSuccess Then
                 ReportMessage("Processing completed for login " & strCurrentLogin, eMessageTypeConstants.HeaderLine)
-			Else
-				SetLocalError(eDBSchemaExportErrorCodes.GeneralError, "Processing failed for server " & udtSchemaExportOptions.ConnectionInfo.ServerName & "; login " & strCurrentLogin)
-			End If
-		Next intIndex
+            Else
+                SetLocalError(eDBSchemaExportErrorCodes.GeneralError, "Processing failed for server " & udtSchemaExportOptions.ConnectionInfo.ServerName & "; login " & strCurrentLogin)
+            End If
+        Next intIndex
 
-	End Sub
+    End Sub
 
 
-	Private Sub ExportSQLServerAgentJobs(ByRef objSqlServer As Server, _
-	 ByRef udtSchemaExportOptions As udtSchemaExportOptionsType, _
-	 ByRef objScriptOptions As ScriptingOptions, _
-	 ByVal strOutputFolderPathCurrentServer As String)
+    Private Sub ExportSQLServerAgentJobs(ByRef objSqlServer As Server,
+     ByRef udtSchemaExportOptions As udtSchemaExportOptionsType,
+     ByRef objScriptOptions As ScriptingOptions,
+     ByVal strOutputFolderPathCurrentServer As String)
 
-		Dim intProcessCountExpected As Integer
-		Dim intIndex As Integer
+        Dim intProcessCountExpected As Integer
+        Dim intIndex As Integer
 
-		Dim strCurrentJob As String
-		Dim blnSuccess As Boolean
+        Dim strCurrentJob As String
+        Dim blnSuccess As Boolean
 
-		' Do not include a Try block in this Function; let the calling function handle errors
+        ' Do not include a Try block in this Function; let the calling function handle errors
 
-		' Export the SQL Server Agent jobs
-		intProcessCountExpected = objSqlServer.JobServer.Jobs.Count
-		ResetSubtaskProgress("Exporting SQL Server Agent jobs")
-		For intIndex = 0 To objSqlServer.JobServer.Jobs.Count - 1
-			strCurrentJob = objSqlServer.JobServer.Jobs(intIndex).Name
-			UpdateSubtaskProgress("Exporting job " & strCurrentJob, mSubtaskProgressPercentComplete)
+        ' Export the SQL Server Agent jobs
+        intProcessCountExpected = objSqlServer.JobServer.Jobs.Count
+        ResetSubtaskProgress("Exporting SQL Server Agent jobs")
+        For intIndex = 0 To objSqlServer.JobServer.Jobs.Count - 1
+            strCurrentJob = objSqlServer.JobServer.Jobs(intIndex).Name
+            UpdateSubtaskProgress("Exporting job " & strCurrentJob, mSubtaskProgressPercentComplete)
 
-			blnSuccess = WriteTextToFile(strOutputFolderPathCurrentServer, "AgentJob_" & strCurrentJob, _
-			 CleanSqlScript(StringCollectionToList(objSqlServer.JobServer.Jobs(intIndex).Script(objScriptOptions)), udtSchemaExportOptions, True, True))
+            blnSuccess = WriteTextToFile(strOutputFolderPathCurrentServer, "AgentJob_" & strCurrentJob,
+             CleanSqlScript(StringCollectionToList(objSqlServer.JobServer.Jobs(intIndex).Script(objScriptOptions)), udtSchemaExportOptions, True, True))
 
-			UpdateSubtaskProgress(intIndex + 1, intProcessCountExpected)
-			CheckPauseStatus()
-			If mAbortProcessing Then
-				UpdateProgress("Aborted processing")
-				Exit For
-			End If
+            UpdateSubtaskProgress(intIndex + 1, intProcessCountExpected)
+            CheckPauseStatus()
+            If mAbortProcessing Then
+                UpdateProgress("Aborted processing")
+                Exit For
+            End If
 
-			If blnSuccess Then
+            If blnSuccess Then
                 ReportMessage("Processing completed for job " & strCurrentJob, eMessageTypeConstants.HeaderLine)
-			Else
-				SetLocalError(eDBSchemaExportErrorCodes.GeneralError, "Processing failed for server " & udtSchemaExportOptions.ConnectionInfo.ServerName & "; job " & strCurrentJob)
-			End If
+            Else
+                SetLocalError(eDBSchemaExportErrorCodes.GeneralError, "Processing failed for server " & udtSchemaExportOptions.ConnectionInfo.ServerName & "; job " & strCurrentJob)
+            End If
 
-		Next intIndex
+        Next intIndex
 
-	End Sub
+    End Sub
 
 	Private Function GetDefaultScriptOptions() As ScriptingOptions
 
@@ -1867,9 +1858,9 @@ Public Class clsExportDBSchema
         End If
 
 		Dim objRegExOptions As RegexOptions
-		objRegExOptions = RegexOptions.Compiled Or _
-		   RegexOptions.IgnoreCase Or _
-		   RegexOptions.Singleline
+        objRegExOptions = RegexOptions.Compiled Or
+           RegexOptions.IgnoreCase Or
+           RegexOptions.Singleline
 
 		mColumnCharNonStandardRegEx = New Regex("[^a-z0-9_]", objRegExOptions)
 
@@ -1959,7 +1950,7 @@ Public Class clsExportDBSchema
     ''' </summary>
     ''' <remarks>Useful when the scripting is running in another thread</remarks>
     Public Sub RequestPause()
-        If Not (mPauseStatus = ePauseStatusConstants.Paused OrElse _
+        If Not (mPauseStatus = ePauseStatusConstants.Paused OrElse
           mPauseStatus = ePauseStatusConstants.PauseRequested) Then
             SetPauseStatus(ePauseStatusConstants.PauseRequested)
         End If
@@ -1970,42 +1961,42 @@ Public Class clsExportDBSchema
     ''' </summary>
     ''' <remarks>Useful when the scripting is running in another thread</remarks>
 	Public Sub RequestUnpause()
-		If Not (mPauseStatus = ePauseStatusConstants.Unpaused OrElse _
-		  mPauseStatus = ePauseStatusConstants.UnpauseRequested) Then
-			SetPauseStatus(ePauseStatusConstants.UnpauseRequested)
-		End If
+        If Not (mPauseStatus = ePauseStatusConstants.Unpaused OrElse
+          mPauseStatus = ePauseStatusConstants.UnpauseRequested) Then
+            SetPauseStatus(ePauseStatusConstants.UnpauseRequested)
+        End If
 	End Sub
 
-	Protected Sub ResetProgress()
-		ResetProgress(String.Empty)
-		ResetSubtaskProgress(String.Empty)
-	End Sub
+    Private Sub ResetProgress()
+        ResetProgress(String.Empty)
+        ResetSubtaskProgress(String.Empty)
+    End Sub
 
-	Protected Sub ResetProgress(ByVal strProgressStepDescription As String)
-		ResetProgress(strProgressStepDescription, mProgressStepCount)
-	End Sub
+    Private Sub ResetProgress(ByVal strProgressStepDescription As String)
+        ResetProgress(strProgressStepDescription, mProgressStepCount)
+    End Sub
 
-	Protected Sub ResetProgress(ByVal strProgressStepDescription As String, ByVal intStepCount As Integer)
-		mProgressStepDescription = String.Copy(strProgressStepDescription)
-		mProgressPercentComplete = 0
-		ResetProgressStepCount(intStepCount)
-		RaiseEvent ProgressReset()
-	End Sub
+    Private Sub ResetProgress(ByVal strProgressStepDescription As String, ByVal intStepCount As Integer)
+        mProgressStepDescription = String.Copy(strProgressStepDescription)
+        mProgressPercentComplete = 0
+        ResetProgressStepCount(intStepCount)
+        RaiseEvent ProgressReset()
+    End Sub
 
-	Protected Sub ResetProgressStepCount(ByVal intStepCount As Integer)
-		mProgressStep = 0
-		mProgressStepCount = intStepCount
-	End Sub
+    Private Sub ResetProgressStepCount(ByVal intStepCount As Integer)
+        mProgressStep = 0
+        mProgressStepCount = intStepCount
+    End Sub
 
-	Protected Sub ResetSubtaskProgress()
-		RaiseEvent SubtaskProgressReset()
-	End Sub
+    Private Sub ResetSubtaskProgress()
+        RaiseEvent SubtaskProgressReset()
+    End Sub
 
-	Protected Sub ResetSubtaskProgress(ByVal strSubtaskProgressStepDescription As String)
-		mSubtaskProgressStepDescription = String.Copy(strSubtaskProgressStepDescription)
-		mSubtaskProgressPercentComplete = 0
-		RaiseEvent SubtaskProgressReset()
-	End Sub
+    Private Sub ResetSubtaskProgress(ByVal strSubtaskProgressStepDescription As String)
+        mSubtaskProgressStepDescription = String.Copy(strSubtaskProgressStepDescription)
+        mSubtaskProgressPercentComplete = 0
+        RaiseEvent SubtaskProgressReset()
+    End Sub
 
 	Private Sub ResetSqlServerConnection(ByRef udtServerConnectionInfo As udtServerConnectionSingleType)
 		With udtServerConnectionInfo
@@ -2023,38 +2014,38 @@ Public Class clsExportDBSchema
 		End With
 	End Sub
 
-	Private Function ScriptCollectionOfObjects(ByRef objSchemaCollection As SchemaCollectionBase, _
-	 ByRef udtSchemaExportOptions As udtSchemaExportOptionsType, _
-	 ByRef objScriptOptions As ScriptingOptions, _
-	 ByVal intProcessCountExpected As Integer, _
-	 ByVal strOutputFolderPathCurrentDB As String) As Integer
+    Private Function ScriptCollectionOfObjects(ByRef objSchemaCollection As SchemaCollectionBase,
+     ByRef udtSchemaExportOptions As udtSchemaExportOptionsType,
+     ByRef objScriptOptions As ScriptingOptions,
+     ByVal intProcessCountExpected As Integer,
+     ByVal strOutputFolderPathCurrentDB As String) As Integer
 
-		' Scripts the objects in objSchemaCollection
-		' Returns the number of objects scripted
+        ' Scripts the objects in objSchemaCollection
+        ' Returns the number of objects scripted
 
-		Dim objItem As Schema
-		Dim intProcessCount As Integer
+        Dim objItem As Schema
+        Dim intProcessCount As Integer
 
-		intProcessCount = 0
-		For Each objItem In objSchemaCollection
-			mSubtaskProgressStepDescription = objItem.Name
-			UpdateSubtaskProgress(intProcessCount, intProcessCountExpected)
+        intProcessCount = 0
+        For Each objItem In objSchemaCollection
+            mSubtaskProgressStepDescription = objItem.Name
+            UpdateSubtaskProgress(intProcessCount, intProcessCountExpected)
 
-			WriteTextToFile(strOutputFolderPathCurrentDB, objItem.Name, _
-			 CleanSqlScript(StringCollectionToList(objItem.Script(objScriptOptions)), udtSchemaExportOptions))
+            WriteTextToFile(strOutputFolderPathCurrentDB, objItem.Name,
+             CleanSqlScript(StringCollectionToList(objItem.Script(objScriptOptions)), udtSchemaExportOptions))
 
-			intProcessCount += 1
+            intProcessCount += 1
 
-			CheckPauseStatus()
-			If mAbortProcessing Then
-				UpdateProgress("Aborted processing")
-				Exit Function
-			End If
-		Next
+            CheckPauseStatus()
+            If mAbortProcessing Then
+                UpdateProgress("Aborted processing")
+                Exit Function
+            End If
+        Next
 
-		Return intProcessCount
+        Return intProcessCount
 
-	End Function
+    End Function
 
 	Private Function ScriptDBObjects(
 	  ByRef objSqlServer As Server,
@@ -2310,15 +2301,15 @@ Public Class clsExportDBSchema
 		RaiseEvent PauseStatusChange()
 	End Sub
 
-	Protected Sub SetProgressComplete()
-		UpdateProgress(100)
-		RaiseEvent ProgressComplete()
-	End Sub
+    Private Sub SetProgressComplete()
+        UpdateProgress(100)
+        RaiseEvent ProgressComplete()
+    End Sub
 
-	Protected Sub SetSubtaskProgressComplete()
-		UpdateSubtaskProgress(100)
-		RaiseEvent SubtaskProgressComplete()
-	End Sub
+    Private Sub SetSubtaskProgressComplete()
+        UpdateSubtaskProgress(100)
+        RaiseEvent SubtaskProgressComplete()
+    End Sub
 
 	Private Function SqlServer2005OrNewer(ByVal objDatabase As Database) As Boolean
 		Return SqlServer2005OrNewer(objDatabase.Parent)
@@ -2344,66 +2335,66 @@ Public Class clsExportDBSchema
 
 	End Function
 
-	Protected Sub UpdateProgress(ByVal intStepNumber As Integer)
-		If mProgressStepCount <= 0 Then
-			UpdateProgress(0)
-		Else
-			UpdateProgress(intStepNumber / CSng(mProgressStepCount) * 100.0!)
-		End If
-	End Sub
+    Private Sub UpdateProgress(ByVal intStepNumber As Integer)
+        If mProgressStepCount <= 0 Then
+            UpdateProgress(0)
+        Else
+            UpdateProgress(intStepNumber / CSng(mProgressStepCount) * 100.0!)
+        End If
+    End Sub
 
-	Protected Sub UpdateProgress(ByVal intStepNumber As Integer, ByVal intStepCount As Integer)
-		If intStepCount <= 0 Then
-			UpdateProgress(0)
-		Else
-			UpdateProgress(intStepNumber / CSng(intStepCount) * 100.0!)
-		End If
-	End Sub
+    Private Sub UpdateProgress(ByVal intStepNumber As Integer, ByVal intStepCount As Integer)
+        If intStepCount <= 0 Then
+            UpdateProgress(0)
+        Else
+            UpdateProgress(intStepNumber / CSng(intStepCount) * 100.0!)
+        End If
+    End Sub
 
-	Protected Sub UpdateProgress(ByVal sngPercentComplete As Single)
-		UpdateProgress(Me.ProgressStepDescription, sngPercentComplete)
-	End Sub
+    Private Sub UpdateProgress(ByVal sngPercentComplete As Single)
+        UpdateProgress(Me.ProgressStepDescription, sngPercentComplete)
+    End Sub
 
-	Protected Sub UpdateProgress(ByVal strProgressStepDescription As String)
-		UpdateProgress(strProgressStepDescription, mProgressPercentComplete)
-	End Sub
+    Private Sub UpdateProgress(ByVal strProgressStepDescription As String)
+        UpdateProgress(strProgressStepDescription, mProgressPercentComplete)
+    End Sub
 
-	Protected Sub UpdateProgress(ByVal strProgressStepDescription As String, ByVal sngPercentComplete As Single)
-		mProgressStepDescription = String.Copy(strProgressStepDescription)
-		If sngPercentComplete < 0 Then
-			sngPercentComplete = 0
-		ElseIf sngPercentComplete >= 100 Then
-			sngPercentComplete = 100
-			mProgressStep = mProgressStepCount
-		End If
-		mProgressPercentComplete = sngPercentComplete
+    Private Sub UpdateProgress(ByVal strProgressStepDescription As String, ByVal sngPercentComplete As Single)
+        mProgressStepDescription = String.Copy(strProgressStepDescription)
+        If sngPercentComplete < 0 Then
+            sngPercentComplete = 0
+        ElseIf sngPercentComplete >= 100 Then
+            sngPercentComplete = 100
+            mProgressStep = mProgressStepCount
+        End If
+        mProgressPercentComplete = sngPercentComplete
 
-		RaiseEvent ProgressChanged(Me.ProgressStepDescription, Me.ProgressPercentComplete)
-	End Sub
+        RaiseEvent ProgressChanged(Me.ProgressStepDescription, Me.ProgressPercentComplete)
+    End Sub
 
-	Protected Sub UpdateSubtaskProgress(ByVal intStepNumber As Integer, ByVal intStepCount As Integer)
-		If intStepCount <= 0 Then
-			UpdateSubtaskProgress(0)
-		Else
-			UpdateSubtaskProgress(intStepNumber / CSng(intStepCount) * 100.0!)
-		End If
-	End Sub
+    Private Sub UpdateSubtaskProgress(ByVal intStepNumber As Integer, ByVal intStepCount As Integer)
+        If intStepCount <= 0 Then
+            UpdateSubtaskProgress(0)
+        Else
+            UpdateSubtaskProgress(intStepNumber / CSng(intStepCount) * 100.0!)
+        End If
+    End Sub
 
-	Protected Sub UpdateSubtaskProgress(ByVal sngPercentComplete As Single)
-		UpdateSubtaskProgress(Me.SubtaskProgressStepDescription, sngPercentComplete)
-	End Sub
+    Private Sub UpdateSubtaskProgress(ByVal sngPercentComplete As Single)
+        UpdateSubtaskProgress(Me.SubtaskProgressStepDescription, sngPercentComplete)
+    End Sub
 
-	Protected Sub UpdateSubtaskProgress(ByVal strSubtaskProgressStepDescription As String, ByVal sngPercentComplete As Single)
-		mSubtaskProgressStepDescription = String.Copy(strSubtaskProgressStepDescription)
-		If sngPercentComplete < 0 Then
-			sngPercentComplete = 0
-		ElseIf sngPercentComplete > 100 Then
-			sngPercentComplete = 100
-		End If
-		mSubtaskProgressPercentComplete = sngPercentComplete
+    Private Sub UpdateSubtaskProgress(ByVal strSubtaskProgressStepDescription As String, ByVal sngPercentComplete As Single)
+        mSubtaskProgressStepDescription = String.Copy(strSubtaskProgressStepDescription)
+        If sngPercentComplete < 0 Then
+            sngPercentComplete = 0
+        ElseIf sngPercentComplete > 100 Then
+            sngPercentComplete = 100
+        End If
+        mSubtaskProgressPercentComplete = sngPercentComplete
 
-		RaiseEvent SubtaskProgressChanged(Me.SubtaskProgressStepDescription, Me.SubtaskProgressPercentComplete)
-	End Sub
+        RaiseEvent SubtaskProgressChanged(Me.SubtaskProgressStepDescription, Me.SubtaskProgressPercentComplete)
+    End Sub
 
 	Private Sub ValidateSchemaExportOptions(ByRef udtSchemaExportOptions As udtSchemaExportOptionsType)
 		With udtSchemaExportOptions

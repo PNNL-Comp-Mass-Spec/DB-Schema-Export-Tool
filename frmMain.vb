@@ -35,7 +35,7 @@ Public Class frmMain
 
     Private Const ROW_COUNT_SEPARATOR As String = ControlChars.Tab & " ("
 
-    Protected Enum eTableNameSortModeConstants
+    Private Enum eTableNameSortModeConstants
         Name = 0
         RowCount = 1
     End Enum
@@ -52,17 +52,17 @@ Public Class frmMain
 	Private mTableNamesForDataExport As List(Of String)
 
 	' Keys are table names; values are row counts, though row counts will be 0 if mCachedTableListIncludesRowCounts = False
-	Protected mCachedTableList As Dictionary(Of String, Int64)
+    Private mCachedTableList As Dictionary(Of String, Int64)
 
-	Protected mCachedTableListIncludesRowCounts As Boolean
+    Private mCachedTableListIncludesRowCounts As Boolean
 
-	Protected mTableNamesToAutoSelect As List(Of String)
+    Private mTableNamesToAutoSelect As List(Of String)
 
     ' Note: Must contain valid RegEx statements (tested case-insensitive)
-	Protected mTableNameAutoSelectRegEx As List(Of String)
+    Private mTableNameAutoSelectRegEx As List(Of String)
 
-	Protected mDefaultDMSDatabaseList As List(Of String)
-	Protected mDefaultMTSDatabaseList As List(Of String)
+    Private mDefaultDMSDatabaseList As List(Of String)
+    Private mDefaultMTSDatabaseList As List(Of String)
 
     Private mWorking As Boolean
 
@@ -109,10 +109,10 @@ Public Class frmMain
 				' Note that AbortProcessingNow should have called RequestUnpause, but we'll call it here just in case
 				mDBSchemaExporter.RequestUnpause()
 			Else
-				If ePauseStatusSaved = clsExportDBSchema.ePauseStatusConstants.Unpaused OrElse _
-				   ePauseStatusSaved = clsExportDBSchema.ePauseStatusConstants.UnpauseRequested Then
-					mDBSchemaExporter.RequestUnpause()
-				End If
+                If ePauseStatusSaved = clsExportDBSchema.ePauseStatusConstants.Unpaused OrElse
+                   ePauseStatusSaved = clsExportDBSchema.ePauseStatusConstants.UnpauseRequested Then
+                    mDBSchemaExporter.RequestUnpause()
+                End If
 			End If
             Application.DoEvents()
 
@@ -352,7 +352,7 @@ Public Class frmMain
                     mnuEditSaveDataAsInsertIntoStatements.Checked = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "SaveDataAsInsertIntoStatements", mnuEditSaveDataAsInsertIntoStatements.Checked)
                     mnuEditWarnOnHighTableRowCount.Checked = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "WarnOnHighTableRowCount", mnuEditWarnOnHighTableRowCount.Checked)
 
-                    If lstDatabasesToProcess.Items.Count = 0 OrElse _
+                    If lstDatabasesToProcess.Items.Count = 0 OrElse
                        Not strServerNameSaved Is Nothing AndAlso strServerNameSaved.ToLower <> txtServerName.Text.ToLower Then
                         If blnConnectToServer Then
                             UpdateDatabaseList()
@@ -525,10 +525,10 @@ Public Class frmMain
 			End If
 
 			' Initialize objRegExArray (we'll fill it below if blnAutoHiglightRows = True)
-			Const objRegExOptions As RegexOptions =
-			  RegexOptions.Compiled Or _
-			  RegexOptions.IgnoreCase Or _
-			  RegexOptions.Singleline
+            Const objRegExOptions As RegexOptions =
+              RegexOptions.Compiled Or
+              RegexOptions.IgnoreCase Or
+              RegexOptions.Singleline
 
 			Dim lstRegExSpecs = New List(Of Regex)
 			Dim blnAutoHiglightRows As Boolean
@@ -1196,8 +1196,8 @@ Public Class frmMain
 		' For data between 10000 and 1 million, rounds to the nearest thousand
 		' For data over 1 million, displays as x.x million
 
-		Dim strValue As String = String.Empty
-		Dim lngValueAbs As Long
+        Dim strValue As String
+        Dim lngValueAbs As Long
 		Dim dblDivisor As Double
 
 		lngValueAbs = Math.Abs(lngValue)
@@ -1215,55 +1215,53 @@ Public Class frmMain
 
 	Private Function VerifyOrUpdateServerConnection(ByVal blnInformUserOnFailure As Boolean) As Boolean
 		Dim blnConnected As Boolean
-		Dim udtConnectionInfo As clsExportDBSchema.udtServerConnectionInfoType
+        Dim udtConnectionInfo As clsExportDBSchema.udtServerConnectionInfoType
 
-		Dim strMessage As String
+        Try
+            Dim strMessage As String
+            blnConnected = False
 
-		Try
-			strMessage = String.Empty
-			blnConnected = False
+            If txtServerName.TextLength = 0 Then
+                strMessage = "Please enter the server name"
+                If blnInformUserOnFailure Then
+                    Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+                End If
+            Else
+                With udtConnectionInfo
+                    .ServerName = txtServerName.Text
+                    .UseIntegratedAuthentication = chkUseIntegratedAuthentication.Checked
+                    .UserName = txtUsername.Text
+                    .Password = txtPassword.Text
+                End With
 
-			If txtServerName.TextLength = 0 Then
-				strMessage = "Please enter the server name"
-				If blnInformUserOnFailure Then
-					Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-				End If
-			Else
-				With udtConnectionInfo
-					.ServerName = txtServerName.Text
-					.UseIntegratedAuthentication = chkUseIntegratedAuthentication.Checked
-					.UserName = txtUsername.Text
-					.Password = txtPassword.Text
-				End With
+                If mDBSchemaExporter Is Nothing Then
+                    mDBSchemaExporter = New clsExportDBSchema(udtConnectionInfo)
+                    blnConnected = mDBSchemaExporter.ConnectedToServer
+                Else
+                    blnConnected = mDBSchemaExporter.ConnectToServer(udtConnectionInfo)
+                End If
 
-				If mDBSchemaExporter Is Nothing Then
-					mDBSchemaExporter = New clsExportDBSchema(udtConnectionInfo)
-					blnConnected = mDBSchemaExporter.ConnectedToServer
-				Else
-					blnConnected = mDBSchemaExporter.ConnectToServer(udtConnectionInfo)
-				End If
+                If Not blnConnected AndAlso blnInformUserOnFailure Then
+                    strMessage = "Error connecting to server " & udtConnectionInfo.ServerName
+                    If mDBSchemaExporter.StatusMessage.Length > 0 Then
+                        strMessage &= "; " & mDBSchemaExporter.StatusMessage
+                    End If
+                    Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+                End If
+            End If
 
-				If Not blnConnected AndAlso blnInformUserOnFailure Then
-					strMessage = "Error connecting to server " & udtConnectionInfo.ServerName
-					If mDBSchemaExporter.StatusMessage.Length > 0 Then
-						strMessage &= "; " & mDBSchemaExporter.StatusMessage
-					End If
-					Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-				End If
-			End If
-
-		Catch ex As Exception
-			Windows.Forms.MessageBox.Show("Error in VerifyOrUpdateServerConnection: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-			blnConnected = False
-		End Try
+        Catch ex As Exception
+            Windows.Forms.MessageBox.Show("Error in VerifyOrUpdateServerConnection: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            blnConnected = False
+        End Try
 
 		Return blnConnected
 	End Function
 
-	Private Sub frmMain_Load(ByVal eventSender As System.Object, ByVal eventArgs As System.EventArgs) Handles MyBase.Load
-		' Note that InitializeControls() is called in Sub New()
+    Private Sub frmMain_Load(ByVal eventSender As System.Object, ByVal eventArgs As System.EventArgs) Handles MyBase.Load
+        ' Note that InitializeControls() is called in Sub New()
 
-	End Sub
+    End Sub
 
 #Region "Control Handlers"
 
@@ -1274,9 +1272,9 @@ Public Class frmMain
 	Private Sub cmdPauseUnpause_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdPauseUnpause.Click
 		If Not mDBSchemaExporter Is Nothing Then
 			mDBSchemaExporter.TogglePause()
-			If mDBSchemaExporter.PauseStatus = clsExportDBSchema.ePauseStatusConstants.UnpauseRequested OrElse _
-			 mDBSchemaExporter.PauseStatus = clsExportDBSchema.ePauseStatusConstants.Unpaused Then
-			End If
+            If mDBSchemaExporter.PauseStatus = clsExportDBSchema.ePauseStatusConstants.UnpauseRequested OrElse
+               mDBSchemaExporter.PauseStatus = clsExportDBSchema.ePauseStatusConstants.Unpaused Then
+            End If
 		End If
 	End Sub
 

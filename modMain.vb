@@ -11,7 +11,7 @@ Option Strict On
 ' See clsMTSAutomation for additional information
 
 Module modMain
-    Public Const PROGRAM_DATE As String = "January 23, 2015"
+    Public Const PROGRAM_DATE As String = "October 29, 2015"
 
 	Private mOutputFolderPath As String
 
@@ -100,7 +100,7 @@ Module modMain
                 blnProceed = True
             End If
 
-            If Not blnProceed OrElse _
+            If Not blnProceed OrElse
                objParseCommandLine.NeedToShowHelp Then
                 ShowProgramHelp()
                 intReturnCode = -1
@@ -167,7 +167,7 @@ Module modMain
 
                 End With
 
-                
+
                 blnSuccess = mProcessingClass.ProcessDatabase(mOutputFolderPath, mServer, mDatabaseList)
 
                 If Not blnSuccess Then
