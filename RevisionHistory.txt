@@ -1,5 +1,8 @@
 DB Schema Export Tool
 
+Version 1.2.5882; February 8, 2016
+	- Update path for git.exe to be C:\Program Files\Git\bin
+
 Version 1.2.5780; October 29, 2015
 	- Export data from tables T_Processor_Tool_Groups and T_Processor_Tool_Group_Details 
 

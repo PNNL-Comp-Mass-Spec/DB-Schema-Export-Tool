@@ -11,7 +11,7 @@ Option Strict On
 ' See clsMTSAutomation for additional information
 
 Module modMain
-    Public Const PROGRAM_DATE As String = "October 29, 2015"
+    Public Const PROGRAM_DATE As String = "February 8, 2016"
 
 	Private mOutputFolderPath As String
 

@@ -1083,8 +1083,8 @@ Public Class clsDBSchemaExportTool
         Const HG_EXE_PATH = "C:\Program Files\TortoiseHg\hg.exe"
         Const HG_SOURCE = "Installed with 64-bit Tortoise Hg, available at http://tortoisehg.bitbucket.org/download/"
 
-        Const GIT_EXE_PATH = "C:\Program Files (x86)\Git\bin\git.exe"
-        Const GIT_SOURCE = "Installed with 32-bit Git for Windows, available at http://git-scm.com/download/win"
+        Const GIT_EXE_PATH = "C:\Program Files\Git\bin\git.exe"
+        Const GIT_SOURCE = "Installed with 64-bit Git for Windows, available at https://git-scm.com/download/win"
 
         Dim fiRepoExe As FileInfo
         Dim strRepoSource As String
