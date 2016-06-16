@@ -21,7 +21,7 @@ Public Class clsDBSchemaExportTool
     ''' Constructor
     ''' </summary>
     Public Sub New()
-        MyBase.mFileDate = "October 29, 2015"
+        MyBase.mFileDate = "June 15, 2016"
         mDateMatcher = New Regex("'\d+/\d+/\d+ \d+:\d+:\d+ [AP]M'", RegexOptions.Compiled Or RegexOptions.IgnoreCase)
 
         InitializeLocalVariables()
@@ -308,10 +308,10 @@ Public Class clsDBSchemaExportTool
 
                 Using srComparisonFile = New StreamReader(New FileStream(fiComparison.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
 
-                    While srBaseFile.Peek > -1
+                    While Not srBaseFile.EndOfStream
                         Dim strLineIn = srBaseFile.ReadLine()
 
-                        If srComparisonFile.Peek > -1 Then
+                        If Not srComparisonFile.EndOfStream Then
                             Dim strComparisonLine = srComparisonFile.ReadLine()
 
                             Dim linesMatch = StringMatch(strLineIn, strComparisonLine)
@@ -616,7 +616,7 @@ Public Class clsDBSchemaExportTool
             End If
 
             Using srReader = New StreamReader(New FileStream(fiDatafile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                While srReader.Peek > -1
+                While Not srReader.EndOfStream
                     Dim strLineIn = srReader.ReadLine()
 
                     If Not String.IsNullOrWhiteSpace(strLineIn) Then
