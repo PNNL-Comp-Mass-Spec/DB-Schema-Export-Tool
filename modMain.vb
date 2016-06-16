@@ -11,7 +11,7 @@ Option Strict On
 ' See clsMTSAutomation for additional information
 
 Module modMain
-    Public Const PROGRAM_DATE As String = "February 8, 2016"
+    Public Const PROGRAM_DATE As String = "June 15, 2016"
 
 	Private mOutputFolderPath As String
 
@@ -192,7 +192,7 @@ Module modMain
 
     End Function
 
-    Private Sub DisplayProgressPercent(ByVal intPercentComplete As Integer, ByVal blnAddCarriageReturn As Boolean)
+    Private Sub DisplayProgressPercent(intPercentComplete As Integer, blnAddCarriageReturn As Boolean)
         If blnAddCarriageReturn Then
             Console.WriteLine()
         End If
@@ -207,11 +207,11 @@ Module modMain
         Return clsProcessFoldersBaseClass.GetAppVersion(PROGRAM_DATE)
     End Function
 
-    Private Function SetOptionsUsingCommandLineParameters(ByVal objParseCommandLine As clsParseCommandLine) As Boolean
+    Private Function SetOptionsUsingCommandLineParameters(objParseCommandLine As clsParseCommandLine) As Boolean
         ' Returns True if no problems; otherwise, returns false
 
         Dim strValue As String = String.Empty
-        Dim lstValidParameters As List(Of String) = New List(Of String) From {
+        Dim lstValidParameters = New List(Of String) From {
           "O", "Server", "DB", "DBList", "FolderPrefix", "NoSubfolder", "NoAutoData", "Data",
           "Sync", "Svn", "Git", "Hg", "Commit",
           "P", "L", "LogFolder", "Preview", "Stats"}
@@ -301,8 +301,8 @@ Module modMain
     End Function
 
 
-    Private Sub ShowErrorMessage(ByVal strMessage As String)
-        Const strSeparator As String = "------------------------------------------------------------------------------"
+    Private Sub ShowErrorMessage(strMessage As String)
+        Const strSeparator = "------------------------------------------------------------------------------"
 
         Console.WriteLine()
         Console.WriteLine(strSeparator)
@@ -313,8 +313,8 @@ Module modMain
         WriteToErrorStream(strMessage)
     End Sub
 
-    Private Sub ShowErrorMessage(ByVal strTitle As String, ByVal items As IEnumerable(Of String))
-        Const strSeparator As String = "------------------------------------------------------------------------------"
+    Private Sub ShowErrorMessage(strTitle As String, items As IEnumerable(Of String))
+        Const strSeparator = "------------------------------------------------------------------------------"
         Dim strMessage As String
 
         Console.WriteLine()
@@ -392,22 +392,22 @@ Module modMain
 
     End Sub
 
-	Private Sub ShowProgressDescriptionIfChanged(taskDescription As String)
-		If Not String.Equals(taskDescription, mProgressDescription) Then
-			mProgressDescription = String.Copy(taskDescription)
-			Console.WriteLine(taskDescription)
-		End If
-	End Sub
+    Private Sub ShowProgressDescriptionIfChanged(taskDescription As String)
+        If Not String.Equals(taskDescription, mProgressDescription) Then
+            mProgressDescription = String.Copy(taskDescription)
+            Console.WriteLine(taskDescription)
+        End If
+    End Sub
 
-	Private Sub WriteToErrorStream(strErrorMessage As String)
-		Try
-			Using swErrorStream As IO.StreamWriter = New IO.StreamWriter(Console.OpenStandardError())
-				swErrorStream.WriteLine(strErrorMessage)
-			End Using
-		Catch ex As Exception
-			' Ignore errors here
-		End Try
-	End Sub
+    Private Sub WriteToErrorStream(strErrorMessage As String)
+        Try
+            Using swErrorStream = New IO.StreamWriter(Console.OpenStandardError())
+                swErrorStream.WriteLine(strErrorMessage)
+            End Using
+        Catch ex As Exception
+            ' Ignore errors here
+        End Try
+    End Sub
 
 	Private Sub mProcessingClass_ProgressChanged(taskDescription As String, percentComplete As Single) Handles mProcessingClass.ProgressChanged
 		ShowProgressDescriptionIfChanged(taskDescription)

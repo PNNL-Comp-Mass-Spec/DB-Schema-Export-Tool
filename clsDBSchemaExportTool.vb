@@ -63,7 +63,7 @@ Public Class clsDBSchemaExportTool
     Private mSubtaskDescription As String
     Private mSubtaskPercentComplete As Single
 
-    Public Event SubtaskProgressChanged(ByVal taskDescription As String, ByVal percentComplete As Single)      ' PercentComplete ranges from 0 to 100, but can contain decimal percentage values
+    Public Event SubtaskProgressChanged(taskDescription As String, percentComplete As Single)      ' PercentComplete ranges from 0 to 100, but can contain decimal percentage values
 
     Private mLocalErrorCode As eDBSchemaExportTool
 
@@ -105,7 +105,7 @@ Public Class clsDBSchemaExportTool
 
 #End Region
 
-    Private Function CheckPlural(ByVal value As Integer, ByVal textIfOne As String, ByVal textIfSeveral As String) As String
+    Private Function CheckPlural(value As Integer, textIfOne As String, textIfSeveral As String) As String
         If value = 1 Then
             Return textIfOne
         Else
@@ -125,8 +125,8 @@ Public Class clsDBSchemaExportTool
     ''' then each database will be scripted to a subfolder below the output folder
     ''' </remarks>
     Public Function ExportSchema(
-      ByVal strOutputFolderPath As String,
-      ByVal serverName As String,
+      strOutputFolderPath As String,
+      serverName As String,
       ByRef dctDatabaseNamesAndOutputPaths As Dictionary(Of String, String)) As Boolean
 
         Return ExportSchema(strOutputFolderPath, serverName, dctDatabaseNamesAndOutputPaths, True, "", "")
@@ -148,12 +148,12 @@ Public Class clsDBSchemaExportTool
     ''' then each database will be scripted to a subfolder below the output folder
     ''' </remarks>
     Public Function ExportSchema(
-      ByVal strOutputFolderPath As String,
-      ByVal serverName As String,
+      strOutputFolderPath As String,
+      serverName As String,
       ByRef dctDatabaseNamesAndOutputPaths As Dictionary(Of String, String),
-      ByVal useIntegratedAuthentication As Boolean,
-      ByVal loginUsername As String,
-      ByVal loginPassword As String) As Boolean
+      useIntegratedAuthentication As Boolean,
+      loginUsername As String,
+      loginPassword As String) As Boolean
 
         Try
 
@@ -263,8 +263,8 @@ Public Class clsDBSchemaExportTool
     ''' In T_Signatures_Data files, in the Insert Into lines, any date values are ignored
     ''' </remarks>
     Private Function FilesDiffer(
-      ByVal fiBase As FileInfo,
-      ByVal fiComparison As FileInfo,
+      fiBase As FileInfo,
+      fiComparison As FileInfo,
       ByRef eDifferenceReason As eDifferenceReasonType) As Boolean
 
         Try
@@ -281,8 +281,8 @@ Public Class clsDBSchemaExportTool
 
             Dim lstDateIgnoreFiles = New SortedSet(Of String)(StringComparer.CurrentCultureIgnoreCase)
             lstDateIgnoreFiles.Add("T_Process_Step_Control_Data.sql")
-			lstDateIgnoreFiles.Add("T_Signatures_Data.sql")
-			lstDateIgnoreFiles.Add("T_MTS_Peptide_DBs_Data.sql")
+            lstDateIgnoreFiles.Add("T_Signatures_Data.sql")
+            lstDateIgnoreFiles.Add("T_MTS_Peptide_DBs_Data.sql")
             lstDateIgnoreFiles.Add("T_MTS_MT_DBs_Data.sql")
             lstDateIgnoreFiles.Add("T_Processor_Tool_Data.sql")
             lstDateIgnoreFiles.Add("T_Processor_Tool_Group_Details.sql")
@@ -546,9 +546,9 @@ Public Class clsDBSchemaExportTool
 
     End Sub
 
-    Private Function LoadParameterFileSettings(ByVal strParameterFilePath As String) As Boolean
+    Private Function LoadParameterFileSettings(strParameterFilePath As String) As Boolean
 
-        Const OPTIONS_SECTION As String = "DBSchemaExportTool"
+        Const OPTIONS_SECTION = "DBSchemaExportTool"
 
         Dim objSettingsFile As New XmlSettingsFileAccessor
         Dim strValue As String
@@ -597,7 +597,7 @@ Public Class clsDBSchemaExportTool
 
     End Function
 
-    Private Function LoadTableNamesForDataExport(ByVal tableDataFilePath As String) As List(Of String)
+    Private Function LoadTableNamesForDataExport(tableDataFilePath As String) As List(Of String)
 
         Dim lstTableNames = New SortedSet(Of String)
 
@@ -638,8 +638,8 @@ Public Class clsDBSchemaExportTool
     End Function
 
     Private Function ParseGitStatus(
-     ByVal diTargetFolder As DirectoryInfo,
-     ByVal standardOutput As String,
+     diTargetFolder As DirectoryInfo,
+     standardOutput As String,
      ByRef intModifiedFileCount As Integer) As Boolean
 
         ' Example output for Git with verbose output
@@ -694,9 +694,9 @@ Public Class clsDBSchemaExportTool
     End Function
 
     Private Function ParseSvnHgStatus(
-      ByVal diTargetFolder As DirectoryInfo,
-      ByVal standardOutput As String,
-      ByVal eRepoManager As eRepoManagerType,
+      diTargetFolder As DirectoryInfo,
+      standardOutput As String,
+      eRepoManager As eRepoManagerType,
       ByRef intModifiedFileCount As Integer) As Boolean
 
         ' Example output for Svn where M is modified, ? is new, and ! means deleted
@@ -737,7 +737,7 @@ Public Class clsDBSchemaExportTool
                 End If
 
                 Dim fileModStatus As Char = statusLine.Chars(0)
-                Dim filePropertyStatus As Char = " "c
+                Dim filePropertyStatus = " "c
 
                 If eRepoManager = eRepoManagerType.Svn Then
                     filePropertyStatus = statusLine.Chars(1)
@@ -763,10 +763,10 @@ Public Class clsDBSchemaExportTool
 
     End Function
 
-    Public Overloads Overrides Function ProcessFolder(ByVal strInputFolderPath As String,
-      ByVal strOutputFolderAlternatePath As String,
-      ByVal strParameterFilePath As String,
-      ByVal blnResetErrorCode As Boolean) As Boolean
+    Public Overloads Overrides Function ProcessFolder(strInputFolderPath As String,
+      strOutputFolderAlternatePath As String,
+      strParameterFilePath As String,
+      blnResetErrorCode As Boolean) As Boolean
         ' Returns True if success, False if failure
 
         ' Assume the input folder points to the target folder where the database schema files will be created
@@ -775,27 +775,27 @@ Public Class clsDBSchemaExportTool
 
     End Function
 
-    Public Shadows Function ProcessAndRecurseFolders(ByVal strInputFolderPath As String) As Boolean
+    Public Shadows Function ProcessAndRecurseFolders(strInputFolderPath As String) As Boolean
         Return ProcessAndRecurseFolders(strInputFolderPath, String.Empty)
     End Function
 
-    Public Shadows Function ProcessAndRecurseFolders(ByVal strInputFolderPath As String, ByVal intRecurseFoldersMaxLevels As Integer) As Boolean
+    Public Shadows Function ProcessAndRecurseFolders(strInputFolderPath As String, intRecurseFoldersMaxLevels As Integer) As Boolean
         Return ProcessAndRecurseFolders(strInputFolderPath, String.Empty, String.Empty, intRecurseFoldersMaxLevels)
     End Function
 
-    Public Shadows Function ProcessAndRecurseFolders(ByVal strInputFolderPath As String, ByVal strOutputFolderAlternatePath As String) As Boolean
+    Public Shadows Function ProcessAndRecurseFolders(strInputFolderPath As String, strOutputFolderAlternatePath As String) As Boolean
         Return ProcessAndRecurseFolders(strInputFolderPath, strOutputFolderAlternatePath, String.Empty)
     End Function
 
-    Public Shadows Function ProcessAndRecurseFolders(ByVal strInputFolderPath As String, ByVal strOutputFolderAlternatePath As String, ByVal strParameterFilePath As String) As Boolean
+    Public Shadows Function ProcessAndRecurseFolders(strInputFolderPath As String, strOutputFolderAlternatePath As String, strParameterFilePath As String) As Boolean
         Return ProcessAndRecurseFolders(strInputFolderPath, strOutputFolderAlternatePath, strParameterFilePath, 0)
     End Function
 
     Public Shadows Function ProcessAndRecurseFolders(
-      ByVal strInputFolderPath As String,
-      ByVal strOutputFolderAlternatePath As String,
-      ByVal strParameterFilePath As String,
-      ByVal intRecurseFoldersMaxLevels As Integer) As Boolean
+      strInputFolderPath As String,
+      strOutputFolderAlternatePath As String,
+      strParameterFilePath As String,
+      intRecurseFoldersMaxLevels As Integer) As Boolean
         ' Returns True if success, False if failure
 
         Return ProcessFolder(strInputFolderPath, strOutputFolderAlternatePath, strParameterFilePath, True)
@@ -809,7 +809,7 @@ Public Class clsDBSchemaExportTool
     ''' <param name="serverName">Server name</param>
     ''' <param name="databaseList">Database names to script</param>
     ''' <returns>True if success, false if a problem</returns>
-    Public Function ProcessDatabase(ByVal outputFolderPath As String, ByVal serverName As String, ByVal databaseList As IEnumerable(Of String)) As Boolean
+    Public Function ProcessDatabase(outputFolderPath As String, serverName As String, databaseList As IEnumerable(Of String)) As Boolean
         Dim blnSuccess As Boolean
 
         Try
@@ -843,7 +843,7 @@ Public Class clsDBSchemaExportTool
     ''' <param name="serverName">Server name</param>
     ''' <param name="databaseName">Database name to script</param>
     ''' <returns>True if success, false if a problem</returns>
-    Public Function ProcessDatabase(ByVal outputFolderPath As String, ByVal serverName As String, ByVal databaseName As String) As Boolean
+    Public Function ProcessDatabase(outputFolderPath As String, serverName As String, databaseName As String) As Boolean
 
         Dim databaseList As New List(Of String) From {databaseName}
 
@@ -852,12 +852,12 @@ Public Class clsDBSchemaExportTool
     End Function
 
     Private Function RunCommand(
-      ByVal exePath As String,
-      ByVal cmdArgs As String,
-      ByVal workDirPath As String,
+      exePath As String,
+      cmdArgs As String,
+      workDirPath As String,
       ByRef standardOutput As String,
       ByRef errorOutput As String,
-      ByVal maxRuntimeSeconds As Integer) As Boolean
+      maxRuntimeSeconds As Integer) As Boolean
 
         standardOutput = String.Empty
         errorOutput = String.Empty
@@ -938,7 +938,7 @@ Public Class clsDBSchemaExportTool
     ''' <param name="text2"></param>
     ''' <returns>True if the strings match, otherwise false</returns>
     ''' <remarks>Case sensitive comparison</remarks>
-    Private Shared Function StringMatch(ByVal text1 As String, ByVal text2 As String) As Boolean
+    Private Shared Function StringMatch(text1 As String, text2 As String) As Boolean
 
         If String.Compare(text1, text2) = 0 Then
             Return True
@@ -948,13 +948,13 @@ Public Class clsDBSchemaExportTool
 
     End Function
 
-    Private Function SyncSchemaFiles(ByVal lstDatabaseNamesAndOutputPaths As ICollection(Of KeyValuePair(Of String, String)), ByVal folderPathForSync As String) As Boolean
+    Private Function SyncSchemaFiles(lstDatabaseNamesAndOutputPaths As ICollection(Of KeyValuePair(Of String, String)), folderPathForSync As String) As Boolean
         Try
             Dim dtStartTime = DateTime.UtcNow
 
             ResetProgress("Synchronizing with " & folderPathForSync)
 
-            Dim intDBsProcessed As Integer = 0
+            Dim intDBsProcessed = 0
             Dim includeDbNameInCommitMessage = (lstDatabaseNamesAndOutputPaths.Count > 1)
 
             For Each dbEntry In lstDatabaseNamesAndOutputPaths
@@ -995,8 +995,8 @@ Public Class clsDBSchemaExportTool
                     Return False
                 End If
 
-                Dim fileProcessCount As Integer = 0
-                Dim fileCopyCount As Integer = 0
+                Dim fileProcessCount = 0
+                Dim fileCopyCount = 0
 
                 ' This list holds the the files that are copied from diSourceFolder to diTargetFolder
                 Dim lstNewFilePaths = New List(Of String)
@@ -1071,11 +1071,11 @@ Public Class clsDBSchemaExportTool
     End Function
 
     Private Function UpdateRepoChanges(
-      ByVal diTargetFolder As DirectoryInfo,
-      ByVal fileCopyCount As Integer,
-      ByVal lstNewFilePaths As ICollection(Of String),
-      ByVal eRepoManager As eRepoManagerType,
-      ByVal commitMessageAppend As String) As Boolean
+      diTargetFolder As DirectoryInfo,
+      fileCopyCount As Integer,
+      lstNewFilePaths As ICollection(Of String),
+      eRepoManager As eRepoManagerType,
+      commitMessageAppend As String) As Boolean
 
         Const SVN_EXE_PATH = "C:\Program Files\TortoiseSVN\bin\svn.exe"
         Const SVN_SOURCE = "Installed with 64-bit Tortoise SVN, available at http://tortoisesvn.net/downloads.html"
@@ -1163,7 +1163,7 @@ Public Class clsDBSchemaExportTool
             End If
             Console.WriteLine()
 
-            Dim modifiedFileCount As Integer = 0
+            Dim modifiedFileCount = 0
 
             If eRepoManager = eRepoManagerType.Svn Or eRepoManager = eRepoManagerType.Hg Then
                 blnSuccess = ParseSvnHgStatus(diTargetFolder, standardOutput, eRepoManager, modifiedFileCount)
@@ -1238,7 +1238,7 @@ Public Class clsDBSchemaExportTool
 
     End Function
 
-    Private Sub UpdateSubtaskProgress(ByVal taskDescription As String, ByVal percentComplete As Single)
+    Private Sub UpdateSubtaskProgress(taskDescription As String, percentComplete As Single)
         Dim blnDescriptionChanged = Not String.Equals(taskDescription, mSubtaskDescription)
 
         mSubtaskDescription = String.Copy(taskDescription)
