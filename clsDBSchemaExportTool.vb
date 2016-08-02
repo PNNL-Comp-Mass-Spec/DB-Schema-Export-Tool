@@ -21,7 +21,7 @@ Public Class clsDBSchemaExportTool
     ''' Constructor
     ''' </summary>
     Public Sub New()
-        MyBase.mFileDate = "June 15, 2016"
+        MyBase.mFileDate = "August 2, 2016"
         mDateMatcher = New Regex("'\d+/\d+/\d+ \d+:\d+:\d+ [AP]M'", RegexOptions.Compiled Or RegexOptions.IgnoreCase)
 
         InitializeLocalVariables()
@@ -1154,7 +1154,7 @@ Public Class clsDBSchemaExportTool
             ' Count the number of new or modified files
             cmdArgs = " status """ & diTargetFolder.FullName & """"
             maxRuntimeSeconds = 300
-            If eRepoManager = eRepoManagerType.Git Then cmdArgs &= " -s -u"
+            If eRepoManager = eRepoManagerType.Git Then cmdArgs = " status -s -u"
 
             blnSuccess = RunCommand(fiRepoExe.FullName, cmdArgs, diTargetFolder.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
             If Not blnSuccess Then Return False
@@ -1211,15 +1211,34 @@ Public Class clsDBSchemaExportTool
                     ElseIf eRepoManager = eRepoManagerType.Git AndAlso errorOutput.StartsWith("fatal") Then
                         ShowMessage("Error reported for " & strToolName & ": " & errorOutput)
                         Return False
+                    ElseIf eRepoManager = eRepoManagerType.svn AndAlso errorOutput.Contains("Commit failed") Then
+                        ShowMessage("Error reported for " & strToolName & ": " & errorOutput)
+                        Return False
                     End If
 
                     If eRepoManager = eRepoManagerType.Hg Or eRepoManager = eRepoManagerType.Git Then
-                        ' Push the changes to the master
 
-                        cmdArgs = " push"
-                        maxRuntimeSeconds = 300
+                        For iteration = 1 To 2
+                            If eRepoManager = eRepoManagerType.Hg Then
+                                ' Push the changes
+                                cmdArgs = " push"
+                            Else
+                                ' Push the changes to the master, both on origin and GitHub
+                                If iteration = 1 Then
+                                    cmdArgs = " push origin"
+                                Else
+                                    cmdArgs = " push GitHub"
+                                End If
+                            End If
 
-                        blnSuccess = RunCommand(fiRepoExe.FullName, cmdArgs, diTargetFolder.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
+                            maxRuntimeSeconds = 300
+
+                            blnSuccess = RunCommand(fiRepoExe.FullName, cmdArgs, diTargetFolder.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
+
+                            If eRepoManager = eRepoManagerType.Hg Then
+                                Exit For
+                            End If
+                        Next
 
                     End If
 

@@ -1,5 +1,8 @@
 DB Schema Export Tool
 
+Version 1.2.6058; August 2, 2016
+	- When committing to git, now pushing to both origin and GitHub
+
 Version 1.2.5882; February 8, 2016
 	- Update path for git.exe to be C:\Program Files\Git\bin
 
