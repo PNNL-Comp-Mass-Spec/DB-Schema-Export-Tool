@@ -11,26 +11,26 @@ Option Strict On
 ' See clsMTSAutomation for additional information
 
 Module modMain
-    Public Const PROGRAM_DATE As String = "August 2, 2016"
+    Public Const PROGRAM_DATE As String = "February 22, 2017"
 
     Private mOutputFolderPath As String
 
-	Private mParameterFilePath As String						' Not used in this app
+    Private mParameterFilePath As String                        ' Not used in this app
 
-	Private mRecurseFolders As Boolean							' Not used in this app
-	Private mRecurseFoldersMaxLevels As Integer					' Not used in this app
+    Private mRecurseFolders As Boolean                          ' Not used in this app
+    Private mRecurseFoldersMaxLevels As Integer                 ' Not used in this app
 
-	Private mServer As String
-	Private mDatabaseList As SortedSet(Of String)
+    Private mServer As String
+    Private mDatabaseList As SortedSet(Of String)
 
-	Private mDisableAutoDataExport As Boolean				' Set to True to auto-select tables for which data should be exported
-	Private mTableDataToExportFile As String				' File with table names for which data should be exported
+    Private mDisableAutoDataExport As Boolean               ' Set to True to auto-select tables for which data should be exported
+    Private mTableDataToExportFile As String                ' File with table names for which data should be exported
 
-	Private mDatabaseSubfolderPrefix As String
-	Private mCreateFolderForEachDB As Boolean
+    Private mDatabaseSubfolderPrefix As String
+    Private mCreateFolderForEachDB As Boolean
 
-	Private mSync As Boolean
-	Private mSyncFolderPath As String
+    Private mSync As Boolean
+    Private mSyncFolderPath As String
     Private mSvnUpdate As Boolean
     Private mGitUpdate As Boolean
     Private mHgUpdate As Boolean
@@ -409,21 +409,21 @@ Module modMain
         End Try
     End Sub
 
-	Private Sub mProcessingClass_ProgressChanged(taskDescription As String, percentComplete As Single) Handles mProcessingClass.ProgressChanged
-		ShowProgressDescriptionIfChanged(taskDescription)
-	End Sub
+    Private Sub mProcessingClass_ProgressChanged(taskDescription As String, percentComplete As Single) Handles mProcessingClass.ProgressChanged
+        ShowProgressDescriptionIfChanged(taskDescription)
+    End Sub
 
-	Private Sub mProcessingClass_ProgressComplete() Handles mProcessingClass.ProgressComplete
-		Console.WriteLine("Processing complete")
-	End Sub
+    Private Sub mProcessingClass_ProgressComplete() Handles mProcessingClass.ProgressComplete
+        Console.WriteLine("Processing complete")
+    End Sub
 
-	Private Sub mProcessingClass_ProgressReset() Handles mProcessingClass.ProgressReset
-		ShowProgressDescriptionIfChanged(mProcessingClass.ProgressStepDescription)
-	End Sub
+    Private Sub mProcessingClass_ProgressReset() Handles mProcessingClass.ProgressReset
+        ShowProgressDescriptionIfChanged(mProcessingClass.ProgressStepDescription)
+    End Sub
 
-	Private Sub mProcessingClass_SubtaskProgressChanged(taskDescription As String, percentComplete As Single) Handles mProcessingClass.SubtaskProgressChanged
+    Private Sub mProcessingClass_SubtaskProgressChanged(taskDescription As String, percentComplete As Single) Handles mProcessingClass.SubtaskProgressChanged
 
-		If Not String.Equals(taskDescription, mSubtaskDescription) Then
+        If Not String.Equals(taskDescription, mSubtaskDescription) Then
             mSubtaskDescription = String.Copy(taskDescription)
             If taskDescription.StartsWith("  ") Then
                 Console.WriteLine(taskDescription)
@@ -431,7 +431,7 @@ Module modMain
                 Console.WriteLine("  " & taskDescription)
             End If
 
-		End If
+        End If
 
-	End Sub
+    End Sub
 End Module

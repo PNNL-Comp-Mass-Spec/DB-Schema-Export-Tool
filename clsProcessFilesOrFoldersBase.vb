@@ -12,7 +12,7 @@ Imports System.Collections.Generic
 ''' <remarks>
 ''' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
 ''' Created in October 2013
-''' Last updated in June 2016
+''' Last updated in January 2017
 ''' </remarks>
 Public MustInherit Class clsProcessFilesOrFoldersBase
 
@@ -150,7 +150,6 @@ Public MustInherit Class clsProcessFilesOrFoldersBase
 
         mLogDataCache = New Dictionary(Of String, DateTime)        
     End Sub
-
 
     Public Overridable Sub AbortProcessingNow()
         mAbortProcessing = True
@@ -734,7 +733,7 @@ Public MustInherit Class clsProcessFilesOrFoldersBase
 
     End Sub
 
-	Protected Sub OperationComplete()
-		RaiseEvent ProgressComplete()
-	End Sub
+    Protected Sub OperationComplete()
+        RaiseEvent ProgressComplete()
+    End Sub
 End Class

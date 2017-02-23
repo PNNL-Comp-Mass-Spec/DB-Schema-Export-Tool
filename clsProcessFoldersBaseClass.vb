@@ -14,141 +14,141 @@ Imports System.Reflection
 ''' Started April 26, 2005
 ''' </remarks>
 Public MustInherit Class clsProcessFoldersBaseClass
-	Inherits clsProcessFilesOrFoldersBase
+    Inherits clsProcessFilesOrFoldersBase
 
-	''' <summary>
-	''' Constructor
-	''' </summary>
-	''' <remarks></remarks>
-	Public Sub New()
-		mFileDate = "October 17, 2013"
-		mErrorCode = eProcessFoldersErrorCodes.NoError	
-	End Sub
+    ''' <summary>
+    ''' Constructor
+    ''' </summary>
+    ''' <remarks></remarks>
+    Public Sub New()
+        mFileDate = "October 17, 2013"
+        mErrorCode = eProcessFoldersErrorCodes.NoError
+    End Sub
 
 #Region "Constants and Enums"
-	Public Enum eProcessFoldersErrorCodes
-		NoError = 0
-		InvalidInputFolderPath = 1
-		InvalidOutputFolderPath = 2
-		ParameterFileNotFound = 4
-		InvalidParameterFile = 8
-		FilePathError = 16
-		LocalizedError = 32
-		UnspecifiedError = -1
-	End Enum
+    Public Enum eProcessFoldersErrorCodes
+        NoError = 0
+        InvalidInputFolderPath = 1
+        InvalidOutputFolderPath = 2
+        ParameterFileNotFound = 4
+        InvalidParameterFile = 8
+        FilePathError = 16
+        LocalizedError = 32
+        UnspecifiedError = -1
+    End Enum
 
-	'' Copy the following to any derived classes
-	''Public Enum eDerivedClassErrorCodes
-	''    NoError = 0
-	''    UnspecifiedError = -1
-	''End Enum
+    '' Copy the following to any derived classes
+    ''Public Enum eDerivedClassErrorCodes
+    ''    NoError = 0
+    ''    UnspecifiedError = -1
+    ''End Enum
 #End Region
 
 #Region "Classwide Variables"
-	''Private mLocalErrorCode As eDerivedClassErrorCodes
+    ''Private mLocalErrorCode As eDerivedClassErrorCodes
 
-	''Public ReadOnly Property LocalErrorCode() As eDerivedClassErrorCodes
-	''    Get
-	''        Return mLocalErrorCode
-	''    End Get
-	''End Property
+    ''Public ReadOnly Property LocalErrorCode() As eDerivedClassErrorCodes
+    ''    Get
+    ''        Return mLocalErrorCode
+    ''    End Get
+    ''End Property
 
-	Private mErrorCode As eProcessFoldersErrorCodes
+    Private mErrorCode As eProcessFoldersErrorCodes
 
 #End Region
 
 #Region "Interface Functions"
 
-	Public ReadOnly Property ErrorCode() As eProcessFoldersErrorCodes
-		Get
-			Return mErrorCode
-		End Get
-	End Property
+    Public ReadOnly Property ErrorCode() As eProcessFoldersErrorCodes
+        Get
+            Return mErrorCode
+        End Get
+    End Property
 
 #End Region
 
-	Protected Overrides Sub CleanupPaths(ByRef strInputFileOrFolderPath As String, ByRef strOutputFolderPath As String)
-		CleanupFolderPaths(strInputFileOrFolderPath, strOutputFolderPath)
-	End Sub
+    Protected Overrides Sub CleanupPaths(ByRef strInputFileOrFolderPath As String, ByRef strOutputFolderPath As String)
+        CleanupFolderPaths(strInputFileOrFolderPath, strOutputFolderPath)
+    End Sub
 
-	Protected Function CleanupFolderPaths(ByRef strInputFolderPath As String, ByRef strOutputFolderPath As String) As Boolean
-		' Validates that strInputFolderPath and strOutputFolderPath contain valid folder paths
-		' Will ignore strOutputFolderPath if it is Nothing or empty; will create strOutputFolderPath if it does not exist
-		'
-		' Returns True if success, False if failure
+    Protected Function CleanupFolderPaths(ByRef strInputFolderPath As String, ByRef strOutputFolderPath As String) As Boolean
+        ' Validates that strInputFolderPath and strOutputFolderPath contain valid folder paths
+        ' Will ignore strOutputFolderPath if it is Nothing or empty; will create strOutputFolderPath if it does not exist
+        '
+        ' Returns True if success, False if failure
 
-		Dim ioFolder As DirectoryInfo
-		Dim blnSuccess As Boolean
+        Dim ioFolder As DirectoryInfo
+        Dim blnSuccess As Boolean
 
-		Try
-			' Make sure strInputFolderPath points to a valid folder
-			ioFolder = New DirectoryInfo(strInputFolderPath)
+        Try
+            ' Make sure strInputFolderPath points to a valid folder
+            ioFolder = New DirectoryInfo(strInputFolderPath)
 
-			If Not ioFolder.Exists() Then
-				If ShowMessages Then
-					ShowErrorMessage("Input folder not found: " & strInputFolderPath)
-				Else
-					LogMessage("Input folder not found: " & strInputFolderPath, eMessageTypeConstants.ErrorMsg)
-				End If
-				mErrorCode = eProcessFoldersErrorCodes.InvalidInputFolderPath
-				blnSuccess = False
-			Else
-				If String.IsNullOrWhiteSpace(strOutputFolderPath) Then
-					' Define strOutputFolderPath based on strInputFolderPath
-					strOutputFolderPath = ioFolder.FullName
-				End If
+            If Not ioFolder.Exists() Then
+                If ShowMessages Then
+                    ShowErrorMessage("Input folder not found: " & strInputFolderPath)
+                Else
+                    LogMessage("Input folder not found: " & strInputFolderPath, eMessageTypeConstants.ErrorMsg)
+                End If
+                mErrorCode = eProcessFoldersErrorCodes.InvalidInputFolderPath
+                blnSuccess = False
+            Else
+                If String.IsNullOrWhiteSpace(strOutputFolderPath) Then
+                    ' Define strOutputFolderPath based on strInputFolderPath
+                    strOutputFolderPath = ioFolder.FullName
+                End If
 
-				' Make sure strOutputFolderPath points to a folder
-				ioFolder = New DirectoryInfo(strOutputFolderPath)
+                ' Make sure strOutputFolderPath points to a folder
+                ioFolder = New DirectoryInfo(strOutputFolderPath)
 
-				If Not ioFolder.Exists() Then
-					' strOutputFolderPath points to a non-existent folder; attempt to create it
-					ioFolder.Create()
-				End If
+                If Not ioFolder.Exists() Then
+                    ' strOutputFolderPath points to a non-existent folder; attempt to create it
+                    ioFolder.Create()
+                End If
 
-				mOutputFolderPath = String.Copy(ioFolder.FullName)
+                mOutputFolderPath = String.Copy(ioFolder.FullName)
 
-				blnSuccess = True
-			End If
+                blnSuccess = True
+            End If
 
-		Catch ex As Exception
-			HandleException("Error cleaning up the folder paths", ex)
-			Return False
-		End Try
+        Catch ex As Exception
+            HandleException("Error cleaning up the folder paths", ex)
+            Return False
+        End Try
 
-		Return blnSuccess
-	End Function
+        Return blnSuccess
+    End Function
 
-	Protected Function GetBaseClassErrorMessage() As String
-		' Returns String.Empty if no error
+    Protected Function GetBaseClassErrorMessage() As String
+        ' Returns String.Empty if no error
 
-		Dim strErrorMessage As String
+        Dim strErrorMessage As String
 
-		Select Case ErrorCode
-			Case eProcessFoldersErrorCodes.NoError
-				strErrorMessage = String.Empty
-			Case eProcessFoldersErrorCodes.InvalidInputFolderPath
-				strErrorMessage = "Invalid input folder path"
-			Case eProcessFoldersErrorCodes.InvalidOutputFolderPath
-				strErrorMessage = "Invalid output folder path"
-			Case eProcessFoldersErrorCodes.ParameterFileNotFound
-				strErrorMessage = "Parameter file not found"
-			Case eProcessFoldersErrorCodes.InvalidParameterFile
-				strErrorMessage = "Invalid parameter file"
-			Case eProcessFoldersErrorCodes.FilePathError
-				strErrorMessage = "General file path error"
-			Case eProcessFoldersErrorCodes.LocalizedError
-				strErrorMessage = "Localized error"
-			Case eProcessFoldersErrorCodes.UnspecifiedError
-				strErrorMessage = "Unspecified error"
-			Case Else
-				' This shouldn't happen
-				strErrorMessage = "Unknown error state"
-		End Select
+        Select Case ErrorCode
+            Case eProcessFoldersErrorCodes.NoError
+                strErrorMessage = String.Empty
+            Case eProcessFoldersErrorCodes.InvalidInputFolderPath
+                strErrorMessage = "Invalid input folder path"
+            Case eProcessFoldersErrorCodes.InvalidOutputFolderPath
+                strErrorMessage = "Invalid output folder path"
+            Case eProcessFoldersErrorCodes.ParameterFileNotFound
+                strErrorMessage = "Parameter file not found"
+            Case eProcessFoldersErrorCodes.InvalidParameterFile
+                strErrorMessage = "Invalid parameter file"
+            Case eProcessFoldersErrorCodes.FilePathError
+                strErrorMessage = "General file path error"
+            Case eProcessFoldersErrorCodes.LocalizedError
+                strErrorMessage = "Localized error"
+            Case eProcessFoldersErrorCodes.UnspecifiedError
+                strErrorMessage = "Unspecified error"
+            Case Else
+                ' This shouldn't happen
+                strErrorMessage = "Unknown error state"
+        End Select
 
-		Return strErrorMessage
+        Return strErrorMessage
 
-	End Function
+    End Function
 
     Public Function ProcessFoldersWildcard(strInputFolderPath As String) As Boolean
         Return ProcessFoldersWildcard(strInputFolderPath, String.Empty, String.Empty)
@@ -458,15 +458,15 @@ Public MustInherit Class clsProcessFoldersBaseClass
     ''    Else
     ''        mLocalErrorCode = eNewErrorCode
 
-	''        If eNewErrorCode = eDerivedClassErrorCodes.NoError Then
-	''            If MyBase.ErrorCode = clsProcessFoldersBaseClass.eProcessFoldersErrorCodes.LocalizedError Then
-	''                MyBase.SetBaseClassErrorCode(clsProcessFoldersBaseClass.eProcessFoldersErrorCodes.NoError)
-	''            End If
-	''        Else
-	''            MyBase.SetBaseClassErrorCode(clsProcessFoldersBaseClass.eProcessFoldersErrorCodes.LocalizedError)
-	''        End If
-	''    End If
+    ''        If eNewErrorCode = eDerivedClassErrorCodes.NoError Then
+    ''            If MyBase.ErrorCode = clsProcessFoldersBaseClass.eProcessFoldersErrorCodes.LocalizedError Then
+    ''                MyBase.SetBaseClassErrorCode(clsProcessFoldersBaseClass.eProcessFoldersErrorCodes.NoError)
+    ''            End If
+    ''        Else
+    ''            MyBase.SetBaseClassErrorCode(clsProcessFoldersBaseClass.eProcessFoldersErrorCodes.LocalizedError)
+    ''        End If
+    ''    End If
 
-	''End Sub
+    ''End Sub
 
 End Class
