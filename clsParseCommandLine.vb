@@ -25,7 +25,7 @@ Option Strict On
 ' this computer software.
 
 '
-' Last modified October 29, 2015
+' Last modified November 18, 2016
 
 Imports System.Collections.Generic
 Imports System.Runtime.InteropServices
@@ -76,7 +76,7 @@ Public Class clsParseCommandLine
     ''' <param name="objParameterList">Parameter list</param>
     ''' <returns>True if any of the parameters are not present in strParameterList()</returns>
     Public Function InvalidParametersPresent(objParameterList As List(Of String)) As Boolean
-        Const blnCaseSensitive As Boolean = False
+        Const blnCaseSensitive = False
         Return InvalidParametersPresent(objParameterList, blnCaseSensitive)
     End Function
 
@@ -86,7 +86,7 @@ Public Class clsParseCommandLine
     ''' <param name="strParameterList">Parameter list</param>
     ''' <returns>True if any of the parameters are not present in strParameterList()</returns>
     Public Function InvalidParametersPresent(strParameterList() As String) As Boolean
-        Const blnCaseSensitive As Boolean = False
+        Const blnCaseSensitive = False
         Return InvalidParametersPresent(strParameterList, blnCaseSensitive)
     End Function
 
@@ -115,7 +115,7 @@ Public Class clsParseCommandLine
     End Function
 
     Public Function InvalidParameters(lstValidParameters As List(Of String)) As List(Of String)
-        Const blnCaseSensitive As Boolean = False
+        Const blnCaseSensitive = False
         Return InvalidParameters(lstValidParameters, blnCaseSensitive)
     End Function
 
