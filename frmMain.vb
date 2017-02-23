@@ -12,6 +12,8 @@ Option Strict On
 ' Website: http://panomics.pnnl.gov/ or http://www.sysbio.org/resources/staff/
 ' -------------------------------------------------------------------------------
 Imports System.Text.RegularExpressions
+Imports PRISM
+Imports ShFolderBrowser.FolderBrowser
 
 Public Class frmMain
 
@@ -307,7 +309,7 @@ Public Class frmMain
     Private Sub IniFileLoadOptions(strFilePath As String, blnResetToDefaultsPriorToLoad As Boolean, blnConnectToServer As Boolean)
         ' Loads options from the given file
 
-        Dim objXmlFile As New PRISM.Files.XmlSettingsFileAccessor
+        Dim objXmlFile As New XmlSettingsFileAccessor
 
         Dim strServerNameSaved As String
 
@@ -421,7 +423,7 @@ Public Class frmMain
     End Sub
 
     Private Sub IniFileSaveOptions(strFilePath As String, Optional ByVal blnSaveWindowDimensionsOnly As Boolean = False)
-        Dim objXmlFile As New PRISM.Files.XmlSettingsFileAccessor
+        Dim objXmlFile As New XmlSettingsFileAccessor
 
         Try
             With objXmlFile
@@ -960,11 +962,9 @@ Public Class frmMain
     Private Sub SelectOutputFolder()
         ' Prompts the user to select the output folder to create the scripted objects in 
 
-        Dim objFolderBrowser As PRISM.Files.FolderBrowser
-        Dim blnSuccess As Boolean
-
         Try
-            objFolderBrowser = New PRISM.Files.FolderBrowser
+            Dim objFolderBrowser = New FolderBrowser
+            Dim blnSuccess As Boolean
 
             If txtOutputFolderPath.TextLength > 0 Then
                 blnSuccess = objFolderBrowser.BrowseForFolder(txtOutputFolderPath.Text)
