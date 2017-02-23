@@ -4,7 +4,6 @@ Imports System.IO
 Imports System.Threading
 Imports System.Reflection
 Imports System.Text.RegularExpressions
-Imports System.Collections.Generic
 
 ''' <summary>
 ''' This class contains functions used by both clsProcessFilesBaseClass and clsProcessFoldersBaseClass

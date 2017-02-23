@@ -96,7 +96,7 @@ Public Class frmMain
 
     Private Sub ConfirmAbortRequest()
         Dim ePauseStatusSaved As clsExportDBSchema.ePauseStatusConstants
-        Dim eResponse As Windows.Forms.DialogResult
+        Dim eResponse As DialogResult
 
         If Not mDBSchemaExporter Is Nothing Then
             ePauseStatusSaved = mDBSchemaExporter.PauseStatus
@@ -105,7 +105,7 @@ Public Class frmMain
             Application.DoEvents()
 
             eResponse = MessageBox.Show("Are you sure you want to abort processing?", "Abort", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1)
-            If eResponse = Windows.Forms.DialogResult.Yes Then
+            If eResponse = DialogResult.Yes Then
                 mDBSchemaExporter.AbortProcessingNow()
 
                 ' Note that AbortProcessingNow should have called RequestUnpause, but we'll call it here just in case
@@ -137,7 +137,7 @@ Public Class frmMain
             mnuEditResetOptions.Enabled = Not mWorking
 
         Catch ex As Exception
-            Windows.Forms.MessageBox.Show("Error in EnableDisableControls: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error in EnableDisableControls: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
     End Sub
 
@@ -186,14 +186,14 @@ Public Class frmMain
             If mCachedTableList.TryGetValue(tableName, tableRowCount) Then
 
                 If tableRowCount >= clsExportDBSchema.DATA_ROW_COUNT_WARNING_THRESHOLD Then
-                    Dim eResponse = Windows.Forms.MessageBox.Show("Warning, table " & tableName & " has " &
+                    Dim eResponse = MessageBox.Show("Warning, table " & tableName & " has " &
                       tableRowCount.ToString & " rows.  Are you sure you want to export data from it?",
                       "Row Count Over " & clsExportDBSchema.DATA_ROW_COUNT_WARNING_THRESHOLD.ToString,
                       MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2)
 
-                    If eResponse = Windows.Forms.DialogResult.No Then
+                    If eResponse = DialogResult.No Then
                         blnKeepTable = False
-                    ElseIf eResponse = Windows.Forms.DialogResult.Cancel Then
+                    ElseIf eResponse = DialogResult.Cancel Then
                         Exit For
                     End If
                 End If
@@ -211,7 +211,7 @@ Public Class frmMain
 
     End Function
 
-    Private Function GetSelectedListboxItems(ByRef objListbox As Windows.Forms.ListBox) As List(Of String)
+    Private Function GetSelectedListboxItems(ByRef objListbox As ListBox) As List(Of String)
         Dim lstItems As List(Of String)
         lstItems = New List(Of String)(objListbox.SelectedItems.Count + 1)
 
@@ -241,7 +241,7 @@ Public Class frmMain
                 mDBSchemaExporter.RequestPause()
             End If
         Catch ex As Exception
-            Windows.Forms.MessageBox.Show("Error in HandleDBExportStartingEvent: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error in HandleDBExportStartingEvent: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
     End Sub
 
@@ -266,7 +266,7 @@ Public Class frmMain
 
         Dim strFilePath As String
 
-        Dim objOpenFile As New Windows.Forms.OpenFileDialog
+        Dim objOpenFile As New OpenFileDialog
 
         strFilePath = String.Copy(mXmlSettingsFilePath)
 
@@ -362,12 +362,12 @@ Public Class frmMain
                     End If
 
                 Catch ex As Exception
-                    Windows.Forms.MessageBox.Show("Invalid parameter in settings file: " & IO.Path.GetFileName(strFilePath), "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+                    MessageBox.Show("Invalid parameter in settings file: " & IO.Path.GetFileName(strFilePath), "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
                 End Try
             End With
 
         Catch ex As Exception
-            Windows.Forms.MessageBox.Show("Error loading settings from file: " & strFilePath, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error loading settings from file: " & strFilePath, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
 
     End Sub
@@ -377,7 +377,7 @@ Public Class frmMain
 
         Dim strFilePath As String
 
-        Dim objSaveFile As New Windows.Forms.SaveFileDialog
+        Dim objSaveFile As New SaveFileDialog
 
         strFilePath = String.Copy(mXmlSettingsFilePath)
 
@@ -462,25 +462,25 @@ Public Class frmMain
                     End If
 
                 Catch ex As Exception
-                    Windows.Forms.MessageBox.Show("Error storing parameter in settings file: " & IO.Path.GetFileName(strFilePath), "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+                    MessageBox.Show("Error storing parameter in settings file: " & IO.Path.GetFileName(strFilePath), "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
                 End Try
 
                 .SaveSettings()
             End With
         Catch ex As Exception
-            Windows.Forms.MessageBox.Show("Error saving settings to file: " & strFilePath, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error saving settings to file: " & strFilePath, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
 
-        ''Dim objProperty As System.Configuration.SettingsProperty
-        ''Dim objProvider As System.Configuration.SettingsProvider
-        ''Dim objAttributes As System.Configuration.SettingsAttributeDictionary
+        ''Dim objProperty As Configuration.SettingsProperty
+        ''Dim objProvider As Configuration.SettingsProvider
+        ''Dim objAttributes As Configuration.SettingsAttributeDictionary
 
         ''Try
-        ''    objProvider = New System.Configuration.LocalFileSettingsProvider
-        ''    objAttributes = New System.Configuration.SettingsAttributeDictionary
+        ''    objProvider = New Configuration.LocalFileSettingsProvider
+        ''    objAttributes = New Configuration.SettingsAttributeDictionary
         ''    objAttributes.Add("", "")
 
-        ''    objProperty = New System.Configuration.SettingsProperty("ServerName", System.Type.GetType("System.String"), objProvider, False, "", Configuration.SettingsSerializeAs.String, objAttributes, False, False)
+        ''    objProperty = New Configuration.SettingsProperty("ServerName", Type.GetType("String"), objProvider, False, "", Configuration.SettingsSerializeAs.String, objAttributes, False, False)
         ''    My.Settings.Properties.Add(objProperty)
 
         ''    My.Settings.Item("ServerName") = txtServerName.Text
@@ -601,7 +601,7 @@ Public Class frmMain
             Next
 
         Catch ex As Exception
-            Windows.Forms.MessageBox.Show("Error in PopulateTableNamesToExport: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error in PopulateTableNamesToExport: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
 
     End Sub
@@ -665,7 +665,7 @@ Public Class frmMain
                 Next intIndex
             End With
         Catch ex As Exception
-            Windows.Forms.MessageBox.Show("Error in PopulateComboBoxes: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error in PopulateComboBoxes: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
 
     End Sub
@@ -695,7 +695,7 @@ Public Class frmMain
 
             If Not IO.Directory.Exists(txtOutputFolderPath.Text) Then
                 strMessage = "Output folder not found: " & txtOutputFolderPath.Text
-                Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+                MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
                 Exit Sub
             End If
 
@@ -747,7 +747,7 @@ Public Class frmMain
             End With
 
         Catch ex As Exception
-            Windows.Forms.MessageBox.Show("Error initializing mSchemaExportOptions in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error initializing mSchemaExportOptions in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
             Exit Sub
         End Try
 
@@ -757,12 +757,12 @@ Public Class frmMain
             mTableNamesForDataExport = GetSelectedTableNamesForDataExport(mnuEditWarnOnHighTableRowCount.Checked)
 
             If mDatabaseListToProcess.Count = 0 And Not mSchemaExportOptions.ExportServerSettingsLoginsAndJobs Then
-                Windows.Forms.MessageBox.Show("No databases or tables were selected; unable to continue", "Nothing To Do", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                MessageBox.Show("No databases or tables were selected; unable to continue", "Nothing To Do", MessageBoxButtons.OK, MessageBoxIcon.Information)
                 Exit Sub
             End If
 
         Catch ex As Exception
-            Windows.Forms.MessageBox.Show("Error determining list of databases (and tables) to process: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error determining list of databases (and tables) to process: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
             Exit Sub
         End Try
 
@@ -779,7 +779,7 @@ Public Class frmMain
                 mDBSchemaExporter.TableNameAutoSelectRegEx = mTableNameAutoSelectRegEx
             End If
         Catch ex As Exception
-            Windows.Forms.MessageBox.Show("Error instantiating mDBSchemaExporter and updating the data export auto-select lists: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error instantiating mDBSchemaExporter and updating the data export auto-select lists: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
             Exit Sub
         End Try
 
@@ -820,10 +820,10 @@ Public Class frmMain
             Application.DoEvents()
             If Not mSchemaExportSuccess OrElse mDBSchemaExporter.ErrorCode <> 0 Then
                 strMessage = "Error exporting the schema objects (ErrorCode=" & mDBSchemaExporter.ErrorCode.ToString & "): " & ControlChars.NewLine & mDBSchemaExporter.StatusMessage
-                Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+                MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
             End If
         Catch ex As Exception
-            Windows.Forms.MessageBox.Show("Error calling ScriptDBSchemaObjectsThread in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error calling ScriptDBSchemaObjectsThread in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         Finally
             mWorking = False
             EnableDisableControls()
@@ -840,7 +840,7 @@ Public Class frmMain
         Try
             lblSubtaskProgress.Text = "Schema export complete"
         Catch ex As Exception
-            Windows.Forms.MessageBox.Show("Error finalizing results in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error finalizing results in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
 
     End Sub
@@ -851,7 +851,7 @@ Public Class frmMain
         Try
             mSchemaExportSuccess = mDBSchemaExporter.ScriptServerAndDBObjects(mSchemaExportOptions, mDatabaseListToProcess, mTableNamesForDataExport)
         Catch ex As Exception
-            Windows.Forms.MessageBox.Show("Error in ScriptDBSchemaObjectsThread: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error in ScriptDBSchemaObjectsThread: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
     End Sub
 
@@ -881,12 +881,12 @@ Public Class frmMain
     End Sub
 
     Private Sub ResetToDefaults(blnConfirm As Boolean)
-        Dim eResponse As Windows.Forms.DialogResult
+        Dim eResponse As DialogResult
 
         Try
             If blnConfirm Then
-                eResponse = Windows.Forms.MessageBox.Show("Are you sure you want to reset all settings to their default values?", "Reset to Defaults", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1)
-                If eResponse <> Windows.Forms.DialogResult.Yes Then
+                eResponse = MessageBox.Show("Are you sure you want to reset all settings to their default values?", "Reset to Defaults", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1)
+                If eResponse <> DialogResult.Yes Then
                     Exit Sub
                 End If
             End If
@@ -942,7 +942,7 @@ Public Class frmMain
 
             EnableDisableControls()
         Catch ex As Exception
-            Windows.Forms.MessageBox.Show("Error in ResetToDefaults: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error in ResetToDefaults: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
 
     End Sub
@@ -976,7 +976,7 @@ Public Class frmMain
                 txtOutputFolderPath.Text = objFolderBrowser.FolderPath
             End If
         Catch ex As Exception
-            Windows.Forms.MessageBox.Show("Error in SelectOutputFolder: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error in SelectOutputFolder: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
     End Sub
 
@@ -985,14 +985,14 @@ Public Class frmMain
 
         Try
 
-            Using objToolTipControl = New Windows.Forms.ToolTip
+            Using objToolTipControl = New ToolTip
                 objToolTipControl.SetToolTip(chkCreateFolderForEachDB, "This will be automatically enabled if multiple databases are chosen above")
                 objToolTipControl.SetToolTip(txtOutputFolderNamePrefix, "The output folder for each database will be named with this prefix followed by the database name")
                 objToolTipControl.SetToolTip(txtServerOutputFolderNamePrefix, "Server settings will be saved in a folder with this prefix followed by the server name")
             End Using
 
         Catch ex As Exception
-            Windows.Forms.MessageBox.Show("Error in SetToolTips: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error in SetToolTips: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
 
     End Sub
@@ -1005,7 +1005,7 @@ Public Class frmMain
         strMessage &= "Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in August 2006" & ControlChars.NewLine
         strMessage &= "Copyright 2006, Battelle Memorial Institute.  All Rights Reserved." & ControlChars.NewLine & ControlChars.NewLine
 
-        strMessage &= "This is version " & Windows.Forms.Application.ProductVersion & " (" & PROGRAM_DATE & "). " & ControlChars.NewLine & ControlChars.NewLine
+        strMessage &= "This is version " & Application.ProductVersion & " (" & PROGRAM_DATE & "). " & ControlChars.NewLine & ControlChars.NewLine
 
         strMessage &= "E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com" & ControlChars.NewLine
         strMessage &= "Website: http://panomics.pnnl.gov/ or http://www.sysbio.org/resources/staff/" & ControlChars.NewLine & ControlChars.NewLine
@@ -1022,7 +1022,7 @@ Public Class frmMain
         strMessage &= "SOFTWARE.  This notice including this sentence must appear on any copies of "
         strMessage &= "this computer software." & ControlChars.NewLine
 
-        Windows.Forms.MessageBox.Show(strMessage, "About", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        MessageBox.Show(strMessage, "About", MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
 
     Private Sub StripRowCountsFromTableNames(ByRef lstTableNames As List(Of String))
@@ -1104,7 +1104,7 @@ Public Class frmMain
                 End If
             End If
         Catch ex As Exception
-            Windows.Forms.MessageBox.Show("Error in UpdateDatabaseList: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error in UpdateDatabaseList: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         Finally
             mWorking = False
             EnableDisableControls()
@@ -1130,7 +1130,7 @@ Public Class frmMain
         End Try
     End Sub
 
-    Private Sub UpdateProgressBar(pbar As Windows.Forms.ProgressBar, sngPercentComplete As Single)
+    Private Sub UpdateProgressBar(pbar As ProgressBar, sngPercentComplete As Single)
         Dim intPercentComplete = CInt(sngPercentComplete)
 
         If intPercentComplete < pbar.Minimum Then intPercentComplete = pbar.Minimum
@@ -1147,7 +1147,7 @@ Public Class frmMain
 
         Try
             If lstDatabasesToProcess.Items.Count = 0 Then
-                Windows.Forms.MessageBox.Show("The database list is currently empty; unable to continue", "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+                MessageBox.Show("The database list is currently empty; unable to continue", "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
                 Exit Try
             ElseIf lstDatabasesToProcess.SelectedIndex < 0 Then
                 ' Auto-select the first database
@@ -1156,7 +1156,7 @@ Public Class frmMain
             strDatabaseName = CStr(lstDatabasesToProcess.Items(lstDatabasesToProcess.SelectedIndex))
 
         Catch ex As Exception
-            Windows.Forms.MessageBox.Show("Error determining selected database name in UpdateTableNamesInSelectedDB: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error determining selected database name in UpdateTableNamesInSelectedDB: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
 
         If strDatabaseName Is Nothing OrElse strDatabaseName.Length = 0 Then
@@ -1183,7 +1183,7 @@ Public Class frmMain
                 End If
             End If
         Catch ex As Exception
-            Windows.Forms.MessageBox.Show("Error in UpdateTableNamesInSelectedDB: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error in UpdateTableNamesInSelectedDB: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         Finally
             mWorking = False
             EnableDisableControls()
@@ -1224,7 +1224,7 @@ Public Class frmMain
             If txtServerName.TextLength = 0 Then
                 strMessage = "Please enter the server name"
                 If blnInformUserOnFailure Then
-                    Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+                    MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
                 End If
             Else
                 With udtConnectionInfo
@@ -1246,30 +1246,30 @@ Public Class frmMain
                     If mDBSchemaExporter.StatusMessage.Length > 0 Then
                         strMessage &= "; " & mDBSchemaExporter.StatusMessage
                     End If
-                    Windows.Forms.MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+                    MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
                 End If
             End If
 
         Catch ex As Exception
-            Windows.Forms.MessageBox.Show("Error in VerifyOrUpdateServerConnection: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error in VerifyOrUpdateServerConnection: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
             blnConnected = False
         End Try
 
         Return blnConnected
     End Function
 
-    Private Sub frmMain_Load(eventSender As System.Object, eventArgs As System.EventArgs) Handles MyBase.Load
+    Private Sub frmMain_Load(eventSender As Object, eventArgs As EventArgs) Handles MyBase.Load
         ' Note that InitializeControls() is called in Sub New()
 
     End Sub
 
 #Region "Control Handlers"
 
-    Private Sub cboTableNamesToExportSortOrder_SelectedIndexChanged(sender As System.Object, e As System.EventArgs) Handles cboTableNamesToExportSortOrder.SelectedIndexChanged
+    Private Sub cboTableNamesToExportSortOrder_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cboTableNamesToExportSortOrder.SelectedIndexChanged
         PopulateTableNamesToExport(False)
     End Sub
 
-    Private Sub cmdPauseUnpause_Click(sender As System.Object, e As System.EventArgs) Handles cmdPauseUnpause.Click
+    Private Sub cmdPauseUnpause_Click(sender As Object, e As EventArgs) Handles cmdPauseUnpause.Click
         If Not mDBSchemaExporter Is Nothing Then
             mDBSchemaExporter.TogglePause()
             If mDBSchemaExporter.PauseStatus = clsExportDBSchema.ePauseStatusConstants.UnpauseRequested OrElse
@@ -1278,44 +1278,44 @@ Public Class frmMain
         End If
     End Sub
 
-    Private Sub cmdRefreshDBList_Click(sender As System.Object, e As System.EventArgs) Handles cmdRefreshDBList.Click
+    Private Sub cmdRefreshDBList_Click(sender As Object, e As EventArgs) Handles cmdRefreshDBList.Click
         UpdateDatabaseList()
     End Sub
 
-    Private Sub cmdUpdateTableNames_Click(sender As System.Object, e As System.EventArgs) Handles cmdUpdateTableNames.Click
+    Private Sub cmdUpdateTableNames_Click(sender As Object, e As EventArgs) Handles cmdUpdateTableNames.Click
         UpdateTableNamesInSelectedDB()
     End Sub
 
-    Private Sub chkUseIntegratedAuthentication_CheckedChanged(sender As System.Object, e As System.EventArgs) Handles chkUseIntegratedAuthentication.CheckedChanged
+    Private Sub chkUseIntegratedAuthentication_CheckedChanged(sender As Object, e As EventArgs) Handles chkUseIntegratedAuthentication.CheckedChanged
         EnableDisableControls()
     End Sub
 
-    Private Sub cmdAbort_Click(sender As System.Object, e As System.EventArgs) Handles cmdAbort.Click
+    Private Sub cmdAbort_Click(sender As Object, e As EventArgs) Handles cmdAbort.Click
         ConfirmAbortRequest()
     End Sub
 
-    Private Sub cmdGo_Click(eventSender As System.Object, eventArgs As System.EventArgs) Handles cmdGo.Click
+    Private Sub cmdGo_Click(eventSender As Object, eventArgs As EventArgs) Handles cmdGo.Click
         ScriptDBSchemaObjects()
     End Sub
 
-    Private Sub cmdSelectDefaultDMSDBs_Click(sender As System.Object, e As System.EventArgs) Handles cmdSelectDefaultDMSDBs.Click
+    Private Sub cmdSelectDefaultDMSDBs_Click(sender As Object, e As EventArgs) Handles cmdSelectDefaultDMSDBs.Click
         SelectDefaultDBs(mDefaultDMSDatabaseList)
     End Sub
 
-    Private Sub cmdSelectDefaultMTSDBs_Click(sender As System.Object, e As System.EventArgs) Handles cmdSelectDefaultMTSDBs.Click
+    Private Sub cmdSelectDefaultMTSDBs_Click(sender As Object, e As EventArgs) Handles cmdSelectDefaultMTSDBs.Click
         SelectDefaultDBs(mDefaultMTSDatabaseList)
     End Sub
 
-    Private Sub cmdExit_Click(eventSender As System.Object, eventArgs As System.EventArgs) Handles cmdExit.Click
+    Private Sub cmdExit_Click(eventSender As Object, eventArgs As EventArgs) Handles cmdExit.Click
         Me.Close()
     End Sub
 
-    Private Sub lstDatabasesToProcess_KeyPress(sender As Object, e As Windows.Forms.KeyPressEventArgs) Handles lstDatabasesToProcess.KeyPress
+    Private Sub lstDatabasesToProcess_KeyPress(sender As Object, e As KeyPressEventArgs) Handles lstDatabasesToProcess.KeyPress
         ' Always mark e as handled to allow Ctrl+A to be used to select all the entries in the listbox
         e.Handled = True
     End Sub
 
-    Private Sub lstDatabasesToProcess_KeyDown(sender As Object, e As Windows.Forms.KeyEventArgs) Handles lstDatabasesToProcess.KeyDown
+    Private Sub lstDatabasesToProcess_KeyDown(sender As Object, e As KeyEventArgs) Handles lstDatabasesToProcess.KeyDown
         If e.Control Then
             If e.KeyCode = Keys.A Then
                 ' Ctrl+A - Select All
@@ -1325,12 +1325,12 @@ Public Class frmMain
         End If
     End Sub
 
-    Private Sub lstObjectTypesToScript_KeyPress(sender As Object, e As Windows.Forms.KeyPressEventArgs) Handles lstObjectTypesToScript.KeyPress
+    Private Sub lstObjectTypesToScript_KeyPress(sender As Object, e As KeyPressEventArgs) Handles lstObjectTypesToScript.KeyPress
         ' Always mark e as handled to allow Ctrl+A to be used to select all the entries in the listbox
         e.Handled = True
     End Sub
 
-    Private Sub lstObjectTypesToScript_KeyDown(sender As Object, e As Windows.Forms.KeyEventArgs) Handles lstObjectTypesToScript.KeyDown
+    Private Sub lstObjectTypesToScript_KeyDown(sender As Object, e As KeyEventArgs) Handles lstObjectTypesToScript.KeyDown
         If e.Control Then
             If e.KeyCode = Keys.A Then
                 ' Ctrl+A - Select All
@@ -1340,12 +1340,12 @@ Public Class frmMain
         End If
     End Sub
 
-    Private Sub lstTableNamesToExportData_KeyPress(sender As Object, e As Windows.Forms.KeyPressEventArgs) Handles lstTableNamesToExportData.KeyPress
+    Private Sub lstTableNamesToExportData_KeyPress(sender As Object, e As KeyPressEventArgs) Handles lstTableNamesToExportData.KeyPress
         ' Always mark e as handled to allow Ctrl+A to be used to select all the entries in the listbox
         e.Handled = True
     End Sub
 
-    Private Sub lstTableNamesToExportData_KeyDown(sender As Object, e As Windows.Forms.KeyEventArgs) Handles lstTableNamesToExportData.KeyDown
+    Private Sub lstTableNamesToExportData_KeyDown(sender As Object, e As KeyEventArgs) Handles lstTableNamesToExportData.KeyDown
         If e.Control Then
             If e.KeyCode = Keys.A Then
                 ' Ctrl+A - Select All
@@ -1358,7 +1358,7 @@ Public Class frmMain
 #End Region
 
 #Region "Form Handlers"
-    Private Sub frmMain_Closing(sender As Object, e As System.ComponentModel.CancelEventArgs) Handles MyBase.Closing
+    Private Sub frmMain_Closing(sender As Object, e As ComponentModel.CancelEventArgs) Handles MyBase.Closing
         If Not mDBSchemaExporter Is Nothing Then
             mDBSchemaExporter.AbortProcessingNow()
         End If
@@ -1366,63 +1366,63 @@ Public Class frmMain
 #End Region
 
 #Region "Menu Handlers"
-    Private Sub mnuFileSelectOutputFolder_Click(sender As System.Object, e As System.EventArgs) Handles mnuFileSelectOutputFolder.Click
+    Private Sub mnuFileSelectOutputFolder_Click(sender As Object, e As EventArgs) Handles mnuFileSelectOutputFolder.Click
         SelectOutputFolder()
     End Sub
 
-    Private Sub mnuFileSaveOptions_Click(sender As System.Object, e As System.EventArgs) Handles mnuFileSaveOptions.Click
+    Private Sub mnuFileSaveOptions_Click(sender As Object, e As EventArgs) Handles mnuFileSaveOptions.Click
         IniFileSaveOptions()
     End Sub
 
-    Private Sub mnuFileLoadOptions_Click(sender As System.Object, e As System.EventArgs) Handles mnuFileLoadOptions.Click
+    Private Sub mnuFileLoadOptions_Click(sender As Object, e As EventArgs) Handles mnuFileLoadOptions.Click
         IniFileLoadOptions()
     End Sub
 
-    Private Sub mnuFileExit_Click(sender As System.Object, e As System.EventArgs) Handles mnuFileExit.Click
+    Private Sub mnuFileExit_Click(sender As Object, e As EventArgs) Handles mnuFileExit.Click
         Me.Close()
     End Sub
 
-    Private Sub mnuEditStart_Click(sender As System.Object, e As System.EventArgs) Handles mnuEditStart.Click
+    Private Sub mnuEditStart_Click(sender As Object, e As EventArgs) Handles mnuEditStart.Click
         ScriptDBSchemaObjects()
     End Sub
 
-    Private Sub mnuEditIncludeSystemObjects_Click(sender As System.Object, e As System.EventArgs) Handles mnuEditIncludeSystemObjects.Click
+    Private Sub mnuEditIncludeSystemObjects_Click(sender As Object, e As EventArgs) Handles mnuEditIncludeSystemObjects.Click
         mnuEditIncludeSystemObjects.Checked = Not mnuEditIncludeSystemObjects.Checked
     End Sub
 
-    Private Sub mnuEditScriptObjectsThreaded_Click(sender As System.Object, e As System.EventArgs) Handles mnuEditScriptObjectsThreaded.Click
+    Private Sub mnuEditScriptObjectsThreaded_Click(sender As Object, e As EventArgs) Handles mnuEditScriptObjectsThreaded.Click
         mnuEditScriptObjectsThreaded.Checked = Not mnuEditScriptObjectsThreaded.Checked
     End Sub
 
-    Private Sub mnuEditPauseAfterEachDatabase_Click_1(sender As System.Object, e As System.EventArgs) Handles mnuEditPauseAfterEachDatabase.Click
+    Private Sub mnuEditPauseAfterEachDatabase_Click_1(sender As Object, e As EventArgs) Handles mnuEditPauseAfterEachDatabase.Click
         mnuEditPauseAfterEachDatabase.Checked = Not mnuEditPauseAfterEachDatabase.Checked
     End Sub
 
-    Private Sub mnuEditIncludeTimestampInScriptFileHeader_Click(sender As System.Object, e As System.EventArgs) Handles mnuEditIncludeTimestampInScriptFileHeader.Click
+    Private Sub mnuEditIncludeTimestampInScriptFileHeader_Click(sender As Object, e As EventArgs) Handles mnuEditIncludeTimestampInScriptFileHeader.Click
         mnuEditIncludeTimestampInScriptFileHeader.Checked = Not mnuEditIncludeTimestampInScriptFileHeader.Checked
     End Sub
 
-    Private Sub mnuEditIncludeTableRowCounts_Click(sender As System.Object, e As System.EventArgs) Handles mnuEditIncludeTableRowCounts.Click
+    Private Sub mnuEditIncludeTableRowCounts_Click(sender As Object, e As EventArgs) Handles mnuEditIncludeTableRowCounts.Click
         mnuEditIncludeTableRowCounts.Checked = Not mnuEditIncludeTableRowCounts.Checked
     End Sub
 
-    Private Sub mnuEditAutoSelectDefaultTableNames_Click(sender As System.Object, e As System.EventArgs) Handles mnuEditAutoSelectDefaultTableNames.Click
+    Private Sub mnuEditAutoSelectDefaultTableNames_Click(sender As Object, e As EventArgs) Handles mnuEditAutoSelectDefaultTableNames.Click
         mnuEditAutoSelectDefaultTableNames.Checked = Not mnuEditAutoSelectDefaultTableNames.Checked
     End Sub
 
-    Private Sub mnuEditSaveDataAsInsertIntoStatements_Click(sender As System.Object, e As System.EventArgs) Handles mnuEditSaveDataAsInsertIntoStatements.Click
+    Private Sub mnuEditSaveDataAsInsertIntoStatements_Click(sender As Object, e As EventArgs) Handles mnuEditSaveDataAsInsertIntoStatements.Click
         mnuEditSaveDataAsInsertIntoStatements.Checked = Not mnuEditSaveDataAsInsertIntoStatements.Checked
     End Sub
 
-    Private Sub mnuEditWarnOnHighTableRowCount_Click(sender As System.Object, e As System.EventArgs) Handles mnuEditWarnOnHighTableRowCount.Click
+    Private Sub mnuEditWarnOnHighTableRowCount_Click(sender As Object, e As EventArgs) Handles mnuEditWarnOnHighTableRowCount.Click
         mnuEditWarnOnHighTableRowCount.Checked = Not mnuEditWarnOnHighTableRowCount.Checked
     End Sub
 
-    Private Sub mnuEditResetOptions_Click(sender As System.Object, e As System.EventArgs) Handles mnuEditResetOptions.Click
+    Private Sub mnuEditResetOptions_Click(sender As Object, e As EventArgs) Handles mnuEditResetOptions.Click
         ResetToDefaults(True)
     End Sub
 
-    Private Sub mnuHelpAbout_Click(sender As System.Object, e As System.EventArgs) Handles mnuHelpAbout.Click
+    Private Sub mnuHelpAbout_Click(sender As Object, e As EventArgs) Handles mnuHelpAbout.Click
         ShowAboutBox()
     End Sub
 #End Region

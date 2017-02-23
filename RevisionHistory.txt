@@ -1,5 +1,8 @@
 DB Schema Export Tool
 
+Version 1.2.6262; February 22, 2017
+	- Update PRISM.dll and add ShFolderBrowser.dll
+
 Version 1.2.6058; August 2, 2016
 	- When committing to git, now pushing to both origin and GitHub
 
