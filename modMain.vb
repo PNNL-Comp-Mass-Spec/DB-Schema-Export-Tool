@@ -186,7 +186,7 @@ Module modMain
             End If
 
         Catch ex As Exception
-            ShowErrorMessage("Error occurred in modMain->Main: " & Environment.NewLine & ex.Message)
+            ShowErrorMessage("Error occurred in modMain->Main: " & Environment.NewLine & ex.Message, ex)
             intReturnCode = -1
         End Try
 
@@ -303,24 +303,35 @@ Module modMain
     End Function
 
 
-    Private Sub ShowErrorMessage(strMessage As String)
+    Private Sub ShowErrorMessage(strMessage As String, Optional ex As Exception = Nothing)
         Const strSeparator = "------------------------------------------------------------------------------"
 
         Console.WriteLine()
         Console.WriteLine(strSeparator)
+
+        Console.ForegroundColor = ConsoleColor.Red
         Console.WriteLine(strMessage)
+
+        If Not ex Is Nothing Then
+            Console.ForegroundColor = ConsoleColor.Yellow
+            Console.WriteLine(PRISM.clsStackTraceFormatter.GetExceptionStackTraceMultiLine((ex)))
+        End If
+
+        Console.ResetColor()
         Console.WriteLine(strSeparator)
         Console.WriteLine()
 
         WriteToErrorStream(strMessage)
     End Sub
 
-    Private Sub ShowErrorMessage(strTitle As String, items As IEnumerable(Of String))
+    Private Sub ShowErrorMessage(strTitle As String, items As IEnumerable(Of String), Optional ex As Exception = Nothing)
         Const strSeparator = "------------------------------------------------------------------------------"
         Dim strMessage As String
 
         Console.WriteLine()
         Console.WriteLine(strSeparator)
+
+        Console.ForegroundColor = ConsoleColor.Red
         Console.WriteLine(strTitle)
         strMessage = strTitle & ":"
 
@@ -328,6 +339,13 @@ Module modMain
             Console.WriteLine("   " + item)
             strMessage &= " " & item
         Next
+
+        If Not ex Is Nothing Then
+            Console.ForegroundColor = ConsoleColor.Yellow
+            Console.WriteLine(PRISM.clsStackTraceFormatter.GetExceptionStackTraceMultiLine((ex)))
+        End If
+
+        Console.ResetColor()
         Console.WriteLine(strSeparator)
         Console.WriteLine()
 
