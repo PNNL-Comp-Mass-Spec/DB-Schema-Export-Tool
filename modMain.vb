@@ -1,5 +1,7 @@
 Option Strict On
 '
+
+Imports PRISM '
 ' -------------------------------------------------------------------------------
 ' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
 ' Program started April 11, 2006

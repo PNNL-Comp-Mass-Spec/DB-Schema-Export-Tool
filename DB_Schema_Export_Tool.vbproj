@@ -17,7 +17,7 @@
     <OldToolsVersion>3.5</OldToolsVersion>
     <UpgradeBackupLocation>
     </UpgradeBackupLocation>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <TargetFrameworkProfile />
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
@@ -88,10 +88,6 @@
       <HintPath>Lib\Microsoft.SqlServer.WmiEnum.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="PRISM, Version=2.1.4643.28167, Culture=neutral, processorArchitecture=x86">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>Lib\PRISM.dll</HintPath>
-    </Reference>
     <Reference Include="SharedVBNetRoutines, Version=1.0.2133.21128, Culture=neutral">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Lib\SharedVBNetRoutines.dll</HintPath>
@@ -122,9 +118,11 @@
   <ItemGroup>
     <Compile Include="clsDBSchemaExportTool.vb" />
     <Compile Include="clsExportDBSchema.vb" />
-    <Compile Include="clsParseCommandLine.vb" />
+    <Compile Include="clsExportOptions.vb" />
     <Compile Include="clsProcessFilesOrFoldersBase.vb" />
     <Compile Include="clsProcessFoldersBaseClass.vb" />
+    <Compile Include="clsServerConnectionInfo.vb" />
+    <Compile Include="clsWorkingParams.vb" />
     <Compile Include="frmMain.Designer.vb">
       <DependentUpon>frmMain.vb</DependentUpon>
     </Compile>
@@ -188,6 +186,11 @@
       <ProductName>Windows Installer 3.1</ProductName>
       <Install>true</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="PRISM-Library">
+      <Version>1.0.2</Version>
+    </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
