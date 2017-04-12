@@ -21,7 +21,7 @@ Public Class clsDBSchemaExportTool
     ''' Constructor
     ''' </summary>
     Public Sub New()
-        MyBase.mFileDate = "February 22, 2017"
+        MyBase.mFileDate = "April 12, 2017"
         mDateMatcher = New Regex("'\d+/\d+/\d+ \d+:\d+:\d+ [AP]M'", RegexOptions.Compiled Or RegexOptions.IgnoreCase)
 
         InitializeLocalVariables()
@@ -58,7 +58,7 @@ Public Class clsDBSchemaExportTool
     Private mServer As String
     Private mDatabase As String
 
-    Private mSchemaExportOptions As clsExportDBSchema.udtSchemaExportOptionsType
+    Private mSchemaExportOptions As clsSchemaExportOptions
 
     Private mSubtaskDescription As String
     Private mSubtaskPercentComplete As Single
@@ -900,12 +900,6 @@ Public Class clsDBSchemaExportTool
                     ShowErrorMessage("Program execution has surpassed " & maxRuntimeSeconds & " seconds; aborting " & exePath)
                     m_ProgRunner.StopMonitoringProgram(Kill:=True)
                     executionAborted = True
-                End If
-
-                If m_ProgRunner.State = clsProgRunner.States.StartingProcess AndAlso DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds > 30 AndAlso DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds < 90 Then
-                    ' It has taken over 30 seconds for the thread to start
-                    ' Try re-joining
-                    m_ProgRunner.JoinThreadNow()
                 End If
 
                 If DateTime.UtcNow.Subtract(dtLastStatus).TotalSeconds > 15 Then

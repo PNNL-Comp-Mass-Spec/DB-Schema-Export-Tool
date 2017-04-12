@@ -49,7 +49,7 @@ Public Class frmMain
 #Region "Classwide Variables"
     Private mXmlSettingsFilePath As String
 
-    Private mSchemaExportOptions As clsExportDBSchema.udtSchemaExportOptionsType
+    Private mSchemaExportOptions As clsSchemaExportOptions
     Private mDatabaseListToProcess As List(Of String)
     Private mTableNamesForDataExport As List(Of String)
 
@@ -712,7 +712,7 @@ Public Class frmMain
                 .ServerOutputFolderNamePrefix = txtServerOutputFolderNamePrefix.Text
 
                 .SaveDataAsInsertIntoStatements = mnuEditSaveDataAsInsertIntoStatements.Checked
-                .DatabaseTypeForInsertInto = clsExportDBSchema.eTargetDatabaseTypeConstants.SqlServer       ' Reserved for future expansion
+                .DatabaseTypeForInsertInto = clsSchemaExportOptions.eTargetDatabaseTypeConstants.SqlServer       ' Reserved for future expansion
                 .AutoSelectTableNamesForDataExport = mnuEditAutoSelectDefaultTableNames.Checked
 
                 ' Note: mDBSchemaExporter & mTableNameAutoSelectRegEx will be passed to mDBSchemaExporter below
@@ -768,7 +768,7 @@ Public Class frmMain
 
         Try
             If mDBSchemaExporter Is Nothing Then
-                mDBSchemaExporter = New clsExportDBSchema
+                mDBSchemaExporter = New clsExportDBSchema()
             End If
 
             If Not mTableNamesToAutoSelect Is Nothing Then
@@ -963,7 +963,7 @@ Public Class frmMain
         ' Prompts the user to select the output folder to create the scripted objects in 
 
         Try
-            Dim objFolderBrowser = New FolderBrowser
+            Dim objFolderBrowser = New FolderBrowser()
             Dim blnSuccess As Boolean
 
             If txtOutputFolderPath.TextLength > 0 Then
@@ -985,7 +985,7 @@ Public Class frmMain
 
         Try
 
-            Using objToolTipControl = New ToolTip
+            Using objToolTipControl = New ToolTip()
                 objToolTipControl.SetToolTip(chkCreateFolderForEachDB, "This will be automatically enabled if multiple databases are chosen above")
                 objToolTipControl.SetToolTip(txtOutputFolderNamePrefix, "The output folder for each database will be named with this prefix followed by the database name")
                 objToolTipControl.SetToolTip(txtServerOutputFolderNamePrefix, "Server settings will be saved in a folder with this prefix followed by the server name")
@@ -1215,7 +1215,6 @@ Public Class frmMain
 
     Private Function VerifyOrUpdateServerConnection(blnInformUserOnFailure As Boolean) As Boolean
         Dim blnConnected As Boolean
-        Dim udtConnectionInfo As clsExportDBSchema.udtServerConnectionInfoType
 
         Try
             Dim strMessage As String
@@ -1227,28 +1226,28 @@ Public Class frmMain
                     MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
                 End If
             Else
-                With udtConnectionInfo
-                    .ServerName = txtServerName.Text
-                    .UseIntegratedAuthentication = chkUseIntegratedAuthentication.Checked
-                    .UserName = txtUsername.Text
-                    .Password = txtPassword.Text
-                End With
+                Dim connectionInfo = New clsServerConnectionInfo(txtServerName.Text, chkUseIntegratedAuthentication.Checked)
+
+                If Not chkUseIntegratedAuthentication.Checked Then
+                    connectionInfo.UserName = txtUsername.Text
+                    connectionInfo.Password = txtPassword.Text
+                End If
 
                 If mDBSchemaExporter Is Nothing Then
-                    mDBSchemaExporter = New clsExportDBSchema(udtConnectionInfo)
-                    blnConnected = mDBSchemaExporter.ConnectedToServer
-                Else
-                    blnConnected = mDBSchemaExporter.ConnectToServer(udtConnectionInfo)
-                End If
-
-                If Not blnConnected AndAlso blnInformUserOnFailure Then
-                    strMessage = "Error connecting to server " & udtConnectionInfo.ServerName
-                    If mDBSchemaExporter.StatusMessage.Length > 0 Then
-                        strMessage &= "; " & mDBSchemaExporter.StatusMessage
+                        mDBSchemaExporter = New clsExportDBSchema(connectionInfo)
+                        blnConnected = mDBSchemaExporter.ConnectedToServer
+                    Else
+                        blnConnected = mDBSchemaExporter.ConnectToServer(connectionInfo)
                     End If
-                    MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+
+                    If Not blnConnected AndAlso blnInformUserOnFailure Then
+                        strMessage = "Error connecting to server " & connectionInfo.ServerName
+                        If mDBSchemaExporter.StatusMessage.Length > 0 Then
+                            strMessage &= "; " & mDBSchemaExporter.StatusMessage
+                        End If
+                        MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+                    End If
                 End If
-            End If
 
         Catch ex As Exception
             MessageBox.Show("Error in VerifyOrUpdateServerConnection: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
