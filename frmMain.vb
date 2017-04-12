@@ -658,8 +658,10 @@ Public Class frmMain
                     .Insert(clsExportDBSchema.eSchemaObjectTypeConstants.UserDefinedFunctions, "User Defined Functions")
                     .Insert(clsExportDBSchema.eSchemaObjectTypeConstants.UserDefinedDataTypes, "User Defined Data Types")
                     .Insert(clsExportDBSchema.eSchemaObjectTypeConstants.UserDefinedTypes, "User Defined Types")
+                    .Insert(clsExportDBSchema.eSchemaObjectTypeConstants.Synonyms, "Synonyms")
                 End With
 
+                ' Auto-select all of the options
                 For intIndex = 0 To .Items.Count - 1
                     .SetSelected(intIndex, True)
                 Next intIndex
@@ -735,6 +737,8 @@ Public Class frmMain
                             .ExportUserDefinedDataTypes = blnSelected
                         Case clsExportDBSchema.eSchemaObjectTypeConstants.UserDefinedTypes
                             .ExportUserDefinedTypes = blnSelected
+                        Case clsExportDBSchema.eSchemaObjectTypeConstants.Synonyms
+                            .ExportSynonyms = blnSelected
                     End Select
                 Next intIndex
 

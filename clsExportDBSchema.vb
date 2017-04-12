@@ -95,6 +95,7 @@ Public Class clsExportDBSchema
         UserDefinedFunctions = 4
         UserDefinedDataTypes = 5
         UserDefinedTypes = 6
+        Synonyms = 7
     End Enum
 
     Public Enum eDataColumnTypeConstants
@@ -612,9 +613,10 @@ Public Class clsExportDBSchema
             If mAbortProcessing Then Exit Sub
         End If
 
-        If schemaExportOptions.ExportViews Or
-           schemaExportOptions.ExportUserDefinedFunctions Or
-           schemaExportOptions.ExportStoredProcedures Then
+        If schemaExportOptions.ExportViews OrElse
+           schemaExportOptions.ExportUserDefinedFunctions OrElse
+           schemaExportOptions.ExportStoredProcedures OrElse
+           schemaExportOptions.ExportSynonyms Then
             ExportDBViewsProcsAndUDFs(objDatabase, schemaExportOptions, objScriptOptions, workingParams)
             If mAbortProcessing Then Exit Sub
         End If
@@ -954,6 +956,13 @@ Public Class clsExportDBSchema
                     If schemaExportOptions.ExportUserDefinedFunctions Then
                         strSql = "SELECT routine_schema, routine_name FROM INFORMATION_SCHEMA.routines WHERE routine_type = 'function' "
                         strSql &= " ORDER BY routine_name"
+                Case 3
+                    ' Synonyms
+                    objectType = "Synonyms"
+                    If schemaExportOptions.ExportSynonyms Then
+                        sql = "SELECT B.name AS SchemaName, A.name FROM sys.synonyms A " +
+                              "INNER JOIN sys.schemas B ON A.schema_id = B.schema_id " +
+                              "ORDER BY A.Name"
                     End If
                 Case Else
                     ' Unknown value for intObjectIterator; skip it
@@ -987,6 +996,9 @@ Public Class clsExportDBSchema
                         Case 2
                             ' User defined functions
                             objSMOObject(0) = objDatabase.UserDefinedFunctions(strObjectName, strObjectSchema)
+                        Case 3
+                            ' Synonyms
+                            smoObject = objDatabase.Synonyms(objectName, objectSchema)
                         Case Else
                             ' Unknown value for intObjectIterator; skip it
                             objSMOObject(0) = Nothing
@@ -1781,6 +1793,7 @@ Public Class clsExportDBSchema
             .ExportUserDefinedFunctions = True
             .ExportUserDefinedDataTypes = True
             .ExportUserDefinedTypes = True
+            .ExportSynonyms = True
 
             ResetSqlServerConnection(.ConnectionInfo)
         End With
