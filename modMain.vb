@@ -1,5 +1,4 @@
 Option Strict On
-'
 
 Imports PRISM '
 ' -------------------------------------------------------------------------------
@@ -9,7 +8,7 @@ Imports PRISM '
 ' E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com
 ' Website: http://omics.pnl.gov/ or http://www.sysbio.org/resources/staff/ or http://panomics.pnnl.gov/
 ' -------------------------------------------------------------------------------
-' 
+'
 ' See clsMTSAutomation for additional information
 
 Module modMain
@@ -70,8 +69,8 @@ Module modMain
 
         mParameterFilePath = String.Empty
 
-        mRecurseFolders = False                 ' Not used in this app    
-        mRecurseFoldersMaxLevels = 0            ' Not used in this app    
+        mRecurseFolders = False                 ' Not used in this app
+        mRecurseFoldersMaxLevels = 0            ' Not used in this app
 
         mServer = String.Empty
         mDatabaseList = New SortedSet(Of String)

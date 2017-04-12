@@ -349,6 +349,9 @@ Public MustInherit Class clsProcessFilesOrFoldersBase
         If ShowMessages Then
             ' Note that ShowErrorMessage() will call LogMessage()
             ShowErrorMessage(strBaseMessage & ": " & ex.Message, True)
+
+            Console.WriteLine(PRISM.clsStackTraceFormatter.GetExceptionStackTraceMultiLine(ex))
+
         Else
             LogMessage(strBaseMessage & ": " & ex.Message, eMessageTypeConstants.ErrorMsg)
             Throw New Exception(strBaseMessage, ex)
