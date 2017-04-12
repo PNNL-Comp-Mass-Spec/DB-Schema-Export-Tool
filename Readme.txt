@@ -1,5 +1,5 @@
 The DB Schema Export Tool exports Sql Server database objects as schema files. 
-Exported objects include tables, views, stored procedures, and functions,
+Exported objects include tables, views, stored procedures, functions, and synonyms,
 plus also database properties including database roles and logins.  The 
 program can also export table data to create SQL files with 
 an Insert Into statement for each row.
