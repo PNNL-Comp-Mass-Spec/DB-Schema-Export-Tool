@@ -21,7 +21,7 @@ Public Class clsDBSchemaExportTool
     ''' Constructor
     ''' </summary>
     Public Sub New()
-        MyBase.mFileDate = "April 12, 2017"
+        MyBase.mFileDate = "June 14, 2017"
         mDateMatcher = New Regex("'\d+/\d+/\d+ \d+:\d+:\d+ [AP]M'", RegexOptions.Compiled Or RegexOptions.IgnoreCase)
 
         InitializeLocalVariables()
@@ -78,7 +78,7 @@ Public Class clsDBSchemaExportTool
 
 #Region "Properties"
 
-    Public Property AutoSelectTableDataToExport() As Boolean
+    Public Property AutoSelectTableDataToExport As Boolean
 
     Public Property TableDataToExportFile As String
 
@@ -116,7 +116,7 @@ Public Class clsDBSchemaExportTool
     ''' <summary>
     ''' Export database schema to the specified folder
     ''' </summary>
-    ''' <param name="strOutputFolderPath">Output folder path</param>
+    ''' <param name="outputFolderPath">Output folder path</param>
     ''' <param name="serverName">Server name</param>
     ''' <param name="dctDatabaseNamesAndOutputPaths">Dictionary where keys are database names and values will be updated to have the output folder path used</param>
     ''' <returns>True if success, false if a problem</returns>
@@ -125,18 +125,18 @@ Public Class clsDBSchemaExportTool
     ''' then each database will be scripted to a subfolder below the output folder
     ''' </remarks>
     Public Function ExportSchema(
-      strOutputFolderPath As String,
+      outputFolderPath As String,
       serverName As String,
       ByRef dctDatabaseNamesAndOutputPaths As Dictionary(Of String, String)) As Boolean
 
-        Return ExportSchema(strOutputFolderPath, serverName, dctDatabaseNamesAndOutputPaths, True, "", "")
+        Return ExportSchema(outputFolderPath, serverName, dctDatabaseNamesAndOutputPaths, True, "", "")
 
     End Function
 
     ''' <summary>
     ''' Export database schema to the specified folder
     ''' </summary>
-    ''' <param name="strOutputFolderPath">Output folder path</param>
+    ''' <param name="outputFolderPath">Output folder path</param>
     ''' <param name="serverName">Server name</param>
     ''' <param name="dctDatabaseNamesAndOutputPaths">Dictionary where keys are database names and values will be updated to have the output folder path used</param>
     ''' <param name="useIntegratedAuthentication">True for integrated authentication, false to use loginUsername and loginPassword</param>
@@ -148,7 +148,7 @@ Public Class clsDBSchemaExportTool
     ''' then each database will be scripted to a subfolder below the output folder
     ''' </remarks>
     Public Function ExportSchema(
-      strOutputFolderPath As String,
+      outputFolderPath As String,
       serverName As String,
       ByRef dctDatabaseNamesAndOutputPaths As Dictionary(Of String, String),
       useIntegratedAuthentication As Boolean,
@@ -156,18 +156,18 @@ Public Class clsDBSchemaExportTool
       loginPassword As String) As Boolean
 
         Try
-            If String.IsNullOrWhiteSpace(strOutputFolderPath) Then
-                Throw New ArgumentException("Output folder cannot be empty", NameOf(strOutputFolderPath))
+            If String.IsNullOrWhiteSpace(outputFolderPath) Then
+                Throw New ArgumentException("Output folder cannot be empty", NameOf(outputFolderPath))
             End If
 
-            If Not Directory.Exists(strOutputFolderPath) Then
+            If Not Directory.Exists(outputFolderPath) Then
                 ' Try to create the missing folder
-                ShowMessage("Creating " & strOutputFolderPath)
-                Directory.CreateDirectory(strOutputFolderPath)
+                ShowMessage("Creating " & outputFolderPath)
+                Directory.CreateDirectory(outputFolderPath)
             End If
 
             With mSchemaExportOptions
-                .OutputFolderPath = strOutputFolderPath
+                .OutputFolderPath = outputFolderPath
 
                 .OutputFolderNamePrefix = Me.DatabaseSubfolderPrefix
                 .CreateFolderForEachDB = Me.CreateFolderForEachDB
@@ -219,7 +219,7 @@ Public Class clsDBSchemaExportTool
             mDBSchemaExporter.ShowStats = Me.ShowStats
             mDBSchemaExporter.PreviewExport = Me.PreviewExport
 
-            Dim blnSuccess = mDBSchemaExporter.ScriptServerAndDBObjects(mSchemaExportOptions, lstDatabaseList, lstTableNamesForDataExport)
+            Dim success = mDBSchemaExporter.ScriptServerAndDBObjects(mSchemaExportOptions, lstDatabaseList, lstTableNamesForDataExport)
 
             ' Populate a dictionary with the database names (properly capitalized) and the output folder path used for each
             Dim dctdatabaseNameLookup = New Dictionary(Of String, String)(StringComparer.CurrentCultureIgnoreCase)
@@ -242,7 +242,7 @@ Public Class clsDBSchemaExportTool
                 Console.WriteLine("Exported database schema in " & DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds.ToString("0.0") & " seconds")
             End If
 
-            Return blnSuccess
+            Return success
 
         Catch ex As Exception
             HandleException("Error in ExportSchema configuring mDBSchemaExporter", ex)
@@ -311,19 +311,19 @@ Public Class clsDBSchemaExportTool
                 Using srComparisonFile = New StreamReader(New FileStream(fiComparison.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
 
                     While Not srBaseFile.EndOfStream
-                        Dim strLineIn = srBaseFile.ReadLine()
+                        Dim dataLine = srBaseFile.ReadLine()
 
                         If Not srComparisonFile.EndOfStream Then
-                            Dim strComparisonLine = srComparisonFile.ReadLine()
+                            Dim comparisonLine = srComparisonFile.ReadLine()
 
-                            Dim linesMatch = StringMatch(strLineIn, strComparisonLine)
+                            Dim linesMatch = StringMatch(dataLine, comparisonLine)
 
                             If linesMatch Then Continue While
 
-                            If dbDefinitionFile AndAlso strLineIn.StartsWith("( NAME =") AndAlso strComparisonLine.StartsWith("( NAME =") Then
+                            If dbDefinitionFile AndAlso dataLine.StartsWith("( NAME =") AndAlso comparisonLine.StartsWith("( NAME =") Then
                                 ' DBDefinition file
-                                Dim lstSourceCols = strLineIn.Split(","c).ToList()
-                                Dim lstComparisonCols = strComparisonLine.Split(","c).ToList()
+                                Dim lstSourceCols = dataLine.Split(","c).ToList()
+                                Dim lstComparisonCols = comparisonLine.Split(","c).ToList()
 
                                 If lstSourceCols.Count = lstComparisonCols.Count Then
                                     linesMatch = True
@@ -342,16 +342,16 @@ Public Class clsDBSchemaExportTool
 
                             End If
 
-                            If ignoreInsertIntoDates AndAlso strLineIn.StartsWith("INSERT INTO ") AndAlso strComparisonLine.StartsWith("INSERT INTO ") Then
+                            If ignoreInsertIntoDates AndAlso dataLine.StartsWith("INSERT INTO ") AndAlso comparisonLine.StartsWith("INSERT INTO ") Then
                                 ' Data file where we're ignoring dates
                                 ' Truncate each of the data lines at the first occurrence of a date
-                                Dim matchBaseFile = mDateMatcher.Match(strLineIn)
-                                Dim matchComparisonFile = mDateMatcher.Match(strComparisonLine)
+                                Dim matchBaseFile = mDateMatcher.Match(dataLine)
+                                Dim matchComparisonFile = mDateMatcher.Match(comparisonLine)
 
                                 If matchBaseFile.Success AndAlso matchComparisonFile.Success Then
-                                    strLineIn = strLineIn.Substring(0, matchBaseFile.Index)
-                                    strComparisonLine = strComparisonLine.Substring(0, matchComparisonFile.Index)
-                                    linesMatch = StringMatch(strLineIn, strComparisonLine)
+                                    dataLine = dataLine.Substring(0, matchBaseFile.Index)
+                                    comparisonLine = comparisonLine.Substring(0, matchComparisonFile.Index)
+                                    linesMatch = StringMatch(dataLine, comparisonLine)
                                 End If
                             End If
 
@@ -381,8 +381,8 @@ Public Class clsDBSchemaExportTool
 
         Dim strErrorMessage As String
 
-        If MyBase.ErrorCode = eProcessFoldersErrorCodes.LocalizedError Or
-     MyBase.ErrorCode = eProcessFoldersErrorCodes.NoError Then
+        If MyBase.ErrorCode = eProcessFoldersErrorCodes.LocalizedError OrElse
+           MyBase.ErrorCode = eProcessFoldersErrorCodes.NoError Then
             Select Case mLocalErrorCode
                 Case eDBSchemaExportTool.NoError
                     strErrorMessage = ""
@@ -553,7 +553,6 @@ Public Class clsDBSchemaExportTool
         Const OPTIONS_SECTION = "DBSchemaExportTool"
 
         Dim objSettingsFile As New XmlSettingsFileAccessor
-        Dim strValue As String
 
         Try
 
@@ -581,9 +580,9 @@ Public Class clsDBSchemaExportTool
                         MyBase.LogMessagesToFile = True
                     End If
 
-                    strValue = objSettingsFile.GetParam(OPTIONS_SECTION, "LogFolder", String.Empty)
-                    If Not String.IsNullOrEmpty(strValue) Then
-                        mLogFolderPath = strValue
+                    Dim value = objSettingsFile.GetParam(OPTIONS_SECTION, "LogFolder", String.Empty)
+                    If Not String.IsNullOrEmpty(value) Then
+                        mLogFolderPath = value
                     End If
 
 
@@ -619,11 +618,11 @@ Public Class clsDBSchemaExportTool
 
             Using srReader = New StreamReader(New FileStream(fiDatafile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 While Not srReader.EndOfStream
-                    Dim strLineIn = srReader.ReadLine()
+                    Dim dataLine = srReader.ReadLine()
 
-                    If Not String.IsNullOrWhiteSpace(strLineIn) Then
-                        If Not lstTableNames.Contains(strLineIn) Then
-                            lstTableNames.Add(strLineIn)
+                    If Not String.IsNullOrWhiteSpace(dataLine) Then
+                        If Not lstTableNames.Contains(dataLine) Then
+                            lstTableNames.Add(dataLine)
                         End If
                     End If
 
@@ -812,7 +811,7 @@ Public Class clsDBSchemaExportTool
     ''' <param name="databaseList">Database names to script</param>
     ''' <returns>True if success, false if a problem</returns>
     Public Function ProcessDatabase(outputFolderPath As String, serverName As String, databaseList As IEnumerable(Of String)) As Boolean
-        Dim blnSuccess As Boolean
+        Dim success As Boolean
 
         If String.IsNullOrWhiteSpace(outputFolderPath) Then
             Throw New ArgumentException("Output folder path must be defined", NameOf(outputFolderPath))
@@ -835,13 +834,13 @@ Public Class clsDBSchemaExportTool
                 dctDatabaseNamesAndOutputPaths.Add(databaseName, String.Empty)
             Next
 
-            blnSuccess = ExportSchema(outputFolderPath, serverName, dctDatabaseNamesAndOutputPaths)
+            success = ExportSchema(outputFolderPath, serverName, dctDatabaseNamesAndOutputPaths)
 
-            If blnSuccess AndAlso Sync Then
-                blnSuccess = SyncSchemaFiles(dctDatabaseNamesAndOutputPaths, SyncFolderPath)
+            If success AndAlso Sync Then
+                success = SyncSchemaFiles(dctDatabaseNamesAndOutputPaths, SyncFolderPath)
             End If
 
-            Return blnSuccess
+            Return success
 
         Catch ex As Exception
             HandleException("Error in ProcessDatabase", ex)
@@ -1134,7 +1133,7 @@ Public Class clsDBSchemaExportTool
             Dim maxRuntimeSeconds As Integer
             Dim standardOutput = String.Empty
             Dim errorOutput = String.Empty
-            Dim blnSuccess As Boolean
+            Dim success As Boolean
 
             Console.WriteLine()
             If lstNewFilePaths.Count > 0 Then
@@ -1147,9 +1146,9 @@ Public Class clsDBSchemaExportTool
                     cmdArgs = " add """ & fiNewFile.FullName & """"
                     maxRuntimeSeconds = 30
 
-                    blnSuccess = RunCommand(fiRepoExe.FullName, cmdArgs, fiNewFile.Directory.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
+                    success = RunCommand(fiRepoExe.FullName, cmdArgs, fiNewFile.Directory.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
 
-                    If Not blnSuccess Then
+                    If Not success Then
                         ShowMessage("Error reported for " & strToolName & ": " & standardOutput)
                         Return False
                     ElseIf eRepoManager = eRepoManagerType.Git AndAlso errorOutput.StartsWith("fatal") Then
@@ -1167,8 +1166,8 @@ Public Class clsDBSchemaExportTool
             maxRuntimeSeconds = 300
             If eRepoManager = eRepoManagerType.Git Then cmdArgs = " status -s -u"
 
-            blnSuccess = RunCommand(fiRepoExe.FullName, cmdArgs, diTargetFolder.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
-            If Not blnSuccess Then Return False
+            success = RunCommand(fiRepoExe.FullName, cmdArgs, diTargetFolder.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
+            If Not success Then Return False
             If eRepoManager = eRepoManagerType.Git AndAlso errorOutput.StartsWith("fatal") Then
                 ShowMessage("Error reported for " & strToolName & ": " & errorOutput)
             End If
@@ -1177,13 +1176,13 @@ Public Class clsDBSchemaExportTool
             Dim modifiedFileCount = 0
 
             If eRepoManager = eRepoManagerType.Svn Or eRepoManager = eRepoManagerType.Hg Then
-                blnSuccess = ParseSvnHgStatus(diTargetFolder, standardOutput, eRepoManager, modifiedFileCount)
+                success = ParseSvnHgStatus(diTargetFolder, standardOutput, eRepoManager, modifiedFileCount)
             Else
                 ' Git
-                blnSuccess = ParseGitStatus(diTargetFolder, standardOutput, modifiedFileCount)
+                success = ParseGitStatus(diTargetFolder, standardOutput, modifiedFileCount)
             End If
 
-            If Not blnSuccess Then Return False
+            If Not success Then Return False
 
             If fileCopyCount > 0 And modifiedFileCount = 0 Then
                 Console.WriteLine("Note: fileCopyCount is " & fileCopyCount & " yet the Modified File Count reported by " & strToolName & " is zero; this may indicate a problem")
@@ -1214,9 +1213,9 @@ Public Class clsDBSchemaExportTool
                     cmdArgs = " commit """ & diTargetFolder.FullName & """ --message """ & commitMessage & """"
                     maxRuntimeSeconds = 120
 
-                    blnSuccess = RunCommand(fiRepoExe.FullName, cmdArgs, diTargetFolder.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
+                    success = RunCommand(fiRepoExe.FullName, cmdArgs, diTargetFolder.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
 
-                    If Not blnSuccess Then
+                    If Not success Then
                         ShowErrorMessage("Commit error" & ControlChars.NewLine & standardOutput)
                         Return False
                     ElseIf eRepoManager = eRepoManagerType.Git AndAlso errorOutput.StartsWith("fatal") Then
@@ -1244,7 +1243,7 @@ Public Class clsDBSchemaExportTool
 
                             maxRuntimeSeconds = 300
 
-                            blnSuccess = RunCommand(fiRepoExe.FullName, cmdArgs, diTargetFolder.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
+                            success = RunCommand(fiRepoExe.FullName, cmdArgs, diTargetFolder.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
 
                             If eRepoManager = eRepoManagerType.Hg Then
                                 Exit For
@@ -1259,7 +1258,7 @@ Public Class clsDBSchemaExportTool
 
             End If
 
-            Return blnSuccess
+            Return success
 
         Catch ex As Exception
             HandleException("Error in UpdateRepoChanges for tool " & strToolName, ex)
@@ -1269,7 +1268,7 @@ Public Class clsDBSchemaExportTool
     End Function
 
     Private Sub UpdateSubtaskProgress(taskDescription As String, percentComplete As Single)
-        Dim blnDescriptionChanged = Not String.Equals(taskDescription, mSubtaskDescription)
+        Dim descriptionChanged = Not String.Equals(taskDescription, mSubtaskDescription)
 
         mSubtaskDescription = String.Copy(taskDescription)
         If percentComplete < 0 Then
@@ -1279,7 +1278,7 @@ Public Class clsDBSchemaExportTool
         End If
         mSubtaskPercentComplete = percentComplete
 
-        If blnDescriptionChanged Then
+        If descriptionChanged Then
             If mSubtaskPercentComplete < Single.Epsilon Then
                 LogMessage(mSubtaskDescription.Replace(Environment.NewLine, "; "))
             Else

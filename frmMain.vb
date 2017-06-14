@@ -76,7 +76,7 @@ Public Class frmMain
 #End Region
 
 #Region "Delegates"
-    Private Delegate Sub AppendNewMessageHandler(strMessage As String, eMessageType As clsExportDBSchema.eMessageTypeConstants)
+    Private Delegate Sub AppendNewMessageHandler(message As String, eMessageType As clsExportDBSchema.eMessageTypeConstants)
     Private Delegate Sub UpdatePauseUnpauseCaptionHandler(ePauseStatus As clsExportDBSchema.ePauseStatusConstants)
 
     Private Delegate Sub ProgressUpdateHandler(taskDescription As String, percentComplete As Single)
@@ -85,12 +85,12 @@ Public Class frmMain
     Private Delegate Sub SubTaskProgressUpdateHandler(taskDescription As String, percentComplete As Single)
     Private Delegate Sub SubTaskProgressCompleteHandler()
 
-    Private Delegate Sub HandleDBExportStartingEventHandler(strDatabaseName As String)
+    Private Delegate Sub HandleDBExportStartingEventHandler(databaseName As String)
 
 #End Region
 
-    Private Sub AppendNewMessage(strMessage As String, eMessageType As clsExportDBSchema.eMessageTypeConstants)
-        lblMessage.Text = strMessage
+    Private Sub AppendNewMessage(message As String, eMessageType As clsExportDBSchema.eMessageTypeConstants)
+        lblMessage.Text = message
         Application.DoEvents()
     End Sub
 
@@ -145,14 +145,14 @@ Public Class frmMain
         Return GetAppFolderPath(True)
     End Function
 
-    Private Function GetAppFolderPath(blnReturnParentIfFolderNamedDebug As Boolean) As String
+    Private Function GetAppFolderPath(returnParentIfFolderNamedDebug As Boolean) As String
         Const DEBUG_FOLDER_NAME = "\debug"
 
         ' Could use Application.StartupPath, but .GetExecutingAssembly is better
         Dim strPath As String
 
         strPath = IO.Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location)
-        If blnReturnParentIfFolderNamedDebug Then
+        If returnParentIfFolderNamedDebug Then
             If strPath.ToLower.EndsWith(DEBUG_FOLDER_NAME) Then
                 strPath = strPath.Substring(0, strPath.Length - DEBUG_FOLDER_NAME.Length)
             End If
@@ -165,14 +165,14 @@ Public Class frmMain
         Return GetSelectedListboxItems(lstDatabasesToProcess)
     End Function
 
-    Private Function GetSelectedTableNamesForDataExport(blnWarnIfRowCountOverThreshold As Boolean) As List(Of String)
+    Private Function GetSelectedTableNamesForDataExport(warnIfRowCountOverThreshold As Boolean) As List(Of String)
         Dim lstTableNames As List(Of String)
 
         lstTableNames = GetSelectedListboxItems(lstTableNamesToExportData)
 
         StripRowCountsFromTableNames(lstTableNames)
 
-        If lstTableNames.Count = 0 OrElse Not mCachedTableListIncludesRowCounts OrElse Not blnWarnIfRowCountOverThreshold Then
+        If lstTableNames.Count = 0 OrElse Not mCachedTableListIncludesRowCounts OrElse Not warnIfRowCountOverThreshold Then
             Return lstTableNames
         End If
 
@@ -180,7 +180,7 @@ Public Class frmMain
 
         ' See if any of the tables in lstTableNames has more than clsExportDBSchema.DATA_ROW_COUNT_WARNING_THRESHOLD rows
         For Each tableName In lstTableNames
-            Dim blnKeepTable = True
+            Dim keepTable = True
 
             Dim tableRowCount As Int64
             If mCachedTableList.TryGetValue(tableName, tableRowCount) Then
@@ -192,7 +192,7 @@ Public Class frmMain
                       MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2)
 
                     If eResponse = DialogResult.No Then
-                        blnKeepTable = False
+                        keepTable = False
                     ElseIf eResponse = DialogResult.Cancel Then
                         Exit For
                     End If
@@ -202,7 +202,7 @@ Public Class frmMain
                 ' Table not found; keep it anyway
             End If
 
-            If blnKeepTable Then
+            If keepTable Then
                 lstValidTableNames.Add(tableName)
             End If
         Next
@@ -233,9 +233,9 @@ Public Class frmMain
         Return IO.Path.Combine(GetAppFolderPath(), XML_SETTINGS_FILE_NAME)
     End Function
 
-    Private Sub HandleDBExportStartingEvent(strDatabaseName As String)
+    Private Sub HandleDBExportStartingEvent(databaseName As String)
         Try
-            lblProgress.Text = "Exporting schema from " & strDatabaseName
+            lblProgress.Text = "Exporting schema from " & databaseName
 
             If mnuEditPauseAfterEachDatabase.Checked Then
                 mDBSchemaExporter.RequestPause()
@@ -306,7 +306,7 @@ Public Class frmMain
 
     End Sub
 
-    Private Sub IniFileLoadOptions(strFilePath As String, blnResetToDefaultsPriorToLoad As Boolean, blnConnectToServer As Boolean)
+    Private Sub IniFileLoadOptions(strFilePath As String, resetToDefaultsPriorToLoad As Boolean, connectToServer As Boolean)
         ' Loads options from the given file
 
         Dim objXmlFile As New XmlSettingsFileAccessor
@@ -314,7 +314,7 @@ Public Class frmMain
         Dim strServerNameSaved As String
 
         Try
-            If blnResetToDefaultsPriorToLoad Then
+            If resetToDefaultsPriorToLoad Then
                 ResetToDefaults(False)
             End If
 
@@ -356,7 +356,7 @@ Public Class frmMain
 
                     If lstDatabasesToProcess.Items.Count = 0 OrElse
                        Not strServerNameSaved Is Nothing AndAlso strServerNameSaved.ToLower <> txtServerName.Text.ToLower Then
-                        If blnConnectToServer Then
+                        If connectToServer Then
                             UpdateDatabaseList()
                         End If
                     End If
@@ -422,7 +422,7 @@ Public Class frmMain
 
     End Sub
 
-    Private Sub IniFileSaveOptions(strFilePath As String, Optional ByVal blnSaveWindowDimensionsOnly As Boolean = False)
+    Private Sub IniFileSaveOptions(strFilePath As String, Optional ByVal saveWindowDimensionsOnly As Boolean = False)
         Dim objXmlFile As New XmlSettingsFileAccessor
 
         Try
@@ -434,7 +434,7 @@ Public Class frmMain
                     .SetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowWidth", Me.Width)
                     .SetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowHeight", Me.Height - 20)
 
-                    If Not blnSaveWindowDimensionsOnly Then
+                    If Not saveWindowDimensionsOnly Then
 
                         .SetParam(XML_SECTION_DATABASE_SETTINGS, "ServerName", txtServerName.Text)
 
@@ -491,7 +491,7 @@ Public Class frmMain
         ''End Try
     End Sub
 
-    Private Sub PopulateTableNamesToExport(blnEnableAutoSelectDefaultTableNames As Boolean)
+    Private Sub PopulateTableNamesToExport(enableAutoSelectDefaultTableNames As Boolean)
 
         Try
             If mCachedTableList.Count <= 0 Then
@@ -526,23 +526,23 @@ Public Class frmMain
                 mTableNameAutoSelectRegEx = New List(Of String)
             End If
 
-            ' Initialize objRegExArray (we'll fill it below if blnAutoHiglightRows = True)
+            ' Initialize objRegExArray (we'll fill it below if autoHiglightRows = True)
             Const objRegExOptions As RegexOptions =
               RegexOptions.Compiled Or
               RegexOptions.IgnoreCase Or
               RegexOptions.Singleline
 
             Dim lstRegExSpecs = New List(Of Regex)
-            Dim blnAutoHiglightRows As Boolean
+            Dim autoHiglightRows As Boolean
 
-            If mnuEditAutoSelectDefaultTableNames.Checked And blnEnableAutoSelectDefaultTableNames Then
-                blnAutoHiglightRows = True
+            If mnuEditAutoSelectDefaultTableNames.Checked And enableAutoSelectDefaultTableNames Then
+                autoHiglightRows = True
 
                 For Each regexItem In mTableNameAutoSelectRegEx
                     lstRegExSpecs.Add(New Regex(regexItem, objRegExOptions))
                 Next
             Else
-                blnAutoHiglightRows = False
+                autoHiglightRows = False
             End If
 
             ' Cache the currently selected names so that we can re-highlight them below
@@ -573,28 +573,28 @@ Public Class frmMain
 
                 Dim intItemIndex = lstTableNamesToExportData.Items.Add(strItem)
 
-                Dim blnHighlightCurrentRow = False
+                Dim highlightCurrentRow = False
                 If lstSelectedTableNamesSaved.Contains(tableItem.Key) Then
                     ' User had previously highlighted this table name; re-highlight it
-                    blnHighlightCurrentRow = True
-                ElseIf blnAutoHiglightRows Then
+                    highlightCurrentRow = True
+                ElseIf autoHiglightRows Then
                     ' Test strTableName against the RegEx values from mTableNameAutoSelectRegEx()
                     For Each regexMatcher In lstRegExSpecs
                         If regexMatcher.Match(tableItem.Key).Success Then
-                            blnHighlightCurrentRow = True
+                            highlightCurrentRow = True
                             Exit For
                         End If
                     Next
 
-                    If Not blnHighlightCurrentRow Then
+                    If Not highlightCurrentRow Then
                         ' No match: test strTableName against the names in mTableNamesToAutoSelect
                         If mTableNamesToAutoSelect.Contains(tableItem.Key, StringComparer.CurrentCultureIgnoreCase) Then
-                            blnHighlightCurrentRow = True
+                            highlightCurrentRow = True
                         End If
                     End If
                 End If
 
-                If blnHighlightCurrentRow Then
+                If highlightCurrentRow Then
                     ' Highlight this table name
                     lstTableNamesToExportData.SetSelected(intItemIndex, True)
                 End If
@@ -636,7 +636,7 @@ Public Class frmMain
     End Sub
 
     Private Sub PopulateComboBoxes()
-        Dim intIndex As Integer
+        Dim index As Integer
 
         Try
             With cboTableNamesToExportSortOrder
@@ -662,9 +662,9 @@ Public Class frmMain
                 End With
 
                 ' Auto-select all of the options
-                For intIndex = 0 To .Items.Count - 1
-                    .SetSelected(intIndex, True)
-                Next intIndex
+                For index = 0 To .Items.Count - 1
+                    .SetSelected(index, True)
+                Next index
             End With
         Catch ex As Exception
             MessageBox.Show("Error in PopulateComboBoxes: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
@@ -683,9 +683,8 @@ Public Class frmMain
 
     Private Sub ScriptDBSchemaObjects()
 
-        Dim strMessage As String
-        Dim intIndex As Integer
-        Dim blnSelected As Boolean
+        Dim message As String
+        Dim index As Integer
 
         If mWorking Then Exit Sub
 
@@ -696,8 +695,8 @@ Public Class frmMain
             End If
 
             If Not IO.Directory.Exists(txtOutputFolderPath.Text) Then
-                strMessage = "Output folder not found: " & txtOutputFolderPath.Text
-                MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+                message = "Output folder not found: " & txtOutputFolderPath.Text
+                MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
                 Exit Sub
             End If
 
@@ -719,28 +718,28 @@ Public Class frmMain
 
                 ' Note: mDBSchemaExporter & mTableNameAutoSelectRegEx will be passed to mDBSchemaExporter below
 
-                For intIndex = 0 To lstObjectTypesToScript.Items.Count - 1
-                    blnSelected = lstObjectTypesToScript.GetSelected(intIndex)
+                For index = 0 To lstObjectTypesToScript.Items.Count - 1
+                    Dim selected = lstObjectTypesToScript.GetSelected(index)
 
-                    Select Case CType(intIndex, clsExportDBSchema.eSchemaObjectTypeConstants)
+                    Select Case CType(index, clsExportDBSchema.eSchemaObjectTypeConstants)
                         Case clsExportDBSchema.eSchemaObjectTypeConstants.SchemasAndRoles
-                            .ExportDBSchemasAndRoles = blnSelected
+                            .ExportDBSchemasAndRoles = selected
                         Case clsExportDBSchema.eSchemaObjectTypeConstants.Tables
-                            .ExportTables = blnSelected
+                            .ExportTables = selected
                         Case clsExportDBSchema.eSchemaObjectTypeConstants.Views
-                            .ExportViews = blnSelected
+                            .ExportViews = selected
                         Case clsExportDBSchema.eSchemaObjectTypeConstants.StoredProcedures
-                            .ExportStoredProcedures = blnSelected
+                            .ExportStoredProcedures = selected
                         Case clsExportDBSchema.eSchemaObjectTypeConstants.UserDefinedFunctions
-                            .ExportUserDefinedFunctions = blnSelected
+                            .ExportUserDefinedFunctions = selected
                         Case clsExportDBSchema.eSchemaObjectTypeConstants.UserDefinedDataTypes
-                            .ExportUserDefinedDataTypes = blnSelected
+                            .ExportUserDefinedDataTypes = selected
                         Case clsExportDBSchema.eSchemaObjectTypeConstants.UserDefinedTypes
-                            .ExportUserDefinedTypes = blnSelected
+                            .ExportUserDefinedTypes = selected
                         Case clsExportDBSchema.eSchemaObjectTypeConstants.Synonyms
-                            .ExportSynonyms = blnSelected
+                            .ExportSynonyms = selected
                     End Select
-                Next intIndex
+                Next index
 
                 With .ConnectionInfo
                     .ServerName = txtServerName.Text
@@ -823,8 +822,8 @@ Public Class frmMain
 
             Application.DoEvents()
             If Not mSchemaExportSuccess OrElse mDBSchemaExporter.ErrorCode <> 0 Then
-                strMessage = "Error exporting the schema objects (ErrorCode=" & mDBSchemaExporter.ErrorCode.ToString & "): " & ControlChars.NewLine & mDBSchemaExporter.StatusMessage
-                MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+                message = "Error exporting the schema objects (ErrorCode=" & mDBSchemaExporter.ErrorCode.ToString & "): " & ControlChars.NewLine & mDBSchemaExporter.StatusMessage
+                MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
             End If
         Catch ex As Exception
             MessageBox.Show("Error calling ScriptDBSchemaObjectsThread in ScriptDBSchemaObjects: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
@@ -861,7 +860,7 @@ Public Class frmMain
 
     Private Sub SelectDefaultDBs(lstDefaultDBs As List(Of String))
 
-        Dim intIndex As Integer
+        Dim index As Integer
         Dim strCurrentDB As String
 
         If Not lstDefaultDBs Is Nothing Then
@@ -872,23 +871,23 @@ Public Class frmMain
 
             lstDatabasesToProcess.ClearSelected()
 
-            For intIndex = 0 To lstDatabasesToProcess.Items.Count - 1
-                strCurrentDB = lstDatabasesToProcess.Items(intIndex).ToString.ToLower()
+            For index = 0 To lstDatabasesToProcess.Items.Count - 1
+                strCurrentDB = lstDatabasesToProcess.Items(index).ToString.ToLower()
 
                 If lstSortedDBs.BinarySearch(strCurrentDB) >= 0 Then
-                    lstDatabasesToProcess.SetSelected(intIndex, True)
+                    lstDatabasesToProcess.SetSelected(index, True)
                 End If
 
-            Next intIndex
+            Next index
         End If
 
     End Sub
 
-    Private Sub ResetToDefaults(blnConfirm As Boolean)
+    Private Sub ResetToDefaults(confirm As Boolean)
         Dim eResponse As DialogResult
 
         Try
-            If blnConfirm Then
+            If confirm Then
                 eResponse = MessageBox.Show("Are you sure you want to reset all settings to their default values?", "Reset to Defaults", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1)
                 If eResponse <> DialogResult.Yes Then
                     Exit Sub
@@ -952,11 +951,11 @@ Public Class frmMain
     End Sub
 
     Private Sub SelectAllListboxItems(objListBox As ListBox)
-        Dim intIndex As Integer
+        Dim index As Integer
 
         Try
-            For intIndex = 0 To objListBox.Items.Count - 1
-                objListBox.SetSelected(intIndex, True)
+            For index = 0 To objListBox.Items.Count - 1
+                objListBox.SetSelected(index, True)
             Next
         Catch ex As Exception
             ' Ignore errors here
@@ -968,15 +967,15 @@ Public Class frmMain
 
         Try
             Dim objFolderBrowser = New FolderBrowser()
-            Dim blnSuccess As Boolean
+            Dim success As Boolean
 
             If txtOutputFolderPath.TextLength > 0 Then
-                blnSuccess = objFolderBrowser.BrowseForFolder(txtOutputFolderPath.Text)
+                success = objFolderBrowser.BrowseForFolder(txtOutputFolderPath.Text)
             Else
-                blnSuccess = objFolderBrowser.BrowseForFolder(GetAppFolderPath())
+                success = objFolderBrowser.BrowseForFolder(GetAppFolderPath())
             End If
 
-            If blnSuccess Then
+            If success Then
                 txtOutputFolderPath.Text = objFolderBrowser.FolderPath
             End If
         Catch ex As Exception
@@ -1002,40 +1001,40 @@ Public Class frmMain
     End Sub
 
     Private Sub ShowAboutBox()
-        Dim strMessage As String
+        Dim message As String
 
-        strMessage = String.Empty
+        message = String.Empty
 
-        strMessage &= "Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in August 2006" & ControlChars.NewLine
-        strMessage &= "Copyright 2006, Battelle Memorial Institute.  All Rights Reserved." & ControlChars.NewLine & ControlChars.NewLine
+        message &= "Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in August 2006" & ControlChars.NewLine
+        message &= "Copyright 2006, Battelle Memorial Institute.  All Rights Reserved." & ControlChars.NewLine & ControlChars.NewLine
 
-        strMessage &= "This is version " & Application.ProductVersion & " (" & PROGRAM_DATE & "). " & ControlChars.NewLine & ControlChars.NewLine
+        message &= "This is version " & Application.ProductVersion & " (" & PROGRAM_DATE & "). " & ControlChars.NewLine & ControlChars.NewLine
 
-        strMessage &= "E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com" & ControlChars.NewLine
-        strMessage &= "Website: http://panomics.pnnl.gov/ or http://www.sysbio.org/resources/staff/" & ControlChars.NewLine & ControlChars.NewLine
+        message &= "E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com" & ControlChars.NewLine
+        message &= "Website: http://panomics.pnnl.gov/ or http://www.sysbio.org/resources/staff/" & ControlChars.NewLine & ControlChars.NewLine
 
-        strMessage &= "Licensed under the Apache License, Version 2.0; you may not use this file except in compliance with the License.  "
-        strMessage &= "You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0" & ControlChars.NewLine & ControlChars.NewLine
+        message &= "Licensed under the Apache License, Version 2.0; you may not use this file except in compliance with the License.  "
+        message &= "You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0" & ControlChars.NewLine & ControlChars.NewLine
 
-        strMessage &= "Notice: This computer software was prepared by Battelle Memorial Institute, "
-        strMessage &= "hereinafter the Contractor, under Contract No. DE-AC05-76RL0 1830 with the "
-        strMessage &= "Department of Energy (DOE).  All rights in the computer software are reserved "
-        strMessage &= "by DOE on behalf of the United States Government and the Contractor as "
-        strMessage &= "provided in the Contract.  NEITHER THE   VERNMENT NOR THE CONTRACTOR MAKES ANY "
-        strMessage &= "WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS "
-        strMessage &= "SOFTWARE.  This notice including this sentence must appear on any copies of "
-        strMessage &= "this computer software." & ControlChars.NewLine
+        message &= "Notice: This computer software was prepared by Battelle Memorial Institute, "
+        message &= "hereinafter the Contractor, under Contract No. DE-AC05-76RL0 1830 with the "
+        message &= "Department of Energy (DOE).  All rights in the computer software are reserved "
+        message &= "by DOE on behalf of the United States Government and the Contractor as "
+        message &= "provided in the Contract.  NEITHER THE   VERNMENT NOR THE CONTRACTOR MAKES ANY "
+        message &= "WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS "
+        message &= "SOFTWARE.  This notice including this sentence must appear on any copies of "
+        message &= "this computer software." & ControlChars.NewLine
 
-        MessageBox.Show(strMessage, "About", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        MessageBox.Show(message, "About", MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
 
     Private Sub StripRowCountsFromTableNames(ByRef lstTableNames As List(Of String))
-        Dim intIndex As Integer
+        Dim index As Integer
 
         If lstTableNames Is Nothing Then Exit Sub
-        For intIndex = 0 To lstTableNames.Count - 1
-            lstTableNames(intIndex) = StripRowCountFromTableName(lstTableNames(intIndex))
-        Next intIndex
+        For index = 0 To lstTableNames.Count - 1
+            lstTableNames(index) = StripRowCountFromTableName(lstTableNames(index))
+        Next index
 
     End Sub
 
@@ -1145,7 +1144,7 @@ Public Class frmMain
 
     Private Sub UpdateTableNamesInSelectedDB()
 
-        Dim strDatabaseName As String = String.Empty
+        Dim databaseName As String = String.Empty
 
         If mWorking Then Exit Sub
 
@@ -1157,13 +1156,13 @@ Public Class frmMain
                 ' Auto-select the first database
                 lstDatabasesToProcess.SelectedIndex = 0
             End If
-            strDatabaseName = CStr(lstDatabasesToProcess.Items(lstDatabasesToProcess.SelectedIndex))
+            databaseName = CStr(lstDatabasesToProcess.Items(lstDatabasesToProcess.SelectedIndex))
 
         Catch ex As Exception
             MessageBox.Show("Error determining selected database name in UpdateTableNamesInSelectedDB: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
 
-        If strDatabaseName Is Nothing OrElse strDatabaseName.Length = 0 Then
+        If databaseName Is Nothing OrElse databaseName.Length = 0 Then
             Exit Sub
         End If
 
@@ -1176,12 +1175,12 @@ Public Class frmMain
 
             If VerifyOrUpdateServerConnection(True) Then
 
-                Dim blnIncludeTableRowCounts = mnuEditIncludeTableRowCounts.Checked
+                Dim includeTableRowCounts = mnuEditIncludeTableRowCounts.Checked
 
-                mCachedTableList = mDBSchemaExporter.GetSqlServerDatabaseTableNames(strDatabaseName, blnIncludeTableRowCounts, mnuEditIncludeSystemObjects.Checked)
+                mCachedTableList = mDBSchemaExporter.GetSqlServerDatabaseTableNames(databaseName, includeTableRowCounts, mnuEditIncludeSystemObjects.Checked)
 
                 If mCachedTableList.Count > 0 Then
-                    mCachedTableListIncludesRowCounts = blnIncludeTableRowCounts
+                    mCachedTableListIncludesRowCounts = includeTableRowCounts
 
                     PopulateTableNamesToExport(True)
                 End If
@@ -1217,17 +1216,17 @@ Public Class frmMain
         Return strValue
     End Function
 
-    Private Function VerifyOrUpdateServerConnection(blnInformUserOnFailure As Boolean) As Boolean
-        Dim blnConnected As Boolean
+    Private Function VerifyOrUpdateServerConnection(informUserOnFailure As Boolean) As Boolean
+        Dim connected As Boolean
 
         Try
-            Dim strMessage As String
-            blnConnected = False
+            Dim message As String
+            connected = False
 
             If txtServerName.TextLength = 0 Then
-                strMessage = "Please enter the server name"
-                If blnInformUserOnFailure Then
-                    MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+                message = "Please enter the server name"
+                If informUserOnFailure Then
+                    MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
                 End If
             Else
                 Dim connectionInfo = New clsServerConnectionInfo(txtServerName.Text, chkUseIntegratedAuthentication.Checked)
@@ -1238,27 +1237,27 @@ Public Class frmMain
                 End If
 
                 If mDBSchemaExporter Is Nothing Then
-                        mDBSchemaExporter = New clsExportDBSchema(connectionInfo)
-                        blnConnected = mDBSchemaExporter.ConnectedToServer
-                    Else
-                        blnConnected = mDBSchemaExporter.ConnectToServer(connectionInfo)
-                    End If
-
-                    If Not blnConnected AndAlso blnInformUserOnFailure Then
-                        strMessage = "Error connecting to server " & connectionInfo.ServerName
-                        If mDBSchemaExporter.StatusMessage.Length > 0 Then
-                            strMessage &= "; " & mDBSchemaExporter.StatusMessage
-                        End If
-                        MessageBox.Show(strMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-                    End If
+                    mDBSchemaExporter = New clsExportDBSchema(connectionInfo)
+                    connected = mDBSchemaExporter.ConnectedToServer
+                Else
+                    connected = mDBSchemaExporter.ConnectToServer(connectionInfo)
                 End If
+
+                If Not connected AndAlso informUserOnFailure Then
+                    message = "Error connecting to server " & connectionInfo.ServerName
+                    If mDBSchemaExporter.StatusMessage.Length > 0 Then
+                        message &= "; " & mDBSchemaExporter.StatusMessage
+                    End If
+                    MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+                End If
+            End If
 
         Catch ex As Exception
             MessageBox.Show("Error in VerifyOrUpdateServerConnection: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-            blnConnected = False
+            connected = False
         End Try
 
-        Return blnConnected
+        Return connected
     End Function
 
     Private Sub frmMain_Load(eventSender As Object, eventArgs As EventArgs) Handles MyBase.Load
@@ -1431,11 +1430,11 @@ Public Class frmMain
 #End Region
 
 #Region "DB Schema Export Automation Events"
-    Private Sub mDBSchemaExporter_NewMessage(strMessage As String, eMessageType As clsExportDBSchema.eMessageTypeConstants) Handles mDBSchemaExporter.NewMessage
+    Private Sub mDBSchemaExporter_NewMessage(message As String, eMessageType As clsExportDBSchema.eMessageTypeConstants) Handles mDBSchemaExporter.NewMessage
         If Me.InvokeRequired Then
-            Me.Invoke(New AppendNewMessageHandler(AddressOf AppendNewMessage), New Object() {strMessage, eMessageType})
+            Me.Invoke(New AppendNewMessageHandler(AddressOf AppendNewMessage), New Object() {message, eMessageType})
         Else
-            AppendNewMessage(strMessage, eMessageType)
+            AppendNewMessage(message, eMessageType)
         End If
         Application.DoEvents()
     End Sub
@@ -1475,11 +1474,11 @@ Public Class frmMain
         End If
     End Sub
 
-    Private Sub mDBSchemaExporter_DBExportStarting(strDatabaseName As String) Handles mDBSchemaExporter.DBExportStarting
+    Private Sub mDBSchemaExporter_DBExportStarting(databaseName As String) Handles mDBSchemaExporter.DBExportStarting
         If Me.InvokeRequired Then
-            Me.Invoke(New HandleDBExportStartingEventHandler(AddressOf HandleDBExportStartingEvent), New Object() {strDatabaseName})
+            Me.Invoke(New HandleDBExportStartingEventHandler(AddressOf HandleDBExportStartingEvent), New Object() {databaseName})
         Else
-            HandleDBExportStartingEvent(strDatabaseName)
+            HandleDBExportStartingEvent(databaseName)
         End If
         Application.DoEvents()
     End Sub

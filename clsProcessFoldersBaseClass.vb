@@ -67,18 +67,18 @@ Public MustInherit Class clsProcessFoldersBaseClass
 
 #End Region
 
-    Protected Overrides Sub CleanupPaths(ByRef strInputFileOrFolderPath As String, ByRef strOutputFolderPath As String)
-        CleanupFolderPaths(strInputFileOrFolderPath, strOutputFolderPath)
+    Protected Overrides Sub CleanupPaths(ByRef strInputFileOrFolderPath As String, ByRef outputFolderPath As String)
+        CleanupFolderPaths(strInputFileOrFolderPath, outputFolderPath)
     End Sub
 
-    Protected Function CleanupFolderPaths(ByRef strInputFolderPath As String, ByRef strOutputFolderPath As String) As Boolean
-        ' Validates that strInputFolderPath and strOutputFolderPath contain valid folder paths
-        ' Will ignore strOutputFolderPath if it is Nothing or empty; will create strOutputFolderPath if it does not exist
+    Protected Function CleanupFolderPaths(ByRef strInputFolderPath As String, ByRef outputFolderPath As String) As Boolean
+        ' Validates that strInputFolderPath and outputFolderPath contain valid folder paths
+        ' Will ignore outputFolderPath if it is Nothing or empty; will create outputFolderPath if it does not exist
         '
         ' Returns True if success, False if failure
 
         Dim ioFolder As DirectoryInfo
-        Dim blnSuccess As Boolean
+        Dim success As Boolean
 
         Try
             ' Make sure strInputFolderPath points to a valid folder
@@ -91,24 +91,24 @@ Public MustInherit Class clsProcessFoldersBaseClass
                     LogMessage("Input folder not found: " & strInputFolderPath, eMessageTypeConstants.ErrorMsg)
                 End If
                 mErrorCode = eProcessFoldersErrorCodes.InvalidInputFolderPath
-                blnSuccess = False
+                success = False
             Else
-                If String.IsNullOrWhiteSpace(strOutputFolderPath) Then
-                    ' Define strOutputFolderPath based on strInputFolderPath
-                    strOutputFolderPath = ioFolder.FullName
+                If String.IsNullOrWhiteSpace(outputFolderPath) Then
+                    ' Define outputFolderPath based on strInputFolderPath
+                    outputFolderPath = ioFolder.FullName
                 End If
 
-                ' Make sure strOutputFolderPath points to a folder
-                ioFolder = New DirectoryInfo(strOutputFolderPath)
+                ' Make sure outputFolderPath points to a folder
+                ioFolder = New DirectoryInfo(outputFolderPath)
 
                 If Not ioFolder.Exists() Then
-                    ' strOutputFolderPath points to a non-existent folder; attempt to create it
+                    ' outputFolderPath points to a non-existent folder; attempt to create it
                     ioFolder.Create()
                 End If
 
                 mOutputFolderPath = String.Copy(ioFolder.FullName)
 
-                blnSuccess = True
+                success = True
             End If
 
         Catch ex As Exception
@@ -116,7 +116,7 @@ Public MustInherit Class clsProcessFoldersBaseClass
             Return False
         End Try
 
-        Return blnSuccess
+        Return success
     End Function
 
     Protected Function GetBaseClassErrorMessage() As String
@@ -165,7 +165,7 @@ Public MustInherit Class clsProcessFoldersBaseClass
     Public Function ProcessFoldersWildcard(strInputFolderPath As String, strOutputFolderAlternatePath As String, strParameterFilePath As String, blnResetErrorCode As Boolean) As Boolean
         ' Returns True if success, False if failure
 
-        Dim blnSuccess As Boolean
+        Dim success As Boolean
         Dim intMatchCount As Integer
 
         Dim strCleanPath As String
@@ -176,7 +176,7 @@ Public MustInherit Class clsProcessFoldersBaseClass
         Dim ioInputFolderInfo As DirectoryInfo
 
         mAbortProcessing = False
-        blnSuccess = True
+        success = True
         Try
             ' Possibly reset the error code
             If blnResetErrorCode Then mErrorCode = eProcessFoldersErrorCodes.NoError
@@ -215,9 +215,9 @@ Public MustInherit Class clsProcessFoldersBaseClass
                 intMatchCount = 0
                 For Each ioFolderMatch In ioInputFolderInfo.GetDirectories(strFolderNameMatchPattern)
 
-                    blnSuccess = ProcessFolder(ioFolderMatch.FullName, strOutputFolderAlternatePath, strParameterFilePath, True)
+                    success = ProcessFolder(ioFolderMatch.FullName, strOutputFolderAlternatePath, strParameterFilePath, True)
 
-                    If Not blnSuccess Or mAbortProcessing Then Exit For
+                    If Not success Or mAbortProcessing Then Exit For
                     intMatchCount += 1
 
                     If intMatchCount Mod 1 = 0 Then Console.Write(".")
@@ -237,7 +237,7 @@ Public MustInherit Class clsProcessFoldersBaseClass
                 End If
 
             Else
-                blnSuccess = ProcessFolder(strInputFolderPath, strOutputFolderAlternatePath, strParameterFilePath, blnResetErrorCode)
+                success = ProcessFolder(strInputFolderPath, strOutputFolderAlternatePath, strParameterFilePath, blnResetErrorCode)
             End If
 
         Catch ex As Exception
@@ -245,7 +245,7 @@ Public MustInherit Class clsProcessFoldersBaseClass
             Return False
         End Try
 
-        Return blnSuccess
+        Return success
 
     End Function
 
@@ -285,7 +285,7 @@ Public MustInherit Class clsProcessFoldersBaseClass
 
         Dim ioFolderInfo As DirectoryInfo
 
-        Dim blnSuccess As Boolean
+        Dim success As Boolean
         Dim intFolderProcessCount, intFolderProcessFailCount As Integer
 
         ' Examine strInputFolderPath to see if it contains a * or ?
@@ -337,7 +337,7 @@ Public MustInherit Class clsProcessFoldersBaseClass
                 intFolderProcessFailCount = 0
 
                 ' Call RecurseFoldersWork
-                blnSuccess = RecurseFoldersWork(strInputFolderToUse, strFolderNameMatchPattern, strParameterFilePath, strOutputFolderAlternatePath, intFolderProcessCount, intFolderProcessFailCount, 1, intRecurseFoldersMaxLevels)
+                success = RecurseFoldersWork(strInputFolderToUse, strFolderNameMatchPattern, strParameterFilePath, strOutputFolderAlternatePath, intFolderProcessCount, intFolderProcessFailCount, 1, intRecurseFoldersMaxLevels)
 
             Else
                 mErrorCode = eProcessFoldersErrorCodes.InvalidInputFolderPath
@@ -349,7 +349,7 @@ Public MustInherit Class clsProcessFoldersBaseClass
             Return False
         End Try
 
-        Return blnSuccess
+        Return success
 
     End Function
 
@@ -361,7 +361,7 @@ Public MustInherit Class clsProcessFoldersBaseClass
         Dim ioFolderMatch As DirectoryInfo
 
         Dim strOutputFolderPathToUse As String
-        Dim blnSuccess As Boolean
+        Dim success As Boolean
 
         Try
             ioInputFolderInfo = New DirectoryInfo(strInputFolderPath)
@@ -391,8 +391,8 @@ Public MustInherit Class clsProcessFoldersBaseClass
 
             If intRecursionLevel = 1 And strFolderNameMatchPattern = "*" Then
                 ' Need to process the current folder
-                blnSuccess = ProcessFolder(ioInputFolderInfo.FullName, strOutputFolderPathToUse, strParameterFilePath, True)
-                If Not blnSuccess Then
+                success = ProcessFolder(ioInputFolderInfo.FullName, strOutputFolderPathToUse, strParameterFilePath, True)
+                If Not success Then
                     intFolderProcessFailCount += 1
                 Else
                     intFolderProcessCount += 1
@@ -400,19 +400,19 @@ Public MustInherit Class clsProcessFoldersBaseClass
             End If
 
             ' Process any matching folder in this folder
-            blnSuccess = True
+            success = True
             For Each ioFolderMatch In ioInputFolderInfo.GetDirectories(strFolderNameMatchPattern)
                 If mAbortProcessing Then Exit For
 
                 If strOutputFolderPathToUse.Length > 0 Then
-                    blnSuccess = ProcessFolder(ioFolderMatch.FullName, Path.Combine(strOutputFolderPathToUse, ioFolderMatch.Name), strParameterFilePath, True)
+                    success = ProcessFolder(ioFolderMatch.FullName, Path.Combine(strOutputFolderPathToUse, ioFolderMatch.Name), strParameterFilePath, True)
                 Else
-                    blnSuccess = ProcessFolder(ioFolderMatch.FullName, String.Empty, strParameterFilePath, True)
+                    success = ProcessFolder(ioFolderMatch.FullName, String.Empty, strParameterFilePath, True)
                 End If
 
-                If Not blnSuccess Then
+                If Not success Then
                     intFolderProcessFailCount += 1
-                    blnSuccess = True
+                    success = True
                 Else
                     intFolderProcessCount += 1
                 End If
@@ -431,13 +431,13 @@ Public MustInherit Class clsProcessFoldersBaseClass
             If intRecurseFoldersMaxLevels <= 0 OrElse intRecursionLevel <= intRecurseFoldersMaxLevels Then
                 ' Call this function for each of the subfolders of ioInputFolderInfo
                 For Each ioSubFolderInfo In ioInputFolderInfo.GetDirectories()
-                    blnSuccess = RecurseFoldersWork(ioSubFolderInfo.FullName, strFolderNameMatchPattern, strParameterFilePath, strOutputFolderAlternatePath, intFolderProcessCount, intFolderProcessFailCount, intRecursionLevel + 1, intRecurseFoldersMaxLevels)
-                    If Not blnSuccess Then Exit For
+                    success = RecurseFoldersWork(ioSubFolderInfo.FullName, strFolderNameMatchPattern, strParameterFilePath, strOutputFolderAlternatePath, intFolderProcessCount, intFolderProcessFailCount, intRecursionLevel + 1, intRecurseFoldersMaxLevels)
+                    If Not success Then Exit For
                 Next ioSubFolderInfo
             End If
         End If
 
-        Return blnSuccess
+        Return success
 
     End Function
 

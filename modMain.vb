@@ -57,14 +57,14 @@ Module modMain
     ''' <remarks></remarks>
     Public Function Main() As Integer
 
-        Dim intReturnCode As Integer
-        Dim objParseCommandLine As New clsParseCommandLine
-        Dim blnProceed As Boolean
+        Dim returnCode As Integer
+        Dim commandLineParser As New clsParseCommandLine
+        Dim proceed As Boolean
 
-        Dim blnSuccess As Boolean
+        Dim success As Boolean
 
         ' Initialize the options
-        intReturnCode = 0
+        returnCode = 0
         mOutputFolderPath = String.Empty
 
         mParameterFilePath = String.Empty
@@ -94,20 +94,20 @@ Module modMain
         mShowStats = False
 
         Try
-            blnProceed = False
-            If objParseCommandLine.ParseCommandLine Then
-                If SetOptionsUsingCommandLineParameters(objParseCommandLine) Then blnProceed = True
+            proceed = False
+            If commandLineParser.ParseCommandLine Then
+                If SetOptionsUsingCommandLineParameters(commandLineParser) Then proceed = True
             Else
-                blnProceed = True
+                proceed = True
             End If
 
-            If Not blnProceed OrElse
-               objParseCommandLine.NeedToShowHelp Then
+            If Not proceed OrElse
+               commandLineParser.NeedToShowHelp Then
                 ShowProgramHelp()
-                intReturnCode = -1
+                returnCode = -1
             Else
 
-                If objParseCommandLine.ParameterCount + objParseCommandLine.NonSwitchParameterCount = 0 Then
+                If commandLineParser.ParameterCount + commandLineParser.NonSwitchParameterCount = 0 Then
                     ' Show the GUI
 
                     Dim objMain As New frmMain
@@ -173,11 +173,11 @@ Module modMain
 
                 End With
 
-                blnSuccess = mProcessingClass.ProcessDatabase(mOutputFolderPath, mServer, mDatabaseList)
+                success = mProcessingClass.ProcessDatabase(mOutputFolderPath, mServer, mDatabaseList)
 
-                If Not blnSuccess Then
-                    intReturnCode = mProcessingClass.ErrorCode
-                    If intReturnCode = 0 Then
+                If Not success Then
+                    returnCode = mProcessingClass.ErrorCode
+                    If returnCode = 0 Then
                         ShowErrorMessage("Error while processing   : Unknown error (return code is 0)")
                     Else
                         ShowErrorMessage("Error while processing   : " & mProcessingClass.GetErrorMessage())
@@ -190,20 +190,20 @@ Module modMain
 
         Catch ex As Exception
             ShowErrorMessage("Error occurred in modMain->Main: " & Environment.NewLine & ex.Message, ex)
-            intReturnCode = -1
+            returnCode = -1
         End Try
 
-        Return intReturnCode
+        Return returnCode
 
     End Function
 
-    Private Sub DisplayProgressPercent(intPercentComplete As Integer, blnAddCarriageReturn As Boolean)
-        If blnAddCarriageReturn Then
+    Private Sub DisplayProgressPercent(percentComplete As Integer, addCarriageReturn As Boolean)
+        If addCarriageReturn Then
             Console.WriteLine()
         End If
-        If intPercentComplete > 100 Then intPercentComplete = 100
-        Console.Write("Processing: " & intPercentComplete.ToString() & "% ")
-        If blnAddCarriageReturn Then
+        If percentComplete > 100 Then percentComplete = 100
+        Console.Write("Processing: " & percentComplete.ToString() & "% ")
+        If addCarriageReturn Then
             Console.WriteLine()
         End If
     End Sub
@@ -215,7 +215,7 @@ Module modMain
     Private Function SetOptionsUsingCommandLineParameters(objParseCommandLine As clsParseCommandLine) As Boolean
         ' Returns True if no problems; otherwise, returns false
 
-        Dim strValue As String = String.Empty
+        Dim value As String = String.Empty
         Dim lstValidParameters = New List(Of String) From {
           "O", "Server", "DB", "DBList", "FolderPrefix", "NoSubfolder", "NoAutoData", "Data",
           "Sync", "Svn", "Git", "Hg", "Commit",
@@ -230,22 +230,22 @@ Module modMain
             Else
                 With objParseCommandLine
                     ' Query objParseCommandLine to see if various parameters are present
-                    If .RetrieveValueForParameter("O", strValue) Then
-                        mOutputFolderPath = strValue
+                    If .RetrieveValueForParameter("O", value) Then
+                        mOutputFolderPath = value
                     ElseIf .NonSwitchParameterCount > 0 Then
                         mOutputFolderPath = .RetrieveNonSwitchParameter(0)
                     End If
 
-                    If .RetrieveValueForParameter("Server", strValue) Then mServer = strValue
+                    If .RetrieveValueForParameter("Server", value) Then mServer = value
 
-                    If .RetrieveValueForParameter("DB", strValue) Then
-                        If Not mDatabaseList.Contains(strValue) Then
-                            mDatabaseList.Add(strValue)
+                    If .RetrieveValueForParameter("DB", value) Then
+                        If Not mDatabaseList.Contains(value) Then
+                            mDatabaseList.Add(value)
                         End If
                     End If
 
-                    If .RetrieveValueForParameter("DBList", strValue) Then
-                        Dim lstDatabaseNames = strValue.Split(","c).ToList()
+                    If .RetrieveValueForParameter("DBList", value) Then
+                        Dim lstDatabaseNames = value.Split(","c).ToList()
 
                         For Each databaseName In lstDatabaseNames
                             If Not mDatabaseList.Contains(databaseName) Then
@@ -254,15 +254,15 @@ Module modMain
                         Next
                     End If
 
-                    If .RetrieveValueForParameter("FolderPrefix", strValue) Then mDatabaseSubfolderPrefix = strValue
-                    If .RetrieveValueForParameter("NoSubfolder", strValue) Then mCreateFolderForEachDB = False
+                    If .RetrieveValueForParameter("FolderPrefix", value) Then mDatabaseSubfolderPrefix = value
+                    If .RetrieveValueForParameter("NoSubfolder", value) Then mCreateFolderForEachDB = False
 
-                    If .RetrieveValueForParameter("NoAutoData", strValue) Then mDisableAutoDataExport = True
-                    If .RetrieveValueForParameter("Data", strValue) Then mTableDataToExportFile = strValue
+                    If .RetrieveValueForParameter("NoAutoData", value) Then mDisableAutoDataExport = True
+                    If .RetrieveValueForParameter("Data", value) Then mTableDataToExportFile = value
 
-                    If .RetrieveValueForParameter("Sync", strValue) Then
+                    If .RetrieveValueForParameter("Sync", value) Then
                         mSync = True
-                        mSyncFolderPath = strValue
+                        mSyncFolderPath = value
                     End If
 
                     If .IsParameterPresent("Svn") Then mSvnUpdate = True
@@ -273,25 +273,25 @@ Module modMain
 
                     If .IsParameterPresent("Commit") Then mCommitUpdates = True
 
-                    If .RetrieveValueForParameter("P", strValue) Then mParameterFilePath = strValue
+                    If .RetrieveValueForParameter("P", value) Then mParameterFilePath = value
 
-                    If .RetrieveValueForParameter("L", strValue) Then
+                    If .RetrieveValueForParameter("L", value) Then
                         mLogMessagesToFile = True
-                        If Not String.IsNullOrEmpty(strValue) Then
-                            mLogFilePath = strValue
+                        If Not String.IsNullOrEmpty(value) Then
+                            mLogFilePath = value
                         End If
                     End If
 
-                    If .RetrieveValueForParameter("LogFolder", strValue) Then
+                    If .RetrieveValueForParameter("LogFolder", value) Then
                         mLogMessagesToFile = True
-                        If Not String.IsNullOrEmpty(strValue) Then
-                            mLogFolderPath = strValue
+                        If Not String.IsNullOrEmpty(value) Then
+                            mLogFolderPath = value
                         End If
                     End If
 
-                    If .RetrieveValueForParameter("Preview", strValue) Then mPreviewExport = True
+                    If .RetrieveValueForParameter("Preview", value) Then mPreviewExport = True
 
-                    If .RetrieveValueForParameter("Stats", strValue) Then mShowStats = True
+                    If .RetrieveValueForParameter("Stats", value) Then mShowStats = True
                 End With
 
                 Return True
@@ -306,14 +306,14 @@ Module modMain
     End Function
 
 
-    Private Sub ShowErrorMessage(strMessage As String, Optional ex As Exception = Nothing)
+    Private Sub ShowErrorMessage(message As String, Optional ex As Exception = Nothing)
         Const strSeparator = "------------------------------------------------------------------------------"
 
         Console.WriteLine()
         Console.WriteLine(strSeparator)
 
         Console.ForegroundColor = ConsoleColor.Red
-        Console.WriteLine(strMessage)
+        Console.WriteLine(message)
 
         If Not ex Is Nothing Then
             Console.ForegroundColor = ConsoleColor.Yellow
@@ -324,25 +324,25 @@ Module modMain
         Console.WriteLine(strSeparator)
         Console.WriteLine()
 
-        WriteToErrorStream(strMessage)
+        WriteToErrorStream(message)
 
         Threading.Thread.Sleep(2000)
     End Sub
 
     Private Sub ShowErrorMessage(strTitle As String, items As IEnumerable(Of String), Optional ex As Exception = Nothing)
         Const strSeparator = "------------------------------------------------------------------------------"
-        Dim strMessage As String
+        Dim message As String
 
         Console.WriteLine()
         Console.WriteLine(strSeparator)
 
         Console.ForegroundColor = ConsoleColor.Red
         Console.WriteLine(strTitle)
-        strMessage = strTitle & ":"
+        message = strTitle & ":"
 
         For Each item As String In items
             Console.WriteLine("   " + item)
-            strMessage &= " " & item
+            message &= " " & item
         Next
 
         If Not ex Is Nothing Then
@@ -354,7 +354,7 @@ Module modMain
         Console.WriteLine(strSeparator)
         Console.WriteLine()
 
-        WriteToErrorStream(strMessage)
+        WriteToErrorStream(message)
     End Sub
 
     Private Sub ShowProgramHelp()

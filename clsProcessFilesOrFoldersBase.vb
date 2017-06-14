@@ -44,9 +44,9 @@ Public MustInherit Class clsProcessFilesOrFoldersBase
     Public Event ProgressChanged(taskDescription As String, percentComplete As Single)     ' PercentComplete ranges from 0 to 100, but can contain decimal percentage values
     Public Event ProgressComplete()
 
-    Public Event ErrorEvent(strMessage As String)
-    Public Event WarningEvent(strMessage As String)
-    Public Event MessageEvent(strMessage As String)
+    Public Event ErrorEvent(message As String)
+    Public Event WarningEvent(message As String)
+    Public Event MessageEvent(message As String)
 
     Protected mProgressStepDescription As String
     Protected mProgressPercentComplete As Single        ' Ranges from 0 to 100, but can contain decimal percentage values
@@ -154,7 +154,7 @@ Public MustInherit Class clsProcessFilesOrFoldersBase
         mAbortProcessing = True
     End Sub
 
-    Protected MustOverride Sub CleanupPaths(ByRef strInputFileOrFolderPath As String, ByRef strOutputFolderPath As String)
+    Protected MustOverride Sub CleanupPaths(ByRef strInputFileOrFolderPath As String, ByRef outputFolderPath As String)
 
     Public Sub CloseLogFileNow()
         If Not mLogFile Is Nothing Then
@@ -359,30 +359,29 @@ Public MustInherit Class clsProcessFilesOrFoldersBase
 
     End Sub
 
-    Protected Sub LogMessage(strMessage As String)
-        LogMessage(strMessage, eMessageTypeConstants.Normal)
+    Protected Sub LogMessage(message As String)
+        LogMessage(message, eMessageTypeConstants.Normal)
     End Sub
 
-    Protected Sub LogMessage(strMessage As String, eMessageType As eMessageTypeConstants)
-        LogMessage(strMessage, eMessageType, intDuplicateHoldoffHours:=0)
+    Protected Sub LogMessage(message As String, eMessageType As eMessageTypeConstants)
+        LogMessage(message, eMessageType, duplicateHoldoffHours:=0)
     End Sub
 
-    Protected Sub LogMessage(strMessage As String, eMessageType As eMessageTypeConstants, intDuplicateHoldoffHours As Integer)
+    Protected Sub LogMessage(message As String, eMessageType As eMessageTypeConstants, duplicateHoldoffHours As Integer)
         ' Note that CleanupPaths() will update mOutputFolderPath, which is used here if mLogFolderPath is blank
         ' Thus, be sure to call CleanupPaths (or update mLogFolderPath) before the first call to LogMessage
 
-        Dim strMessageType As String
-        Dim blnOpeningExistingFile As Boolean
+        Dim messageType As String
 
         Select Case eMessageType
             Case eMessageTypeConstants.Normal
-                strMessageType = "Normal"
+                messageType = "Normal"
             Case eMessageTypeConstants.ErrorMsg
-                strMessageType = "Error"
+                messageType = "Error"
             Case eMessageTypeConstants.Warning
-                strMessageType = "Warning"
+                messageType = "Warning"
             Case Else
-                strMessageType = "Unknown"
+                messageType = "Unknown"
         End Select
 
         If mLogFile Is Nothing AndAlso mLogMessagesToFile Then
@@ -424,17 +423,17 @@ Public MustInherit Class clsProcessFilesOrFoldersBase
                     mLogFilePath = Path.Combine(mLogFolderPath, mLogFilePath)
                 End If
 
-                blnOpeningExistingFile = File.Exists(mLogFilePath)
+                Dim openingExistingFile As Boolean = File.Exists(mLogFilePath)
 
-                If (blnOpeningExistingFile And mLogDataCache.Count = 0) Then
-                    UpdateLogDataCache(mLogFilePath, DateTime.UtcNow.AddHours(-intDuplicateHoldoffHours))
+                If (openingExistingFile And mLogDataCache.Count = 0) Then
+                    UpdateLogDataCache(mLogFilePath, DateTime.UtcNow.AddHours(-duplicateHoldoffHours))
                 End If
 
                 mLogFile = New StreamWriter(New FileStream(mLogFilePath, FileMode.Append, FileAccess.Write, FileShare.Read)) With {
                     .AutoFlush = True
                 }
 
-                If Not blnOpeningExistingFile Then
+                If Not openingExistingFile Then
                     mLogFile.WriteLine("Date" & ControlChars.Tab &
                      "Type" & ControlChars.Tab &
                      "Message")
@@ -450,31 +449,31 @@ Public MustInherit Class clsProcessFilesOrFoldersBase
         End If
 
         If Not mLogFile Is Nothing Then
-            Dim blnWriteToLog = True
+            Dim writeToLog = True
 
-            Dim strLogKey As String = strMessageType & "_" & strMessage
+            Dim strLogKey As String = messageType & "_" & message
             Dim dtLastLogTime As DateTime
-            Dim blnMessageCached As Boolean
+            Dim messageCached As Boolean
 
             If mLogDataCache.TryGetValue(strLogKey, dtLastLogTime) Then
-                blnMessageCached = True
+                messageCached = True
             Else
-                blnMessageCached = False
-                dtLastLogTime = DateTime.UtcNow.AddHours(-(intDuplicateHoldoffHours + 1))
+                messageCached = False
+                dtLastLogTime = DateTime.UtcNow.AddHours(-(duplicateHoldoffHours + 1))
             End If
 
-            If intDuplicateHoldoffHours > 0 AndAlso DateTime.UtcNow.Subtract(dtLastLogTime).TotalHours < intDuplicateHoldoffHours Then
-                blnWriteToLog = False
+            If duplicateHoldoffHours > 0 AndAlso DateTime.UtcNow.Subtract(dtLastLogTime).TotalHours < duplicateHoldoffHours Then
+                writeToLog = False
             End If
 
-            If blnWriteToLog Then
+            If writeToLog Then
 
                 mLogFile.WriteLine(
                   DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss tt") & ControlChars.Tab &
-                  strMessageType & ControlChars.Tab &
-                  strMessage)
+                  messageType & ControlChars.Tab &
+                  message)
 
-                If blnMessageCached Then
+                If messageCached Then
                     mLogDataCache(strLogKey) = DateTime.UtcNow
                 Else
                     Try
@@ -491,34 +490,34 @@ Public MustInherit Class clsProcessFilesOrFoldersBase
 
         End If
 
-        RaiseMessageEvent(strMessage, eMessageType)
+        RaiseMessageEvent(message, eMessageType)
 
     End Sub
 
-    Private Sub RaiseMessageEvent(strMessage As String, eMessageType As eMessageTypeConstants)
+    Private Sub RaiseMessageEvent(message As String, eMessageType As eMessageTypeConstants)
         Static strLastMessage As String = String.Empty
         Static dtLastReportTime As DateTime
 
-        If Not String.IsNullOrWhiteSpace(strMessage) Then
-            If String.Equals(strMessage, strLastMessage) AndAlso
+        If Not String.IsNullOrWhiteSpace(message) Then
+            If String.Equals(message, strLastMessage) AndAlso
                DateTime.UtcNow.Subtract(dtLastReportTime).TotalSeconds < 0.5 Then
                 ' Duplicate message; do not raise any events
             Else
                 dtLastReportTime = DateTime.UtcNow
-                strLastMessage = String.Copy(strMessage)
+                strLastMessage = String.Copy(message)
 
                 Select Case eMessageType
                     Case eMessageTypeConstants.Normal
-                        RaiseEvent MessageEvent(strMessage)
+                        RaiseEvent MessageEvent(message)
 
                     Case eMessageTypeConstants.Warning
-                        RaiseEvent WarningEvent(strMessage)
+                        RaiseEvent WarningEvent(message)
 
                     Case eMessageTypeConstants.ErrorMsg
-                        RaiseEvent ErrorEvent(strMessage)
+                        RaiseEvent ErrorEvent(message)
 
                     Case Else
-                        RaiseEvent MessageEvent(strMessage)
+                        RaiseEvent MessageEvent(message)
                 End Select
             End If
         End If
@@ -535,92 +534,92 @@ Public MustInherit Class clsProcessFilesOrFoldersBase
         RaiseEvent ProgressReset()
     End Sub
 
-    Protected Sub ShowErrorMessage(strMessage As String)
-        ShowErrorMessage(strMessage, blnAllowLogToFile:=True)
+    Protected Sub ShowErrorMessage(message As String)
+        ShowErrorMessage(message, allowLogToFile:=True)
     End Sub
 
-    Protected Sub ShowErrorMessage(strMessage As String, blnAllowLogToFile As Boolean)
-        ShowErrorMessage(strMessage, blnAllowLogToFile, intDuplicateHoldoffHours:=0)
+    Protected Sub ShowErrorMessage(message As String, allowLogToFile As Boolean)
+        ShowErrorMessage(message, allowLogToFile, duplicateHoldoffHours:=0)
     End Sub
 
-    Protected Sub ShowErrorMessage(strMessage As String, intDuplicateHoldoffHours As Integer)
-        ShowErrorMessage(strMessage, blnAllowLogToFile:=True, intDuplicateHoldoffHours:=intDuplicateHoldoffHours)
+    Protected Sub ShowErrorMessage(message As String, duplicateHoldoffHours As Integer)
+        ShowErrorMessage(message, allowLogToFile:=True, duplicateHoldoffHours:=duplicateHoldoffHours)
     End Sub
 
-    Protected Sub ShowErrorMessage(strMessage As String, blnAllowLogToFile As Boolean, intDuplicateHoldoffHours As Integer)
+    Protected Sub ShowErrorMessage(message As String, allowLogToFile As Boolean, duplicateHoldoffHours As Integer)
         Const strSeparator = "------------------------------------------------------------------------------"
 
         Console.WriteLine()
         Console.WriteLine(strSeparator)
-        Console.WriteLine(strMessage)
+        Console.WriteLine(message)
         Console.WriteLine(strSeparator)
         Console.WriteLine()
 
-        If blnAllowLogToFile Then
+        If allowLogToFile Then
             ' Note that LogMessage will call RaiseMessageEvent
-            LogMessage(strMessage, eMessageTypeConstants.ErrorMsg, intDuplicateHoldoffHours)
+            LogMessage(message, eMessageTypeConstants.ErrorMsg, duplicateHoldoffHours)
         Else
-            RaiseMessageEvent(strMessage, eMessageTypeConstants.ErrorMsg)
+            RaiseMessageEvent(message, eMessageTypeConstants.ErrorMsg)
         End If
 
     End Sub
 
-    Protected Sub ShowMessage(strMessage As String)
-        ShowMessage(strMessage, blnAllowLogToFile:=True, blnPrecedeWithNewline:=False, intDuplicateHoldoffHours:=0)
+    Protected Sub ShowMessage(message As String)
+        ShowMessage(message, allowLogToFile:=True, precedeWithNewline:=False, duplicateHoldoffHours:=0)
     End Sub
 
-    Protected Sub ShowMessage(strMessage As String, intDuplicateHoldoffHours As Integer)
-        ShowMessage(strMessage, blnAllowLogToFile:=True, blnPrecedeWithNewline:=False, intDuplicateHoldoffHours:=intDuplicateHoldoffHours)
+    Protected Sub ShowMessage(message As String, duplicateHoldoffHours As Integer)
+        ShowMessage(message, allowLogToFile:=True, precedeWithNewline:=False, duplicateHoldoffHours:=duplicateHoldoffHours)
     End Sub
 
-    Protected Sub ShowMessage(strMessage As String, blnAllowLogToFile As Boolean)
-        ShowMessage(strMessage, blnAllowLogToFile, blnPrecedeWithNewline:=False, intDuplicateHoldoffHours:=0)
+    Protected Sub ShowMessage(message As String, allowLogToFile As Boolean)
+        ShowMessage(message, allowLogToFile, precedeWithNewline:=False, duplicateHoldoffHours:=0)
     End Sub
 
-    Protected Sub ShowMessage(strMessage As String, blnAllowLogToFile As Boolean, blnPrecedeWithNewline As Boolean)
-        ShowMessage(strMessage, blnAllowLogToFile, blnPrecedeWithNewline, intDuplicateHoldoffHours:=0)
-    End Sub
-
-    Protected Sub ShowMessage(
-      strMessage As String,
-      blnAllowLogToFile As Boolean,
-      blnPrecedeWithNewline As Boolean,
-      intDuplicateHoldoffHours As Integer)
-
-        ShowMessage(strMessage, blnAllowLogToFile, blnPrecedeWithNewline, intDuplicateHoldoffHours, eMessageTypeConstants.Normal)
+    Protected Sub ShowMessage(message As String, allowLogToFile As Boolean, precedeWithNewline As Boolean)
+        ShowMessage(message, allowLogToFile, precedeWithNewline, duplicateHoldoffHours:=0)
     End Sub
 
     Protected Sub ShowMessage(
-      strMessage As String,
-      blnAllowLogToFile As Boolean,
-      blnPrecedeWithNewline As Boolean,
-      intDuplicateHoldoffHours As Integer,
+      message As String,
+      allowLogToFile As Boolean,
+      precedeWithNewline As Boolean,
+      duplicateHoldoffHours As Integer)
+
+        ShowMessage(message, allowLogToFile, precedeWithNewline, duplicateHoldoffHours, eMessageTypeConstants.Normal)
+    End Sub
+
+    Protected Sub ShowMessage(
+      message As String,
+      allowLogToFile As Boolean,
+      precedeWithNewline As Boolean,
+      duplicateHoldoffHours As Integer,
       eMessageType As eMessageTypeConstants)
 
-        If blnPrecedeWithNewline Then
+        If precedeWithNewline Then
             Console.WriteLine()
         End If
-        Console.WriteLine(strMessage)
+        Console.WriteLine(message)
 
-        If blnAllowLogToFile Then
+        If allowLogToFile Then
             ' Note that LogMessage will call RaiseMessageEvent
-            LogMessage(strMessage, eMessageType, intDuplicateHoldoffHours)
+            LogMessage(message, eMessageType, duplicateHoldoffHours)
         Else
-            RaiseMessageEvent(strMessage, eMessageType)
+            RaiseMessageEvent(message, eMessageType)
         End If
 
     End Sub
 
-    Protected Sub ShowWarning(strMessage As String)
-        ShowMessage(strMessage, blnAllowLogToFile:=True, blnPrecedeWithNewline:=False, intDuplicateHoldoffHours:=0, eMessageType:=eMessageTypeConstants.Warning)
+    Protected Sub ShowWarning(message As String)
+        ShowMessage(message, allowLogToFile:=True, precedeWithNewline:=False, duplicateHoldoffHours:=0, eMessageType:=eMessageTypeConstants.Warning)
     End Sub
 
-    Protected Sub ShowWarning(strMessage As String, intDuplicateHoldoffHours As Integer)
-        ShowMessage(strMessage, blnAllowLogToFile:=True, blnPrecedeWithNewline:=False, intDuplicateHoldoffHours:=intDuplicateHoldoffHours, eMessageType:=eMessageTypeConstants.Warning)
+    Protected Sub ShowWarning(message As String, duplicateHoldoffHours As Integer)
+        ShowMessage(message, allowLogToFile:=True, precedeWithNewline:=False, duplicateHoldoffHours:=duplicateHoldoffHours, eMessageType:=eMessageTypeConstants.Warning)
     End Sub
 
-    Protected Sub ShowWarning(strMessage As String, blnAllowLogToFile As Boolean)
-        ShowMessage(strMessage, blnAllowLogToFile, blnPrecedeWithNewline:=False, intDuplicateHoldoffHours:=0, eMessageType:=eMessageTypeConstants.Warning)
+    Protected Sub ShowWarning(message As String, allowLogToFile As Boolean)
+        ShowMessage(message, allowLogToFile, precedeWithNewline:=False, duplicateHoldoffHours:=0, eMessageType:=eMessageTypeConstants.Warning)
     End Sub
 
     Private Sub TrimLogDataCache()
@@ -636,10 +635,10 @@ Public MustInherit Class clsProcessFilesOrFoldersBase
             ' Sort by date
             lstDates.Sort()
 
-            Dim intThresholdIndex = CInt(Math.Floor(mLogDataCache.Count - MAX_LOGDATA_CACHE_SIZE * 0.8))
-            If intThresholdIndex < 0 Then intThresholdIndex = 0
+            Dim thresholdIndex = CInt(Math.Floor(mLogDataCache.Count - MAX_LOGDATA_CACHE_SIZE * 0.8))
+            If thresholdIndex < 0 Then thresholdIndex = 0
 
-            Dim dtThreshold = lstDates(intThresholdIndex)
+            Dim dtThreshold = lstDates(thresholdIndex)
 
             ' Construct a list of keys to be removed
             Dim lstKeys As List(Of String) = (From entry In mLogDataCache Where entry.Value <= dtThreshold Select entry.Key).ToList()
@@ -665,8 +664,8 @@ Public MustInherit Class clsProcessFilesOrFoldersBase
 
             Using srLogFile = New StreamReader(New FileStream(strLogFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 While Not srLogFile.EndOfStream
-                    Dim strLineIn = srLogFile.ReadLine()
-                    Dim reMatch = reParseLine.Match(strLineIn)
+                    Dim dataLine = srLogFile.ReadLine()
+                    Dim reMatch = reParseLine.Match(dataLine)
 
                     If reMatch.Success Then
                         Dim dtLogTime As DateTime
@@ -714,7 +713,7 @@ Public MustInherit Class clsProcessFilesOrFoldersBase
     End Sub
 
     Protected Sub UpdateProgress(strProgressStepDescription As String, sngPercentComplete As Single)
-        Dim blnDescriptionChanged = Not String.Equals(strProgressStepDescription, mProgressStepDescription)
+        Dim descriptionChanged = Not String.Equals(strProgressStepDescription, mProgressStepDescription)
 
         mProgressStepDescription = String.Copy(strProgressStepDescription)
         If sngPercentComplete < 0 Then
@@ -724,7 +723,7 @@ Public MustInherit Class clsProcessFilesOrFoldersBase
         End If
         mProgressPercentComplete = sngPercentComplete
 
-        If blnDescriptionChanged Then
+        If descriptionChanged Then
             If mProgressPercentComplete < Single.Epsilon Then
                 LogMessage(mProgressStepDescription.Replace(Environment.NewLine, "; "))
             Else

@@ -113,8 +113,8 @@ Public Class clsExportDBSchema
 #End Region
 
 #Region "Classwide Variables"
-    Public Event NewMessage(strMessage As String, eMessageType As eMessageTypeConstants)
-    Public Event DBExportStarting(strDatabaseName As String)
+    Public Event NewMessage(message As String, eMessageType As eMessageTypeConstants)
+    Public Event DBExportStarting(databaseName As String)
     Public Event PauseStatusChange()
 
     Private mSqlServer As Server
@@ -306,7 +306,7 @@ Public Class clsExportDBSchema
                 Next
             End If
 
-            ' Initialize lstRegEx (we'll fill it below if blnAutoHiglightRows = True)
+            ' Initialize lstRegEx (we'll fill it below if autoHiglightRows = True)
             Const objRegExOptions As RegexOptions = RegexOptions.Compiled Or
              RegexOptions.IgnoreCase Or
              RegexOptions.Singleline
@@ -363,15 +363,15 @@ Public Class clsExportDBSchema
     End Function
 
     Private Function CleanSqlScript(lstInfo As IEnumerable(Of String), schemaExportOptions As clsSchemaExportOptions) As IEnumerable(Of String)
-        ' Calls CleanSqlScript with blnRemoveAllOccurrences = False and blnRemoveDuplicateHeaderLine = FAlse
+        ' Calls CleanSqlScript with removeAllOccurrences = False and removeDuplicateHeaderLine = False
         Return CleanSqlScript(lstInfo, schemaExportOptions, False, False)
     End Function
 
     Private Function CleanSqlScript(
       lstInfo As IEnumerable(Of String),
       schemaExportOptions As clsSchemaExportOptions,
-      blnRemoveAllScriptDateOccurrences As Boolean,
-      blnRemoveDuplicateHeaderLine As Boolean) As List(Of String)
+      removeAllScriptDateOccurrences As Boolean,
+      removeDuplicateHeaderLine As Boolean) As List(Of String)
 
         Dim chWhiteSpaceChars = New Char() {" "c, ControlChars.Tab}
 
@@ -385,8 +385,8 @@ Public Class clsExportDBSchema
             ' Look for and remove the timestamp from the first line of the Sql script
             ' For example: "Script Date: 08/14/2006 20:14:31" prior to each "******/"
             '
-            ' If blnRemoveAllOccurrences = True, then searches for all occurrences
-            ' If blnRemoveAllOccurrences = False, then does not look past the first
+            ' If removeAllOccurrences = True, then searches for all occurrences
+            ' If removeAllOccurrences = False, then does not look past the first
             '   carriage return of each entry in lstInfo
 
             For Each strText In lstInfo
@@ -394,7 +394,7 @@ Public Class clsExportDBSchema
                 Dim intIndexStart = 0
                 Dim intFinalSearchIndex As Integer
 
-                If blnRemoveAllScriptDateOccurrences Then
+                If removeAllScriptDateOccurrences Then
                     intFinalSearchIndex = strText.Length - 1
                 Else
                     ' Find the first CrLf after the first non-blank line in strText
@@ -429,9 +429,9 @@ Public Class clsExportDBSchema
                                       strText.Substring(intIndexEndCurrent + COMMENT_END_TEXT_SHORT.Length)
                         End If
                     End If
-                Loop While blnRemoveAllScriptDateOccurrences And intIndexStartCurrent > 0
+                Loop While removeAllScriptDateOccurrences And intIndexStartCurrent > 0
 
-                If blnRemoveDuplicateHeaderLine Then
+                If removeDuplicateHeaderLine Then
                     Dim intFirstCrLf = strText.IndexOf(ControlChars.NewLine, 0, StringComparison.Ordinal)
                     If intFirstCrLf > 0 AndAlso intFirstCrLf < strText.Length Then
                         Dim intIndexNextCrLf = strText.IndexOf(ControlChars.NewLine, intFirstCrLf + 1, StringComparison.Ordinal)
@@ -498,27 +498,27 @@ Public Class clsExportDBSchema
 
     Private Function ExportDBObjectsUsingSMO(
       objSqlServer As Server,
-      strDatabaseName As String,
+      databaseName As String,
       lstTableNamesForDataExport As IReadOnlyCollection(Of String),
       schemaExportOptions As clsSchemaExportOptions,
-      <Out()> ByRef blnDBNotFoundReturn As Boolean) As Boolean
+      <Out()> ByRef databaseNotFound As Boolean) As Boolean
 
         Dim workingParams As New clsWorkingParams()
-        Dim objScriptOptions As ScriptingOptions
+        Dim scriptOptions As ScriptingOptions
         Dim objDatabase As Database
 
         Dim dctTablesToExport As Dictionary(Of String, Int64)
 
-        RaiseEvent DBExportStarting(strDatabaseName)
+        RaiseEvent DBExportStarting(databaseName)
 
         Try
-            objScriptOptions = GetDefaultScriptOptions()
+            scriptOptions = GetDefaultScriptOptions()
 
-            objDatabase = objSqlServer.Databases(strDatabaseName)
-            blnDBNotFoundReturn = False
+            objDatabase = objSqlServer.Databases(databaseName)
+            databaseNotFound = False
         Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error connecting to database " & strDatabaseName)
-            blnDBNotFoundReturn = True
+            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error connecting to database " & databaseName)
+            databaseNotFound = True
             Return False
         End Try
 
@@ -538,10 +538,10 @@ Public Class clsExportDBSchema
                 Directory.CreateDirectory(workingParams.OutputFolderPathCurrentDB)
             End If
 
-            If mSchemaOutputFolders.ContainsKey(strDatabaseName) Then
-                mSchemaOutputFolders(strDatabaseName) = workingParams.OutputFolderPathCurrentDB
+            If mSchemaOutputFolders.ContainsKey(databaseName) Then
+                mSchemaOutputFolders(databaseName) = workingParams.OutputFolderPathCurrentDB
             Else
-                mSchemaOutputFolders.Add(strDatabaseName, workingParams.OutputFolderPathCurrentDB)
+                mSchemaOutputFolders.Add(databaseName, workingParams.OutputFolderPathCurrentDB)
             End If
 
             If schemaExportOptions.AutoSelectTableNamesForDataExport Then
@@ -563,7 +563,7 @@ Public Class clsExportDBSchema
 
             ' Count the number of objects that will be exported
             workingParams.CountObjectsOnly = True
-            ExportDBObjectsWork(objDatabase, objScriptOptions, schemaExportOptions, workingParams)
+            ExportDBObjectsWork(objDatabase, scriptOptions, schemaExportOptions, workingParams)
             workingParams.ProcessCountExpected = workingParams.ProcessCount
 
             If Not lstTableNamesForDataExport Is Nothing Then
@@ -580,15 +580,15 @@ Public Class clsExportDBSchema
 
             workingParams.CountObjectsOnly = False
             If workingParams.ProcessCount > 0 Then
-                ExportDBObjectsWork(objDatabase, objScriptOptions, schemaExportOptions, workingParams)
+                ExportDBObjectsWork(objDatabase, scriptOptions, schemaExportOptions, workingParams)
             End If
 
             ' Export data from tables specified by dctTablesToExport
-            Dim blnSuccess = ExportDBTableData(objDatabase, dctTablesToExport, schemaExportOptions, workingParams)
-            Return blnSuccess
+            Dim success = ExportDBTableData(objDatabase, dctTablesToExport, schemaExportOptions, workingParams)
+            Return success
 
         Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error scripting objects in database " & strDatabaseName)
+            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error scripting objects in database " & databaseName)
             Return False
         End Try
 
@@ -596,7 +596,7 @@ Public Class clsExportDBSchema
 
     Private Sub ExportDBObjectsWork(
       objDatabase As Database,
-      objScriptOptions As ScriptingOptions,
+      scriptOptions As ScriptingOptions,
       schemaExportOptions As clsSchemaExportOptions,
       workingParams As clsWorkingParams)
 
@@ -606,12 +606,12 @@ Public Class clsExportDBSchema
         workingParams.ProcessCount = 0
 
         If schemaExportOptions.ExportDBSchemasAndRoles Then
-            ExportDBSchemasAndRoles(objDatabase, schemaExportOptions, objScriptOptions, workingParams)
+            ExportDBSchemasAndRoles(objDatabase, schemaExportOptions, scriptOptions, workingParams)
             If mAbortProcessing Then Exit Sub
         End If
 
         If schemaExportOptions.ExportTables Then
-            ExportDBTables(objDatabase, schemaExportOptions, objScriptOptions, workingParams)
+            ExportDBTables(objDatabase, schemaExportOptions, scriptOptions, workingParams)
             If mAbortProcessing Then Exit Sub
         End If
 
@@ -619,17 +619,17 @@ Public Class clsExportDBSchema
            schemaExportOptions.ExportUserDefinedFunctions OrElse
            schemaExportOptions.ExportStoredProcedures OrElse
            schemaExportOptions.ExportSynonyms Then
-            ExportDBViewsProcsAndUDFs(objDatabase, schemaExportOptions, objScriptOptions, workingParams)
+            ExportDBViewsProcsAndUDFs(objDatabase, schemaExportOptions, scriptOptions, workingParams)
             If mAbortProcessing Then Exit Sub
         End If
 
         If schemaExportOptions.ExportUserDefinedDataTypes Then
-            ExportDBUserDefinedDataTypes(objDatabase, schemaExportOptions, objScriptOptions, workingParams)
+            ExportDBUserDefinedDataTypes(objDatabase, schemaExportOptions, scriptOptions, workingParams)
             If mAbortProcessing Then Exit Sub
         End If
 
         If schemaExportOptions.ExportUserDefinedTypes Then
-            ExportDBUserDefinedTypes(objDatabase, schemaExportOptions, objScriptOptions, workingParams)
+            ExportDBUserDefinedTypes(objDatabase, schemaExportOptions, scriptOptions, workingParams)
             If mAbortProcessing Then Exit Sub
         End If
 
@@ -638,31 +638,31 @@ Public Class clsExportDBSchema
     Private Sub ExportDBSchemasAndRoles(
       objDatabase As Database,
       schemaExportOptions As clsSchemaExportOptions,
-      objScriptOptions As ScriptingOptions,
+      scriptOptions As ScriptingOptions,
       workingParams As clsWorkingParams)
 
         If workingParams.CountObjectsOnly Then
             workingParams.ProcessCount += 1
 
             If SqlServer2005OrNewer(objDatabase) Then
-                For intIndex = 0 To objDatabase.Schemas.Count - 1
-                    If ExportSchema(objDatabase.Schemas(intIndex)) Then
+                For index = 0 To objDatabase.Schemas.Count - 1
+                    If ExportSchema(objDatabase.Schemas(index)) Then
                         workingParams.ProcessCount += 1
                     End If
-                Next intIndex
+                Next index
             End If
 
-            For intIndex = 0 To objDatabase.Roles.Count - 1
-                If ExportRole(objDatabase.Roles(intIndex)) Then
+            For index = 0 To objDatabase.Roles.Count - 1
+                If ExportRole(objDatabase.Roles(index)) Then
                     workingParams.ProcessCount += 1
                 End If
-            Next intIndex
+            Next index
             Exit Sub
         End If
 
         Try
             WriteTextToFile(workingParams.OutputFolderPathCurrentDB, DB_DEFINITION_FILE_PREFIX & objDatabase.Name,
-             CleanSqlScript(StringCollectionToList(objDatabase.Script(objScriptOptions)), schemaExportOptions))
+             CleanSqlScript(StringCollectionToList(objDatabase.Script(scriptOptions)), schemaExportOptions))
         Catch ex As Exception
             ' User likely doesn't have privilege to script the DB; ignore the error
             ReportMessage("Unable to script DB " & objDatabase.Name & ": " & ex.Message, eMessageTypeConstants.ErrorMessage)
@@ -670,10 +670,10 @@ Public Class clsExportDBSchema
         workingParams.ProcessCount += 1
 
         If SqlServer2005OrNewer(objDatabase) Then
-            For intIndex = 0 To objDatabase.Schemas.Count - 1
-                If ExportSchema(objDatabase.Schemas(intIndex)) Then
-                    WriteTextToFile(workingParams.OutputFolderPathCurrentDB, "Schema_" & objDatabase.Schemas(intIndex).Name,
-                     CleanSqlScript(StringCollectionToList(objDatabase.Schemas(intIndex).Script(objScriptOptions)), schemaExportOptions))
+            For index = 0 To objDatabase.Schemas.Count - 1
+                If ExportSchema(objDatabase.Schemas(index)) Then
+                    WriteTextToFile(workingParams.OutputFolderPathCurrentDB, "Schema_" & objDatabase.Schemas(index).Name,
+                     CleanSqlScript(StringCollectionToList(objDatabase.Schemas(index).Script(scriptOptions)), schemaExportOptions))
 
                     workingParams.ProcessCount += 1
                     CheckPauseStatus()
@@ -682,13 +682,13 @@ Public Class clsExportDBSchema
                         Exit Sub
                     End If
                 End If
-            Next intIndex
+            Next index
         End If
 
-        For intIndex = 0 To objDatabase.Roles.Count - 1
-            If ExportRole(objDatabase.Roles(intIndex)) Then
-                WriteTextToFile(workingParams.OutputFolderPathCurrentDB, "Role_" & objDatabase.Roles(intIndex).Name,
-                 CleanSqlScript(StringCollectionToList(objDatabase.Roles(intIndex).Script(objScriptOptions)), schemaExportOptions))
+        For index = 0 To objDatabase.Roles.Count - 1
+            If ExportRole(objDatabase.Roles(index)) Then
+                WriteTextToFile(workingParams.OutputFolderPathCurrentDB, "Role_" & objDatabase.Roles(index).Name,
+                 CleanSqlScript(StringCollectionToList(objDatabase.Roles(index).Script(scriptOptions)), schemaExportOptions))
 
                 workingParams.ProcessCount += 1
                 CheckPauseStatus()
@@ -697,14 +697,14 @@ Public Class clsExportDBSchema
                     Exit Sub
                 End If
             End If
-        Next intIndex
+        Next index
 
     End Sub
 
     Private Sub ExportDBTables(
       objDatabase As Database,
       schemaExportOptions As clsSchemaExportOptions,
-      objScriptOptions As ScriptingOptions,
+      scriptOptions As ScriptingOptions,
       workingParams As clsWorkingParams)
 
         Const SYNC_OBJ_TABLE_PREFIX = "syncobj_0x"
@@ -718,23 +718,23 @@ Public Class clsExportDBSchema
 
             ' Initialize the scripter and objSMOObject()
             Dim objScripter = New Scripter(mSqlServer)
-            objScripter.Options = objScriptOptions
+            objScripter.Options = scriptOptions
 
             For Each objTable As Table In objDatabase.Tables
-                Dim blnIncludeTable = True
+                Dim includeTable = True
                 If Not schemaExportOptions.IncludeSystemObjects Then
                     If objTable.IsSystemObject Then
-                        blnIncludeTable = False
+                        includeTable = False
                     Else
                         If objTable.Name.Length >= SYNC_OBJ_TABLE_PREFIX.Length Then
                             If objTable.Name.ToLower.Substring(0, SYNC_OBJ_TABLE_PREFIX.Length) = SYNC_OBJ_TABLE_PREFIX.ToLower Then
-                                blnIncludeTable = False
+                                includeTable = False
                             End If
                         End If
                     End If
                 End If
 
-                If blnIncludeTable Then
+                If includeTable Then
                     mSubtaskProgressStepDescription = objTable.Name
                     UpdateSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected)
 
@@ -762,7 +762,7 @@ Public Class clsExportDBSchema
     Private Sub ExportDBUserDefinedDataTypes(
       objDatabase As Database,
       schemaExportOptions As clsSchemaExportOptions,
-      objScriptOptions As ScriptingOptions,
+      scriptOptions As ScriptingOptions,
       workingParams As clsWorkingParams)
 
         Dim intItemCount As Integer
@@ -770,7 +770,7 @@ Public Class clsExportDBSchema
         If workingParams.CountObjectsOnly Then
             workingParams.ProcessCount += objDatabase.UserDefinedDataTypes.Count
         Else
-            intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedDataTypes, schemaExportOptions, objScriptOptions, workingParams.ProcessCountExpected, workingParams.OutputFolderPathCurrentDB)
+            intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedDataTypes, schemaExportOptions, scriptOptions, workingParams.ProcessCountExpected, workingParams.OutputFolderPathCurrentDB)
             workingParams.ProcessCount += intItemCount
         End If
     End Sub
@@ -778,7 +778,7 @@ Public Class clsExportDBSchema
     Private Sub ExportDBUserDefinedTypes(
       objDatabase As Database,
       schemaExportOptions As clsSchemaExportOptions,
-      objScriptOptions As ScriptingOptions,
+      scriptOptions As ScriptingOptions,
       workingParams As clsWorkingParams)
 
         Dim intItemCount As Integer
@@ -787,7 +787,7 @@ Public Class clsExportDBSchema
             If workingParams.CountObjectsOnly Then
                 workingParams.ProcessCount += objDatabase.UserDefinedTypes.Count
             Else
-                intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedTypes, schemaExportOptions, objScriptOptions, workingParams.ProcessCountExpected, workingParams.OutputFolderPathCurrentDB)
+                intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedTypes, schemaExportOptions, scriptOptions, workingParams.ProcessCountExpected, workingParams.OutputFolderPathCurrentDB)
                 workingParams.ProcessCount += intItemCount
             End If
         End If
@@ -797,7 +797,7 @@ Public Class clsExportDBSchema
     Private Sub ExportDBViewsProcsAndUDFs(
       objDatabase As Database,
       schemaExportOptions As clsSchemaExportOptions,
-      objScriptOptions As ScriptingOptions,
+      scriptOptions As ScriptingOptions,
       workingParams As clsWorkingParams)
 
         ' Option 1) obtain the list of views, stored procedures, and UDFs is to use objDatabase.EnumObjects
@@ -901,7 +901,7 @@ Public Class clsExportDBSchema
 
         ' Initialize the scripter and objSMOObject()
         Dim objScripter = New Scripter(mSqlServer)
-        objScripter.Options = objScriptOptions
+        objScripter.Options = scriptOptions
 
         For objectIterator = 0 To 3
             Dim objectType = "unknown"
@@ -1024,7 +1024,7 @@ Public Class clsExportDBSchema
 
             For Each tableItem In dctTablesToExport
 
-                Dim intMaximumDataRowsToExport = tableItem.Value
+                Dim maximumDataRowsToExport = tableItem.Value
 
                 mSubtaskProgressStepDescription = "Exporting data from " & tableItem.Key
                 UpdateSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected)
@@ -1040,10 +1040,10 @@ Public Class clsExportDBSchema
                 End If
 
                 ' See if any of the columns in the table is an identity column
-                Dim blnIdentityColumnFound = False
+                Dim identityColumnFound = False
                 For Each objColumn As Column In objTable.Columns
                     If objColumn.Identity Then
-                        blnIdentityColumnFound = True
+                        identityColumnFound = True
                         Exit For
                     End If
                 Next
@@ -1051,8 +1051,8 @@ Public Class clsExportDBSchema
                 ' Export the data from objTable, possibly limiting the number of rows to export
                 Dim sql = "SELECT "
 
-                If intMaximumDataRowsToExport > 0 Then
-                    sql &= "TOP " & intMaximumDataRowsToExport.ToString
+                If maximumDataRowsToExport > 0 Then
+                    sql &= "TOP " & maximumDataRowsToExport.ToString
                 End If
 
                 sql &= " * FROM [" & objTable.Name & "]"
@@ -1062,21 +1062,21 @@ Public Class clsExportDBSchema
 
                 Dim lstTableRows = New List(Of String)
 
-                Dim strHeader = COMMENT_START_TEXT & "Object:  Table [" & objTable.Name & "]"
+                Dim header = COMMENT_START_TEXT & "Object:  Table [" & objTable.Name & "]"
                 If schemaExportOptions.IncludeTimestampInScriptFileHeader Then
-                    strHeader &= "    " & COMMENT_SCRIPT_DATE_TEXT & GetTimeStamp()
+                    header &= "    " & COMMENT_SCRIPT_DATE_TEXT & GetTimeStamp()
                 End If
-                strHeader &= COMMENT_END_TEXT
-                lstTableRows.Add(strHeader)
+                header &= COMMENT_END_TEXT
+                lstTableRows.Add(header)
 
                 lstTableRows.Add(COMMENT_START_TEXT & "RowCount: " & objTable.RowCount & COMMENT_END_TEXT)
 
-                Dim intColumnCount = dsCurrentTable.Tables(0).Columns.Count
+                Dim columnCount = dsCurrentTable.Tables(0).Columns.Count
                 Dim lstColumnTypes = New List(Of eDataColumnTypeConstants)
 
                 ' Construct the column name list and determine the column data types
                 sbCurrentRow.Clear()
-                For intColumnIndex = 0 To intColumnCount - 1
+                For intColumnIndex = 0 To columnCount - 1
                     Dim objColumn As DataColumn = dsCurrentTable.Tables(0).Columns(intColumnIndex)
 
                     ' Initially assume the column's data type is numeric
@@ -1126,19 +1126,19 @@ Public Class clsExportDBSchema
 
                     If schemaExportOptions.SaveDataAsInsertIntoStatements Then
                         sbCurrentRow.Append(PossiblyQuoteColumnName(objColumn.ColumnName))
-                        If intColumnIndex < intColumnCount - 1 Then
+                        If intColumnIndex < columnCount - 1 Then
                             sbCurrentRow.Append(", ")
                         End If
                     Else
                         sbCurrentRow.Append(objColumn.ColumnName)
-                        If intColumnIndex < intColumnCount - 1 Then
+                        If intColumnIndex < columnCount - 1 Then
                             sbCurrentRow.Append(ControlChars.Tab)
                         End If
                     End If
 
                 Next
 
-                Dim strInsertIntoLine As String = String.Empty
+                Dim insertIntoLine As String = String.Empty
                 Dim chColSepChar As Char
 
                 If schemaExportOptions.SaveDataAsInsertIntoStatements Then
@@ -1149,12 +1149,12 @@ Public Class clsExportDBSchema
                     ''        ' Unsupported mode
                     ''End Select
 
-                    If blnIdentityColumnFound Then
-                        strInsertIntoLine = "INSERT INTO [" & objTable.Name & "] (" & sbCurrentRow.ToString & ") VALUES ("
+                    If identityColumnFound Then
+                        insertIntoLine = "INSERT INTO [" & objTable.Name & "] (" & sbCurrentRow.ToString & ") VALUES ("
                         lstTableRows.Add("SET IDENTITY_INSERT [" & objTable.Name & "] ON")
                     Else
                         ' Identity column not present; no need to explicitly list the column names
-                        strInsertIntoLine = "INSERT INTO [" & objTable.Name & "] VALUES ("
+                        insertIntoLine = "INSERT INTO [" & objTable.Name & "] VALUES ("
 
                         ' However, we'll display the column names in the output file
                         lstTableRows.Add(COMMENT_START_TEXT & "Columns: " & sbCurrentRow.ToString & COMMENT_END_TEXT)
@@ -1169,38 +1169,38 @@ Public Class clsExportDBSchema
                 For Each objRow As DataRow In dsCurrentTable.Tables(0).Rows
                     sbCurrentRow.Clear()
                     If schemaExportOptions.SaveDataAsInsertIntoStatements Then
-                        sbCurrentRow.Append(strInsertIntoLine)
+                        sbCurrentRow.Append(insertIntoLine)
                     End If
 
-                    For intColumnIndex = 0 To intColumnCount - 1
-                        Select Case lstColumnTypes(intColumnIndex)
+                    For columnIndex = 0 To columnCount - 1
+                        Select Case lstColumnTypes(columnIndex)
                             Case eDataColumnTypeConstants.Numeric
-                                sbCurrentRow.Append(objRow.Item(intColumnIndex).ToString)
+                                sbCurrentRow.Append(objRow.Item(columnIndex).ToString)
                             Case eDataColumnTypeConstants.Text, eDataColumnTypeConstants.DateTime, eDataColumnTypeConstants.GUID
                                 If schemaExportOptions.SaveDataAsInsertIntoStatements Then
-                                    sbCurrentRow.Append(PossiblyQuoteText(objRow.Item(intColumnIndex).ToString))
+                                    sbCurrentRow.Append(PossiblyQuoteText(objRow.Item(columnIndex).ToString))
                                 Else
-                                    sbCurrentRow.Append(objRow.Item(intColumnIndex).ToString)
+                                    sbCurrentRow.Append(objRow.Item(columnIndex).ToString)
                                 End If
 
                             Case eDataColumnTypeConstants.BinaryArray
                                 Try
-                                    Dim bytData = CType(CType(objRow.Item(intColumnIndex), Array), Byte())
+                                    Dim bytData = CType(CType(objRow.Item(columnIndex), Array), Byte())
 
                                     ' Convert the bytes to a string; however, do not write any leading zeroes
                                     ' The string will be of the form '0x020D89'
                                     sbCurrentRow.Append("0x")
 
-                                    Dim blnDataFound = False
-                                    For intByteIndex = 0 To bytData.Length - 1
-                                        If blnDataFound OrElse bytData(intByteIndex) <> 0 Then
-                                            blnDataFound = True
+                                    Dim dataFound = False
+                                    For byteIndex = 0 To bytData.Length - 1
+                                        If dataFound OrElse bytData(byteIndex) <> 0 Then
+                                            dataFound = True
                                             ' Convert the byte to Hex (0 to 255 -> 00 to FF)
-                                            sbCurrentRow.Append(bytData(intByteIndex).ToString("X2"))
+                                            sbCurrentRow.Append(bytData(byteIndex).ToString("X2"))
                                         End If
-                                    Next intByteIndex
+                                    Next byteIndex
 
-                                    If Not blnDataFound Then
+                                    If Not dataFound Then
                                         sbCurrentRow.Append("00")
                                     End If
 
@@ -1210,7 +1210,7 @@ Public Class clsExportDBSchema
 
                             Case eDataColumnTypeConstants.BinaryByte
                                 Try
-                                    sbCurrentRow.Append("0x" & Convert.ToByte(objRow.Item(intColumnIndex)).ToString("X2"))
+                                    sbCurrentRow.Append("0x" & Convert.ToByte(objRow.Item(columnIndex)).ToString("X2"))
                                 Catch ex As Exception
                                     sbCurrentRow.Append("[Byte]")
                                 End Try
@@ -1223,10 +1223,10 @@ Public Class clsExportDBSchema
 
                             Case Else
                                 ' No need to quote
-                                sbCurrentRow.Append(objRow.Item(intColumnIndex).ToString)
+                                sbCurrentRow.Append(objRow.Item(columnIndex).ToString)
                         End Select
 
-                        If intColumnIndex < intColumnCount - 1 Then
+                        If columnIndex < columnCount - 1 Then
                             sbCurrentRow.Append(chColSepChar)
                         End If
                     Next
@@ -1237,7 +1237,7 @@ Public Class clsExportDBSchema
                     lstTableRows.Add(sbCurrentRow.ToString)
                 Next
 
-                If blnIdentityColumnFound AndAlso schemaExportOptions.SaveDataAsInsertIntoStatements Then
+                If identityColumnFound AndAlso schemaExportOptions.SaveDataAsInsertIntoStatements Then
                     lstTableRows.Add("SET IDENTITY_INSERT [" & objTable.Name & "] OFF")
                 End If
 
@@ -1282,21 +1282,18 @@ Public Class clsExportDBSchema
     End Function
 
     Private Function ExportRole(objDatabaseRole As DatabaseRole) As Boolean
-        Dim blnExportRole As Boolean
 
         Try
             If objDatabaseRole.IsFixedRole Then
-                blnExportRole = False
+                Return False
             ElseIf objDatabaseRole.Name.ToLower = "public" Then
-                blnExportRole = False
+                Return False
             Else
-                blnExportRole = True
+                Return True
             End If
         Catch ex As Exception
-            blnExportRole = False
+            Return False
         End Try
-
-        Return blnExportRole
 
     End Function
 
@@ -1310,21 +1307,21 @@ Public Class clsExportDBSchema
 
     End Function
 
-    Private Sub AppendToList(lstInfo As ICollection(Of String), PropertyName As String, PropertyValue As String)
-        If Not (PropertyName Is Nothing Or PropertyValue Is Nothing) Then
-            lstInfo.Add(PropertyName & "=" & PropertyValue)
+    Private Sub AppendToList(lstInfo As ICollection(Of String), propertyName As String, propertyValue As String)
+        If Not (propertyName Is Nothing Or propertyValue Is Nothing) Then
+            lstInfo.Add(propertyName & "=" & propertyValue)
         End If
     End Sub
 
-    Private Sub AppendToList(lstInfo As ICollection(Of String), PropertyName As String, PropertyValue As Integer)
-        If Not PropertyName Is Nothing Then
-            lstInfo.Add(PropertyName & "=" & PropertyValue.ToString)
+    Private Sub AppendToList(lstInfo As ICollection(Of String), propertyName As String, propertyValue As Integer)
+        If Not propertyName Is Nothing Then
+            lstInfo.Add(propertyName & "=" & propertyValue.ToString)
         End If
     End Sub
 
-    Private Sub AppendToList(lstInfo As ICollection(Of String), PropertyName As String, PropertyValue As Boolean)
-        If Not PropertyName Is Nothing Then
-            lstInfo.Add(PropertyName & "=" & PropertyValue.ToString)
+    Private Sub AppendToList(lstInfo As ICollection(Of String), propertyName As String, propertyValue As Boolean)
+        If Not propertyName Is Nothing Then
+            lstInfo.Add(propertyName & "=" & propertyValue.ToString)
         End If
     End Sub
 
@@ -1337,8 +1334,8 @@ Public Class clsExportDBSchema
     Private Sub ExportSQLServerConfiguration(
       objSqlServer As Server,
       schemaExportOptions As clsSchemaExportOptions,
-      objScriptOptions As ScriptingOptions,
-      strOutputFolderPathCurrentServer As String)
+      scriptOptions As ScriptingOptions,
+      outputFolderPathCurrentServer As String)
 
         Dim lstInfo As New List(Of String)
 
@@ -1371,7 +1368,7 @@ Public Class clsExportDBSchema
             AppendToList(lstInfo, "VersionString", .VersionString)
         End With
 
-        WriteTextToFile(strOutputFolderPathCurrentServer, "ServerInformation", lstInfo, False, ".ini")
+        WriteTextToFile(outputFolderPathCurrentServer, "ServerInformation", lstInfo, False, ".ini")
 
 
         ' Next save the Server Configuration to file ServerConfiguration
@@ -1442,22 +1439,22 @@ Public Class clsExportDBSchema
             AppendToList(lstInfo, .XPCmdShellEnabled)
         End With
 
-        WriteTextToFile(strOutputFolderPathCurrentServer, "ServerConfiguration", lstInfo, False, ".ini")
+        WriteTextToFile(outputFolderPathCurrentServer, "ServerConfiguration", lstInfo, False, ".ini")
 
 
         ' Next save the Mail settings to file ServerMail
         ' Can only do this for Sql Server 2005 or newer
         If SqlServer2005OrNewer(objSqlServer) Then
-            lstInfo = CleanSqlScript(StringCollectionToList(objSqlServer.Mail.Script(objScriptOptions)), schemaExportOptions, False, False)
-            WriteTextToFile(strOutputFolderPathCurrentServer, "ServerMail", lstInfo, True)
+            lstInfo = CleanSqlScript(StringCollectionToList(objSqlServer.Mail.Script(scriptOptions)), schemaExportOptions, False, False)
+            WriteTextToFile(outputFolderPathCurrentServer, "ServerMail", lstInfo, True)
         End If
 
 
         ' Next save the Registry Settings to file ServerRegistrySettings
-        lstInfo = CleanSqlScript(StringCollectionToList(objSqlServer.Settings.Script(objScriptOptions)), schemaExportOptions, False, False)
+        lstInfo = CleanSqlScript(StringCollectionToList(objSqlServer.Settings.Script(scriptOptions)), schemaExportOptions, False, False)
         lstInfo.Insert(0, "-- Registry Settings for " & objSqlServer.Name)
 
-        WriteTextToFile(strOutputFolderPathCurrentServer, "ServerRegistrySettings", lstInfo, False)
+        WriteTextToFile(outputFolderPathCurrentServer, "ServerRegistrySettings", lstInfo, False)
 
 
     End Sub
@@ -1465,29 +1462,29 @@ Public Class clsExportDBSchema
     Private Sub ExportSQLServerLogins(
       objSqlServer As Server,
       schemaExportOptions As clsSchemaExportOptions,
-      objScriptOptions As ScriptingOptions,
-      strOutputFolderPathCurrentServer As String)
+      scriptOptions As ScriptingOptions,
+      outputFolderPathCurrentServer As String)
 
         ' Do not include a Try block in this Function; let the calling function handle errors
 
         ' Export the server logins
-        Dim intProcessCountExpected = objSqlServer.Logins.Count
+        Dim processCountExpected = objSqlServer.Logins.Count
         ResetSubtaskProgress("Exporting SQL Server logins")
-        For intIndex = 0 To objSqlServer.Logins.Count - 1
-            Dim strCurrentLogin = objSqlServer.Logins.Item(intIndex).Name
+        For index = 0 To objSqlServer.Logins.Count - 1
+            Dim strCurrentLogin = objSqlServer.Logins.Item(index).Name
             UpdateSubtaskProgress("Exporting login " & strCurrentLogin, mSubtaskProgressPercentComplete)
 
-            Dim blnSuccess = WriteTextToFile(strOutputFolderPathCurrentServer, "Login_" & strCurrentLogin,
-             CleanSqlScript(StringCollectionToList(objSqlServer.Logins.Item(intIndex).Script(objScriptOptions)), schemaExportOptions, True, True))
+            Dim success = WriteTextToFile(outputFolderPathCurrentServer, "Login_" & strCurrentLogin,
+             CleanSqlScript(StringCollectionToList(objSqlServer.Logins.Item(index).Script(scriptOptions)), schemaExportOptions, True, True))
 
-            UpdateSubtaskProgress(intIndex + 1, intProcessCountExpected)
+            UpdateSubtaskProgress(index + 1, processCountExpected)
             CheckPauseStatus()
             If mAbortProcessing Then
                 UpdateProgress("Aborted processing")
                 Exit For
             End If
 
-            If blnSuccess Then
+            If success Then
                 ReportMessage("Processing completed for login " & strCurrentLogin, eMessageTypeConstants.HeaderLine)
             Else
                 SetLocalError(eDBSchemaExportErrorCodes.GeneralError, "Processing failed for server " & schemaExportOptions.ConnectionInfo.ServerName & "; login " & strCurrentLogin)
@@ -1500,43 +1497,43 @@ Public Class clsExportDBSchema
     Private Sub ExportSQLServerAgentJobs(
       objSqlServer As Server,
       schemaExportOptions As clsSchemaExportOptions,
-      objScriptOptions As ScriptingOptions,
-      strOutputFolderPathCurrentServer As String)
+      scriptOptions As ScriptingOptions,
+      outputFolderPathCurrentServer As String)
 
         ' Do not include a Try block in this Function; let the calling function handle errors
 
         ' Export the SQL Server Agent jobs
-        Dim intProcessCountExpected = objSqlServer.JobServer.Jobs.Count
+        Dim processCountExpected = objSqlServer.JobServer.Jobs.Count
         ResetSubtaskProgress("Exporting SQL Server Agent jobs")
-        For intIndex = 0 To objSqlServer.JobServer.Jobs.Count - 1
-            Dim strCurrentJob = objSqlServer.JobServer.Jobs(intIndex).Name
+        For index = 0 To objSqlServer.JobServer.Jobs.Count - 1
+            Dim strCurrentJob = objSqlServer.JobServer.Jobs(index).Name
             UpdateSubtaskProgress("Exporting job " & strCurrentJob, mSubtaskProgressPercentComplete)
 
-            Dim blnSuccess = WriteTextToFile(strOutputFolderPathCurrentServer, "AgentJob_" & strCurrentJob,
-             CleanSqlScript(StringCollectionToList(objSqlServer.JobServer.Jobs(intIndex).Script(objScriptOptions)), schemaExportOptions, True, True))
+            Dim success = WriteTextToFile(outputFolderPathCurrentServer, "AgentJob_" & strCurrentJob,
+             CleanSqlScript(StringCollectionToList(objSqlServer.JobServer.Jobs(index).Script(scriptOptions)), schemaExportOptions, True, True))
 
-            UpdateSubtaskProgress(intIndex + 1, intProcessCountExpected)
+            UpdateSubtaskProgress(index + 1, processCountExpected)
             CheckPauseStatus()
             If mAbortProcessing Then
                 UpdateProgress("Aborted processing")
                 Exit For
             End If
 
-            If blnSuccess Then
+            If success Then
                 ReportMessage("Processing completed for job " & strCurrentJob, eMessageTypeConstants.HeaderLine)
             Else
                 SetLocalError(eDBSchemaExportErrorCodes.GeneralError, "Processing failed for server " & schemaExportOptions.ConnectionInfo.ServerName & "; job " & strCurrentJob)
             End If
 
-        Next intIndex
+        Next index
 
     End Sub
 
     Private Function GetDefaultScriptOptions() As ScriptingOptions
 
-        Dim objScriptOptions As New ScriptingOptions
+        Dim scriptOptions As New ScriptingOptions
 
-        With objScriptOptions
+        With scriptOptions
             '.Bindings = True
             .Default = True
             .DriAll = True
@@ -1558,7 +1555,7 @@ Public Class clsExportDBSchema
             .WithDependencies = False       ' Scripting speed will be much slower if this is set to true
         End With
 
-        Return objScriptOptions
+        Return scriptOptions
     End Function
 
     ''' <summary>
@@ -1607,10 +1604,10 @@ Public Class clsExportDBSchema
                 ResetProgressStepCount(objDatabases.Count)
             End If
 
-            For intIndex = 0 To objDatabases.Count - 1
-                lstDatabases.Add(objDatabases(intIndex).Name)
+            For index = 0 To objDatabases.Count - 1
+                lstDatabases.Add(objDatabases(index).Name)
 
-                mProgressStep = intIndex + 1
+                mProgressStep = index + 1
                 If reportProgress Then
                     UpdateProgress(mProgressStep)
                 End If
@@ -1619,7 +1616,7 @@ Public Class clsExportDBSchema
                     UpdateProgress("Aborted processing")
                     Exit For
                 End If
-            Next intIndex
+            Next index
 
             lstDatabases.Sort()
 
@@ -1632,37 +1629,37 @@ Public Class clsExportDBSchema
     ''' <summary>
     ''' Lookup the table names in the specified database, optionally also determining table row counts
     ''' </summary>
-    ''' <param name="strDatabaseName">Database to query</param>
-    ''' <param name="blnIncludeTableRowCounts">When true, then determines the row count in each table</param>
-    ''' <param name="blnIncludeSystemObjects">When true, then also returns system object tables</param>
-    ''' <returns>Dictionary where key is table name and value is row counts (if blnIncludeTableRowCounts = true)</returns>
+    ''' <param name="databaseName">Database to query</param>
+    ''' <param name="includeTableRowCounts">When true, then determines the row count in each table</param>
+    ''' <param name="includeSystemObjects">When true, then also returns system object tables</param>
+    ''' <returns>Dictionary where key is table name and value is row counts (if includeTableRowCounts = true)</returns>
     ''' <remarks></remarks>
     Public Function GetSqlServerDatabaseTableNames(
-      strDatabaseName As String,
-      blnIncludeTableRowCounts As Boolean,
-      blnIncludeSystemObjects As Boolean) As Dictionary(Of String, Int64)
+      databaseName As String,
+      includeTableRowCounts As Boolean,
+      includeSystemObjects As Boolean) As Dictionary(Of String, Int64)
 
         Try
             InitializeLocalVariables(False)
 
             Dim dctTables = New Dictionary(Of String, Int64)
 
-            If strDatabaseName Is Nothing Then
+            If databaseName Is Nothing Then
                 mStatusMessage = "Empty database name sent to GetSqlServerDatabaseTableNames"
                 Return dctTables
             ElseIf Not mConnectedToServer OrElse mSqlServer Is Nothing OrElse mSqlServer.State <> SqlSmoState.Existing Then
                 mStatusMessage = "Not connected to a server"
                 Return dctTables
-            ElseIf Not mSqlServer.Databases.Contains(strDatabaseName) Then
-                mStatusMessage = "Database " & strDatabaseName & " not found on server " & mCurrentServerInfo.ServerName
+            ElseIf Not mSqlServer.Databases.Contains(databaseName) Then
+                mStatusMessage = "Database " & databaseName & " not found on server " & mCurrentServerInfo.ServerName
                 Return dctTables
             End If
 
             ' Obtain a list of all databases actually residing on the server (according to the Master database)
-            ResetProgress("Obtaining list of tables in database " & strDatabaseName & " on server " & mCurrentServerInfo.ServerName)
+            ResetProgress("Obtaining list of tables in database " & databaseName & " on server " & mCurrentServerInfo.ServerName)
 
-            ' Connect to database strDatabaseName
-            Dim objDatabase = mSqlServer.Databases(strDatabaseName)
+            ' Connect to database databaseName
+            Dim objDatabase = mSqlServer.Databases(databaseName)
 
             ' Obtain a list of the tables in objDatabase
             Dim objTables = objDatabase.Tables
@@ -1670,18 +1667,18 @@ Public Class clsExportDBSchema
 
                 ResetProgressStepCount(objTables.Count)
 
-                For intIndex = 0 To objTables.Count - 1
-                    If blnIncludeSystemObjects OrElse Not objTables(intIndex).IsSystemObject Then
+                For index = 0 To objTables.Count - 1
+                    If includeSystemObjects OrElse Not objTables(index).IsSystemObject Then
 
                         Dim tableRowCount As Int64 = 0
 
-                        If blnIncludeTableRowCounts Then
-                            tableRowCount = objTables(intIndex).RowCount
+                        If includeTableRowCounts Then
+                            tableRowCount = objTables(index).RowCount
                         End If
 
-                        dctTables.Add(objTables(intIndex).Name, tableRowCount)
+                        dctTables.Add(objTables(index).Name, tableRowCount)
 
-                        mProgressStep = intIndex + 1
+                        mProgressStep = index + 1
                         UpdateProgress(mProgressStep)
                         If mAbortProcessing Then
                             UpdateProgress("Aborted processing")
@@ -1689,7 +1686,7 @@ Public Class clsExportDBSchema
                         End If
 
                     End If
-                Next intIndex
+                Next index
 
             End If
 
@@ -1701,7 +1698,7 @@ Public Class clsExportDBSchema
             Return dctTables
 
         Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error obtaining list of tables in database " & strDatabaseName & " on current server", ex)
+            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error obtaining list of tables in database " & databaseName & " on current server", ex)
         End Try
 
         Return New Dictionary(Of String, Int64)
@@ -1750,7 +1747,7 @@ Public Class clsExportDBSchema
 
     End Function
 
-    Private Sub InitializeLocalVariables(blnResetServerConnection As Boolean)
+    Private Sub InitializeLocalVariables(resetServerConnection As Boolean)
         mErrorCode = eDBSchemaExportErrorCodes.NoError
         mStatusMessage = String.Empty
 
@@ -1773,7 +1770,7 @@ Public Class clsExportDBSchema
 
         mNonStandardOSChars = New Regex("[^a-z0-9_ =+-,.';`~!@#$%^&(){}\[\]]", objRegExOptions)
 
-        If blnResetServerConnection Then
+        If resetServerConnection Then
             ResetSqlServerConnection(mCurrentServerInfo)
             mConnectedToServer = False
         End If
@@ -1865,8 +1862,8 @@ Public Class clsExportDBSchema
         End If
     End Sub
 
-    Private Sub ReportMessage(strMessage As String, eMessageType As eMessageTypeConstants)
-        RaiseEvent NewMessage(strMessage, eMessageType)
+    Private Sub ReportMessage(message As String, eMessageType As eMessageTypeConstants)
+        RaiseEvent NewMessage(message, eMessageType)
     End Sub
 
     ''' <summary>
@@ -1936,15 +1933,15 @@ Public Class clsExportDBSchema
     ''' </summary>
     ''' <param name="objSchemaCollection">IEnumerable of type SchemaCollectionBase</param>
     ''' <param name="schemaExportOptions">Export options</param>
-    ''' <param name="objScriptOptions">Script options</param>
-    ''' <param name="intProcessCountExpected">Expected number of items</param>
+    ''' <param name="scriptOptions">Script options</param>
+    ''' <param name="processCountExpected">Expected number of items</param>
     ''' <param name="strOutputFolderPathCurrentDB">Output folder path</param>
     ''' <returns></returns>
     Private Function ScriptCollectionOfObjects(
       objSchemaCollection As IEnumerable,
       schemaExportOptions As clsSchemaExportOptions,
-      objScriptOptions As ScriptingOptions,
-      intProcessCountExpected As Integer,
+      scriptOptions As ScriptingOptions,
+      processCountExpected As Integer,
       strOutputFolderPathCurrentDB As String) As Integer
 
         ' Scripts the objects in objSchemaCollection
@@ -1954,10 +1951,10 @@ Public Class clsExportDBSchema
 
         For Each objItem As Schema In objSchemaCollection
             mSubtaskProgressStepDescription = objItem.Name
-            UpdateSubtaskProgress(intProcessCount, intProcessCountExpected)
+            UpdateSubtaskProgress(intProcessCount, processCountExpected)
 
             WriteTextToFile(strOutputFolderPathCurrentDB, objItem.Name,
-                            CleanSqlScript(StringCollectionToList(objItem.Script(objScriptOptions)), schemaExportOptions))
+                            CleanSqlScript(StringCollectionToList(objItem.Script(scriptOptions)), schemaExportOptions))
 
             intProcessCount += 1
 
@@ -2000,7 +1997,7 @@ Public Class clsExportDBSchema
             Next
 
             For Each strCurrentDB In lstDatabaseListToProcess
-                Dim blnDBNotFoundReturn = True
+                Dim databaseNotFound = True
 
                 If String.IsNullOrWhiteSpace(strCurrentDB) Then
                     ' DB name is empty; this shouldn't happen
@@ -2013,7 +2010,7 @@ Public Class clsExportDBSchema
                 End If
 
                 lstProcessedDBList.Add(strCurrentDB)
-                Dim blnSuccess As Boolean
+                Dim success As Boolean
                 Dim currentDbName As String = String.Empty
 
                 If dctDatabasesOnServer.TryGetValue(strCurrentDB.ToLower(), currentDbName) Then
@@ -2021,10 +2018,10 @@ Public Class clsExportDBSchema
                     strCurrentDB = String.Copy(currentDbName)
                     UpdateProgress("Exporting objects from database " & currentDbName)
 
-                    blnSuccess = ExportDBObjectsUsingSMO(objSqlServer, currentDbName, lstTableNamesForDataExport, schemaExportOptions, blnDBNotFoundReturn)
+                    success = ExportDBObjectsUsingSMO(objSqlServer, currentDbName, lstTableNamesForDataExport, schemaExportOptions, databaseNotFound)
 
-                    If Not blnDBNotFoundReturn Then
-                        If Not blnSuccess Then Exit For
+                    If Not databaseNotFound Then
+                        If Not success Then Exit For
 
                         If Not mAbortProcessing Then
                             SetSubtaskProgressComplete()
@@ -2032,7 +2029,7 @@ Public Class clsExportDBSchema
                     End If
                 Else
                     ' Database not actually present on the server; skip it
-                    blnDBNotFoundReturn = True
+                    databaseNotFound = True
                 End If
 
                 mProgressStep = lstProcessedDBList.Count
@@ -2043,9 +2040,9 @@ Public Class clsExportDBSchema
                     Exit For
                 End If
 
-                If blnSuccess Then
+                If success Then
                     ReportMessage("Processing completed for database " & strCurrentDB, eMessageTypeConstants.HeaderLine)
-                ElseIf blnDBNotFoundReturn Then
+                ElseIf databaseNotFound Then
                     SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Database " & strCurrentDB & " not found on server " & schemaExportOptions.ConnectionInfo.ServerName)
                 Else
                     SetLocalError(eDBSchemaExportErrorCodes.GeneralError, "Processing failed for server " & schemaExportOptions.ConnectionInfo.ServerName)
@@ -2071,24 +2068,23 @@ Public Class clsExportDBSchema
 
         ' Export the Server Settings and Sql Server Agent jobs
 
-        Dim objScriptOptions As ScriptingOptions
+        Dim scriptOptions As ScriptingOptions
 
-        Dim strOutputFolderPathCurrentServer As String = String.Empty
-        Dim blnSuccess As Boolean
+        Dim outputFolderPathCurrentServer As String = String.Empty
 
-        objScriptOptions = GetDefaultScriptOptions()
+        scriptOptions = GetDefaultScriptOptions()
 
         Try
             ' Construct the path to the output folder
-            strOutputFolderPathCurrentServer = Path.Combine(schemaExportOptions.OutputFolderPath, schemaExportOptions.ServerOutputFolderNamePrefix & objSqlServer.Name)
+            outputFolderPathCurrentServer = Path.Combine(schemaExportOptions.OutputFolderPath, schemaExportOptions.ServerOutputFolderNamePrefix & objSqlServer.Name)
 
             ' Create the folder if it doesn't exist
-            If Not Directory.Exists(strOutputFolderPathCurrentServer) AndAlso Not Me.PreviewExport Then
-                Directory.CreateDirectory(strOutputFolderPathCurrentServer)
+            If Not Directory.Exists(outputFolderPathCurrentServer) AndAlso Not Me.PreviewExport Then
+                Directory.CreateDirectory(outputFolderPathCurrentServer)
             End If
 
         Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating or creating folder " & strOutputFolderPathCurrentServer)
+            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating or creating folder " & outputFolderPathCurrentServer)
             Return False
         End Try
 
@@ -2097,29 +2093,27 @@ Public Class clsExportDBSchema
             ResetSubtaskProgress("Exporting server options")
 
             ' Export the overall server configuration and options (this is quite fast, so we won't increment mProgressStep after this)
-            ExportSQLServerConfiguration(objSqlServer, schemaExportOptions, objScriptOptions, strOutputFolderPathCurrentServer)
-            If mAbortProcessing Then Exit Try
+            ExportSQLServerConfiguration(objSqlServer, schemaExportOptions, scriptOptions, outputFolderPathCurrentServer)
+            If mAbortProcessing Then Return False
 
             ' Export the logins
-            ExportSQLServerLogins(objSqlServer, schemaExportOptions, objScriptOptions, strOutputFolderPathCurrentServer)
+            ExportSQLServerLogins(objSqlServer, schemaExportOptions, scriptOptions, outputFolderPathCurrentServer)
             mProgressStep += 1
             UpdateProgress(mProgressStep)
-            If mAbortProcessing Then Exit Try
+            If mAbortProcessing Then Return False
 
             ' Export the Sql Server Agent Jobs
-            ExportSQLServerAgentJobs(objSqlServer, schemaExportOptions, objScriptOptions, strOutputFolderPathCurrentServer)
+            ExportSQLServerAgentJobs(objSqlServer, schemaExportOptions, scriptOptions, outputFolderPathCurrentServer)
             mProgressStep += 1
             UpdateProgress(mProgressStep)
-            If mAbortProcessing Then Exit Try
+            If mAbortProcessing Then Return False
 
-            blnSuccess = True
+            Return True
 
         Catch ex As Exception
             SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error scripting objects for server " & objSqlServer.Name)
-            blnSuccess = False
+            Return False
         End Try
-
-        Return blnSuccess
 
     End Function
 
@@ -2135,18 +2129,18 @@ Public Class clsExportDBSchema
       lstDatabaseListToProcess As List(Of String),
       lstTableNamesForDataExport As List(Of String)) As Boolean
 
-        Dim blnSuccess = False
+        Dim success = False
 
         InitializeLocalVariables(False)
 
         Try
-            blnSuccess = False
+            success = False
             If schemaExportOptions.ConnectionInfo.ServerName Is Nothing OrElse schemaExportOptions.ConnectionInfo.ServerName.Length = 0 Then
                 SetLocalError(eDBSchemaExportErrorCodes.ConfigurationError, "Server name is not defined")
             ElseIf lstDatabaseListToProcess Is Nothing OrElse lstDatabaseListToProcess.Count = 0 Then
                 If schemaExportOptions.ExportServerSettingsLoginsAndJobs Then
                     ' No databases are defined, but we are exporting server settings; this is OK
-                    blnSuccess = True
+                    success = True
                 Else
                     SetLocalError(eDBSchemaExportErrorCodes.ConfigurationError, "Database list to process is empty")
                 End If
@@ -2155,13 +2149,13 @@ Public Class clsExportDBSchema
                     ' Force CreateFolderForEachDB to true
                     schemaExportOptions.CreateFolderForEachDB = True
                 End If
-                blnSuccess = True
+                success = True
             End If
         Catch ex As Exception
             SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating the Schema Export Options", ex)
         End Try
 
-        If Not blnSuccess Then Return False
+        If Not success Then Return False
 
         ' Validate the strings in schemaExportOptions
         ValidateSchemaExportOptions(schemaExportOptions)
@@ -2176,22 +2170,22 @@ Public Class clsExportDBSchema
         ResetProgress("Exporting schema to: " & VBNetRoutines.CompactPathString(schemaExportOptions.OutputFolderPath), 1)
         ResetSubtaskProgress("Connecting to " & schemaExportOptions.ConnectionInfo.ServerName)
 
-        blnSuccess = ConnectToServer(schemaExportOptions.ConnectionInfo)
-        If Not blnSuccess Then Return False
+        success = ConnectToServer(schemaExportOptions.ConnectionInfo)
+        If Not success Then Return False
 
         If schemaExportOptions.ExportServerSettingsLoginsAndJobs Then
-            blnSuccess = ScriptServerObjects(mSqlServer, schemaExportOptions)
-            If mAbortProcessing Then blnSuccess = False
+            success = ScriptServerObjects(mSqlServer, schemaExportOptions)
+            If mAbortProcessing Then success = False
         End If
 
-        If Not blnSuccess Then Return False
+        If Not success Then Return False
 
         If Not lstDatabaseListToProcess Is Nothing AndAlso lstDatabaseListToProcess.Count > 0 Then
-            blnSuccess = ScriptDBObjects(mSqlServer, schemaExportOptions, lstDatabaseListToProcess, lstTableNamesForDataExport)
-            If mAbortProcessing Then blnSuccess = False
+            success = ScriptDBObjects(mSqlServer, schemaExportOptions, lstDatabaseListToProcess, lstTableNamesForDataExport)
+            If mAbortProcessing Then success = False
         End If
 
-        If Not blnSuccess Then Return False
+        If Not success Then Return False
 
         ' Set the overall progress to Complete
         If mAbortProcessing Then
@@ -2203,16 +2197,16 @@ Public Class clsExportDBSchema
 
     End Function
 
-    Private Sub SetLocalError(eErrorCode As eDBSchemaExportErrorCodes, strMessage As String)
-        SetLocalError(eErrorCode, strMessage, Nothing)
+    Private Sub SetLocalError(eErrorCode As eDBSchemaExportErrorCodes, message As String)
+        SetLocalError(eErrorCode, message, Nothing)
     End Sub
 
-    Private Sub SetLocalError(eErrorCode As eDBSchemaExportErrorCodes, strMessage As String, exException As Exception)
+    Private Sub SetLocalError(eErrorCode As eDBSchemaExportErrorCodes, message As String, exException As Exception)
         Try
             mErrorCode = eErrorCode
 
-            If strMessage Is Nothing Then strMessage = String.Empty
-            mStatusMessage = String.Copy(strMessage)
+            If message Is Nothing Then message = String.Empty
+            mStatusMessage = String.Copy(message)
 
             If Not exException Is Nothing Then
                 mStatusMessage &= ": " & exException.Message
@@ -2341,16 +2335,16 @@ Public Class clsExportDBSchema
     End Sub
 
 
-    Private Function WriteTextToFile(strOutputFolderPath As String, strObjectName As String, lstInfo As IEnumerable(Of String)) As Boolean
-        ' Calls WriteTextToFile with blnAutoAddGoStatements = True
-        Return WriteTextToFile(strOutputFolderPath, strObjectName, lstInfo, True)
+    Private Function WriteTextToFile(outputFolderPath As String, strObjectName As String, lstInfo As IEnumerable(Of String)) As Boolean
+        ' Calls WriteTextToFile with autoAddGoStatements = True
+        Return WriteTextToFile(outputFolderPath, strObjectName, lstInfo, True)
     End Function
 
-    Private Function WriteTextToFile(strOutputFolderPath As String, strObjectName As String, lstInfo As IEnumerable(Of String), blnAutoAddGoStatements As Boolean) As Boolean
-        Return WriteTextToFile(strOutputFolderPath, strObjectName, lstInfo, blnAutoAddGoStatements, ".sql")
+    Private Function WriteTextToFile(outputFolderPath As String, strObjectName As String, lstInfo As IEnumerable(Of String), autoAddGoStatements As Boolean) As Boolean
+        Return WriteTextToFile(outputFolderPath, strObjectName, lstInfo, autoAddGoStatements, ".sql")
     End Function
 
-    Private Function WriteTextToFile(strOutputFolderPath As String, strObjectName As String, lstInfo As IEnumerable(Of String), blnAutoAddGoStatements As Boolean, strFileExtension As String) As Boolean
+    Private Function WriteTextToFile(outputFolderPath As String, strObjectName As String, lstInfo As IEnumerable(Of String), autoAddGoStatements As Boolean, strFileExtension As String) As Boolean
 
         Dim strOutFilePath = "??"
 
@@ -2358,12 +2352,12 @@ Public Class clsExportDBSchema
             ' Make sure strObjectName doesn't contain any invalid characters
             strObjectName = CleanNameForOS(strObjectName)
 
-            strOutFilePath = Path.Combine(strOutputFolderPath, strObjectName & strFileExtension)
+            strOutFilePath = Path.Combine(outputFolderPath, strObjectName & strFileExtension)
             Using swOutFile = New StreamWriter(strOutFilePath, False)
                 For Each sqlItem In lstInfo
                     swOutFile.WriteLine(sqlItem)
 
-                    If blnAutoAddGoStatements Then
+                    If autoAddGoStatements Then
                         swOutFile.WriteLine("GO")
                     End If
                 Next
