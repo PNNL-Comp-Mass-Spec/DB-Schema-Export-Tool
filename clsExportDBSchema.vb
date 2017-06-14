@@ -142,6 +142,8 @@ Public Class clsExportDBSchema
     Private mAbortProcessing As Boolean
     Private mPauseStatus As ePauseStatusConstants
 
+    Private mSchemaToIgnore As SortedSet(Of String)
+
 #End Region
 
 #Region "Progress Events and Variables"
@@ -1298,30 +1300,7 @@ Public Class clsExportDBSchema
 
     End Function
 
-    Private Function ExportSchema(objDatabaseSchema As Schema) As Boolean
-        Static lstSchemaToIgnore As SortedSet(Of String)
-        Dim blnExportSchema As Boolean
-
-        If lstSchemaToIgnore Is Nothing Then
-            lstSchemaToIgnore = New SortedSet(Of String)(StringComparer.CurrentCultureIgnoreCase)
-
-            ' Make sure each of these names is lowercase since we convert
-            '  the schema name to lower case when searching lstSchemaToIgnore
-            lstSchemaToIgnore.Add("db_accessadmin")
-            lstSchemaToIgnore.Add("db_backupoperator")
-            lstSchemaToIgnore.Add("db_datareader")
-            lstSchemaToIgnore.Add("db_datawriter")
-            lstSchemaToIgnore.Add("db_ddladmin")
-            lstSchemaToIgnore.Add("db_denydatareader")
-            lstSchemaToIgnore.Add("db_denydatawriter")
-            lstSchemaToIgnore.Add("db_owner")
-            lstSchemaToIgnore.Add("db_securityadmin")
-            lstSchemaToIgnore.Add("dbo")
-            lstSchemaToIgnore.Add("guest")
-            lstSchemaToIgnore.Add("information_schema")
-            lstSchemaToIgnore.Add("sys")
-
-        End If
+    Private Function ExportSchema(objDatabaseSchema As NamedSmoObject) As Boolean
 
         Try
             blnExportSchema = Not lstSchemaToIgnore.Contains(objDatabaseSchema.Name)
@@ -1805,6 +1784,23 @@ Public Class clsExportDBSchema
 
         mAbortProcessing = False
         SetPauseStatus(ePauseStatusConstants.Unpaused)
+
+        mSchemaToIgnore = New SortedSet(Of String)(StringComparer.InvariantCultureIgnoreCase) From {
+            "db_accessadmin",
+            "db_backupoperator",
+            "db_datareader",
+            "db_datawriter",
+            "db_ddladmin",
+            "db_denydatareader",
+            "db_denydatawriter",
+            "db_owner",
+            "db_securityadmin",
+            "dbo",
+            "guest",
+            "information_schema",
+            "sys"
+        }
+
     End Sub
 
     Private Function LoginToServerWork(
