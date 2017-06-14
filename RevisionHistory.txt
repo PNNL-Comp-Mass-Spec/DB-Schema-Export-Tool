@@ -1,6 +1,6 @@
 DB Schema Export Tool
 
-Version 1.2.6374; April 12, 2017
+Version 1.2.6374; June 14, 2017
 	- Exclude tables T_CandidateModsSeqWork and T_CandidateSeqWork_
 	  (created in the Master_Seq_Scratch database)
 
