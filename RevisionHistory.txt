@@ -1,5 +1,9 @@
 DB Schema Export Tool
 
+Version 1.2.6374; April 12, 2017
+	- Exclude tables T_CandidateModsSeqWork and T_CandidateSeqWork_
+	  (created in the Master_Seq_Scratch database)
+
 Version 1.2.6311; April 12, 2017
 	- Add option to export synonyms
 	- Update to .NET 4.6.2 and obtain PRISM from NuGet

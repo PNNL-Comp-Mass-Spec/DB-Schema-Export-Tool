@@ -1001,7 +1001,10 @@ Public Class clsDBSchemaExportTool
 
                     Dim fileNameLcase = fiFile.Name.ToLower()
 
-                    If fileNameLcase.StartsWith("x_") OrElse fileNameLcase.StartsWith("t_tmp_") Then
+                    If fileNameLcase.StartsWith("x_") OrElse
+                       fileNameLcase.StartsWith("t_tmp_") OrElse
+                       fileNameLcase.StartsWith("t_candidatemodsseqwork_") OrElse
+                       fileNameLcase.StartsWith("t_candidateseqwork_") Then
                         ShowMessage("Skipping " & databaseName & " object " & fiFile.Name)
                         Continue For
                     End If
