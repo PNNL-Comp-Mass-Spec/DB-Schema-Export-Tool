@@ -1303,12 +1303,10 @@ Public Class clsExportDBSchema
     Private Function ExportSchema(objDatabaseSchema As NamedSmoObject) As Boolean
 
         Try
-            blnExportSchema = Not lstSchemaToIgnore.Contains(objDatabaseSchema.Name)
+            Return Not mSchemaToIgnore.Contains(objDatabaseSchema.Name)
         Catch ex As Exception
-            blnExportSchema = False
+            Return False
         End Try
-
-        Return blnExportSchema
 
     End Function
 
@@ -1933,8 +1931,17 @@ Public Class clsExportDBSchema
         connectionInfo.Reset()
     End Sub
 
+    ''' <summary>
+    '''
+    ''' </summary>
+    ''' <param name="objSchemaCollection">IEnumerable of type SchemaCollectionBase</param>
+    ''' <param name="schemaExportOptions">Export options</param>
+    ''' <param name="objScriptOptions">Script options</param>
+    ''' <param name="intProcessCountExpected">Expected number of items</param>
+    ''' <param name="strOutputFolderPathCurrentDB">Output folder path</param>
+    ''' <returns></returns>
     Private Function ScriptCollectionOfObjects(
-      objSchemaCollection As SchemaCollectionBase,
+      objSchemaCollection As IEnumerable,
       schemaExportOptions As clsSchemaExportOptions,
       objScriptOptions As ScriptingOptions,
       intProcessCountExpected As Integer,
@@ -1943,16 +1950,14 @@ Public Class clsExportDBSchema
         ' Scripts the objects in objSchemaCollection
         ' Returns the number of objects scripted
 
-        Dim objItem As Schema
-        Dim intProcessCount As Integer
+        Dim intProcessCount = 0
 
-        intProcessCount = 0
-        For Each objItem In objSchemaCollection
+        For Each objItem As Schema In objSchemaCollection
             mSubtaskProgressStepDescription = objItem.Name
             UpdateSubtaskProgress(intProcessCount, intProcessCountExpected)
 
             WriteTextToFile(strOutputFolderPathCurrentDB, objItem.Name,
-             CleanSqlScript(StringCollectionToList(objItem.Script(objScriptOptions)), schemaExportOptions))
+                            CleanSqlScript(StringCollectionToList(objItem.Script(objScriptOptions)), schemaExportOptions))
 
             intProcessCount += 1
 

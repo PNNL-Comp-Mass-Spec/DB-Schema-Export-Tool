@@ -173,7 +173,6 @@ Module modMain
 
                 End With
 
-
                 blnSuccess = mProcessingClass.ProcessDatabase(mOutputFolderPath, mServer, mDatabaseList)
 
                 If Not blnSuccess Then
@@ -318,7 +317,7 @@ Module modMain
 
         If Not ex Is Nothing Then
             Console.ForegroundColor = ConsoleColor.Yellow
-            Console.WriteLine(PRISM.clsStackTraceFormatter.GetExceptionStackTraceMultiLine((ex)))
+            Console.WriteLine(clsStackTraceFormatter.GetExceptionStackTraceMultiLine((ex)))
         End If
 
         Console.ResetColor()
@@ -326,6 +325,8 @@ Module modMain
         Console.WriteLine()
 
         WriteToErrorStream(strMessage)
+
+        Threading.Thread.Sleep(2000)
     End Sub
 
     Private Sub ShowErrorMessage(strTitle As String, items As IEnumerable(Of String), Optional ex As Exception = Nothing)
@@ -346,7 +347,7 @@ Module modMain
 
         If Not ex Is Nothing Then
             Console.ForegroundColor = ConsoleColor.Yellow
-            Console.WriteLine(PRISM.clsStackTraceFormatter.GetExceptionStackTraceMultiLine((ex)))
+            Console.WriteLine(clsStackTraceFormatter.GetExceptionStackTraceMultiLine((ex)))
         End If
 
         Console.ResetColor()

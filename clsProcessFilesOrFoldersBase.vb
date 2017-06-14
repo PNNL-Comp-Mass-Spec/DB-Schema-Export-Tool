@@ -430,8 +430,9 @@ Public MustInherit Class clsProcessFilesOrFoldersBase
                     UpdateLogDataCache(mLogFilePath, DateTime.UtcNow.AddHours(-intDuplicateHoldoffHours))
                 End If
 
-                mLogFile = New StreamWriter(New FileStream(mLogFilePath, FileMode.Append, FileAccess.Write, FileShare.Read))
-                mLogFile.AutoFlush = True
+                mLogFile = New StreamWriter(New FileStream(mLogFilePath, FileMode.Append, FileAccess.Write, FileShare.Read)) With {
+                    .AutoFlush = True
+                }
 
                 If Not blnOpeningExistingFile Then
                     mLogFile.WriteLine("Date" & ControlChars.Tab &
