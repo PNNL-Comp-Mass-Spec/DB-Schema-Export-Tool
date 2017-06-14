@@ -156,7 +156,9 @@ Public Class clsDBSchemaExportTool
       loginPassword As String) As Boolean
 
         Try
-
+            If String.IsNullOrWhiteSpace(strOutputFolderPath) Then
+                Throw New ArgumentException("Output folder cannot be empty", NameOf(strOutputFolderPath))
+            End If
 
             If Not Directory.Exists(strOutputFolderPath) Then
                 ' Try to create the missing folder
@@ -638,7 +640,7 @@ Public Class clsDBSchemaExportTool
     End Function
 
     Private Function ParseGitStatus(
-     diTargetFolder As DirectoryInfo,
+     diTargetFolder As FileSystemInfo,
      standardOutput As String,
      ByRef intModifiedFileCount As Integer) As Boolean
 
@@ -694,7 +696,7 @@ Public Class clsDBSchemaExportTool
     End Function
 
     Private Function ParseSvnHgStatus(
-      diTargetFolder As DirectoryInfo,
+      diTargetFolder As FileSystemInfo,
       standardOutput As String,
       eRepoManager As eRepoManagerType,
       ByRef intModifiedFileCount As Integer) As Boolean
@@ -811,6 +813,18 @@ Public Class clsDBSchemaExportTool
     ''' <returns>True if success, false if a problem</returns>
     Public Function ProcessDatabase(outputFolderPath As String, serverName As String, databaseList As IEnumerable(Of String)) As Boolean
         Dim blnSuccess As Boolean
+
+        If String.IsNullOrWhiteSpace(outputFolderPath) Then
+            Throw New ArgumentException("Output folder path must be defined", NameOf(outputFolderPath))
+        End If
+
+        If String.IsNullOrWhiteSpace(serverName) Then
+            Throw New ArgumentException("Server name must be defined", NameOf(serverName))
+        End If
+
+        If databaseList.Count = 0 Then
+            Throw New ArgumentException("Database list cannot be empty", NameOf(databaseList))
+        End If
 
         Try
             ' Keys in this dictionary are database names
@@ -1068,7 +1082,7 @@ Public Class clsDBSchemaExportTool
     End Function
 
     Private Function UpdateRepoChanges(
-      diTargetFolder As DirectoryInfo,
+      diTargetFolder As FileSystemInfo,
       fileCopyCount As Integer,
       lstNewFilePaths As ICollection(Of String),
       eRepoManager As eRepoManagerType,
@@ -1165,7 +1179,7 @@ Public Class clsDBSchemaExportTool
             If eRepoManager = eRepoManagerType.Svn Or eRepoManager = eRepoManagerType.Hg Then
                 blnSuccess = ParseSvnHgStatus(diTargetFolder, standardOutput, eRepoManager, modifiedFileCount)
             Else
-                ' Git 
+                ' Git
                 blnSuccess = ParseGitStatus(diTargetFolder, standardOutput, modifiedFileCount)
             End If
 

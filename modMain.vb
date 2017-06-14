@@ -116,6 +116,11 @@ Module modMain
                     Return 0
                 End If
 
+                If String.IsNullOrWhiteSpace(mOutputFolderPath) Then
+                    ShowErrorMessage("Output folder path must be defined (use . for the current directory)")
+                    Return -4
+                End If
+
                 If String.IsNullOrWhiteSpace(mServer) Then
                     ShowErrorMessage("Server must be defined using /Server")
                     Return -5
@@ -365,7 +370,7 @@ Module modMain
             Console.WriteLine(" [/Sync:TargetFolderPath] [/Svn] [/Git] [/Hg] [/Commit]")
             Console.WriteLine(" [/L[:LogFilePath]] [/LogFolder:LogFolderPath] [/Preview] [/Stats]")
             Console.WriteLine()
-            Console.WriteLine("SchemaFileFolder is the path to the folder where the schema files will be saved")
+            Console.WriteLine("SchemaFileFolder is the path to the folder where the schema files will be saved; use a period for the current directory")
             Console.WriteLine("To process a single database, use /Server and /DB")
             Console.WriteLine("Use /DBList to process several databases (separate names with commas)")
             Console.WriteLine()
