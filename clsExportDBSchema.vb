@@ -2348,23 +2348,21 @@ Public Class clsExportDBSchema
     Private Function WriteTextToFile(strOutputFolderPath As String, strObjectName As String, lstInfo As IEnumerable(Of String), blnAutoAddGoStatements As Boolean, strFileExtension As String) As Boolean
 
         Dim strOutFilePath = "??"
-        Dim swOutFile As StreamWriter
 
         Try
             ' Make sure strObjectName doesn't contain any invalid characters
             strObjectName = CleanNameForOS(strObjectName)
 
             strOutFilePath = Path.Combine(strOutputFolderPath, strObjectName & strFileExtension)
-            swOutFile = New StreamWriter(strOutFilePath, False)
+            Using swOutFile = New StreamWriter(strOutFilePath, False)
+                For Each sqlItem In lstInfo
+                    swOutFile.WriteLine(sqlItem)
 
-            For Each sqlItem In lstInfo
-                swOutFile.WriteLine(sqlItem)
-
-                If blnAutoAddGoStatements Then
-                    swOutFile.WriteLine("GO")
-                End If
-            Next
-            swOutFile.Close()
+                    If blnAutoAddGoStatements Then
+                        swOutFile.WriteLine("GO")
+                    End If
+                Next
+            End Using
 
         Catch ex As Exception
             SetLocalError(eDBSchemaExportErrorCodes.OutputFolderAccessError, "Error saving file " & strOutFilePath)
