@@ -1,5 +1,8 @@
 DB Schema Export Tool
 
+Version 1.2.6414; July 24, 2017
+	- Fig bug that was failing to ignore date fields in file T_Processor_Tool_Group_Details_data.sql
+
 Version 1.2.6374; June 14, 2017
 	- Exclude tables T_CandidateModsSeqWork and T_CandidateSeqWork_
 	  (created in the Master_Seq_Scratch database)

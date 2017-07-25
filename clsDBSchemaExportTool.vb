@@ -281,13 +281,14 @@ Public Class clsDBSchemaExportTool
 
             Dim dbDefinitionFile = False
 
-            Dim lstDateIgnoreFiles = New SortedSet(Of String)(StringComparer.CurrentCultureIgnoreCase)
-            lstDateIgnoreFiles.Add("T_Process_Step_Control_Data.sql")
-            lstDateIgnoreFiles.Add("T_Signatures_Data.sql")
-            lstDateIgnoreFiles.Add("T_MTS_Peptide_DBs_Data.sql")
-            lstDateIgnoreFiles.Add("T_MTS_MT_DBs_Data.sql")
-            lstDateIgnoreFiles.Add("T_Processor_Tool_Data.sql")
-            lstDateIgnoreFiles.Add("T_Processor_Tool_Group_Details.sql")
+            Dim lstDateIgnoreFiles = New SortedSet(Of String)(StringComparer.CurrentCultureIgnoreCase) From {
+                "T_Process_Step_Control_Data.sql",
+                "T_Signatures_Data.sql",
+                "T_MTS_Peptide_DBs_Data.sql",
+                "T_MTS_MT_DBs_Data.sql",
+                "T_Processor_Tool_Data.sql",
+                "T_Processor_Tool_Group_Details_Data.sql"
+            }
 
             Dim ignoreInsertIntoDates = False
 

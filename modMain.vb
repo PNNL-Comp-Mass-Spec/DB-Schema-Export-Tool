@@ -12,7 +12,7 @@ Imports PRISM '
 ' See clsMTSAutomation for additional information
 
 Module modMain
-    Public Const PROGRAM_DATE As String = "June 14, 2017"
+    Public Const PROGRAM_DATE As String = "July 24, 2017"
 
     Private mOutputFolderPath As String
 
