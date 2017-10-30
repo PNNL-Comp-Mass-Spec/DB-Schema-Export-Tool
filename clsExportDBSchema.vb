@@ -48,7 +48,7 @@ Public Class clsExportDBSchema
 
 #Region "Constants and Enums"
     ' SQL Server Login Info
-    Public Const SQL_SERVER_NAME_DEFAULT As String = "Albert"
+    Public Const SQL_SERVER_NAME_DEFAULT As String = "Pogo"
     Public Const SQL_SERVER_USERNAME_DEFAULT As String = "mtuser"
     Public Const SQL_SERVER_PASSWORD_DEFAULT As String = "mt4fun"
 

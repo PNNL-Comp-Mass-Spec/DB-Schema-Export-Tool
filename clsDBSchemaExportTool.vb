@@ -583,7 +583,7 @@ Public Class clsDBSchemaExportTool
 
                     Dim value = objSettingsFile.GetParam(OPTIONS_SECTION, "LogFolder", String.Empty)
                     If Not String.IsNullOrEmpty(value) Then
-                        mLogFolderPath = value
+                        MyBase.LogFolderPath = value
                     End If
 
 

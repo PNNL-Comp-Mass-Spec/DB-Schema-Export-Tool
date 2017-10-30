@@ -2,7 +2,7 @@
 <sections>
   <section name="DBSchemaExportOptions">
     <item key="WindowWidth" value="932" />
-    <item key="WindowHeight" value="795" />
+    <item key="WindowHeight" value="800" />
     <item key="OutputFolderPath" value="C:\Temp\" />
     <item key="ScriptObjectsThreaded" value="False" />
     <item key="PauseAfterEachDatabase" value="False" />
@@ -17,7 +17,7 @@
     <item key="ServerOutputFolderNamePrefix" value="ServerSchema__" />
   </section>
   <section name="DBSchemaExportDatabaseSettings">
-    <item key="ServerName" value="Albert" />
+    <item key="ServerName" value="Pogo" />
     <item key="UseIntegratedAuthentication" value="True" />
     <item key="Username" value="mtuser" />
     <item key="Password" value="mt4fun" />
