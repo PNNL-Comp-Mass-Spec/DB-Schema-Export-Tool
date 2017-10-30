@@ -83,6 +83,7 @@ Partial Class frmMain
         Me.cmdPauseUnpause = New System.Windows.Forms.Button()
         Me.lstObjectTypesToScript = New System.Windows.Forms.ListBox()
         Me.fraObjectTypesToScript = New System.Windows.Forms.GroupBox()
+        Me.lblTableDataToExport = New System.Windows.Forms.Label()
         Me.fraConnectionSettings.SuspendLayout()
         Me.fraOutputOptions.SuspendLayout()
         Me.fraStatus.SuspendLayout()
@@ -313,7 +314,7 @@ Partial Class frmMain
         Me.lblProgress.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
         Me.lblProgress.Name = "lblProgress"
         Me.lblProgress.RightToLeft = System.Windows.Forms.RightToLeft.No
-        Me.lblProgress.Size = New System.Drawing.Size(415, 30)
+        Me.lblProgress.Size = New System.Drawing.Size(417, 30)
         Me.lblProgress.TabIndex = 1
         '
         'mnuFileLoadOptions
@@ -344,7 +345,7 @@ Partial Class frmMain
         Me.cmdUpdateTableNames.Cursor = System.Windows.Forms.Cursors.Default
         Me.cmdUpdateTableNames.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmdUpdateTableNames.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.cmdUpdateTableNames.Location = New System.Drawing.Point(352, 73)
+        Me.cmdUpdateTableNames.Location = New System.Drawing.Point(549, 70)
         Me.cmdUpdateTableNames.Margin = New System.Windows.Forms.Padding(4)
         Me.cmdUpdateTableNames.Name = "cmdUpdateTableNames"
         Me.cmdUpdateTableNames.RightToLeft = System.Windows.Forms.RightToLeft.No
@@ -412,6 +413,7 @@ Partial Class frmMain
             Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.fraOutputOptions.BackColor = System.Drawing.SystemColors.Control
+        Me.fraOutputOptions.Controls.Add(Me.lblTableDataToExport)
         Me.fraOutputOptions.Controls.Add(Me.lblServerOutputFolderNamePrefix)
         Me.fraOutputOptions.Controls.Add(Me.txtServerOutputFolderNamePrefix)
         Me.fraOutputOptions.Controls.Add(Me.chkExportServerSettingsLoginsAndJobs)
@@ -435,7 +437,7 @@ Partial Class frmMain
         Me.fraOutputOptions.Name = "fraOutputOptions"
         Me.fraOutputOptions.Padding = New System.Windows.Forms.Padding(4)
         Me.fraOutputOptions.RightToLeft = System.Windows.Forms.RightToLeft.No
-        Me.fraOutputOptions.Size = New System.Drawing.Size(757, 438)
+        Me.fraOutputOptions.Size = New System.Drawing.Size(759, 438)
         Me.fraOutputOptions.TabIndex = 3
         Me.fraOutputOptions.TabStop = False
         Me.fraOutputOptions.Text = "Output Options"
@@ -590,7 +592,7 @@ Partial Class frmMain
         Me.lstTableNamesToExportData.Margin = New System.Windows.Forms.Padding(4)
         Me.lstTableNamesToExportData.Name = "lstTableNamesToExportData"
         Me.lstTableNamesToExportData.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended
-        Me.lstTableNamesToExportData.Size = New System.Drawing.Size(392, 196)
+        Me.lstTableNamesToExportData.Size = New System.Drawing.Size(394, 196)
         Me.lstTableNamesToExportData.TabIndex = 5
         '
         'txtOutputFolderPath
@@ -607,7 +609,7 @@ Partial Class frmMain
         Me.txtOutputFolderPath.MaxLength = 0
         Me.txtOutputFolderPath.Name = "txtOutputFolderPath"
         Me.txtOutputFolderPath.RightToLeft = System.Windows.Forms.RightToLeft.No
-        Me.txtOutputFolderPath.Size = New System.Drawing.Size(733, 23)
+        Me.txtOutputFolderPath.Size = New System.Drawing.Size(735, 23)
         Me.txtOutputFolderPath.TabIndex = 1
         Me.txtOutputFolderPath.Text = "C:\Temp\"
         '
@@ -654,7 +656,7 @@ Partial Class frmMain
         Me.lblSubtaskProgress.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
         Me.lblSubtaskProgress.Name = "lblSubtaskProgress"
         Me.lblSubtaskProgress.RightToLeft = System.Windows.Forms.RightToLeft.No
-        Me.lblSubtaskProgress.Size = New System.Drawing.Size(415, 30)
+        Me.lblSubtaskProgress.Size = New System.Drawing.Size(417, 30)
         Me.lblSubtaskProgress.TabIndex = 3
         '
         'fraStatus
@@ -673,7 +675,7 @@ Partial Class frmMain
         Me.fraStatus.Name = "fraStatus"
         Me.fraStatus.Padding = New System.Windows.Forms.Padding(4)
         Me.fraStatus.RightToLeft = System.Windows.Forms.RightToLeft.No
-        Me.fraStatus.Size = New System.Drawing.Size(756, 96)
+        Me.fraStatus.Size = New System.Drawing.Size(758, 96)
         Me.fraStatus.TabIndex = 4
         Me.fraStatus.TabStop = False
         '
@@ -822,11 +824,25 @@ Partial Class frmMain
         Me.fraObjectTypesToScript.TabStop = False
         Me.fraObjectTypesToScript.Text = "Objects to Script"
         '
+        'lblTableDataToExport
+        '
+        Me.lblTableDataToExport.BackColor = System.Drawing.SystemColors.Control
+        Me.lblTableDataToExport.Cursor = System.Windows.Forms.Cursors.Default
+        Me.lblTableDataToExport.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblTableDataToExport.ForeColor = System.Drawing.SystemColors.ControlText
+        Me.lblTableDataToExport.Location = New System.Drawing.Point(350, 77)
+        Me.lblTableDataToExport.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
+        Me.lblTableDataToExport.Name = "lblTableDataToExport"
+        Me.lblTableDataToExport.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.lblTableDataToExport.Size = New System.Drawing.Size(171, 20)
+        Me.lblTableDataToExport.TabIndex = 7
+        Me.lblTableDataToExport.Text = "Table Data to Export"
+        '
         'frmMain
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(8.0!, 16.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(789, 721)
+        Me.ClientSize = New System.Drawing.Size(791, 721)
         Me.Controls.Add(Me.fraObjectTypesToScript)
         Me.Controls.Add(Me.fraControls)
         Me.Controls.Add(Me.fraConnectionSettings)
@@ -909,4 +925,5 @@ Partial Class frmMain
     Friend WithEvents chkExportServerSettingsLoginsAndJobs As System.Windows.Forms.CheckBox
     Friend WithEvents lblServerOutputFolderNamePrefix As System.Windows.Forms.Label
     Friend WithEvents txtServerOutputFolderNamePrefix As System.Windows.Forms.TextBox
+    Friend WithEvents lblTableDataToExport As Label
 End Class
