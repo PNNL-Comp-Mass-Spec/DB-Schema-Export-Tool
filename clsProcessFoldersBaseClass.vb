@@ -175,7 +175,7 @@ Public MustInherit Class clsProcessFoldersBaseClass
         Dim ioFolderMatch As DirectoryInfo
         Dim ioInputFolderInfo As DirectoryInfo
 
-        mAbortProcessing = False
+        AbortProcessing = False
         success = True
         Try
             ' Possibly reset the error code
@@ -217,7 +217,7 @@ Public MustInherit Class clsProcessFoldersBaseClass
 
                     success = ProcessFolder(ioFolderMatch.FullName, strOutputFolderAlternatePath, strParameterFilePath, True)
 
-                    If Not success Or mAbortProcessing Then Exit For
+                    If Not success Or AbortProcessing Then Exit For
                     intMatchCount += 1
 
                     If intMatchCount Mod 1 = 0 Then Console.Write(".")
@@ -332,7 +332,7 @@ Public MustInherit Class clsProcessFoldersBaseClass
                 End If
 
                 ' Initialize some parameters
-                mAbortProcessing = False
+                AbortProcessing = False
                 intFolderProcessCount = 0
                 intFolderProcessFailCount = 0
 
@@ -402,7 +402,7 @@ Public MustInherit Class clsProcessFoldersBaseClass
             ' Process any matching folder in this folder
             success = True
             For Each ioFolderMatch In ioInputFolderInfo.GetDirectories(strFolderNameMatchPattern)
-                If mAbortProcessing Then Exit For
+                If AbortProcessing Then Exit For
 
                 If strOutputFolderPathToUse.Length > 0 Then
                     success = ProcessFolder(ioFolderMatch.FullName, Path.Combine(strOutputFolderPathToUse, ioFolderMatch.Name), strParameterFilePath, True)
@@ -425,7 +425,7 @@ Public MustInherit Class clsProcessFoldersBaseClass
             Return False
         End Try
 
-        If Not mAbortProcessing Then
+        If Not AbortProcessing Then
             ' If intRecurseFoldersMaxLevels is <=0 then we recurse infinitely
             '  otherwise, compare intRecursionLevel to intRecurseFoldersMaxLevels
             If intRecurseFoldersMaxLevels <= 0 OrElse intRecursionLevel <= intRecurseFoldersMaxLevels Then

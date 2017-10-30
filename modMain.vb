@@ -12,7 +12,7 @@ Imports PRISM '
 ' See clsMTSAutomation for additional information
 
 Module modMain
-    Public Const PROGRAM_DATE As String = "July 24, 2017"
+    Public Const PROGRAM_DATE As String = "October 30, 2017"
 
     Private mOutputFolderPath As String
 
@@ -48,7 +48,7 @@ Module modMain
     Private mProgressDescription As String = String.Empty
     Private mSubtaskDescription As String = String.Empty
 
-    Private WithEvents mProcessingClass As clsDBSchemaExportTool
+    Private mProcessingClass As clsDBSchemaExportTool
 
     ''' <summary>
     ''' Program entry point
@@ -138,6 +138,11 @@ Module modMain
                 End If
 
                 mProcessingClass = New clsDBSchemaExportTool
+                AddHandler mProcessingClass.ProgressUpdate, AddressOf mProcessingClass_ProgressUpdate
+                AddHandler mProcessingClass.ProgressComplete, AddressOf mProcessingClass_ProgressComplete
+                AddHandler mProcessingClass.ProgressReset, AddressOf mProcessingClass_ProgressReset
+                AddHandler mProcessingClass.SubtaskProgressChanged, AddressOf mProcessingClass_SubtaskProgressChanged
+
 
                 With mProcessingClass
                     .ShowMessages = True
@@ -305,56 +310,12 @@ Module modMain
 
     End Function
 
-
     Private Sub ShowErrorMessage(message As String, Optional ex As Exception = Nothing)
-        Const strSeparator = "------------------------------------------------------------------------------"
-
-        Console.WriteLine()
-        Console.WriteLine(strSeparator)
-
-        Console.ForegroundColor = ConsoleColor.Red
-        Console.WriteLine(message)
-
-        If Not ex Is Nothing Then
-            Console.ForegroundColor = ConsoleColor.Yellow
-            Console.WriteLine(clsStackTraceFormatter.GetExceptionStackTraceMultiLine((ex)))
-        End If
-
-        Console.ResetColor()
-        Console.WriteLine(strSeparator)
-        Console.WriteLine()
-
-        WriteToErrorStream(message)
-
-        Threading.Thread.Sleep(2000)
+        ConsoleMsgUtils.ShowError(message, ex)
     End Sub
 
-    Private Sub ShowErrorMessage(strTitle As String, items As IEnumerable(Of String), Optional ex As Exception = Nothing)
-        Const strSeparator = "------------------------------------------------------------------------------"
-        Dim message As String
-
-        Console.WriteLine()
-        Console.WriteLine(strSeparator)
-
-        Console.ForegroundColor = ConsoleColor.Red
-        Console.WriteLine(strTitle)
-        message = strTitle & ":"
-
-        For Each item As String In items
-            Console.WriteLine("   " + item)
-            message &= " " & item
-        Next
-
-        If Not ex Is Nothing Then
-            Console.ForegroundColor = ConsoleColor.Yellow
-            Console.WriteLine(clsStackTraceFormatter.GetExceptionStackTraceMultiLine((ex)))
-        End If
-
-        Console.ResetColor()
-        Console.WriteLine(strSeparator)
-        Console.WriteLine()
-
-        WriteToErrorStream(message)
+    Private Sub ShowErrorMessage(title As String, messages As IEnumerable(Of String))
+        ConsoleMsgUtils.ShowErrors(title, messages)
     End Sub
 
     Private Sub ShowProgramHelp()
@@ -424,29 +385,19 @@ Module modMain
         End If
     End Sub
 
-    Private Sub WriteToErrorStream(strErrorMessage As String)
-        Try
-            Using swErrorStream = New IO.StreamWriter(Console.OpenStandardError())
-                swErrorStream.WriteLine(strErrorMessage)
-            End Using
-        Catch ex As Exception
-            ' Ignore errors here
-        End Try
-    End Sub
-
-    Private Sub mProcessingClass_ProgressChanged(taskDescription As String, percentComplete As Single) Handles mProcessingClass.ProgressChanged
+    Private Sub mProcessingClass_ProgressUpdate(taskDescription As String, percentComplete As Single)
         ShowProgressDescriptionIfChanged(taskDescription)
     End Sub
 
-    Private Sub mProcessingClass_ProgressComplete() Handles mProcessingClass.ProgressComplete
+    Private Sub mProcessingClass_ProgressComplete()
         Console.WriteLine("Processing complete")
     End Sub
 
-    Private Sub mProcessingClass_ProgressReset() Handles mProcessingClass.ProgressReset
+    Private Sub mProcessingClass_ProgressReset()
         ShowProgressDescriptionIfChanged(mProcessingClass.ProgressStepDescription)
     End Sub
 
-    Private Sub mProcessingClass_SubtaskProgressChanged(taskDescription As String, percentComplete As Single) Handles mProcessingClass.SubtaskProgressChanged
+    Private Sub mProcessingClass_SubtaskProgressChanged(taskDescription As String, percentComplete As Single)
 
         If Not String.Equals(taskDescription, mSubtaskDescription) Then
             mSubtaskDescription = String.Copy(taskDescription)
