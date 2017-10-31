@@ -1,0 +1,12 @@
+version: 1.0.{build}
+image: Visual Studio 2017
+before_build:
+- cmd: nuget.exe restore DB_Schema_Export_Tool.sln
+configuration: Release
+platform: Any CPU
+build:
+  project: DB_Schema_Export_Tool.sln
+  verbosity: minimal
+artifacts:
+- path: bin
+  name: DB_Schema_Export_Tool
