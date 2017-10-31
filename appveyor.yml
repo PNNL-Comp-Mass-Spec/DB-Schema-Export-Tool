@@ -3,7 +3,7 @@ image: Visual Studio 2017
 before_build:
 - cmd: nuget.exe restore DB_Schema_Export_Tool.sln
 configuration: Release
-platform: Any CPU
+platform: x86
 build:
   project: DB_Schema_Export_Tool.sln
   verbosity: minimal
