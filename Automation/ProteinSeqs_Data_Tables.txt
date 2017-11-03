@@ -1,2 +1,0 @@
-T_Protein_Collections
-T_Collection_Organism_Xref
