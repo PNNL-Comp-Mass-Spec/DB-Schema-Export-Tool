@@ -1,6 +1,7 @@
 Option Strict On
 
-Imports PRISM '
+Imports PRISM
+Imports PRISM.FileProcessor
 ' -------------------------------------------------------------------------------
 ' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
 ' Program started April 11, 2006
@@ -48,7 +49,7 @@ Module modMain
     Private mProgressDescription As String = String.Empty
     Private mSubtaskDescription As String = String.Empty
 
-    Private mProcessingClass As clsDBSchemaExportTool
+    Private mSchemaExportTool As clsDBSchemaExportTool
 
     ''' <summary>
     ''' Program entry point
@@ -137,15 +138,17 @@ Module modMain
                     Return -7
                 End If
 
-                mProcessingClass = New clsDBSchemaExportTool
-                AddHandler mProcessingClass.ProgressUpdate, AddressOf mProcessingClass_ProgressUpdate
-                AddHandler mProcessingClass.ProgressComplete, AddressOf mProcessingClass_ProgressComplete
-                AddHandler mProcessingClass.ProgressReset, AddressOf mProcessingClass_ProgressReset
-                AddHandler mProcessingClass.SubtaskProgressChanged, AddressOf mProcessingClass_SubtaskProgressChanged
+                mSchemaExportTool = New clsDBSchemaExportTool
+                RegisterEvents(mSchemaExportTool)
+
+                AddHandler mSchemaExportTool.ProgressUpdate, AddressOf ProcessingClass_ProgressUpdate
+                AddHandler mSchemaExportTool.ProgressComplete, AddressOf ProcessingClass_ProgressComplete
+                AddHandler mSchemaExportTool.ProgressReset, AddressOf ProcessingClass_ProgressReset
+                AddHandler mSchemaExportTool.SubtaskProgressChanged, AddressOf ProcessingClass_SubtaskProgressChanged
 
 
-                With mProcessingClass
-                    .ShowMessages = True
+                With mSchemaExportTool
+                    .ReThrowEvents = False
                     .LogMessagesToFile = mLogMessagesToFile
                     .LogFilePath = mLogFilePath
                     .LogFolderPath = mLogFolderPath
@@ -178,14 +181,14 @@ Module modMain
 
                 End With
 
-                success = mProcessingClass.ProcessDatabase(mOutputFolderPath, mServer, mDatabaseList)
+                success = mSchemaExportTool.ProcessDatabase(mOutputFolderPath, mServer, mDatabaseList)
 
                 If Not success Then
-                    returnCode = mProcessingClass.ErrorCode
+                    returnCode = mSchemaExportTool.ErrorCode
                     If returnCode = 0 Then
                         ShowErrorMessage("Error while processing   : Unknown error (return code is 0)")
                     Else
-                        ShowErrorMessage("Error while processing   : " & mProcessingClass.GetErrorMessage())
+                        ShowErrorMessage("Error while processing   : " & mSchemaExportTool.GetErrorMessage())
                     End If
                 End If
 
@@ -214,7 +217,7 @@ Module modMain
     End Sub
 
     Private Function GetAppVersion() As String
-        Return clsProcessFoldersBaseClass.GetAppVersion(PROGRAM_DATE)
+        Return ProcessFoldersBase.GetAppVersion(PROGRAM_DATE)
     End Function
 
     Private Function SetOptionsUsingCommandLineParameters(objParseCommandLine As clsParseCommandLine) As Boolean
@@ -378,6 +381,29 @@ Module modMain
 
     End Sub
 
+    Private Sub RegisterEvents(processor As clsEventNotifier)
+        AddHandler processor.DebugEvent, AddressOf Processor_DebugEvent
+        AddHandler processor.ErrorEvent, AddressOf Processor_ErrorEvent
+        AddHandler processor.StatusEvent, AddressOf Processor_StatusEvent
+        AddHandler processor.WarningEvent, AddressOf Processor_WarningEvent
+    End Sub
+
+    Private Sub Processor_DebugEvent(message As String)
+        ConsoleMsgUtils.ShowDebug(message)
+    End Sub
+
+    Private Sub Processor_ErrorEvent(message As String, ex As Exception)
+        ShowErrorMessage(message, ex)
+    End Sub
+
+    Private Sub Processor_StatusEvent(message As String)
+        Console.WriteLine(message)
+    End Sub
+
+    Private Sub Processor_WarningEvent(message As String)
+        ConsoleMsgUtils.ShowWarning(message)
+    End Sub
+
     Private Sub ShowProgressDescriptionIfChanged(taskDescription As String)
         If Not String.Equals(taskDescription, mProgressDescription) Then
             mProgressDescription = String.Copy(taskDescription)
@@ -385,19 +411,19 @@ Module modMain
         End If
     End Sub
 
-    Private Sub mProcessingClass_ProgressUpdate(taskDescription As String, percentComplete As Single)
+    Private Sub ProcessingClass_ProgressUpdate(taskDescription As String, percentComplete As Single)
         ShowProgressDescriptionIfChanged(taskDescription)
     End Sub
 
-    Private Sub mProcessingClass_ProgressComplete()
+    Private Sub ProcessingClass_ProgressComplete()
         Console.WriteLine("Processing complete")
     End Sub
 
-    Private Sub mProcessingClass_ProgressReset()
-        ShowProgressDescriptionIfChanged(mProcessingClass.ProgressStepDescription)
+    Private Sub ProcessingClass_ProgressReset()
+        ShowProgressDescriptionIfChanged(mSchemaExportTool.ProgressStepDescription)
     End Sub
 
-    Private Sub mProcessingClass_SubtaskProgressChanged(taskDescription As String, percentComplete As Single)
+    Private Sub ProcessingClass_SubtaskProgressChanged(taskDescription As String, percentComplete As Single)
 
         If Not String.Equals(taskDescription, mSubtaskDescription) Then
             mSubtaskDescription = String.Copy(taskDescription)

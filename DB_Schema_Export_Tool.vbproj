@@ -57,6 +57,9 @@
   <PropertyGroup>
     <OptionInfer>On</OptionInfer>
   </PropertyGroup>
+  <PropertyGroup>
+    <OptionExplicit>On</OptionExplicit>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.SqlServer.ConnectionInfo, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -119,8 +122,6 @@
     <Compile Include="clsDBSchemaExportTool.vb" />
     <Compile Include="clsExportDBSchema.vb" />
     <Compile Include="clsExportOptions.vb" />
-    <Compile Include="clsProcessFilesOrFoldersBase.vb" />
-    <Compile Include="clsProcessFoldersBaseClass.vb" />
     <Compile Include="clsServerConnectionInfo.vb" />
     <Compile Include="clsWorkingParams.vb" />
     <Compile Include="frmMain.Designer.vb">
@@ -189,7 +190,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="PRISM-Library">
-      <Version>2.4.39</Version>
+      <Version>2.4.41</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.VisualBasic.targets" />

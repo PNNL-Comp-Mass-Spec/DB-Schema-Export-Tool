@@ -15,7 +15,7 @@ Imports System.Text.RegularExpressions
 Imports PRISM
 
 Public Class clsDBSchemaExportTool
-    Inherits clsProcessFoldersBaseClass
+    Inherits FileProcessor.ProcessFoldersBase
 
     ''' <summary>
     ''' Constructor
@@ -484,7 +484,7 @@ Public Class clsDBSchemaExportTool
 
     Private Sub InitializeLocalVariables()
 
-        MyBase.ShowMessages = True
+        MyBase.ReThrowEvents = False
         MyBase.LogMessagesToFile = False
 
         mLocalErrorCode = eDBSchemaExportTool.NoError
