@@ -403,96 +403,70 @@ Public Class clsDBSchemaExportTool
     End Function
 
     Public Shared Function GetTableNamesToAutoExportData() As List(Of String)
-        Dim lstTableNames = New List(Of String)
 
-        ' MT_Main
-        lstTableNames.Add("T_Folder_Paths")
-
-        ' MT DBs
-        lstTableNames.Add("T_Peak_Matching_Defaults")
-        lstTableNames.Add("T_Process_Config")
-        lstTableNames.Add("T_Process_Config_Parameters")
-        lstTableNames.Add("T_Quantitation_Defaults")
-
-        ' MTS_Master
-        lstTableNames.Add("T_MTS_DB_Types")
-        lstTableNames.Add("T_MTS_MT_DBs")
-        lstTableNames.Add("T_MTS_Peptide_DBs")
-        lstTableNames.Add("T_MTS_Servers")
-        lstTableNames.Add("T_MyEMSL_Cache_Paths")
-
-        ' Peptide DB
-        lstTableNames.Add("T_Dataset_Scan_Type_Name")
-
-        ' Prism_IFC
-        lstTableNames.Add("T_Match_Methods")
-        lstTableNames.Add("T_SP_Categories")
-        lstTableNames.Add("T_SP_Column_Direction_Types")
-        lstTableNames.Add("T_SP_Glossary")
-        lstTableNames.Add("T_SP_List")
-
-        ' Prism_RPT
-        lstTableNames.Add("T_Analysis_Job_Processor_Tools")
-        lstTableNames.Add("T_Analysis_Job_Processors")
-        lstTableNames.Add("T_Status")
-
-        ' DMS5
-        lstTableNames.Add("T_Dataset_Rating_Name")
-        lstTableNames.Add("T_Default_PSM_Job_Types")
-        lstTableNames.Add("T_Enzymes")
-        lstTableNames.Add("T_Instrument_Ops_Role")
-        lstTableNames.Add("T_MiscPaths")
-        lstTableNames.Add("T_Modification_Types")
-        lstTableNames.Add("T_MyEMSLState")
-        lstTableNames.Add("T_Predefined_Analysis_Scheduling_Rules")
-        lstTableNames.Add("T_Research_Team_Roles")
-        lstTableNames.Add("T_Residues")
-        lstTableNames.Add("T_User_Operations")
-
-        ' Data_Package
-        lstTableNames.Add("T_Properties")
-        lstTableNames.Add("T_URI_Paths")
-
-        ' Manager Control
-        lstTableNames.Add("T_Event_Target")
-        lstTableNames.Add("T_Mgrs")
-        lstTableNames.Add("T_MgrState")
-        lstTableNames.Add("T_MgrType_ParamType_Map")
-        lstTableNames.Add("T_MgrTypes")
-        lstTableNames.Add("T_ParamType")
-
-        ' Ontology_Lookup
-        lstTableNames.Add("ontology")
-        lstTableNames.Add("T_Unimod_AminoAcids")
-        lstTableNames.Add("T_Unimod_Bricks")
-        lstTableNames.Add("T_Unimod_Specificity_NL")
-
-        ' DMS_Pipeline and DMS_Capture
-        lstTableNames.Add("T_Automatic_Jobs")
-        lstTableNames.Add("T_Default_SP_Params")
-        lstTableNames.Add("T_Processor_Instrument")
-        lstTableNames.Add("T_Processor_Tool")
-        lstTableNames.Add("T_Processor_Tool_Group_Details")
-        lstTableNames.Add("T_Processor_Tool_Groups")
-        lstTableNames.Add("T_Scripts")
-        lstTableNames.Add("T_Scripts_History")
-        lstTableNames.Add("T_Signatures")
-        lstTableNames.Add("T_Step_Tools")
-
-        ' Protein Sequences
-        lstTableNames.Add("T_Annotation_Types")
-        lstTableNames.Add("T_Archived_File_Types")
-        lstTableNames.Add("T_Collection_Organism_Xref")
-        lstTableNames.Add("T_Creation_Option_Keywords")
-        lstTableNames.Add("T_Creation_Option_Values")
-        lstTableNames.Add("T_Naming_Authorities")
-        lstTableNames.Add("T_Output_Sequence_Types")
-        lstTableNames.Add("T_Protein_Collection_Types")
-        lstTableNames.Add("T_Protein_Collections")
-
-        ' dba
-        lstTableNames.Add("AlertContacts")
-        lstTableNames.Add("AlertSettings")
+        Dim lstTableNames = New List(Of String) From {
+            "T_Folder_Paths",                       ' MT_Main
+            "T_Peak_Matching_Defaults",             ' MT DBs
+            "T_Process_Config",
+            "T_Process_Config_Parameters",
+            "T_Quantitation_Defaults",
+            "T_MTS_DB_Types",                       ' MTS_Master
+            "T_MTS_MT_DBs",
+            "T_MTS_Peptide_DBs",
+            "T_MTS_Servers",
+            "T_MyEMSL_Cache_Paths",
+            "T_Dataset_Scan_Type_Name",             ' Peptide DB
+            "T_Match_Methods",                      ' Prism_IFC
+            "T_SP_Categories",
+            "T_SP_Column_Direction_Types",
+            "T_SP_Glossary",
+            "T_SP_List",
+            "T_Analysis_Job_Processor_Tools",       ' Prism_RPT
+            "T_Analysis_Job_Processors",
+            "T_Status",
+            "T_Dataset_Rating_Name",                ' DMS5
+            "T_Default_PSM_Job_Types",
+            "T_Enzymes",
+            "T_Instrument_Ops_Role",
+            "T_MiscPaths",
+            "T_Modification_Types",
+            "T_MyEMSLState",
+            "T_Predefined_Analysis_Scheduling_Rules",
+            "T_Research_Team_Roles",
+            "T_Residues",
+            "T_User_Operations",
+            "T_Properties",                          ' Data_Package
+            "T_URI_Paths",
+            "T_Event_Target",                        ' Manager Control
+            "T_Mgrs",
+            "T_MgrState",
+            "T_MgrType_ParamType_Map",
+            "T_MgrTypes",
+            "T_ParamType",
+            "ontology",                              ' Ontology_Lookup
+            "T_Unimod_AminoAcids",
+            "T_Unimod_Bricks",
+            "T_Unimod_Specificity_NL",
+            "T_Automatic_Jobs",                      ' DMS_Pipeline and DMS_Capture
+            "T_Default_SP_Params",
+            "T_Processor_Instrument",
+            "T_Processor_Tool",
+            "T_Processor_Tool_Group_Details",
+            "T_Processor_Tool_Groups",
+            "T_Scripts",
+            "T_Scripts_History",
+            "T_Signatures",
+            "T_Step_Tools",
+            "T_Annotation_Types",                    ' Protein Sequences
+            "T_Archived_File_Types",
+            "T_Creation_Option_Keywords",
+            "T_Creation_Option_Values",
+            "T_Naming_Authorities",
+            "T_Output_Sequence_Types",
+            "T_Protein_Collection_Types",
+            "AlertContacts",                         ' dba
+            "AlertSettings"
+        }
 
         Return lstTableNames
 
