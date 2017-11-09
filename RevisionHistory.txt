@@ -1,5 +1,9 @@
 DB Schema Export Tool
 
+Version 1.2.6522; November 9, 2017
+	- Now using ProcessFilesOrFoldersBase and ProcessFoldersBase in PRISM.dll
+	- No longer exporting data from tables T_Protein_Collections or T_Collection_Organism_Xref
+
 Version 1.2.6512; October 30, 2017
 	- Updated versions of clsProcessFilesOrFoldersBase and clsProcessFoldersBaseClass that use clsEventNotifier
 

@@ -55,6 +55,7 @@ Partial Class frmMain
         Me.mnuHelp = New System.Windows.Forms.MenuItem()
         Me.mnuHelpAbout = New System.Windows.Forms.MenuItem()
         Me.fraOutputOptions = New System.Windows.Forms.GroupBox()
+        Me.lblTableDataToExport = New System.Windows.Forms.Label()
         Me.lblServerOutputFolderNamePrefix = New System.Windows.Forms.Label()
         Me.txtServerOutputFolderNamePrefix = New System.Windows.Forms.TextBox()
         Me.chkExportServerSettingsLoginsAndJobs = New System.Windows.Forms.CheckBox()
@@ -83,7 +84,6 @@ Partial Class frmMain
         Me.cmdPauseUnpause = New System.Windows.Forms.Button()
         Me.lstObjectTypesToScript = New System.Windows.Forms.ListBox()
         Me.fraObjectTypesToScript = New System.Windows.Forms.GroupBox()
-        Me.lblTableDataToExport = New System.Windows.Forms.Label()
         Me.fraConnectionSettings.SuspendLayout()
         Me.fraOutputOptions.SuspendLayout()
         Me.fraStatus.SuspendLayout()
@@ -441,6 +441,20 @@ Partial Class frmMain
         Me.fraOutputOptions.TabIndex = 3
         Me.fraOutputOptions.TabStop = False
         Me.fraOutputOptions.Text = "Output Options"
+        '
+        'lblTableDataToExport
+        '
+        Me.lblTableDataToExport.BackColor = System.Drawing.SystemColors.Control
+        Me.lblTableDataToExport.Cursor = System.Windows.Forms.Cursors.Default
+        Me.lblTableDataToExport.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblTableDataToExport.ForeColor = System.Drawing.SystemColors.ControlText
+        Me.lblTableDataToExport.Location = New System.Drawing.Point(350, 77)
+        Me.lblTableDataToExport.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
+        Me.lblTableDataToExport.Name = "lblTableDataToExport"
+        Me.lblTableDataToExport.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.lblTableDataToExport.Size = New System.Drawing.Size(171, 20)
+        Me.lblTableDataToExport.TabIndex = 7
+        Me.lblTableDataToExport.Text = "Table Data to Export"
         '
         'lblServerOutputFolderNamePrefix
         '
@@ -823,20 +837,6 @@ Partial Class frmMain
         Me.fraObjectTypesToScript.TabIndex = 1
         Me.fraObjectTypesToScript.TabStop = False
         Me.fraObjectTypesToScript.Text = "Objects to Script"
-        '
-        'lblTableDataToExport
-        '
-        Me.lblTableDataToExport.BackColor = System.Drawing.SystemColors.Control
-        Me.lblTableDataToExport.Cursor = System.Windows.Forms.Cursors.Default
-        Me.lblTableDataToExport.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.lblTableDataToExport.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.lblTableDataToExport.Location = New System.Drawing.Point(350, 77)
-        Me.lblTableDataToExport.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
-        Me.lblTableDataToExport.Name = "lblTableDataToExport"
-        Me.lblTableDataToExport.RightToLeft = System.Windows.Forms.RightToLeft.No
-        Me.lblTableDataToExport.Size = New System.Drawing.Size(171, 20)
-        Me.lblTableDataToExport.TabIndex = 7
-        Me.lblTableDataToExport.Text = "Table Data to Export"
         '
         'frmMain
         '

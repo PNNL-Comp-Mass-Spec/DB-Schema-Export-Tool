@@ -13,7 +13,7 @@ Imports PRISM.FileProcessor
 ' See clsMTSAutomation for additional information
 
 Module modMain
-    Public Const PROGRAM_DATE As String = "October 30, 2017"
+    Public Const PROGRAM_DATE As String = "November 9, 2017"
 
     Private mOutputFolderPath As String
 

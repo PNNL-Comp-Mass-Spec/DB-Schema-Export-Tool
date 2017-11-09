@@ -963,7 +963,7 @@ Public Class frmMain
     End Sub
 
     Private Sub SelectOutputFolder()
-        ' Prompts the user to select the output folder to create the scripted objects in 
+        ' Prompts the user to select the output folder to create the scripted objects in
 
         Try
             Dim objFolderBrowser = New FolderBrowser()
