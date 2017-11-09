@@ -21,7 +21,7 @@ Public Class clsDBSchemaExportTool
     ''' Constructor
     ''' </summary>
     Public Sub New()
-        MyBase.mFileDate = "June 14, 2017"
+        MyBase.mFileDate = "November 9, 2017"
         mDateMatcher = New Regex("'\d+/\d+/\d+ \d+:\d+:\d+ [AP]M'", RegexOptions.Compiled Or RegexOptions.IgnoreCase)
 
         InitializeLocalVariables()
@@ -472,12 +472,14 @@ Public Class clsDBSchemaExportTool
 
     End Function
 
+
     Public Shared Function GetTableRegExToAutoExportData() As List(Of String)
-        Dim lstRegExSpecs = New List(Of String)
-        lstRegExSpecs.Add(".*_?Type_?Name")
-        lstRegExSpecs.Add(".*_?State_?Name")
-        lstRegExSpecs.Add(".*_State")
-        lstRegExSpecs.Add(".*_States")
+        Dim lstRegExSpecs = New List(Of String) From {
+            ".*_?Type_?Name",
+            ".*_?State_?Name",
+            ".*_State",
+            ".*_States"
+        }
 
         Return lstRegExSpecs
     End Function
@@ -886,7 +888,7 @@ Public Class clsDBSchemaExportTool
 
                 If elapsedSeconds > maxRuntimeSeconds Then
                     ShowErrorMessage("Program execution has surpassed " & maxRuntimeSeconds & " seconds; aborting " & exePath)
-                    m_ProgRunner.StopMonitoringProgram(Kill:=True)
+                    m_ProgRunner.StopMonitoringProgram(kill:=True)
                     executionAborted = True
                 End If
 

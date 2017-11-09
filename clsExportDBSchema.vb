@@ -478,7 +478,7 @@ Public Class clsExportDBSchema
                 End If
             End If
 
-            ' Connect to server serverConnectionInfo.ServerName
+            ' Connect to server clsServerConnectionInfo.ServerName
             Dim connected = LoginToServerWork(mSqlServer, serverConnectionInfo)
             If Not connected Then
                 SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error logging into the server: " & serverConnectionInfo.ServerName)
@@ -717,8 +717,9 @@ Public Class clsExportDBSchema
             Dim dtStartTime = DateTime.UtcNow
 
             ' Initialize the scripter and objSMOObject()
-            Dim objScripter = New Scripter(mSqlServer)
-            objScripter.Options = scriptOptions
+            Dim objScripter = New Scripter(mSqlServer) With {
+                .Options = scriptOptions
+            }
 
             For Each objTable As Table In objDatabase.Tables
                 Dim includeTable = True
@@ -900,8 +901,9 @@ Public Class clsExportDBSchema
         ' Option 4) Query the INFORMATION_SCHEMA views
 
         ' Initialize the scripter and objSMOObject()
-        Dim objScripter = New Scripter(mSqlServer)
-        objScripter.Options = scriptOptions
+        Dim objScripter = New Scripter(mSqlServer) With {
+            .Options = scriptOptions
+        }
 
         For objectIterator = 0 To 3
             Dim objectType = "unknown"
