@@ -205,17 +205,6 @@ Module modMain
 
     End Function
 
-    Private Sub DisplayProgressPercent(percentComplete As Integer, addCarriageReturn As Boolean)
-        If addCarriageReturn Then
-            Console.WriteLine()
-        End If
-        If percentComplete > 100 Then percentComplete = 100
-        Console.Write("Processing: " & percentComplete.ToString() & "% ")
-        If addCarriageReturn Then
-            Console.WriteLine()
-        End If
-    End Sub
-
     Private Function GetAppVersion() As String
         Return ProcessFoldersBase.GetAppVersion(PROGRAM_DATE)
     End Function
