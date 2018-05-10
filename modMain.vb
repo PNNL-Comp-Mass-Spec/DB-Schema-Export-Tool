@@ -13,7 +13,7 @@ Imports PRISM.FileProcessor
 ' See clsMTSAutomation for additional information
 
 Module modMain
-    Public Const PROGRAM_DATE As String = "November 9, 2017"
+    Public Const PROGRAM_DATE As String = "May 10, 2018"
 
     Private mOutputFolderPath As String
 
@@ -145,7 +145,6 @@ Module modMain
                 AddHandler mSchemaExportTool.ProgressComplete, AddressOf ProcessingClass_ProgressComplete
                 AddHandler mSchemaExportTool.ProgressReset, AddressOf ProcessingClass_ProgressReset
                 AddHandler mSchemaExportTool.SubtaskProgressChanged, AddressOf ProcessingClass_SubtaskProgressChanged
-
 
                 With mSchemaExportTool
                     .ReThrowEvents = False
