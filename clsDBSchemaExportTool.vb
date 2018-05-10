@@ -199,6 +199,7 @@ Public Class clsDBSchemaExportTool
 
             If mDBSchemaExporter Is Nothing Then
                 mDBSchemaExporter = New clsExportDBSchema
+                RegisterEvents(mDBSchemaExporter)
             End If
 
             mDBSchemaExporter.TableNamesToAutoSelect = GetTableNamesToAutoExportData()
@@ -1269,7 +1270,7 @@ Public Class clsDBSchemaExportTool
 
 #Region "Event Handlers"
 
-    Private Sub mDBSchemaExporter_ProgressChanged(taskDescription As String, percentComplete As Single) Handles mDBSchemaExporter.ProgressChanged
+    Private Sub mDBSchemaExporter_ProgressChanged(taskDescription As String, percentComplete As Single) Handles mDBSchemaExporter.ProgressUpdate
         UpdateProgress(taskDescription, percentComplete)
     End Sub
 

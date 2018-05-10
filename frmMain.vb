@@ -76,7 +76,7 @@ Public Class frmMain
 #End Region
 
 #Region "Delegates"
-    Private Delegate Sub AppendNewMessageHandler(message As String, eMessageType As clsExportDBSchema.eMessageTypeConstants)
+    Private Delegate Sub AppendNewMessageHandler(message As String, isError As Boolean)
     Private Delegate Sub UpdatePauseUnpauseCaptionHandler(ePauseStatus As clsExportDBSchema.ePauseStatusConstants)
 
     Private Delegate Sub ProgressUpdateHandler(taskDescription As String, percentComplete As Single)
@@ -89,8 +89,13 @@ Public Class frmMain
 
 #End Region
 
-    Private Sub AppendNewMessage(message As String, eMessageType As clsExportDBSchema.eMessageTypeConstants)
-        lblMessage.Text = message
+    Private Sub AppendNewMessage(message As String, isError As Boolean)
+        If isError And Not message.StartsWith("Error", StringComparison.OrdinalIgnoreCase) Then
+            lblMessage.Text = "Error: " & message
+        Else
+            lblMessage.Text = message
+        End If
+
         Application.DoEvents()
     End Sub
 
@@ -1430,11 +1435,21 @@ Public Class frmMain
 #End Region
 
 #Region "DB Schema Export Automation Events"
-    Private Sub mDBSchemaExporter_NewMessage(message As String, eMessageType As clsExportDBSchema.eMessageTypeConstants) Handles mDBSchemaExporter.NewMessage
+
+    Private Sub mDBSchemaExporter_ErrorMessage(message As String, ex As Exception) Handles mDBSchemaExporter.ErrorEvent
         If Me.InvokeRequired Then
-            Me.Invoke(New AppendNewMessageHandler(AddressOf AppendNewMessage), New Object() {message, eMessageType})
+            Me.Invoke(New AppendNewMessageHandler(AddressOf AppendNewMessage), New Object() {message, True})
         Else
-            AppendNewMessage(message, eMessageType)
+            AppendNewMessage(message, True)
+        End If
+        Application.DoEvents()
+    End Sub
+
+    Private Sub mDBSchemaExporter_StatusMessage(message As String) Handles mDBSchemaExporter.StatusEvent
+        If Me.InvokeRequired Then
+            Me.Invoke(New AppendNewMessageHandler(AddressOf AppendNewMessage), New Object() {message, False})
+        Else
+            AppendNewMessage(message, False)
         End If
         Application.DoEvents()
     End Sub
@@ -1448,7 +1463,7 @@ Public Class frmMain
         Application.DoEvents()
     End Sub
 
-    Private Sub mDBSchemaExporter_ProgressChanged(taskDescription As String, percentComplete As Single) Handles mDBSchemaExporter.ProgressChanged
+    Private Sub mDBSchemaExporter_ProgressChanged(taskDescription As String, percentComplete As Single) Handles mDBSchemaExporter.ProgressUpdate
         If Me.InvokeRequired Then
             Me.Invoke(New ProgressUpdateHandler(AddressOf ProgressUpdate), New Object() {taskDescription, percentComplete})
         Else

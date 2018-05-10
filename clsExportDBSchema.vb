@@ -27,6 +27,7 @@ Imports System.Text
 Imports SharedVBNetRoutines
 
 Public Class clsExportDBSchema
+    Inherits PRISM.clsEventNotifier
 
     ''' <summary>
     ''' Constructor
@@ -113,7 +114,6 @@ Public Class clsExportDBSchema
 #End Region
 
 #Region "Classwide Variables"
-    Public Event NewMessage(message As String, eMessageType As eMessageTypeConstants)
     Public Event DBExportStarting(databaseName As String)
     Public Event PauseStatusChange()
 
@@ -148,7 +148,6 @@ Public Class clsExportDBSchema
 
 #Region "Progress Events and Variables"
     Public Event ProgressReset()
-    Public Event ProgressChanged(taskDescription As String, percentComplete As Single)     ' PercentComplete ranges from 0 to 100, but can contain decimal percentage values
     Public Event ProgressComplete()
 
     Public Event SubtaskProgressReset()
@@ -1865,7 +1864,12 @@ Public Class clsExportDBSchema
     End Sub
 
     Private Sub ReportMessage(message As String, eMessageType As eMessageTypeConstants)
-        RaiseEvent NewMessage(message, eMessageType)
+        If eMessageType = eMessageTypeConstants.ErrorMessage Then
+            OnErrorEvent(message)
+        Else
+            OnStatusEvent(message)
+        End If
+
     End Sub
 
     ''' <summary>
@@ -2293,7 +2297,7 @@ Public Class clsExportDBSchema
         End If
         mProgressPercentComplete = sngPercentComplete
 
-        RaiseEvent ProgressChanged(Me.ProgressStepDescription, Me.ProgressPercentComplete)
+        OnProgressUpdate(Me.ProgressStepDescription, Me.ProgressPercentComplete)
     End Sub
 
     Private Sub UpdateSubtaskProgress(intStepNumber As Integer, intStepCount As Integer)
