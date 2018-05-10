@@ -4,7 +4,7 @@ rem Can auto-commit with /Commit
 F:
 cd "F:\My Documents\Projects\DataMining\Database_Tools\DB_Schema_Export_Tool\bin"
 
-DB_Schema_Export_Tool.exe F:\Cached_DBSchema /server:Gigasax      /DBList:DMS_Capture,DMS_Data_Package,DMS_Pipeline,DMS5,Ontology_Lookup /sync:"F:\My Documents\Projects\DataMining\Database_Schema\DMS"         /Git /L /LogFolder:Logs /Data:..\Automation\DMS_Data_Tables.txt
+DB_Schema_Export_Tool.exe F:\Cached_DBSchema /server:Gigasax      /DBList:DMS_Capture,DMS_Data_Package,DMS_Pipeline,DMS5,Ontology_Lookup,dba /sync:"F:\My Documents\Projects\DataMining\Database_Schema\DMS"         /Git /L /LogFolder:Logs /Data:..\Automation\DMS_Data_Tables.txt
 DB_Schema_Export_Tool.exe F:\Cached_DBSchema /server:Proteinseqs  /DBList:Manager_Control,Protein_Sequences                              /sync:"F:\My Documents\Projects\DataMining\Database_Schema\DMS"         /Git /L /LogFolder:Logs
 
 DB_Schema_Export_Tool.exe F:\Cached_DBSchema /server:Pogo         /DB:mt_template_01                                                /sync:"F:\My Documents\Projects\DataMining\Database_Schema\MTS\MT_Template"  /Git /L /LogFolder:Logs /NoSubfolder
