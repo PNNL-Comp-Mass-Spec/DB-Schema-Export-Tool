@@ -6,8 +6,8 @@
 ' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
 ' Class started April 7, 2014
 '
-' E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com
-' Website: http://panomics.pnl.gov/ or http://www.sysbio.org/resources/staff/
+' E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov
+' Website: https://omics.pnl.gov/ or https://www.pnnl.gov/sysbio/ or https://panomics.pnnl.gov/
 ' -------------------------------------------------------------------------------
 
 Imports System.IO
@@ -1066,10 +1066,10 @@ Public Class clsDBSchemaExportTool
       commitMessageAppend As String) As Boolean
 
         Const SVN_EXE_PATH = "C:\Program Files\TortoiseSVN\bin\svn.exe"
-        Const SVN_SOURCE = "Installed with 64-bit Tortoise SVN, available at http://tortoisesvn.net/downloads.html"
+        Const SVN_SOURCE = "Installed with 64-bit Tortoise SVN, available at https://tortoisesvn.net/downloads.html"
 
         Const HG_EXE_PATH = "C:\Program Files\TortoiseHg\hg.exe"
-        Const HG_SOURCE = "Installed with 64-bit Tortoise Hg, available at http://tortoisehg.bitbucket.org/download/"
+        Const HG_SOURCE = "Installed with 64-bit Tortoise Hg, available at https://tortoisehg.bitbucket.io/download/index.html"
 
         Const GIT_EXE_PATH = "C:\Program Files\Git\bin\git.exe"
         Const GIT_SOURCE = "Installed with 64-bit Git for Windows, available at https://git-scm.com/download/win"

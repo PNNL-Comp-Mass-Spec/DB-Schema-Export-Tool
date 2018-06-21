@@ -8,8 +8,8 @@ Option Strict On
 ' Program started August 11, 2006
 ' Copyright 2006, Battelle Memorial Institute.  All Rights Reserved.
 
-' E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com
-' Website: http://panomics.pnnl.gov/ or http://www.sysbio.org/resources/staff/
+' E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov
+' Website: https://omics.pnl.gov/ or https://www.pnnl.gov/sysbio/ or https://panomics.pnnl.gov/
 ' -------------------------------------------------------------------------------
 Imports System.Text.RegularExpressions
 Imports PRISM
@@ -1015,11 +1015,11 @@ Public Class frmMain
 
         message &= "This is version " & Application.ProductVersion & " (" & PROGRAM_DATE & "). " & ControlChars.NewLine & ControlChars.NewLine
 
-        message &= "E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com" & ControlChars.NewLine
-        message &= "Website: http://panomics.pnnl.gov/ or http://www.sysbio.org/resources/staff/" & ControlChars.NewLine & ControlChars.NewLine
+        message &= "E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov" & ControlChars.NewLine
+        message &= "Website: https://omics.pnl.gov/ or https://panomics.pnnl.gov/" & ControlChars.NewLine & ControlChars.NewLine
 
         message &= "Licensed under the Apache License, Version 2.0; you may not use this file except in compliance with the License.  "
-        message &= "You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0" & ControlChars.NewLine & ControlChars.NewLine
+        message &= "You may obtain a copy of the License at https://www.apache.org/licenses/LICENSE-2.0" & ControlChars.NewLine & ControlChars.NewLine
 
         message &= "Notice: This computer software was prepared by Battelle Memorial Institute, "
         message &= "hereinafter the Contractor, under Contract No. DE-AC05-76RL0 1830 with the "

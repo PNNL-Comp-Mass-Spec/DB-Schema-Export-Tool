@@ -8,13 +8,13 @@ Option Strict On
 ' Program started August 11, 2006
 ' Copyright 2006, Battelle Memorial Institute.  All Rights Reserved.
 
-' E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com
-' Website: http://panomics.pnl.gov/ or http://www.sysbio.org/resources/staff/
+' E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov
+' Website: https://omics.pnl.gov/ or https://www.pnnl.gov/sysbio/ or https://panomics.pnnl.gov/
 ' -------------------------------------------------------------------------------
 '
 ' Licensed under the Apache License, Version 2.0; you may not use this file except
 ' in compliance with the License.  You may obtain a copy of the License at
-' http://www.apache.org/licenses/LICENSE-2.0
+' https://www.apache.org/licenses/LICENSE-2.0
 
 Imports System.IO
 Imports Microsoft.SqlServer.Management.Common
