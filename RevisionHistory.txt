@@ -1,5 +1,13 @@
 DB Schema Export Tool
 
+Version 1.2.6796; August 10, 2018
+	- Update PRISM.dll from NuGet
+
+Version 1.2.6704; May 10, 2018
+	- Obtain SqlManagementObjects from NuGet
+	- Raise events from clsExportDBSchema by inheriting clsEventNotifier
+	- Script objects in database dba
+
 Version 1.2.6522; November 9, 2017
 	- Now using ProcessFilesOrFoldersBase and ProcessFoldersBase in PRISM.dll
 	- No longer exporting data from tables T_Protein_Collections or T_Collection_Organism_Xref

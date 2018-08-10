@@ -42,7 +42,7 @@ DB_Schema_Export_Tool.exe
  /DB:Database /DBList:CommaSeparatedDatabaseName
  [/FolderPrefix:PrefixText] [/NoSubfolder]
  [/Data:TableDataToExport.txt] [/NoAutoData]
- [/Sync:TargetFolderPath] [/Svn] [/Git] [/Hg] [/Commit]
+ [/Sync:TargetFolderPath] [/Git] [/Svn] [/Hg] [/Commit]
  [/L[:LogFilePath]] [/LogFolder:LogFolderPath] [/Preview] [/Stats]
 ```
 
@@ -65,9 +65,9 @@ which will have their data exported; disable the defaults using /NoAutoData
 Use /Sync to copy new/changed files from the output folder to an alternative folder. 
 * This is advantageous to prevent file timestamps from getting updated every time the schema is exported
 
-Use /Svn to auto-update any new or changed files using Subversion
-
 Use /Git to auto-update any new or changed files using Git
+
+Use /Svn to auto-update any new or changed files using Subversion
 
 Use /Hg  to auto-update any new or changed files using Mercurial
 
@@ -86,29 +86,31 @@ Use /Stats to show (but not log) export stats
 
 This program leverages SMO from Sql Server 2012.  The required DLLs are in the Lib folder
 
-In order to use the /Svn, /Git, and/or /Hg switches, you need the following software installed
+In order to use the /Git, /Svn, or /Hg switches, you need the following software installed
 and the executables present at a specific location.
+
+Git
+* `C:\Program Files\Git\bin\git.exe`
+* Installed with 64-bit Git for Windows, available at https://git-scm.com/download/win
 
 Subversion: 
 * `C:\Program Files\TortoiseSVN\bin\svn.exe`
-* Installed with 64-bit Tortoise SVN, available at http://tortoisesvn.net/downloads.html
+* Installed with 64-bit Tortoise SVN, available at https://tortoisesvn.net/downloads.html
 
 Mercurial
 * `C:\Program Files\TortoiseHg\hg.exe`
-* Installed with 64-bit Tortoise Hg,  available at http://tortoisehg.bitbucket.org/download/
-
-Git
-* `C:\Program Files (x86)\Git\bin\git.exe`
-* Installed with 32-bit Git for Windows, available at http://git-scm.com/download/win
+* Installed with 64-bit Tortoise Hg,  available at https://tortoisehg.bitbucket.io/download/index.html
 
 ## Contacts
 
 Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) \
-E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com\
-Website: http://panomics.pnnl.gov/ or http://omics.pnl.gov or http://www.sysbio.org/resources/staff/
+E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov\
+Website: https://omics.pnl.gov/ or https://www.pnnl.gov/sysbio/ or https://panomics.pnnl.gov/
 
 ## License
 
-The DB Schema Export Tool is licensed under the Apache License, Version 2.0; 
+The DB Schema Export Tool is licensed under the 2-Clause BSD License; 
 you may not use this file except in compliance with the License.  You may obtain 
-a copy of the License at https://opensource.org/licenses/Apache-2.0
+a copy of the License at https://opensource.org/licenses/BSD-2-Clause
+
+Copyright 2018 Battelle Memorial Institute
