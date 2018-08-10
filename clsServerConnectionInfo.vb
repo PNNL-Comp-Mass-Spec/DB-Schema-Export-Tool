@@ -1,4 +1,6 @@
-﻿Public Class clsServerConnectionInfo
+﻿Option Strict On
+
+Public Class clsServerConnectionInfo
     Public Property ServerName As String
     Public Property UserName As String
     Public Property Password As String

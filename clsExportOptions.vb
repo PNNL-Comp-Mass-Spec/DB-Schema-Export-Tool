@@ -1,6 +1,11 @@
-﻿Public Class clsSchemaExportOptions
+﻿Option Strict On
 
-    ' Note: Currenly only SqlServer is supported
+Public Class clsSchemaExportOptions
+
+    ''' <summary>
+    ''' Target database type
+    ''' </summary>
+    ''' <remarks>Currently only SqlServer is supported</remarks>
     Public Enum eTargetDatabaseTypeConstants
         SqlServer = 0
         MySql = 1

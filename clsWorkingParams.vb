@@ -1,4 +1,6 @@
-﻿Public Class clsWorkingParams
+﻿Option Strict On
+
+Public Class clsWorkingParams
     Public Property ProcessCount As Integer
     Public Property ProcessCountExpected As Integer
     Public Property OutputFolderPathCurrentDB As String

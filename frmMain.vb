@@ -1,20 +1,26 @@
 Option Strict On
 
-' This program uses class clsExportDBSchema to export the objects from the
-' database(s) on the selected server
-'
 ' -------------------------------------------------------------------------------
-' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
-' Program started August 11, 2006
-' Copyright 2006, Battelle Memorial Institute.  All Rights Reserved.
+' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in 2006
 
 ' E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov
 ' Website: https://omics.pnl.gov/ or https://www.pnnl.gov/sysbio/ or https://panomics.pnnl.gov/
 ' -------------------------------------------------------------------------------
+'
+' Licensed under the 2-Clause BSD License; you may not use this file except
+' in compliance with the License.  You may obtain a copy of the License at
+' https://opensource.org/licenses/BSD-2-Clause
+'
+' Copyright 2018 Battelle Memorial Institute
+
 Imports System.Text.RegularExpressions
 Imports PRISM
 Imports ShFolderBrowser.FolderBrowser
 
+''' <summary>
+''' This program uses class clsExportDBSchema to export the objects from the
+''' database(s) on the selected server
+''' </summary>
 Public Class frmMain
 
     ''' <summary>
@@ -1018,17 +1024,9 @@ Public Class frmMain
         message &= "E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov" & ControlChars.NewLine
         message &= "Website: https://omics.pnl.gov/ or https://panomics.pnnl.gov/" & ControlChars.NewLine & ControlChars.NewLine
 
-        message &= "Licensed under the Apache License, Version 2.0; you may not use this file except in compliance with the License.  "
-        message &= "You may obtain a copy of the License at https://www.apache.org/licenses/LICENSE-2.0" & ControlChars.NewLine & ControlChars.NewLine
-
-        message &= "Notice: This computer software was prepared by Battelle Memorial Institute, "
-        message &= "hereinafter the Contractor, under Contract No. DE-AC05-76RL0 1830 with the "
-        message &= "Department of Energy (DOE).  All rights in the computer software are reserved "
-        message &= "by DOE on behalf of the United States Government and the Contractor as "
-        message &= "provided in the Contract.  NEITHER THE   VERNMENT NOR THE CONTRACTOR MAKES ANY "
-        message &= "WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS "
-        message &= "SOFTWARE.  This notice including this sentence must appear on any copies of "
-        message &= "this computer software." & ControlChars.NewLine
+        message &= "Licensed under the 2-Clause BSD License; you may not use this file except "
+        message &= "in compliance with the License.  You may obtain a copy of the License at https://opensource.org/licenses/BSD-2-Clause"
+        message &= ControlChars.NewLine & ControlChars.NewLine
 
         MessageBox.Show(message, "About", MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub

@@ -1,19 +1,25 @@
 ﻿Option Strict On
 
-' This class exports the schema for one or more databases on a server
-'
 ' -------------------------------------------------------------------------------
-' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
-' Class started April 7, 2014
+' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in 2014
 '
 ' E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov
 ' Website: https://omics.pnl.gov/ or https://www.pnnl.gov/sysbio/ or https://panomics.pnnl.gov/
 ' -------------------------------------------------------------------------------
+'
+' Licensed under the 2-Clause BSD License; you may not use this file except
+' in compliance with the License.  You may obtain a copy of the License at
+' https://opensource.org/licenses/BSD-2-Clause
+'
+' Copyright 2018 Battelle Memorial Institute
 
 Imports System.IO
 Imports System.Text.RegularExpressions
 Imports PRISM
 
+''' <summary>
+''' This class exports the schema for one or more databases on a server
+''' </summary>
 Public Class clsDBSchemaExportTool
     Inherits FileProcessor.ProcessFoldersBase
 
@@ -21,7 +27,7 @@ Public Class clsDBSchemaExportTool
     ''' Constructor
     ''' </summary>
     Public Sub New()
-        MyBase.mFileDate = "June 20, 2018"
+        MyBase.mFileDate = "August 10, 2018"
         mDateMatcher = New Regex("'\d+/\d+/\d+ \d+:\d+:\d+ [AP]M'", RegexOptions.Compiled Or RegexOptions.IgnoreCase)
 
         InitializeLocalVariables()

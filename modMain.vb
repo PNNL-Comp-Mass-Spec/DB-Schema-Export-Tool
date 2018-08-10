@@ -1,19 +1,27 @@
 Option Strict On
 
-Imports PRISM
-Imports PRISM.FileProcessor
 ' -------------------------------------------------------------------------------
-' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
-' Program started April 11, 2006
+' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in 2006
 '
 ' E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov
 ' Website: https://omics.pnl.gov/ or https://www.pnnl.gov/sysbio/ or https://panomics.pnnl.gov/
 ' -------------------------------------------------------------------------------
 '
-' See clsMTSAutomation for additional information
+' Licensed under the 2-Clause BSD License; you may not use this file except
+' in compliance with the License.  You may obtain a copy of the License at
+' https://opensource.org/licenses/BSD-2-Clause
+'
+' Copyright 2018 Battelle Memorial Institute
 
+Imports PRISM
+Imports PRISM.FileProcessor
+
+''' <summary>
+''' Entry class for the DB Schema Export Tool
+''' See clsMTSAutomation for additional information
+''' </summary>
 Module modMain
-    Public Const PROGRAM_DATE As String = "June 20, 2018"
+    Public Const PROGRAM_DATE As String = "August 10, 2018"
 
     Private mOutputFolderPath As String
 
@@ -138,7 +146,7 @@ Module modMain
                     Return -7
                 End If
 
-                mSchemaExportTool = New clsDBSchemaExportTool
+                mSchemaExportTool = New clsDBSchemaExportTool()
                 RegisterEvents(mSchemaExportTool)
 
                 AddHandler mSchemaExportTool.ProgressUpdate, AddressOf ProcessingClass_ProgressUpdate

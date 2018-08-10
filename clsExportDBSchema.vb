@@ -1,20 +1,17 @@
 Option Strict On
 
-' This class will export all of the specified object types
-' from a specific Sql Server database
-'
 ' -------------------------------------------------------------------------------
-' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
-' Program started August 11, 2006
-' Copyright 2006, Battelle Memorial Institute.  All Rights Reserved.
+' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in 2006
 
 ' E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov
 ' Website: https://omics.pnl.gov/ or https://www.pnnl.gov/sysbio/ or https://panomics.pnnl.gov/
 ' -------------------------------------------------------------------------------
 '
-' Licensed under the Apache License, Version 2.0; you may not use this file except
+' Licensed under the 2-Clause BSD License; you may not use this file except
 ' in compliance with the License.  You may obtain a copy of the License at
-' https://www.apache.org/licenses/LICENSE-2.0
+' https://opensource.org/licenses/BSD-2-Clause
+'
+' Copyright 2018 Battelle Memorial Institute
 
 Imports System.IO
 Imports Microsoft.SqlServer.Management.Common
@@ -26,6 +23,10 @@ Imports System.Threading
 Imports System.Text
 Imports SharedVBNetRoutines
 
+''' <summary>
+''' This class will export all of the specified object types
+''' from a specific Sql Server database
+''' </summary>
 Public Class clsExportDBSchema
     Inherits PRISM.clsEventNotifier
 
