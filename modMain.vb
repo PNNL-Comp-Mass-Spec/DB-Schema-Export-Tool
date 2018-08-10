@@ -321,40 +321,50 @@ Module modMain
 
         Try
 
-            Console.WriteLine("This program exports Sql Server database objects as schema files. Starting this program without any parameters will show the GUI")
+            Console.WriteLine(ConsoleMsgUtils.WrapParagraph(
+                "This program exports Sql Server database objects as schema files. Starting this program without any parameters will show the GUI"))
             Console.WriteLine()
             Console.WriteLine("Command line syntax:" & Environment.NewLine & IO.Path.GetFileName(Reflection.Assembly.GetExecutingAssembly().Location))
             Console.WriteLine(" SchemaFileFolder /Server:ServerName")
             Console.WriteLine(" /DB:Database /DBList:CommaSeparatedDatabaseName")
             Console.WriteLine(" [/FolderPrefix:PrefixText] [/NoSubfolder]")
             Console.WriteLine(" [/Data:TableDataToExport.txt] [/NoAutoData] ")
-            Console.WriteLine(" [/Sync:TargetFolderPath] [/Svn] [/Git] [/Hg] [/Commit]")
+            Console.WriteLine(" [/Sync:TargetFolderPath] [/Git] [/Svn] [/Hg] [/Commit]")
             Console.WriteLine(" [/L[:LogFilePath]] [/LogFolder:LogFolderPath] [/Preview] [/Stats]")
             Console.WriteLine()
-            Console.WriteLine("SchemaFileFolder is the path to the folder where the schema files will be saved; use a period for the current directory")
-            Console.WriteLine("To process a single database, use /Server and /DB")
+            Console.WriteLine(ConsoleMsgUtils.WrapParagraph(
+                "SchemaFileFolder is the path to the folder where the schema files will be saved; use a period for the current directory. " &
+                "To process a single database, use /Server and /DB"))
+            Console.WriteLine()
             Console.WriteLine("Use /DBList to process several databases (separate names with commas)")
             Console.WriteLine()
-            Console.WriteLine("By default, a subfolder named " & clsExportDBSchema.DEFAULT_DB_OUTPUT_FOLDER_NAME_PREFIX & "DatabaseName will be created below SchemaFileFolder")
-            Console.WriteLine("Customize this the prefix text using /FolderPrefix")
+            Console.WriteLine(ConsoleMsgUtils.WrapParagraph(
+                "By default, a subfolder named " & clsExportDBSchema.DEFAULT_DB_OUTPUT_FOLDER_NAME_PREFIX & "DatabaseName will be created below SchemaFileFolder. " &
+                "Customize this the prefix text using /FolderPrefix"))
+            Console.WriteLine()
             Console.WriteLine("Use /NoSubfolder to disable auto creating a subfolder for the database being exported")
             Console.WriteLine("Note: subfolders will always be created if you use /DBList and specify more than one database")
             Console.WriteLine()
-            Console.WriteLine("Use /Data to define a text file with table names (one name per line) for which the data should be exported")
-            Console.WriteLine("In addition to table names defined in /Data, there are default tables which will have their data exported")
-            Console.WriteLine("Disable the defaults using /NoAutoData")
+            Console.WriteLine(ConsoleMsgUtils.WrapParagraph(
+                "Use /Data to define a text file with table names (one name per line) for which the data should be exported"))
             Console.WriteLine()
-            Console.WriteLine("Use /Sync to copy new/changed files from the output folder to an alternative folder")
-            Console.WriteLine("This is advantageous to prevent file timestamps from getting updated every time the schema is exported")
+            Console.WriteLine(ConsoleMsgUtils.WrapParagraph(
+                "In addition to table names defined in /Data, there are default tables which will have their data exported. " &
+                "Disable the defaults using /NoAutoData"))
             Console.WriteLine()
-            Console.WriteLine("Use /Svn to auto-update any new or changed files using Subversion")
+            Console.WriteLine(ConsoleMsgUtils.WrapParagraph(
+                "Use /Sync to copy new/changed files from the output folder to an alternative folder. " &
+                "This is advantageous to prevent file timestamps from getting updated every time the schema is exported"))
+            Console.WriteLine()
             Console.WriteLine("Use /Git to auto-update any new or changed files using Git")
+            Console.WriteLine("Use /Svn to auto-update any new or changed files using Subversion")
             Console.WriteLine("Use /Hg  to auto-update any new or changed files using Mercurial")
             Console.WriteLine("Use /Commit to commit any updates to the repository")
             Console.WriteLine()
 
             Console.WriteLine("Use /L to log messages to a file; you can optionally specify a log file name using /L:LogFilePath.")
-            Console.WriteLine("Use /LogFolder to specify the folder to save the log file in. By default, the log file is created in the current working directory.")
+            Console.WriteLine(ConsoleMsgUtils.WrapParagraph(
+                "Use /LogFolder to specify the folder to save the log file in. By default, the log file is created in the current working directory."))
             Console.WriteLine()
             Console.WriteLine("Use /Preview to count the number of database objects that would be exported")
             Console.WriteLine("Use /Stats to show (but not log) export stats")
