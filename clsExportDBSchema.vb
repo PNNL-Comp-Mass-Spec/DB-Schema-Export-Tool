@@ -28,7 +28,7 @@ Imports SharedVBNetRoutines
 ''' from a specific Sql Server database
 ''' </summary>
 Public Class clsExportDBSchema
-    Inherits PRISM.clsEventNotifier
+    Inherits PRISM.EventNotifier
 
     ''' <summary>
     ''' Constructor

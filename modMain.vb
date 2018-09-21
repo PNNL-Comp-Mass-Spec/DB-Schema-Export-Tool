@@ -21,7 +21,7 @@ Imports PRISM.FileProcessor
 ''' See clsMTSAutomation for additional information
 ''' </summary>
 Module modMain
-    Public Const PROGRAM_DATE As String = "August 10, 2018"
+    Public Const PROGRAM_DATE As String = "September 21, 2018"
 
     Private mOutputFolderPath As String
 
@@ -228,7 +228,7 @@ Module modMain
         Try
             ' Make sure no invalid parameters are present
             If objParseCommandLine.InvalidParametersPresent(lstValidParameters) Then
-                ShowErrorMessage("Invalid commmand line parameters",
+                ShowErrorMessage("Invalid command line parameters",
                   (From item In objParseCommandLine.InvalidParameters(lstValidParameters) Select "/" + item).ToList())
                 Return False
             Else
@@ -387,7 +387,7 @@ Module modMain
 
     End Sub
 
-    Private Sub RegisterEvents(processor As clsEventNotifier)
+    Private Sub RegisterEvents(processor As EventNotifier)
         AddHandler processor.DebugEvent, AddressOf Processor_DebugEvent
         AddHandler processor.ErrorEvent, AddressOf Processor_ErrorEvent
         AddHandler processor.StatusEvent, AddressOf Processor_StatusEvent

@@ -27,7 +27,7 @@ Public Class clsDBSchemaExportTool
     ''' Constructor
     ''' </summary>
     Public Sub New()
-        MyBase.mFileDate = "August 10, 2018"
+        MyBase.mFileDate = "September 21, 2018"
         mDateMatcher = New Regex("'\d+/\d+/\d+ \d+:\d+:\d+ [AP]M'", RegexOptions.Compiled Or RegexOptions.IgnoreCase)
 
         InitializeLocalVariables()
@@ -78,7 +78,7 @@ Public Class clsDBSchemaExportTool
     Private ReadOnly mDateMatcher As Regex
 
     'Runs specified program
-    Private WithEvents m_ProgRunner As clsProgRunner
+    Private WithEvents m_ProgRunner As ProgRunner
 
 #End Region
 
@@ -861,7 +861,7 @@ Public Class clsDBSchemaExportTool
 
         Try
 
-            m_ProgRunner = New clsProgRunner
+            m_ProgRunner = New ProgRunner
             With m_ProgRunner
                 .Arguments = cmdArgs
                 .CreateNoWindow = True
@@ -888,7 +888,7 @@ Public Class clsDBSchemaExportTool
             If maxRuntimeSeconds < 10 Then maxRuntimeSeconds = 10
 
             ' Loop until program is complete, or until maxRuntimeSeconds seconds elapses
-            While (m_ProgRunner.State <> clsProgRunner.States.NotMonitoring)
+            While (m_ProgRunner.State <> ProgRunner.States.NotMonitoring)
                 Threading.Thread.Sleep(100)
 
                 Dim elapsedSeconds = DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds
