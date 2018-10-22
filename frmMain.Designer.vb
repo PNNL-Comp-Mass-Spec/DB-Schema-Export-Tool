@@ -49,25 +49,25 @@ Partial Class frmMain
         Me.mnuFileExit = New System.Windows.Forms.MenuItem()
         Me.mnuFileSep2 = New System.Windows.Forms.MenuItem()
         Me.cmdUpdateTableNames = New System.Windows.Forms.Button()
-        Me.chkCreateFolderForEachDB = New System.Windows.Forms.CheckBox()
+        Me.chkCreateDirectoryForEachDB = New System.Windows.Forms.CheckBox()
         Me.pbarProgress = New System.Windows.Forms.ProgressBar()
         Me.cmdRefreshDBList = New System.Windows.Forms.Button()
         Me.mnuHelp = New System.Windows.Forms.MenuItem()
         Me.mnuHelpAbout = New System.Windows.Forms.MenuItem()
         Me.fraOutputOptions = New System.Windows.Forms.GroupBox()
         Me.lblTableDataToExport = New System.Windows.Forms.Label()
-        Me.lblServerOutputFolderNamePrefix = New System.Windows.Forms.Label()
-        Me.txtServerOutputFolderNamePrefix = New System.Windows.Forms.TextBox()
+        Me.lblServerOutputDirectoryNamePrefix = New System.Windows.Forms.Label()
+        Me.txtServerOutputDirectoryNamePrefix = New System.Windows.Forms.TextBox()
         Me.chkExportServerSettingsLoginsAndJobs = New System.Windows.Forms.CheckBox()
         Me.lblSelectDefaultDBs = New System.Windows.Forms.Label()
         Me.cmdSelectDefaultDMSDBs = New System.Windows.Forms.Button()
         Me.cmdSelectDefaultMTSDBs = New System.Windows.Forms.Button()
-        Me.lblOutputFolderNamePrefix = New System.Windows.Forms.Label()
-        Me.txtOutputFolderNamePrefix = New System.Windows.Forms.TextBox()
+        Me.lblOutputDirectoryNamePrefix = New System.Windows.Forms.Label()
+        Me.txtOutputDirectoryNamePrefix = New System.Windows.Forms.TextBox()
         Me.cboTableNamesToExportSortOrder = New System.Windows.Forms.ComboBox()
         Me.lstTableNamesToExportData = New System.Windows.Forms.ListBox()
-        Me.txtOutputFolderPath = New System.Windows.Forms.TextBox()
-        Me.lblOutputFolderPath = New System.Windows.Forms.Label()
+        Me.txtOutputDirectoryPath = New System.Windows.Forms.TextBox()
+        Me.lblOutputDirectoryPath = New System.Windows.Forms.Label()
         Me.lstDatabasesToProcess = New System.Windows.Forms.ListBox()
         Me.mnuFileSep1 = New System.Windows.Forms.MenuItem()
         Me.lblSubtaskProgress = New System.Windows.Forms.Label()
@@ -76,7 +76,7 @@ Partial Class frmMain
         Me.lblMessage = New System.Windows.Forms.Label()
         Me.MainMenuControl = New System.Windows.Forms.MainMenu(Me.components)
         Me.mnuFile = New System.Windows.Forms.MenuItem()
-        Me.mnuFileSelectOutputFolder = New System.Windows.Forms.MenuItem()
+        Me.mnuFileSelectOutputDirectory = New System.Windows.Forms.MenuItem()
         Me.fraControls = New System.Windows.Forms.GroupBox()
         Me.cmdGo = New System.Windows.Forms.Button()
         Me.cmdExit = New System.Windows.Forms.Button()
@@ -354,23 +354,23 @@ Partial Class frmMain
         Me.cmdUpdateTableNames.Text = "Refresh &Table Names"
         Me.cmdUpdateTableNames.UseVisualStyleBackColor = False
         '
-        'chkCreateFolderForEachDB
+        'chkCreateDirectoryForEachDB
         '
-        Me.chkCreateFolderForEachDB.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
-        Me.chkCreateFolderForEachDB.BackColor = System.Drawing.SystemColors.Control
-        Me.chkCreateFolderForEachDB.Checked = True
-        Me.chkCreateFolderForEachDB.CheckState = System.Windows.Forms.CheckState.Checked
-        Me.chkCreateFolderForEachDB.Cursor = System.Windows.Forms.Cursors.Default
-        Me.chkCreateFolderForEachDB.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.chkCreateFolderForEachDB.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.chkCreateFolderForEachDB.Location = New System.Drawing.Point(15, 377)
-        Me.chkCreateFolderForEachDB.Margin = New System.Windows.Forms.Padding(4)
-        Me.chkCreateFolderForEachDB.Name = "chkCreateFolderForEachDB"
-        Me.chkCreateFolderForEachDB.RightToLeft = System.Windows.Forms.RightToLeft.No
-        Me.chkCreateFolderForEachDB.Size = New System.Drawing.Size(223, 25)
-        Me.chkCreateFolderForEachDB.TabIndex = 7
-        Me.chkCreateFolderForEachDB.Text = "Create folder for each DB"
-        Me.chkCreateFolderForEachDB.UseVisualStyleBackColor = False
+        Me.chkCreateDirectoryForEachDB.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
+        Me.chkCreateDirectoryForEachDB.BackColor = System.Drawing.SystemColors.Control
+        Me.chkCreateDirectoryForEachDB.Checked = True
+        Me.chkCreateDirectoryForEachDB.CheckState = System.Windows.Forms.CheckState.Checked
+        Me.chkCreateDirectoryForEachDB.Cursor = System.Windows.Forms.Cursors.Default
+        Me.chkCreateDirectoryForEachDB.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.chkCreateDirectoryForEachDB.ForeColor = System.Drawing.SystemColors.ControlText
+        Me.chkCreateDirectoryForEachDB.Location = New System.Drawing.Point(15, 377)
+        Me.chkCreateDirectoryForEachDB.Margin = New System.Windows.Forms.Padding(4)
+        Me.chkCreateDirectoryForEachDB.Name = "chkCreateDirectoryForEachDB"
+        Me.chkCreateDirectoryForEachDB.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.chkCreateDirectoryForEachDB.Size = New System.Drawing.Size(223, 25)
+        Me.chkCreateDirectoryForEachDB.TabIndex = 7
+        Me.chkCreateDirectoryForEachDB.Text = "Create directory for each DB"
+        Me.chkCreateDirectoryForEachDB.UseVisualStyleBackColor = False
         '
         'pbarProgress
         '
@@ -414,21 +414,21 @@ Partial Class frmMain
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.fraOutputOptions.BackColor = System.Drawing.SystemColors.Control
         Me.fraOutputOptions.Controls.Add(Me.lblTableDataToExport)
-        Me.fraOutputOptions.Controls.Add(Me.lblServerOutputFolderNamePrefix)
-        Me.fraOutputOptions.Controls.Add(Me.txtServerOutputFolderNamePrefix)
+        Me.fraOutputOptions.Controls.Add(Me.lblServerOutputDirectoryNamePrefix)
+        Me.fraOutputOptions.Controls.Add(Me.txtServerOutputDirectoryNamePrefix)
         Me.fraOutputOptions.Controls.Add(Me.chkExportServerSettingsLoginsAndJobs)
         Me.fraOutputOptions.Controls.Add(Me.lblSelectDefaultDBs)
         Me.fraOutputOptions.Controls.Add(Me.cmdSelectDefaultDMSDBs)
         Me.fraOutputOptions.Controls.Add(Me.cmdSelectDefaultMTSDBs)
-        Me.fraOutputOptions.Controls.Add(Me.lblOutputFolderNamePrefix)
-        Me.fraOutputOptions.Controls.Add(Me.txtOutputFolderNamePrefix)
+        Me.fraOutputOptions.Controls.Add(Me.lblOutputDirectoryNamePrefix)
+        Me.fraOutputOptions.Controls.Add(Me.txtOutputDirectoryNamePrefix)
         Me.fraOutputOptions.Controls.Add(Me.cboTableNamesToExportSortOrder)
         Me.fraOutputOptions.Controls.Add(Me.cmdRefreshDBList)
-        Me.fraOutputOptions.Controls.Add(Me.chkCreateFolderForEachDB)
+        Me.fraOutputOptions.Controls.Add(Me.chkCreateDirectoryForEachDB)
         Me.fraOutputOptions.Controls.Add(Me.cmdUpdateTableNames)
         Me.fraOutputOptions.Controls.Add(Me.lstTableNamesToExportData)
-        Me.fraOutputOptions.Controls.Add(Me.txtOutputFolderPath)
-        Me.fraOutputOptions.Controls.Add(Me.lblOutputFolderPath)
+        Me.fraOutputOptions.Controls.Add(Me.txtOutputDirectoryPath)
+        Me.fraOutputOptions.Controls.Add(Me.lblOutputDirectoryPath)
         Me.fraOutputOptions.Controls.Add(Me.lstDatabasesToProcess)
         Me.fraOutputOptions.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.fraOutputOptions.ForeColor = System.Drawing.SystemColors.ControlText
@@ -456,37 +456,37 @@ Partial Class frmMain
         Me.lblTableDataToExport.TabIndex = 7
         Me.lblTableDataToExport.Text = "Table Data to Export"
         '
-        'lblServerOutputFolderNamePrefix
+        'lblServerOutputDirectoryNamePrefix
         '
-        Me.lblServerOutputFolderNamePrefix.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
-        Me.lblServerOutputFolderNamePrefix.BackColor = System.Drawing.SystemColors.Control
-        Me.lblServerOutputFolderNamePrefix.Cursor = System.Windows.Forms.Cursors.Default
-        Me.lblServerOutputFolderNamePrefix.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.lblServerOutputFolderNamePrefix.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.lblServerOutputFolderNamePrefix.Location = New System.Drawing.Point(349, 404)
-        Me.lblServerOutputFolderNamePrefix.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
-        Me.lblServerOutputFolderNamePrefix.Name = "lblServerOutputFolderNamePrefix"
-        Me.lblServerOutputFolderNamePrefix.RightToLeft = System.Windows.Forms.RightToLeft.No
-        Me.lblServerOutputFolderNamePrefix.Size = New System.Drawing.Size(153, 20)
-        Me.lblServerOutputFolderNamePrefix.TabIndex = 17
-        Me.lblServerOutputFolderNamePrefix.Text = "Output Folder Prefix"
+        Me.lblServerOutputDirectoryNamePrefix.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
+        Me.lblServerOutputDirectoryNamePrefix.BackColor = System.Drawing.SystemColors.Control
+        Me.lblServerOutputDirectoryNamePrefix.Cursor = System.Windows.Forms.Cursors.Default
+        Me.lblServerOutputDirectoryNamePrefix.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblServerOutputDirectoryNamePrefix.ForeColor = System.Drawing.SystemColors.ControlText
+        Me.lblServerOutputDirectoryNamePrefix.Location = New System.Drawing.Point(349, 404)
+        Me.lblServerOutputDirectoryNamePrefix.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
+        Me.lblServerOutputDirectoryNamePrefix.Name = "lblServerOutputDirectoryNamePrefix"
+        Me.lblServerOutputDirectoryNamePrefix.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.lblServerOutputDirectoryNamePrefix.Size = New System.Drawing.Size(153, 20)
+        Me.lblServerOutputDirectoryNamePrefix.TabIndex = 17
+        Me.lblServerOutputDirectoryNamePrefix.Text = "Output Directory Prefix"
         '
-        'txtServerOutputFolderNamePrefix
+        'txtServerOutputDirectoryNamePrefix
         '
-        Me.txtServerOutputFolderNamePrefix.AcceptsReturn = True
-        Me.txtServerOutputFolderNamePrefix.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
-        Me.txtServerOutputFolderNamePrefix.BackColor = System.Drawing.SystemColors.Window
-        Me.txtServerOutputFolderNamePrefix.Cursor = System.Windows.Forms.Cursors.IBeam
-        Me.txtServerOutputFolderNamePrefix.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.txtServerOutputFolderNamePrefix.ForeColor = System.Drawing.SystemColors.WindowText
-        Me.txtServerOutputFolderNamePrefix.Location = New System.Drawing.Point(516, 400)
-        Me.txtServerOutputFolderNamePrefix.Margin = New System.Windows.Forms.Padding(4)
-        Me.txtServerOutputFolderNamePrefix.MaxLength = 0
-        Me.txtServerOutputFolderNamePrefix.Name = "txtServerOutputFolderNamePrefix"
-        Me.txtServerOutputFolderNamePrefix.RightToLeft = System.Windows.Forms.RightToLeft.No
-        Me.txtServerOutputFolderNamePrefix.Size = New System.Drawing.Size(155, 23)
-        Me.txtServerOutputFolderNamePrefix.TabIndex = 18
-        Me.txtServerOutputFolderNamePrefix.Text = "ServerSchema__"
+        Me.txtServerOutputDirectoryNamePrefix.AcceptsReturn = True
+        Me.txtServerOutputDirectoryNamePrefix.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
+        Me.txtServerOutputDirectoryNamePrefix.BackColor = System.Drawing.SystemColors.Window
+        Me.txtServerOutputDirectoryNamePrefix.Cursor = System.Windows.Forms.Cursors.IBeam
+        Me.txtServerOutputDirectoryNamePrefix.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.txtServerOutputDirectoryNamePrefix.ForeColor = System.Drawing.SystemColors.WindowText
+        Me.txtServerOutputDirectoryNamePrefix.Location = New System.Drawing.Point(516, 400)
+        Me.txtServerOutputDirectoryNamePrefix.Margin = New System.Windows.Forms.Padding(4)
+        Me.txtServerOutputDirectoryNamePrefix.MaxLength = 0
+        Me.txtServerOutputDirectoryNamePrefix.Name = "txtServerOutputDirectoryNamePrefix"
+        Me.txtServerOutputDirectoryNamePrefix.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.txtServerOutputDirectoryNamePrefix.Size = New System.Drawing.Size(155, 23)
+        Me.txtServerOutputDirectoryNamePrefix.TabIndex = 18
+        Me.txtServerOutputDirectoryNamePrefix.Text = "ServerSchema__"
         '
         'chkExportServerSettingsLoginsAndJobs
         '
@@ -553,37 +553,37 @@ Partial Class frmMain
         Me.cmdSelectDefaultMTSDBs.Text = "MTS DBs"
         Me.cmdSelectDefaultMTSDBs.UseVisualStyleBackColor = False
         '
-        'lblOutputFolderNamePrefix
+        'lblOutputDirectoryNamePrefix
         '
-        Me.lblOutputFolderNamePrefix.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
-        Me.lblOutputFolderNamePrefix.BackColor = System.Drawing.SystemColors.Control
-        Me.lblOutputFolderNamePrefix.Cursor = System.Windows.Forms.Cursors.Default
-        Me.lblOutputFolderNamePrefix.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.lblOutputFolderNamePrefix.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.lblOutputFolderNamePrefix.Location = New System.Drawing.Point(12, 407)
-        Me.lblOutputFolderNamePrefix.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
-        Me.lblOutputFolderNamePrefix.Name = "lblOutputFolderNamePrefix"
-        Me.lblOutputFolderNamePrefix.RightToLeft = System.Windows.Forms.RightToLeft.No
-        Me.lblOutputFolderNamePrefix.Size = New System.Drawing.Size(153, 20)
-        Me.lblOutputFolderNamePrefix.TabIndex = 8
-        Me.lblOutputFolderNamePrefix.Text = "Output Folder Prefix"
+        Me.lblOutputDirectoryNamePrefix.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
+        Me.lblOutputDirectoryNamePrefix.BackColor = System.Drawing.SystemColors.Control
+        Me.lblOutputDirectoryNamePrefix.Cursor = System.Windows.Forms.Cursors.Default
+        Me.lblOutputDirectoryNamePrefix.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblOutputDirectoryNamePrefix.ForeColor = System.Drawing.SystemColors.ControlText
+        Me.lblOutputDirectoryNamePrefix.Location = New System.Drawing.Point(12, 407)
+        Me.lblOutputDirectoryNamePrefix.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
+        Me.lblOutputDirectoryNamePrefix.Name = "lblOutputDirectoryNamePrefix"
+        Me.lblOutputDirectoryNamePrefix.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.lblOutputDirectoryNamePrefix.Size = New System.Drawing.Size(153, 20)
+        Me.lblOutputDirectoryNamePrefix.TabIndex = 8
+        Me.lblOutputDirectoryNamePrefix.Text = "Output Directory Prefix"
         '
-        'txtOutputFolderNamePrefix
+        'txtOutputDirectoryNamePrefix
         '
-        Me.txtOutputFolderNamePrefix.AcceptsReturn = True
-        Me.txtOutputFolderNamePrefix.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
-        Me.txtOutputFolderNamePrefix.BackColor = System.Drawing.SystemColors.Window
-        Me.txtOutputFolderNamePrefix.Cursor = System.Windows.Forms.Cursors.IBeam
-        Me.txtOutputFolderNamePrefix.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.txtOutputFolderNamePrefix.ForeColor = System.Drawing.SystemColors.WindowText
-        Me.txtOutputFolderNamePrefix.Location = New System.Drawing.Point(179, 404)
-        Me.txtOutputFolderNamePrefix.Margin = New System.Windows.Forms.Padding(4)
-        Me.txtOutputFolderNamePrefix.MaxLength = 0
-        Me.txtOutputFolderNamePrefix.Name = "txtOutputFolderNamePrefix"
-        Me.txtOutputFolderNamePrefix.RightToLeft = System.Windows.Forms.RightToLeft.No
-        Me.txtOutputFolderNamePrefix.Size = New System.Drawing.Size(155, 23)
-        Me.txtOutputFolderNamePrefix.TabIndex = 9
-        Me.txtOutputFolderNamePrefix.Text = "DBSchema__"
+        Me.txtOutputDirectoryNamePrefix.AcceptsReturn = True
+        Me.txtOutputDirectoryNamePrefix.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
+        Me.txtOutputDirectoryNamePrefix.BackColor = System.Drawing.SystemColors.Window
+        Me.txtOutputDirectoryNamePrefix.Cursor = System.Windows.Forms.Cursors.IBeam
+        Me.txtOutputDirectoryNamePrefix.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.txtOutputDirectoryNamePrefix.ForeColor = System.Drawing.SystemColors.WindowText
+        Me.txtOutputDirectoryNamePrefix.Location = New System.Drawing.Point(179, 404)
+        Me.txtOutputDirectoryNamePrefix.Margin = New System.Windows.Forms.Padding(4)
+        Me.txtOutputDirectoryNamePrefix.MaxLength = 0
+        Me.txtOutputDirectoryNamePrefix.Name = "txtOutputDirectoryNamePrefix"
+        Me.txtOutputDirectoryNamePrefix.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.txtOutputDirectoryNamePrefix.Size = New System.Drawing.Size(155, 23)
+        Me.txtOutputDirectoryNamePrefix.TabIndex = 9
+        Me.txtOutputDirectoryNamePrefix.Text = "DBSchema__"
         '
         'cboTableNamesToExportSortOrder
         '
@@ -609,37 +609,37 @@ Partial Class frmMain
         Me.lstTableNamesToExportData.Size = New System.Drawing.Size(394, 196)
         Me.lstTableNamesToExportData.TabIndex = 5
         '
-        'txtOutputFolderPath
+        'txtOutputDirectoryPath
         '
-        Me.txtOutputFolderPath.AcceptsReturn = True
-        Me.txtOutputFolderPath.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
+        Me.txtOutputDirectoryPath.AcceptsReturn = True
+        Me.txtOutputDirectoryPath.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.txtOutputFolderPath.BackColor = System.Drawing.SystemColors.Window
-        Me.txtOutputFolderPath.Cursor = System.Windows.Forms.Cursors.IBeam
-        Me.txtOutputFolderPath.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.txtOutputFolderPath.ForeColor = System.Drawing.SystemColors.WindowText
-        Me.txtOutputFolderPath.Location = New System.Drawing.Point(11, 39)
-        Me.txtOutputFolderPath.Margin = New System.Windows.Forms.Padding(4)
-        Me.txtOutputFolderPath.MaxLength = 0
-        Me.txtOutputFolderPath.Name = "txtOutputFolderPath"
-        Me.txtOutputFolderPath.RightToLeft = System.Windows.Forms.RightToLeft.No
-        Me.txtOutputFolderPath.Size = New System.Drawing.Size(735, 23)
-        Me.txtOutputFolderPath.TabIndex = 1
-        Me.txtOutputFolderPath.Text = "C:\Temp\"
+        Me.txtOutputDirectoryPath.BackColor = System.Drawing.SystemColors.Window
+        Me.txtOutputDirectoryPath.Cursor = System.Windows.Forms.Cursors.IBeam
+        Me.txtOutputDirectoryPath.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.txtOutputDirectoryPath.ForeColor = System.Drawing.SystemColors.WindowText
+        Me.txtOutputDirectoryPath.Location = New System.Drawing.Point(11, 39)
+        Me.txtOutputDirectoryPath.Margin = New System.Windows.Forms.Padding(4)
+        Me.txtOutputDirectoryPath.MaxLength = 0
+        Me.txtOutputDirectoryPath.Name = "txtOutputDirectoryPath"
+        Me.txtOutputDirectoryPath.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.txtOutputDirectoryPath.Size = New System.Drawing.Size(735, 23)
+        Me.txtOutputDirectoryPath.TabIndex = 1
+        Me.txtOutputDirectoryPath.Text = "C:\Temp\"
         '
-        'lblOutputFolderPath
+        'lblOutputDirectoryPath
         '
-        Me.lblOutputFolderPath.BackColor = System.Drawing.SystemColors.Control
-        Me.lblOutputFolderPath.Cursor = System.Windows.Forms.Cursors.Default
-        Me.lblOutputFolderPath.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.lblOutputFolderPath.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.lblOutputFolderPath.Location = New System.Drawing.Point(11, 20)
-        Me.lblOutputFolderPath.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
-        Me.lblOutputFolderPath.Name = "lblOutputFolderPath"
-        Me.lblOutputFolderPath.RightToLeft = System.Windows.Forms.RightToLeft.No
-        Me.lblOutputFolderPath.Size = New System.Drawing.Size(183, 21)
-        Me.lblOutputFolderPath.TabIndex = 0
-        Me.lblOutputFolderPath.Text = "Output Folder Path"
+        Me.lblOutputDirectoryPath.BackColor = System.Drawing.SystemColors.Control
+        Me.lblOutputDirectoryPath.Cursor = System.Windows.Forms.Cursors.Default
+        Me.lblOutputDirectoryPath.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblOutputDirectoryPath.ForeColor = System.Drawing.SystemColors.ControlText
+        Me.lblOutputDirectoryPath.Location = New System.Drawing.Point(11, 20)
+        Me.lblOutputDirectoryPath.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
+        Me.lblOutputDirectoryPath.Name = "lblOutputDirectoryPath"
+        Me.lblOutputDirectoryPath.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.lblOutputDirectoryPath.Size = New System.Drawing.Size(183, 21)
+        Me.lblOutputDirectoryPath.TabIndex = 0
+        Me.lblOutputDirectoryPath.Text = "Output Directory Path"
         '
         'lstDatabasesToProcess
         '
@@ -725,14 +725,14 @@ Partial Class frmMain
         'mnuFile
         '
         Me.mnuFile.Index = 0
-        Me.mnuFile.MenuItems.AddRange(New System.Windows.Forms.MenuItem() {Me.mnuFileSelectOutputFolder, Me.mnuFileSep1, Me.mnuFileLoadOptions, Me.mnuFileSaveOptions, Me.mnuFileSep2, Me.mnuFileExit})
+        Me.mnuFile.MenuItems.AddRange(New System.Windows.Forms.MenuItem() {Me.mnuFileSelectOutputDirectory, Me.mnuFileSep1, Me.mnuFileLoadOptions, Me.mnuFileSaveOptions, Me.mnuFileSep2, Me.mnuFileExit})
         Me.mnuFile.Text = "&File"
         '
-        'mnuFileSelectOutputFolder
+        'mnuFileSelectOutputDirectory
         '
-        Me.mnuFileSelectOutputFolder.Index = 0
-        Me.mnuFileSelectOutputFolder.Shortcut = System.Windows.Forms.Shortcut.CtrlO
-        Me.mnuFileSelectOutputFolder.Text = "Select &Output Folder ..."
+        Me.mnuFileSelectOutputDirectory.Index = 0
+        Me.mnuFileSelectOutputDirectory.Shortcut = System.Windows.Forms.Shortcut.CtrlO
+        Me.mnuFileSelectOutputDirectory.Text = "Select &Output Directory ..."
         '
         'fraControls
         '
@@ -882,22 +882,22 @@ Partial Class frmMain
     Friend WithEvents mnuFileExit As System.Windows.Forms.MenuItem
     Friend WithEvents mnuFileSep2 As System.Windows.Forms.MenuItem
     Friend WithEvents cmdUpdateTableNames As System.Windows.Forms.Button
-    Friend WithEvents chkCreateFolderForEachDB As System.Windows.Forms.CheckBox
-	Friend WithEvents pbarProgress As System.Windows.Forms.ProgressBar
+    Friend WithEvents chkCreateDirectoryForEachDB As System.Windows.Forms.CheckBox
+    Friend WithEvents pbarProgress As System.Windows.Forms.ProgressBar
     Friend WithEvents cmdRefreshDBList As System.Windows.Forms.Button
     Friend WithEvents mnuHelp As System.Windows.Forms.MenuItem
     Friend WithEvents mnuHelpAbout As System.Windows.Forms.MenuItem
     Friend WithEvents fraOutputOptions As System.Windows.Forms.GroupBox
-    Friend WithEvents txtOutputFolderPath As System.Windows.Forms.TextBox
-    Friend WithEvents lblOutputFolderPath As System.Windows.Forms.Label
+    Friend WithEvents txtOutputDirectoryPath As System.Windows.Forms.TextBox
+    Friend WithEvents lblOutputDirectoryPath As System.Windows.Forms.Label
     Friend WithEvents lstDatabasesToProcess As System.Windows.Forms.ListBox
     Friend WithEvents mnuFileSep1 As System.Windows.Forms.MenuItem
     Friend WithEvents lblSubtaskProgress As System.Windows.Forms.Label
     Friend WithEvents fraStatus As System.Windows.Forms.GroupBox
-	Friend WithEvents pbarSubtaskProgress As System.Windows.Forms.ProgressBar
+    Friend WithEvents pbarSubtaskProgress As System.Windows.Forms.ProgressBar
     Friend WithEvents MainMenuControl As System.Windows.Forms.MainMenu
     Friend WithEvents mnuFile As System.Windows.Forms.MenuItem
-    Friend WithEvents mnuFileSelectOutputFolder As System.Windows.Forms.MenuItem
+    Friend WithEvents mnuFileSelectOutputDirectory As System.Windows.Forms.MenuItem
     Friend WithEvents mnuEditPauseAfterEachDatabase As System.Windows.Forms.MenuItem
     Friend WithEvents fraControls As System.Windows.Forms.GroupBox
     Friend WithEvents lblMessage As System.Windows.Forms.Label
@@ -915,15 +915,15 @@ Partial Class frmMain
     Friend WithEvents fraObjectTypesToScript As System.Windows.Forms.GroupBox
     Friend WithEvents mnuEditSaveDataAsInsertIntoStatements As System.Windows.Forms.MenuItem
     Friend WithEvents mnuEditWarnOnHighTableRowCount As System.Windows.Forms.MenuItem
-    Friend WithEvents lblOutputFolderNamePrefix As System.Windows.Forms.Label
-    Friend WithEvents txtOutputFolderNamePrefix As System.Windows.Forms.TextBox
+    Friend WithEvents lblOutputDirectoryNamePrefix As System.Windows.Forms.Label
+    Friend WithEvents txtOutputDirectoryNamePrefix As System.Windows.Forms.TextBox
     Friend WithEvents mnuEditSep3 As System.Windows.Forms.MenuItem
     Friend WithEvents mnuEditIncludeTimestampInScriptFileHeader As System.Windows.Forms.MenuItem
     Friend WithEvents lblSelectDefaultDBs As System.Windows.Forms.Label
     Friend WithEvents cmdSelectDefaultDMSDBs As System.Windows.Forms.Button
     Friend WithEvents cmdSelectDefaultMTSDBs As System.Windows.Forms.Button
     Friend WithEvents chkExportServerSettingsLoginsAndJobs As System.Windows.Forms.CheckBox
-    Friend WithEvents lblServerOutputFolderNamePrefix As System.Windows.Forms.Label
-    Friend WithEvents txtServerOutputFolderNamePrefix As System.Windows.Forms.TextBox
+    Friend WithEvents lblServerOutputDirectoryNamePrefix As System.Windows.Forms.Label
+    Friend WithEvents txtServerOutputDirectoryNamePrefix As System.Windows.Forms.TextBox
     Friend WithEvents lblTableDataToExport As Label
 End Class

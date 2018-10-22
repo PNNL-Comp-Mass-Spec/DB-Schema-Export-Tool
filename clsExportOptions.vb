@@ -13,14 +13,14 @@ Public Class clsSchemaExportOptions
         SqlLite = 3
     End Enum
 
-    Public Property OutputFolderPath As String
-    Public Property OutputFolderNamePrefix As String
-    Public Property CreateFolderForEachDB As Boolean
+    Public Property OutputDirectoryPath As String
+    Public Property OutputDirectoryNamePrefix As String
+    Public Property CreateDirectoryForEachDB As Boolean
     Public Property IncludeSystemObjects As Boolean
     Public Property IncludeTimestampInScriptFileHeader As Boolean
 
     Public Property ExportServerSettingsLoginsAndJobs As Boolean
-    Public Property ServerOutputFolderNamePrefix As String
+    Public Property ServerOutputDirectoryNamePrefix As String
 
     Public Property SaveDataAsInsertIntoStatements As Boolean
     Public Property DatabaseTypeForInsertInto As eTargetDatabaseTypeConstants

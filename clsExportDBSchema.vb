@@ -54,8 +54,8 @@ Public Class clsExportDBSchema
     Public Const SQL_SERVER_USERNAME_DEFAULT As String = "mtuser"
     Public Const SQL_SERVER_PASSWORD_DEFAULT As String = "mt4fun"
 
-    Public Const DEFAULT_DB_OUTPUT_FOLDER_NAME_PREFIX As String = "DBSchema__"
-    Public Const DEFAULT_SERVER_OUTPUT_FOLDER_NAME_PREFIX As String = "ServerSchema__"
+    Public Const DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX As String = "DBSchema__"
+    Public Const DEFAULT_SERVER_OUTPUT_DIRECTORY_NAME_PREFIX As String = "ServerSchema__"
 
     ' Note: this value defines the maximum number of data rows that will be exported
     ' from tables that are auto-added to the table list for data export
@@ -73,7 +73,7 @@ Public Class clsExportDBSchema
         GeneralError = 1
         ConfigurationError = 2
         DatabaseConnectionError = 3
-        OutputFolderAccessError = 4
+        OutputDirectoryAccessError = 4
     End Enum
 
     Public Enum ePauseStatusConstants
@@ -132,8 +132,8 @@ Public Class clsExportDBSchema
     Private mTableNameAutoSelectRegEx As List(Of String)
 
     ' Keys in the dictionary are DatabaseName
-    ' Values are the output folder path that was used
-    Private mSchemaOutputFolders As Dictionary(Of String, String)
+    ' Values are the output directory path that was used
+    Private mSchemaOutputDirectories As Dictionary(Of String, String)
 
     Private mShowStats As Boolean
 
@@ -204,9 +204,9 @@ Public Class clsExportDBSchema
 
     Public Property PreviewExport As Boolean
 
-    Public ReadOnly Property SchemaOutputFolders() As Dictionary(Of String, String)
+    Public ReadOnly Property SchemaOutputDirectories() As Dictionary(Of String, String)
         Get
-            Return mSchemaOutputFolders
+            Return mSchemaOutputDirectories
         End Get
     End Property
 
@@ -526,22 +526,22 @@ Public Class clsExportDBSchema
             ' Validate the strings in schemaExportOptions
             ValidateSchemaExportOptions(schemaExportOptions)
 
-            ' Construct the path to the output folder
-            If schemaExportOptions.CreateFolderForEachDB Then
-                workingParams.OutputFolderPathCurrentDB = Path.Combine(schemaExportOptions.OutputFolderPath, schemaExportOptions.OutputFolderNamePrefix & objDatabase.Name)
+            ' Construct the path to the output directory
+            If schemaExportOptions.CreateDirectoryForEachDB Then
+                workingParams.OutputDirectoryPathCurrentDB = Path.Combine(schemaExportOptions.OutputDirectoryPath, schemaExportOptions.OutputDirectoryNamePrefix & objDatabase.Name)
             Else
-                workingParams.OutputFolderPathCurrentDB = String.Copy(schemaExportOptions.OutputFolderPath)
+                workingParams.OutputDirectoryPathCurrentDB = String.Copy(schemaExportOptions.OutputDirectoryPath)
             End If
 
-            ' Create the folder if it doesn't exist
-            If Not Directory.Exists(workingParams.OutputFolderPathCurrentDB) AndAlso Not Me.PreviewExport Then
-                Directory.CreateDirectory(workingParams.OutputFolderPathCurrentDB)
+            ' Create the directory if it doesn't exist
+            If Not Directory.Exists(workingParams.OutputDirectoryPathCurrentDB) AndAlso Not Me.PreviewExport Then
+                Directory.CreateDirectory(workingParams.OutputDirectoryPathCurrentDB)
             End If
 
-            If mSchemaOutputFolders.ContainsKey(databaseName) Then
-                mSchemaOutputFolders(databaseName) = workingParams.OutputFolderPathCurrentDB
+            If mSchemaOutputDirectories.ContainsKey(databaseName) Then
+                mSchemaOutputDirectories(databaseName) = workingParams.OutputDirectoryPathCurrentDB
             Else
-                mSchemaOutputFolders.Add(databaseName, workingParams.OutputFolderPathCurrentDB)
+                mSchemaOutputDirectories.Add(databaseName, workingParams.OutputDirectoryPathCurrentDB)
             End If
 
             If schemaExportOptions.AutoSelectTableNamesForDataExport Then
@@ -554,7 +554,7 @@ Public Class clsExportDBSchema
             End If
 
         Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating or creating folder " & workingParams.OutputFolderPathCurrentDB)
+            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating or creating directory " & workingParams.OutputDirectoryPathCurrentDB)
             Return False
         End Try
 
@@ -661,7 +661,7 @@ Public Class clsExportDBSchema
         End If
 
         Try
-            WriteTextToFile(workingParams.OutputFolderPathCurrentDB, DB_DEFINITION_FILE_PREFIX & objDatabase.Name,
+            WriteTextToFile(workingParams.OutputDirectoryPathCurrentDB, DB_DEFINITION_FILE_PREFIX & objDatabase.Name,
              CleanSqlScript(StringCollectionToList(objDatabase.Script(scriptOptions)), schemaExportOptions))
         Catch ex As Exception
             ' User likely doesn't have privilege to script the DB; ignore the error
@@ -672,7 +672,7 @@ Public Class clsExportDBSchema
         If SqlServer2005OrNewer(objDatabase) Then
             For index = 0 To objDatabase.Schemas.Count - 1
                 If ExportSchema(objDatabase.Schemas(index)) Then
-                    WriteTextToFile(workingParams.OutputFolderPathCurrentDB, "Schema_" & objDatabase.Schemas(index).Name,
+                    WriteTextToFile(workingParams.OutputDirectoryPathCurrentDB, "Schema_" & objDatabase.Schemas(index).Name,
                      CleanSqlScript(StringCollectionToList(objDatabase.Schemas(index).Script(scriptOptions)), schemaExportOptions))
 
                     workingParams.ProcessCount += 1
@@ -687,7 +687,7 @@ Public Class clsExportDBSchema
 
         For index = 0 To objDatabase.Roles.Count - 1
             If ExportRole(objDatabase.Roles(index)) Then
-                WriteTextToFile(workingParams.OutputFolderPathCurrentDB, "Role_" & objDatabase.Roles(index).Name,
+                WriteTextToFile(workingParams.OutputDirectoryPathCurrentDB, "Role_" & objDatabase.Roles(index).Name,
                  CleanSqlScript(StringCollectionToList(objDatabase.Roles(index).Script(scriptOptions)), schemaExportOptions))
 
                 workingParams.ProcessCount += 1
@@ -741,7 +741,7 @@ Public Class clsExportDBSchema
 
                     Dim smoObjectArray As SqlSmoObject() = {objTable}
 
-                    WriteTextToFile(workingParams.OutputFolderPathCurrentDB, objTable.Name,
+                    WriteTextToFile(workingParams.OutputDirectoryPathCurrentDB, objTable.Name,
                      CleanSqlScript(StringCollectionToList(objScripter.Script(smoObjectArray)), schemaExportOptions))
                 End If
 
@@ -771,7 +771,7 @@ Public Class clsExportDBSchema
         If workingParams.CountObjectsOnly Then
             workingParams.ProcessCount += objDatabase.UserDefinedDataTypes.Count
         Else
-            intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedDataTypes, schemaExportOptions, scriptOptions, workingParams.ProcessCountExpected, workingParams.OutputFolderPathCurrentDB)
+            intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedDataTypes, schemaExportOptions, scriptOptions, workingParams.ProcessCountExpected, workingParams.OutputDirectoryPathCurrentDB)
             workingParams.ProcessCount += intItemCount
         End If
     End Sub
@@ -788,7 +788,7 @@ Public Class clsExportDBSchema
             If workingParams.CountObjectsOnly Then
                 workingParams.ProcessCount += objDatabase.UserDefinedTypes.Count
             Else
-                intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedTypes, schemaExportOptions, scriptOptions, workingParams.ProcessCountExpected, workingParams.OutputFolderPathCurrentDB)
+                intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedTypes, schemaExportOptions, scriptOptions, workingParams.ProcessCountExpected, workingParams.OutputDirectoryPathCurrentDB)
                 workingParams.ProcessCount += intItemCount
             End If
         End If
@@ -882,7 +882,7 @@ Public Class clsExportDBSchema
         ''                End Select
 
         ''                If Not smoObject Is Nothing Then
-        ''                    WriteTextToFile(workingParams.OutputFolderPathCurrentDB, strObjectName,
+        ''                    WriteTextToFile(workingParams.OutputDirectoryPathCurrentDB, strObjectName,
         ''                                      CleanSqlScript(objScripter.Script(objSMOObject), schemaExportOptions)))
         ''                End If
 
@@ -992,7 +992,7 @@ Public Class clsExportDBSchema
                     If Not smoObject Is Nothing Then
                         Dim smoObjectArray As SqlSmoObject() = {smoObject}
 
-                        WriteTextToFile(workingParams.OutputFolderPathCurrentDB, objectName,
+                        WriteTextToFile(workingParams.OutputDirectoryPathCurrentDB, objectName,
                          CleanSqlScript(StringCollectionToList(objScripter.Script(smoObjectArray)), schemaExportOptions))
                     End If
 
@@ -1259,7 +1259,7 @@ Public Class clsExportDBSchema
                 ''    Loop
                 ''End If
 
-                WriteTextToFile(workingParams.OutputFolderPathCurrentDB,
+                WriteTextToFile(workingParams.OutputDirectoryPathCurrentDB,
                  objTable.Name & "_Data",
                  lstTableRows, False)
 
@@ -1337,7 +1337,7 @@ Public Class clsExportDBSchema
       objSqlServer As Server,
       schemaExportOptions As clsSchemaExportOptions,
       scriptOptions As ScriptingOptions,
-      outputFolderPathCurrentServer As String)
+      outputDirectoryPathCurrentServer As String)
 
         Dim lstInfo As New List(Of String)
 
@@ -1370,7 +1370,7 @@ Public Class clsExportDBSchema
             AppendToList(lstInfo, "VersionString", .VersionString)
         End With
 
-        WriteTextToFile(outputFolderPathCurrentServer, "ServerInformation", lstInfo, False, ".ini")
+        WriteTextToFile(outputDirectoryPathCurrentServer, "ServerInformation", lstInfo, False, ".ini")
 
 
         ' Next save the Server Configuration to file ServerConfiguration
@@ -1441,14 +1441,14 @@ Public Class clsExportDBSchema
             AppendToList(lstInfo, .XPCmdShellEnabled)
         End With
 
-        WriteTextToFile(outputFolderPathCurrentServer, "ServerConfiguration", lstInfo, False, ".ini")
+        WriteTextToFile(outputDirectoryPathCurrentServer, "ServerConfiguration", lstInfo, False, ".ini")
 
 
         ' Next save the Mail settings to file ServerMail
         ' Can only do this for Sql Server 2005 or newer
         If SqlServer2005OrNewer(objSqlServer) Then
             lstInfo = CleanSqlScript(StringCollectionToList(objSqlServer.Mail.Script(scriptOptions)), schemaExportOptions, False, False)
-            WriteTextToFile(outputFolderPathCurrentServer, "ServerMail", lstInfo, True)
+            WriteTextToFile(outputDirectoryPathCurrentServer, "ServerMail", lstInfo, True)
         End If
 
 
@@ -1456,7 +1456,7 @@ Public Class clsExportDBSchema
         lstInfo = CleanSqlScript(StringCollectionToList(objSqlServer.Settings.Script(scriptOptions)), schemaExportOptions, False, False)
         lstInfo.Insert(0, "-- Registry Settings for " & objSqlServer.Name)
 
-        WriteTextToFile(outputFolderPathCurrentServer, "ServerRegistrySettings", lstInfo, False)
+        WriteTextToFile(outputDirectoryPathCurrentServer, "ServerRegistrySettings", lstInfo, False)
 
 
     End Sub
@@ -1465,7 +1465,7 @@ Public Class clsExportDBSchema
       objSqlServer As Server,
       schemaExportOptions As clsSchemaExportOptions,
       scriptOptions As ScriptingOptions,
-      outputFolderPathCurrentServer As String)
+      outputDirectoryPathCurrentServer As String)
 
         ' Do not include a Try block in this Function; let the calling function handle errors
 
@@ -1476,7 +1476,7 @@ Public Class clsExportDBSchema
             Dim strCurrentLogin = objSqlServer.Logins.Item(index).Name
             UpdateSubtaskProgress("Exporting login " & strCurrentLogin, mSubtaskProgressPercentComplete)
 
-            Dim success = WriteTextToFile(outputFolderPathCurrentServer, "Login_" & strCurrentLogin,
+            Dim success = WriteTextToFile(outputDirectoryPathCurrentServer, "Login_" & strCurrentLogin,
              CleanSqlScript(StringCollectionToList(objSqlServer.Logins.Item(index).Script(scriptOptions)), schemaExportOptions, True, True))
 
             UpdateSubtaskProgress(index + 1, processCountExpected)
@@ -1500,7 +1500,7 @@ Public Class clsExportDBSchema
       objSqlServer As Server,
       schemaExportOptions As clsSchemaExportOptions,
       scriptOptions As ScriptingOptions,
-      outputFolderPathCurrentServer As String)
+      outputDirectoryPathCurrentServer As String)
 
         ' Do not include a Try block in this Function; let the calling function handle errors
 
@@ -1511,7 +1511,7 @@ Public Class clsExportDBSchema
             Dim strCurrentJob = objSqlServer.JobServer.Jobs(index).Name
             UpdateSubtaskProgress("Exporting job " & strCurrentJob, mSubtaskProgressPercentComplete)
 
-            Dim success = WriteTextToFile(outputFolderPathCurrentServer, "AgentJob_" & strCurrentJob,
+            Dim success = WriteTextToFile(outputDirectoryPathCurrentServer, "AgentJob_" & strCurrentJob,
              CleanSqlScript(StringCollectionToList(objSqlServer.JobServer.Jobs(index).Script(scriptOptions)), schemaExportOptions, True, True))
 
             UpdateSubtaskProgress(index + 1, processCountExpected)
@@ -1719,15 +1719,15 @@ Public Class clsExportDBSchema
         Dim schemaExportOptions = New clsSchemaExportOptions()
 
         With schemaExportOptions
-            .OutputFolderPath = String.Empty
-            .OutputFolderNamePrefix = DEFAULT_DB_OUTPUT_FOLDER_NAME_PREFIX
+            .OutputDirectoryPath = String.Empty
+            .OutputDirectoryNamePrefix = DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX
 
-            .CreateFolderForEachDB = True           ' This will be forced to true if more than one DB is to be scripted
+            .CreateDirectoryForEachDB = True           ' This will be forced to true if more than one DB is to be scripted
             .IncludeSystemObjects = False
             .IncludeTimestampInScriptFileHeader = False
 
             .ExportServerSettingsLoginsAndJobs = False
-            .ServerOutputFolderNamePrefix = DEFAULT_SERVER_OUTPUT_FOLDER_NAME_PREFIX
+            .ServerOutputDirectoryNamePrefix = DEFAULT_SERVER_OUTPUT_DIRECTORY_NAME_PREFIX
 
             .SaveDataAsInsertIntoStatements = True
             .DatabaseTypeForInsertInto = clsSchemaExportOptions.eTargetDatabaseTypeConstants.SqlServer
@@ -1777,7 +1777,7 @@ Public Class clsExportDBSchema
             mConnectedToServer = False
         End If
 
-        mSchemaOutputFolders = New Dictionary(Of String, String)
+        mSchemaOutputDirectories = New Dictionary(Of String, String)
 
         mAbortProcessing = False
         SetPauseStatus(ePauseStatusConstants.Unpaused)
@@ -1942,14 +1942,14 @@ Public Class clsExportDBSchema
     ''' <param name="schemaExportOptions">Export options</param>
     ''' <param name="scriptOptions">Script options</param>
     ''' <param name="processCountExpected">Expected number of items</param>
-    ''' <param name="strOutputFolderPathCurrentDB">Output folder path</param>
+    ''' <param name="strOutputDirectoryPathCurrentDB">Output directory path</param>
     ''' <returns></returns>
     Private Function ScriptCollectionOfObjects(
       objSchemaCollection As IEnumerable,
       schemaExportOptions As clsSchemaExportOptions,
       scriptOptions As ScriptingOptions,
       processCountExpected As Integer,
-      strOutputFolderPathCurrentDB As String) As Integer
+      strOutputDirectoryPathCurrentDB As String) As Integer
 
         ' Scripts the objects in objSchemaCollection
         ' Returns the number of objects scripted
@@ -1960,7 +1960,7 @@ Public Class clsExportDBSchema
             mSubtaskProgressStepDescription = objItem.Name
             UpdateSubtaskProgress(intProcessCount, processCountExpected)
 
-            WriteTextToFile(strOutputFolderPathCurrentDB, objItem.Name,
+            WriteTextToFile(strOutputDirectoryPathCurrentDB, objItem.Name,
                             CleanSqlScript(StringCollectionToList(objItem.Script(scriptOptions)), schemaExportOptions))
 
             intProcessCount += 1
@@ -1987,9 +1987,9 @@ Public Class clsExportDBSchema
         Try
 
             ' Process each database in lstDatabaseListToProcess
-            ResetProgress("Exporting DB objects to: " & VBNetRoutines.CompactPathString(schemaExportOptions.OutputFolderPath), lstDatabaseListToProcess.Count)
+            ResetProgress("Exporting DB objects to: " & VBNetRoutines.CompactPathString(schemaExportOptions.OutputDirectoryPath), lstDatabaseListToProcess.Count)
 
-            mSchemaOutputFolders.Clear()
+            mSchemaOutputDirectories.Clear()
 
             ' Lookup the database names with the proper capitalization
 
@@ -2060,7 +2060,7 @@ Public Class clsExportDBSchema
             Return True
 
         Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.GeneralError, "Error exporting DB schema objects: " & schemaExportOptions.OutputFolderPath, ex)
+            SetLocalError(eDBSchemaExportErrorCodes.GeneralError, "Error exporting DB schema objects: " & schemaExportOptions.OutputDirectoryPath, ex)
         End Try
 
         Return False
@@ -2077,40 +2077,40 @@ Public Class clsExportDBSchema
 
         Dim scriptOptions As ScriptingOptions
 
-        Dim outputFolderPathCurrentServer As String = String.Empty
+        Dim outputDirectoryPathCurrentServer As String = String.Empty
 
         scriptOptions = GetDefaultScriptOptions()
 
         Try
-            ' Construct the path to the output folder
-            outputFolderPathCurrentServer = Path.Combine(schemaExportOptions.OutputFolderPath, schemaExportOptions.ServerOutputFolderNamePrefix & objSqlServer.Name)
+            ' Construct the path to the output directory
+            outputDirectoryPathCurrentServer = Path.Combine(schemaExportOptions.OutputDirectoryPath, schemaExportOptions.ServerOutputDirectoryNamePrefix & objSqlServer.Name)
 
-            ' Create the folder if it doesn't exist
-            If Not Directory.Exists(outputFolderPathCurrentServer) AndAlso Not Me.PreviewExport Then
-                Directory.CreateDirectory(outputFolderPathCurrentServer)
+            ' Create the directory if it doesn't exist
+            If Not Directory.Exists(outputDirectoryPathCurrentServer) AndAlso Not Me.PreviewExport Then
+                Directory.CreateDirectory(outputDirectoryPathCurrentServer)
             End If
 
         Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating or creating folder " & outputFolderPathCurrentServer)
+            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating or creating directory " & outputDirectoryPathCurrentServer)
             Return False
         End Try
 
         Try
-            ResetProgress("Exporting Server objects to: " & VBNetRoutines.CompactPathString(schemaExportOptions.OutputFolderPath), PROGRESS_STEP_COUNT)
+            ResetProgress("Exporting Server objects to: " & VBNetRoutines.CompactPathString(schemaExportOptions.OutputDirectoryPath), PROGRESS_STEP_COUNT)
             ResetSubtaskProgress("Exporting server options")
 
             ' Export the overall server configuration and options (this is quite fast, so we won't increment mProgressStep after this)
-            ExportSQLServerConfiguration(objSqlServer, schemaExportOptions, scriptOptions, outputFolderPathCurrentServer)
+            ExportSQLServerConfiguration(objSqlServer, schemaExportOptions, scriptOptions, outputDirectoryPathCurrentServer)
             If mAbortProcessing Then Return False
 
             ' Export the logins
-            ExportSQLServerLogins(objSqlServer, schemaExportOptions, scriptOptions, outputFolderPathCurrentServer)
+            ExportSQLServerLogins(objSqlServer, schemaExportOptions, scriptOptions, outputDirectoryPathCurrentServer)
             mProgressStep += 1
             UpdateProgress(mProgressStep)
             If mAbortProcessing Then Return False
 
             ' Export the Sql Server Agent Jobs
-            ExportSQLServerAgentJobs(objSqlServer, schemaExportOptions, scriptOptions, outputFolderPathCurrentServer)
+            ExportSQLServerAgentJobs(objSqlServer, schemaExportOptions, scriptOptions, outputDirectoryPathCurrentServer)
             mProgressStep += 1
             UpdateProgress(mProgressStep)
             If mAbortProcessing Then Return False
@@ -2153,8 +2153,8 @@ Public Class clsExportDBSchema
                 End If
             Else
                 If lstDatabaseListToProcess.Count > 1 Then
-                    ' Force CreateFolderForEachDB to true
-                    schemaExportOptions.CreateFolderForEachDB = True
+                    ' Force CreateDirectoryForEachDB to true
+                    schemaExportOptions.CreateDirectoryForEachDB = True
                 End If
                 success = True
             End If
@@ -2167,14 +2167,14 @@ Public Class clsExportDBSchema
         ' Validate the strings in schemaExportOptions
         ValidateSchemaExportOptions(schemaExportOptions)
 
-        ' Confirm that the output folder exists
-        If Not Directory.Exists(schemaExportOptions.OutputFolderPath) Then
-            SetLocalError(eDBSchemaExportErrorCodes.OutputFolderAccessError, "Output folder not found: " & schemaExportOptions.OutputFolderPath)
+        ' Confirm that the output directory exists
+        If Not Directory.Exists(schemaExportOptions.OutputDirectoryPath) Then
+            SetLocalError(eDBSchemaExportErrorCodes.OutputDirectoryAccessError, "Output directory not found: " & schemaExportOptions.OutputDirectoryPath)
             Return False
         End If
 
 
-        ResetProgress("Exporting schema to: " & VBNetRoutines.CompactPathString(schemaExportOptions.OutputFolderPath), 1)
+        ResetProgress("Exporting schema to: " & VBNetRoutines.CompactPathString(schemaExportOptions.OutputDirectoryPath), 1)
         ResetSubtaskProgress("Connecting to " & schemaExportOptions.ConnectionInfo.ServerName)
 
         success = ConnectToServer(schemaExportOptions.ConnectionInfo)
@@ -2327,31 +2327,31 @@ Public Class clsExportDBSchema
 
     Private Sub ValidateSchemaExportOptions(schemaExportOptions As clsSchemaExportOptions)
         With schemaExportOptions
-            If .OutputFolderPath Is Nothing Then
-                .OutputFolderPath = String.Empty
+            If .OutputDirectoryPath Is Nothing Then
+                .OutputDirectoryPath = String.Empty
             End If
 
-            If .OutputFolderNamePrefix Is Nothing Then
-                .OutputFolderNamePrefix = DEFAULT_DB_OUTPUT_FOLDER_NAME_PREFIX
+            If .OutputDirectoryNamePrefix Is Nothing Then
+                .OutputDirectoryNamePrefix = DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX
             End If
 
-            If .ServerOutputFolderNamePrefix Is Nothing Then
-                .ServerOutputFolderNamePrefix = DEFAULT_SERVER_OUTPUT_FOLDER_NAME_PREFIX
+            If .ServerOutputDirectoryNamePrefix Is Nothing Then
+                .ServerOutputDirectoryNamePrefix = DEFAULT_SERVER_OUTPUT_DIRECTORY_NAME_PREFIX
             End If
         End With
     End Sub
 
 
-    Private Function WriteTextToFile(outputFolderPath As String, strObjectName As String, lstInfo As IEnumerable(Of String)) As Boolean
+    Private Function WriteTextToFile(outputDirectoryPath As String, strObjectName As String, lstInfo As IEnumerable(Of String)) As Boolean
         ' Calls WriteTextToFile with autoAddGoStatements = True
-        Return WriteTextToFile(outputFolderPath, strObjectName, lstInfo, True)
+        Return WriteTextToFile(outputDirectoryPath, strObjectName, lstInfo, True)
     End Function
 
-    Private Function WriteTextToFile(outputFolderPath As String, strObjectName As String, lstInfo As IEnumerable(Of String), autoAddGoStatements As Boolean) As Boolean
-        Return WriteTextToFile(outputFolderPath, strObjectName, lstInfo, autoAddGoStatements, ".sql")
+    Private Function WriteTextToFile(outputDirectoryPath As String, strObjectName As String, lstInfo As IEnumerable(Of String), autoAddGoStatements As Boolean) As Boolean
+        Return WriteTextToFile(outputDirectoryPath, strObjectName, lstInfo, autoAddGoStatements, ".sql")
     End Function
 
-    Private Function WriteTextToFile(outputFolderPath As String, strObjectName As String, lstInfo As IEnumerable(Of String), autoAddGoStatements As Boolean, strFileExtension As String) As Boolean
+    Private Function WriteTextToFile(outputDirectoryPath As String, strObjectName As String, lstInfo As IEnumerable(Of String), autoAddGoStatements As Boolean, strFileExtension As String) As Boolean
 
         Dim strOutFilePath = "??"
 
@@ -2359,7 +2359,7 @@ Public Class clsExportDBSchema
             ' Make sure strObjectName doesn't contain any invalid characters
             strObjectName = CleanNameForOS(strObjectName)
 
-            strOutFilePath = Path.Combine(outputFolderPath, strObjectName & strFileExtension)
+            strOutFilePath = Path.Combine(outputDirectoryPath, strObjectName & strFileExtension)
             Using swOutFile = New StreamWriter(strOutFilePath, False)
                 For Each sqlItem In lstInfo
                     swOutFile.WriteLine(sqlItem)
@@ -2371,7 +2371,7 @@ Public Class clsExportDBSchema
             End Using
 
         Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.OutputFolderAccessError, "Error saving file " & strOutFilePath)
+            SetLocalError(eDBSchemaExportErrorCodes.OutputDirectoryAccessError, "Error saving file " & strOutFilePath)
             Return False
         End Try
 

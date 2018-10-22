@@ -23,12 +23,11 @@ Imports PRISM.FileProcessor
 Module modMain
     Public Const PROGRAM_DATE As String = "September 21, 2018"
 
-    Private mOutputFolderPath As String
+    Private mOutputDirectoryPath As String
 
-    Private mParameterFilePath As String                        ' Not used in this app
-
-    Private mRecurseFolders As Boolean                          ' Not used in this app
-    Private mRecurseFoldersMaxLevels As Integer                 ' Not used in this app
+    ' Private mParameterFilePath As String                    ' Not used in this app
+    ' Private mRecurseDirectories As Boolean                  ' Not used in this app
+    ' Private mMaxLevelsToRecurse As Integer                  ' Not used in this app
 
     Private mServer As String
     Private mDatabaseList As SortedSet(Of String)
@@ -36,11 +35,11 @@ Module modMain
     Private mDisableAutoDataExport As Boolean               ' Set to True to auto-select tables for which data should be exported
     Private mTableDataToExportFile As String                ' File with table names for which data should be exported
 
-    Private mDatabaseSubfolderPrefix As String
-    Private mCreateFolderForEachDB As Boolean
+    Private mDatabaseSubdirectoryPrefix As String
+    Private mCreateDirectoryForEachDB As Boolean
 
     Private mSync As Boolean
-    Private mSyncFolderPath As String
+    Private mSyncDirectoryPath As String
     Private mSvnUpdate As Boolean
     Private mGitUpdate As Boolean
     Private mHgUpdate As Boolean
@@ -49,7 +48,7 @@ Module modMain
 
     Private mLogMessagesToFile As Boolean
     Private mLogFilePath As String = String.Empty
-    Private mLogFolderPath As String = String.Empty
+    Private mLogDirectoryPath As String = String.Empty
 
     Private mPreviewExport As Boolean
     Private mShowStats As Boolean
@@ -74,12 +73,11 @@ Module modMain
 
         ' Initialize the options
         returnCode = 0
-        mOutputFolderPath = String.Empty
+        mOutputDirectoryPath = String.Empty
 
-        mParameterFilePath = String.Empty
-
-        mRecurseFolders = False                 ' Not used in this app
-        mRecurseFoldersMaxLevels = 0            ' Not used in this app
+        ' mParameterFilePath = String.Empty     ' Not used in this app
+        ' mRecurseDirectories = False           ' Not used in this app
+        ' mMaxLevelsToRecurse = 0               ' Not used in this app
 
         mServer = String.Empty
         mDatabaseList = New SortedSet(Of String)
@@ -87,11 +85,11 @@ Module modMain
         mDisableAutoDataExport = False
         mTableDataToExportFile = String.Empty
 
-        mDatabaseSubfolderPrefix = clsExportDBSchema.DEFAULT_DB_OUTPUT_FOLDER_NAME_PREFIX
-        mCreateFolderForEachDB = True
+        mDatabaseSubdirectoryPrefix = clsExportDBSchema.DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX
+        mCreateDirectoryForEachDB = True
 
         mSync = False
-        mSyncFolderPath = String.Empty
+        mSyncDirectoryPath = String.Empty
 
         mSvnUpdate = False
         mGitUpdate = False
@@ -125,8 +123,8 @@ Module modMain
                     Return 0
                 End If
 
-                If String.IsNullOrWhiteSpace(mOutputFolderPath) Then
-                    ShowErrorMessage("Output folder path must be defined (use . for the current directory)")
+                If String.IsNullOrWhiteSpace(mOutputDirectoryPath) Then
+                    ShowErrorMessage("Output directory path must be defined (use . for the current directory)")
                     Return -4
                 End If
 
@@ -141,8 +139,8 @@ Module modMain
                     Return -6
                 End If
 
-                If mSync AndAlso String.IsNullOrWhiteSpace(mSyncFolderPath) Then
-                    ShowErrorMessage("Sync folder must be defined when using /Sync")
+                If mSync AndAlso String.IsNullOrWhiteSpace(mSyncDirectoryPath) Then
+                    ShowErrorMessage("Sync directory must be defined when using /Sync")
                     Return -7
                 End If
 
@@ -158,7 +156,7 @@ Module modMain
                     .ReThrowEvents = False
                     .LogMessagesToFile = mLogMessagesToFile
                     .LogFilePath = mLogFilePath
-                    .LogFolderPath = mLogFolderPath
+                    .LogDirectoryPath = mLogDirectoryPath
 
                     .PreviewExport = mPreviewExport
                     .ShowStats = mShowStats
@@ -166,19 +164,19 @@ Module modMain
                     .AutoSelectTableDataToExport = Not mDisableAutoDataExport
                     .TableDataToExportFile = mTableDataToExportFile
 
-                    .DatabaseSubfolderPrefix = mDatabaseSubfolderPrefix
+                    .DatabaseSubdirectoryPrefix = mDatabaseSubdirectoryPrefix
 
-                    If mDatabaseList.Count = 1 AndAlso mCreateFolderForEachDB Then
-                        If mSync AndAlso mSyncFolderPath.ToLower().EndsWith("\" & mDatabaseList.First.ToLower()) Then
-                            ' Auto-disable mCreateFolderForEachDB
-                            mCreateFolderForEachDB = False
+                    If mDatabaseList.Count = 1 AndAlso mCreateDirectoryForEachDB Then
+                        If mSync AndAlso mSyncDirectoryPath.ToLower().EndsWith("\" & mDatabaseList.First.ToLower()) Then
+                            ' Auto-disable mCreateDirectoryForEachDB
+                            mCreateDirectoryForEachDB = False
                         End If
                     End If
 
-                    .CreateFolderForEachDB = mCreateFolderForEachDB
+                    .CreateDirectoryForEachDB = mCreateDirectoryForEachDB
 
                     .Sync = mSync
-                    .SyncFolderPath = mSyncFolderPath
+                    .SyncDirectoryPath = mSyncDirectoryPath
 
                     .SvnUpdate = mSvnUpdate
                     .GitUpdate = mGitUpdate
@@ -188,7 +186,7 @@ Module modMain
 
                 End With
 
-                success = mSchemaExportTool.ProcessDatabase(mOutputFolderPath, mServer, mDatabaseList)
+                success = mSchemaExportTool.ProcessDatabase(mOutputDirectoryPath, mServer, mDatabaseList)
 
                 If Not success Then
                     returnCode = mSchemaExportTool.ErrorCode
@@ -216,87 +214,85 @@ Module modMain
         Return ProcessFilesOrDirectoriesBase.GetAppVersion(PROGRAM_DATE)
     End Function
 
-    Private Function SetOptionsUsingCommandLineParameters(objParseCommandLine As clsParseCommandLine) As Boolean
+    Private Function SetOptionsUsingCommandLineParameters(commandLineParser As clsParseCommandLine) As Boolean
         ' Returns True if no problems; otherwise, returns false
 
         Dim value As String = String.Empty
         Dim lstValidParameters = New List(Of String) From {
-          "O", "Server", "DB", "DBList", "FolderPrefix", "NoSubfolder", "NoAutoData", "Data",
+          "O", "Server", "DB", "DBList", "DirectoryPrefix", "NoSubdirectory", "NoAutoData", "Data",
           "Sync", "Svn", "Git", "Hg", "Commit",
-          "P", "L", "LogFolder", "Preview", "Stats"}
+          "L", "LogDir", "Preview", "Stats"}
 
         Try
             ' Make sure no invalid parameters are present
-            If objParseCommandLine.InvalidParametersPresent(lstValidParameters) Then
+            If commandLineParser.InvalidParametersPresent(lstValidParameters) Then
                 ShowErrorMessage("Invalid command line parameters",
-                  (From item In objParseCommandLine.InvalidParameters(lstValidParameters) Select "/" + item).ToList())
+                  (From item In commandLineParser.InvalidParameters(lstValidParameters) Select "/" + item).ToList())
                 Return False
             Else
-                With objParseCommandLine
-                    ' Query objParseCommandLine to see if various parameters are present
-                    If .RetrieveValueForParameter("O", value) Then
-                        mOutputFolderPath = value
-                    ElseIf .NonSwitchParameterCount > 0 Then
-                        mOutputFolderPath = .RetrieveNonSwitchParameter(0)
+                ' Query commandLineParser to see if various parameters are present
+                If commandLineParser.RetrieveValueForParameter("O", value) Then
+                    mOutputDirectoryPath = value
+                ElseIf commandLineParser.NonSwitchParameterCount > 0 Then
+                    mOutputDirectoryPath = commandLineParser.RetrieveNonSwitchParameter(0)
+                End If
+
+                If commandLineParser.RetrieveValueForParameter("Server", value) Then mServer = value
+
+                If commandLineParser.RetrieveValueForParameter("DB", value) Then
+                    If Not mDatabaseList.Contains(value) Then
+                        mDatabaseList.Add(value)
                     End If
+                End If
 
-                    If .RetrieveValueForParameter("Server", value) Then mServer = value
+                If commandLineParser.RetrieveValueForParameter("DBList", value) Then
+                    Dim lstDatabaseNames = value.Split(","c).ToList()
 
-                    If .RetrieveValueForParameter("DB", value) Then
-                        If Not mDatabaseList.Contains(value) Then
-                            mDatabaseList.Add(value)
+                    For Each databaseName In lstDatabaseNames
+                        If Not mDatabaseList.Contains(databaseName) Then
+                            mDatabaseList.Add(databaseName)
                         End If
+                    Next
+                End If
+
+                If commandLineParser.RetrieveValueForParameter("DirectoryPrefix", value) Then mDatabaseSubdirectoryPrefix = value
+                If commandLineParser.RetrieveValueForParameter("NoSubdirectory", value) Then mCreateDirectoryForEachDB = False
+                If commandLineParser.RetrieveValueForParameter("NoAutoData", value) Then mDisableAutoDataExport = True
+                If commandLineParser.RetrieveValueForParameter("Data", value) Then mTableDataToExportFile = value
+
+                If commandLineParser.RetrieveValueForParameter("Sync", value) Then
+                    mSync = True
+                    mSyncDirectoryPath = value
+                End If
+
+                If commandLineParser.IsParameterPresent("Svn") Then mSvnUpdate = True
+
+                If commandLineParser.IsParameterPresent("Git") Then mGitUpdate = True
+
+                If commandLineParser.IsParameterPresent("Hg") Then mHgUpdate = True
+
+                If commandLineParser.IsParameterPresent("Commit") Then mCommitUpdates = True
+
+                ' If commandLineParser.RetrieveValueForParameter("P", value) Then mParameterFilePath = value
+
+                If commandLineParser.RetrieveValueForParameter("L", value) Then
+                    mLogMessagesToFile = True
+                    If Not String.IsNullOrEmpty(value) Then
+                        mLogFilePath = value
                     End If
+                End If
 
-                    If .RetrieveValueForParameter("DBList", value) Then
-                        Dim lstDatabaseNames = value.Split(","c).ToList()
-
-                        For Each databaseName In lstDatabaseNames
-                            If Not mDatabaseList.Contains(databaseName) Then
-                                mDatabaseList.Add(databaseName)
-                            End If
-                        Next
+                If commandLineParser.RetrieveValueForParameter("LogDir", value) Then
+                    mLogMessagesToFile = True
+                    If Not String.IsNullOrEmpty(value) Then
+                        mLogDirectoryPath = value
                     End If
+                End If
 
-                    If .RetrieveValueForParameter("FolderPrefix", value) Then mDatabaseSubfolderPrefix = value
-                    If .RetrieveValueForParameter("NoSubfolder", value) Then mCreateFolderForEachDB = False
+                If commandLineParser.RetrieveValueForParameter("Preview", value) Then mPreviewExport = True
 
-                    If .RetrieveValueForParameter("NoAutoData", value) Then mDisableAutoDataExport = True
-                    If .RetrieveValueForParameter("Data", value) Then mTableDataToExportFile = value
+                If commandLineParser.RetrieveValueForParameter("Stats", value) Then mShowStats = True
 
-                    If .RetrieveValueForParameter("Sync", value) Then
-                        mSync = True
-                        mSyncFolderPath = value
-                    End If
-
-                    If .IsParameterPresent("Svn") Then mSvnUpdate = True
-
-                    If .IsParameterPresent("Git") Then mGitUpdate = True
-
-                    If .IsParameterPresent("Hg") Then mHgUpdate = True
-
-                    If .IsParameterPresent("Commit") Then mCommitUpdates = True
-
-                    If .RetrieveValueForParameter("P", value) Then mParameterFilePath = value
-
-                    If .RetrieveValueForParameter("L", value) Then
-                        mLogMessagesToFile = True
-                        If Not String.IsNullOrEmpty(value) Then
-                            mLogFilePath = value
-                        End If
-                    End If
-
-                    If .RetrieveValueForParameter("LogFolder", value) Then
-                        mLogMessagesToFile = True
-                        If Not String.IsNullOrEmpty(value) Then
-                            mLogFolderPath = value
-                        End If
-                    End If
-
-                    If .RetrieveValueForParameter("Preview", value) Then mPreviewExport = True
-
-                    If .RetrieveValueForParameter("Stats", value) Then mShowStats = True
-                End With
 
                 Return True
             End If
@@ -325,25 +321,25 @@ Module modMain
                 "This program exports Sql Server database objects as schema files. Starting this program without any parameters will show the GUI"))
             Console.WriteLine()
             Console.WriteLine("Command line syntax:" & Environment.NewLine & IO.Path.GetFileName(Reflection.Assembly.GetExecutingAssembly().Location))
-            Console.WriteLine(" SchemaFileFolder /Server:ServerName")
+            Console.WriteLine(" SchemaFileDirectory /Server:ServerName")
             Console.WriteLine(" /DB:Database /DBList:CommaSeparatedDatabaseName")
-            Console.WriteLine(" [/FolderPrefix:PrefixText] [/NoSubfolder]")
+            Console.WriteLine(" [/DirectoryPrefix:PrefixText] [/NoSubdirectory]")
             Console.WriteLine(" [/Data:TableDataToExport.txt] [/NoAutoData] ")
-            Console.WriteLine(" [/Sync:TargetFolderPath] [/Git] [/Svn] [/Hg] [/Commit]")
-            Console.WriteLine(" [/L[:LogFilePath]] [/LogFolder:LogFolderPath] [/Preview] [/Stats]")
+            Console.WriteLine(" [/Sync:TargetDirectoryPath] [/Git] [/Svn] [/Hg] [/Commit]")
+            Console.WriteLine(" [/L[:LogFilePath]] [/LogDir:LogDirectoryPath] [/Preview] [/Stats]")
             Console.WriteLine()
             Console.WriteLine(ConsoleMsgUtils.WrapParagraph(
-                "SchemaFileFolder is the path to the folder where the schema files will be saved; use a period for the current directory. " &
+                "SchemaFileDirectory is the path to the directory where the schema files will be saved; use a period for the current directory. " &
                 "To process a single database, use /Server and /DB"))
             Console.WriteLine()
             Console.WriteLine("Use /DBList to process several databases (separate names with commas)")
             Console.WriteLine()
             Console.WriteLine(ConsoleMsgUtils.WrapParagraph(
-                "By default, a subfolder named " & clsExportDBSchema.DEFAULT_DB_OUTPUT_FOLDER_NAME_PREFIX & "DatabaseName will be created below SchemaFileFolder. " &
-                "Customize this the prefix text using /FolderPrefix"))
+                "By default, a subdirectory named " & clsExportDBSchema.DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX & "DatabaseName will be created below SchemaFileDirectory. " &
+                "Customize this the prefix text using /DirectoryPrefix"))
             Console.WriteLine()
-            Console.WriteLine("Use /NoSubfolder to disable auto creating a subfolder for the database being exported")
-            Console.WriteLine("Note: subfolders will always be created if you use /DBList and specify more than one database")
+            Console.WriteLine("Use /NoSubdirectory to disable auto creating a subdirectory for the database being exported")
+            Console.WriteLine("Note: subdirectories will always be created if you use /DBList and specify more than one database")
             Console.WriteLine()
             Console.WriteLine(ConsoleMsgUtils.WrapParagraph(
                 "Use /Data to define a text file with table names (one name per line) for which the data should be exported"))
@@ -353,7 +349,7 @@ Module modMain
                 "Disable the defaults using /NoAutoData"))
             Console.WriteLine()
             Console.WriteLine(ConsoleMsgUtils.WrapParagraph(
-                "Use /Sync to copy new/changed files from the output folder to an alternative folder. " &
+                "Use /Sync to copy new/changed files from the output directory to an alternative directory. " &
                 "This is advantageous to prevent file timestamps from getting updated every time the schema is exported"))
             Console.WriteLine()
             Console.WriteLine("Use /Git to auto-update any new or changed files using Git")
@@ -364,7 +360,7 @@ Module modMain
 
             Console.WriteLine("Use /L to log messages to a file; you can optionally specify a log file name using /L:LogFilePath.")
             Console.WriteLine(ConsoleMsgUtils.WrapParagraph(
-                "Use /LogFolder to specify the folder to save the log file in. By default, the log file is created in the current working directory."))
+                "Use /LogDir to specify the Directory to save the log file in. By default, the log file is created in the current working directory."))
             Console.WriteLine()
             Console.WriteLine("Use /Preview to count the number of database objects that would be exported")
             Console.WriteLine("Use /Stats to show (but not log) export stats")

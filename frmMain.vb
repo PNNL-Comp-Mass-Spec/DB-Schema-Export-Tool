@@ -152,20 +152,18 @@ Public Class frmMain
         End Try
     End Sub
 
-    Private Function GetAppFolderPath() As String
-        Return GetAppFolderPath(True)
+    Private Function GetAppDirectoryPath() As String
+        Return GetAppGetAppDirectoryPath(True)
     End Function
 
-    Private Function GetAppFolderPath(returnParentIfFolderNamedDebug As Boolean) As String
-        Const DEBUG_FOLDER_NAME = "\debug"
+    Private Function GetAppGetAppDirectoryPath(returnParentIfDirectoryNamedDebug As Boolean) As String
+        Const DEBUG_DIRECTORY_NAME = "\debug"
 
-        ' Could use Application.StartupPath, but .GetExecutingAssembly is better
-        Dim strPath As String
+        Dim strPath = FileProcessor.ProcessFilesOrDirectoriesBase.GetAppDirectoryPath()
 
-        strPath = IO.Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location)
-        If returnParentIfFolderNamedDebug Then
-            If strPath.ToLower.EndsWith(DEBUG_FOLDER_NAME) Then
-                strPath = strPath.Substring(0, strPath.Length - DEBUG_FOLDER_NAME.Length)
+        If returnParentIfDirectoryNamedDebug Then
+            If strPath.ToLower().EndsWith(DEBUG_DIRECTORY_NAME) Then
+                strPath = strPath.Substring(0, strPath.Length - DEBUG_DIRECTORY_NAME.Length)
             End If
         End If
 
@@ -241,7 +239,7 @@ Public Class frmMain
     End Function
 
     Private Function GetSettingsFilePath() As String
-        Return IO.Path.Combine(GetAppFolderPath(), XML_SETTINGS_FILE_NAME)
+        Return IO.Path.Combine(GetAppDirectoryPath(), XML_SETTINGS_FILE_NAME)
     End Function
 
     Private Sub HandleDBExportStartingEvent(databaseName As String)
@@ -298,10 +296,10 @@ Public Class frmMain
                 Try
                     .InitialDirectory = IO.Directory.GetParent(strFilePath).ToString
                 Catch
-                    .InitialDirectory = GetAppFolderPath()
+                    .InitialDirectory = GetAppDirectoryPath()
                 End Try
             Else
-                .InitialDirectory = GetAppFolderPath()
+                .InitialDirectory = GetAppDirectoryPath()
             End If
 
             .FileName = String.Empty
@@ -348,17 +346,17 @@ Public Class frmMain
                     txtUsername.Text = .GetParam(XML_SECTION_DATABASE_SETTINGS, "Username", txtUsername.Text)
                     txtPassword.Text = .GetParam(XML_SECTION_DATABASE_SETTINGS, "Password", txtPassword.Text)
 
-                    txtOutputFolderPath.Text = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "OutputFolderPath", txtOutputFolderPath.Text)
+                    txtOutputDirectoryPath.Text = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "OutputDirectoryPath", txtOutputDirectoryPath.Text)
 
                     mnuEditScriptObjectsThreaded.Checked = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "ScriptObjectsThreaded", mnuEditScriptObjectsThreaded.Checked)
                     mnuEditPauseAfterEachDatabase.Checked = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "PauseAfterEachDatabase", mnuEditPauseAfterEachDatabase.Checked)
                     mnuEditIncludeTimestampInScriptFileHeader.Checked = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "IncludeTimestampInScriptFileHeader", mnuEditIncludeTimestampInScriptFileHeader.Checked)
 
-                    chkCreateFolderForEachDB.Checked = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "CreateFolderForEachDB", chkCreateFolderForEachDB.Checked)
-                    txtOutputFolderNamePrefix.Text = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "OutputFolderNamePrefix", txtOutputFolderNamePrefix.Text)
+                    chkCreateDirectoryForEachDB.Checked = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "CreateDirectoryForEachDB", chkCreateDirectoryForEachDB.Checked)
+                    txtOutputDirectoryNamePrefix.Text = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "OutputDirectoryNamePrefix", txtOutputDirectoryNamePrefix.Text)
 
                     chkExportServerSettingsLoginsAndJobs.Checked = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "ExportServerSettingsLoginsAndJobs", chkExportServerSettingsLoginsAndJobs.Checked)
-                    txtServerOutputFolderNamePrefix.Text = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "ServerOutputFolderNamePrefix", txtServerOutputFolderNamePrefix.Text)
+                    txtServerOutputDirectoryNamePrefix.Text = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "ServerOutputDirectoryNamePrefix", txtServerOutputDirectoryNamePrefix.Text)
 
                     mnuEditIncludeTableRowCounts.Checked = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "IncludeTableRowCounts", mnuEditIncludeTableRowCounts.Checked)
                     mnuEditAutoSelectDefaultTableNames.Checked = .GetParam(XML_SECTION_PROGRAM_OPTIONS, "AutoSelectDefaultTableNames", mnuEditAutoSelectDefaultTableNames.Checked)
@@ -409,10 +407,10 @@ Public Class frmMain
                 Try
                     .InitialDirectory = IO.Directory.GetParent(strFilePath).ToString
                 Catch
-                    .InitialDirectory = GetAppFolderPath()
+                    .InitialDirectory = GetAppDirectoryPath()
                 End Try
             Else
-                .InitialDirectory = GetAppFolderPath()
+                .InitialDirectory = GetAppDirectoryPath()
             End If
 
             If IO.File.Exists(strFilePath) Then
@@ -453,17 +451,17 @@ Public Class frmMain
                         .SetParam(XML_SECTION_DATABASE_SETTINGS, "Username", txtUsername.Text)
                         .SetParam(XML_SECTION_DATABASE_SETTINGS, "Password", txtPassword.Text)
 
-                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "OutputFolderPath", txtOutputFolderPath.Text)
+                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "OutputDirectoryPath", txtOutputDirectoryPath.Text)
 
                         .SetParam(XML_SECTION_PROGRAM_OPTIONS, "ScriptObjectsThreaded", mnuEditScriptObjectsThreaded.Checked)
                         .SetParam(XML_SECTION_PROGRAM_OPTIONS, "PauseAfterEachDatabase", mnuEditPauseAfterEachDatabase.Checked)
                         .SetParam(XML_SECTION_PROGRAM_OPTIONS, "IncludeTimestampInScriptFileHeader", mnuEditIncludeTimestampInScriptFileHeader.Checked)
 
-                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "CreateFolderForEachDB", chkCreateFolderForEachDB.Checked)
-                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "OutputFolderNamePrefix", txtOutputFolderNamePrefix.Text)
+                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "CreateDirectoryForEachDB", chkCreateDirectoryForEachDB.Checked)
+                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "OutputDirectoryNamePrefix", txtOutputDirectoryNamePrefix.Text)
 
                         .SetParam(XML_SECTION_PROGRAM_OPTIONS, "ExportServerSettingsLoginsAndJobs", chkExportServerSettingsLoginsAndJobs.Checked)
-                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "ServerOutputFolderNamePrefix", txtServerOutputFolderNamePrefix.Text)
+                        .SetParam(XML_SECTION_PROGRAM_OPTIONS, "ServerOutputDirectoryNamePrefix", txtServerOutputDirectoryNamePrefix.Text)
 
                         .SetParam(XML_SECTION_PROGRAM_OPTIONS, "IncludeTableRowCounts", mnuEditIncludeTableRowCounts.Checked)
                         .SetParam(XML_SECTION_PROGRAM_OPTIONS, "AutoSelectDefaultTableNames", mnuEditAutoSelectDefaultTableNames.Checked)
@@ -537,23 +535,23 @@ Public Class frmMain
                 mTableNameAutoSelectRegEx = New List(Of String)
             End If
 
-            ' Initialize objRegExArray (we'll fill it below if autoHiglightRows = True)
+            ' Initialize objRegExArray (we'll fill it below if autoHighlightRows = True)
             Const objRegExOptions As RegexOptions =
               RegexOptions.Compiled Or
               RegexOptions.IgnoreCase Or
               RegexOptions.Singleline
 
             Dim lstRegExSpecs = New List(Of Regex)
-            Dim autoHiglightRows As Boolean
+            Dim autoHighlightRows As Boolean
 
             If mnuEditAutoSelectDefaultTableNames.Checked And enableAutoSelectDefaultTableNames Then
-                autoHiglightRows = True
+                autoHighlightRows = True
 
                 For Each regexItem In mTableNameAutoSelectRegEx
                     lstRegExSpecs.Add(New Regex(regexItem, objRegExOptions))
                 Next
             Else
-                autoHiglightRows = False
+                autoHighlightRows = False
             End If
 
             ' Cache the currently selected names so that we can re-highlight them below
@@ -588,7 +586,7 @@ Public Class frmMain
                 If lstSelectedTableNamesSaved.Contains(tableItem.Key) Then
                     ' User had previously highlighted this table name; re-highlight it
                     highlightCurrentRow = True
-                ElseIf autoHiglightRows Then
+                ElseIf autoHighlightRows Then
                     ' Test strTableName against the RegEx values from mTableNameAutoSelectRegEx()
                     For Each regexMatcher In lstRegExSpecs
                         If regexMatcher.Match(tableItem.Key).Success Then
@@ -700,13 +698,13 @@ Public Class frmMain
         If mWorking Then Exit Sub
 
         Try
-            ' Validate txtOutputFolderPath.Text
-            If txtOutputFolderPath.TextLength = 0 Then
-                txtOutputFolderPath.Text = GetAppFolderPath()
+            ' Validate txtOutputDirectoryPath.Text
+            If txtOutputDirectoryPath.TextLength = 0 Then
+                txtOutputDirectoryPath.Text = GetAppDirectoryPath()
             End If
 
-            If Not IO.Directory.Exists(txtOutputFolderPath.Text) Then
-                message = "Output folder not found: " & txtOutputFolderPath.Text
+            If Not IO.Directory.Exists(txtOutputDirectoryPath.Text) Then
+                message = "Output directory not found: " & txtOutputDirectoryPath.Text
                 MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
                 Exit Sub
             End If
@@ -714,14 +712,14 @@ Public Class frmMain
             mSchemaExportOptions = clsExportDBSchema.GetDefaultSchemaExportOptions()
 
             With mSchemaExportOptions
-                .OutputFolderPath = txtOutputFolderPath.Text
-                .OutputFolderNamePrefix = txtOutputFolderNamePrefix.Text
-                .CreateFolderForEachDB = chkCreateFolderForEachDB.Checked
+                .OutputDirectoryPath = txtOutputDirectoryPath.Text
+                .OutputDirectoryNamePrefix = txtOutputDirectoryNamePrefix.Text
+                .CreateDirectoryForEachDB = chkCreateDirectoryForEachDB.Checked
                 .IncludeSystemObjects = mnuEditIncludeSystemObjects.Checked
                 .IncludeTimestampInScriptFileHeader = mnuEditIncludeTimestampInScriptFileHeader.Checked
 
                 .ExportServerSettingsLoginsAndJobs = chkExportServerSettingsLoginsAndJobs.Checked
-                .ServerOutputFolderNamePrefix = txtServerOutputFolderNamePrefix.Text
+                .ServerOutputDirectoryNamePrefix = txtServerOutputDirectoryNamePrefix.Text
 
                 .SaveDataAsInsertIntoStatements = mnuEditSaveDataAsInsertIntoStatements.Checked
                 .DatabaseTypeForInsertInto = clsSchemaExportOptions.eTargetDatabaseTypeConstants.SqlServer       ' Reserved for future expansion
@@ -924,11 +922,11 @@ Public Class frmMain
             mnuEditSaveDataAsInsertIntoStatements.Checked = True
             mnuEditWarnOnHighTableRowCount.Checked = True
 
-            chkCreateFolderForEachDB.Checked = True
-            txtOutputFolderNamePrefix.Text = clsExportDBSchema.DEFAULT_DB_OUTPUT_FOLDER_NAME_PREFIX
+            chkCreateDirectoryForEachDB.Checked = True
+            txtOutputDirectoryNamePrefix.Text = clsExportDBSchema.DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX
 
             chkExportServerSettingsLoginsAndJobs.Checked = False
-            txtServerOutputFolderNamePrefix.Text = clsExportDBSchema.DEFAULT_SERVER_OUTPUT_FOLDER_NAME_PREFIX
+            txtServerOutputDirectoryNamePrefix.Text = clsExportDBSchema.DEFAULT_SERVER_OUTPUT_DIRECTORY_NAME_PREFIX
 
             mTableNamesToAutoSelect = clsDBSchemaExportTool.GetTableNamesToAutoExportData
             mTableNameAutoSelectRegEx = clsDBSchemaExportTool.GetTableRegExToAutoExportData()
@@ -973,24 +971,24 @@ Public Class frmMain
         End Try
     End Sub
 
-    Private Sub SelectOutputFolder()
-        ' Prompts the user to select the output folder to create the scripted objects in
+    Private Sub SelectOutputDirectory()
+        ' Prompts the user to select the output directory to create the scripted objects in
 
         Try
             Dim objFolderBrowser = New FolderBrowser()
             Dim success As Boolean
 
-            If txtOutputFolderPath.TextLength > 0 Then
-                success = objFolderBrowser.BrowseForFolder(txtOutputFolderPath.Text)
+            If txtOutputDirectoryPath.TextLength > 0 Then
+                success = objFolderBrowser.BrowseForFolder(txtOutputDirectoryPath.Text)
             Else
-                success = objFolderBrowser.BrowseForFolder(GetAppFolderPath())
+                success = objFolderBrowser.BrowseForFolder(GetAppDirectoryPath())
             End If
 
             If success Then
-                txtOutputFolderPath.Text = objFolderBrowser.FolderPath
+                txtOutputDirectoryPath.Text = objFolderBrowser.FolderPath
             End If
         Catch ex As Exception
-            MessageBox.Show("Error in SelectOutputFolder: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("Error in SelectOutputDirectory: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
     End Sub
 
@@ -1000,9 +998,9 @@ Public Class frmMain
         Try
 
             Using objToolTipControl = New ToolTip()
-                objToolTipControl.SetToolTip(chkCreateFolderForEachDB, "This will be automatically enabled if multiple databases are chosen above")
-                objToolTipControl.SetToolTip(txtOutputFolderNamePrefix, "The output folder for each database will be named with this prefix followed by the database name")
-                objToolTipControl.SetToolTip(txtServerOutputFolderNamePrefix, "Server settings will be saved in a folder with this prefix followed by the server name")
+                objToolTipControl.SetToolTip(chkCreateDirectoryForEachDB, "This will be automatically enabled if multiple databases are chosen above")
+                objToolTipControl.SetToolTip(txtOutputDirectoryNamePrefix, "The output directory for each database will be named with this prefix followed by the database name")
+                objToolTipControl.SetToolTip(txtServerOutputDirectoryNamePrefix, "Server settings will be saved in a directory with this prefix followed by the server name")
             End Using
 
         Catch ex As Exception
@@ -1136,12 +1134,12 @@ Public Class frmMain
         End Try
     End Sub
 
-    Private Sub UpdateProgressBar(pbar As ProgressBar, sngPercentComplete As Single)
+    Private Sub UpdateProgressBar(targetBar As ProgressBar, sngPercentComplete As Single)
         Dim intPercentComplete = CInt(sngPercentComplete)
 
-        If intPercentComplete < pbar.Minimum Then intPercentComplete = pbar.Minimum
-        If intPercentComplete > pbar.Maximum Then intPercentComplete = pbar.Maximum
-        pbar.Value = intPercentComplete
+        If intPercentComplete < targetBar.Minimum Then intPercentComplete = targetBar.Minimum
+        If intPercentComplete > targetBar.Maximum Then intPercentComplete = targetBar.Maximum
+        targetBar.Value = intPercentComplete
 
     End Sub
 
@@ -1371,8 +1369,8 @@ Public Class frmMain
 #End Region
 
 #Region "Menu Handlers"
-    Private Sub mnuFileSelectOutputFolder_Click(sender As Object, e As EventArgs) Handles mnuFileSelectOutputFolder.Click
-        SelectOutputFolder()
+    Private Sub mnuFileSelectOutputDirectory_Click(sender As Object, e As EventArgs) Handles mnuFileSelectOutputDirectory.Click
+        SelectOutputDirectory()
     End Sub
 
     Private Sub mnuFileSaveOptions_Click(sender As Object, e As EventArgs) Handles mnuFileSaveOptions.Click

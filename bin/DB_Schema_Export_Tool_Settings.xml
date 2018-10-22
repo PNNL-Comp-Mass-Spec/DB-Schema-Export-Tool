@@ -1,20 +1,20 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <sections>
   <section name="DBSchemaExportOptions">
     <item key="WindowWidth" value="932" />
     <item key="WindowHeight" value="800" />
-    <item key="OutputFolderPath" value="C:\Temp\" />
+    <item key="OutputDirectoryPath" value="C:\Temp\" />
     <item key="ScriptObjectsThreaded" value="False" />
     <item key="PauseAfterEachDatabase" value="False" />
-    <item key="CreateFolderForEachDB" value="True" />
+    <item key="CreateDirectoryForEachDB" value="True" />
     <item key="IncludeTableRowCounts" value="True" />
     <item key="AutoSelectDefaultTableNames" value="True" />
     <item key="SaveDataAsInsertIntoStatements" value="True" />
     <item key="WarnOnHighTableRowCount" value="True" />
-    <item key="OutputFolderNamePrefix" value="DBSchema__" />
+    <item key="OutputDirectoryNamePrefix" value="DBSchema__" />
     <item key="IncludeTimestampInScriptFileHeader" value="False" />
     <item key="ExportServerSettingsLoginsAndJobs" value="False" />
-    <item key="ServerOutputFolderNamePrefix" value="ServerSchema__" />
+    <item key="ServerOutputDirectoryNamePrefix" value="ServerSchema__" />
   </section>
   <section name="DBSchemaExportDatabaseSettings">
     <item key="ServerName" value="Pogo" />

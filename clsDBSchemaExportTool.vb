@@ -88,9 +88,9 @@ Public Class clsDBSchemaExportTool
 
     Public Property TableDataToExportFile As String
 
-    Public Property CreateFolderForEachDB As Boolean
+    Public Property CreateDirectoryForEachDB As Boolean
 
-    Public Property DatabaseSubfolderPrefix As String
+    Public Property DatabaseSubdirectoryPrefix As String
 
     Public Property PreviewExport As Boolean
 
@@ -98,7 +98,7 @@ Public Class clsDBSchemaExportTool
 
     Public Property Sync As Boolean
 
-    Public Property SyncFolderPath As String
+    Public Property SyncDirectoryPath As String
 
     Public Property GitUpdate As Boolean
 
@@ -120,41 +120,41 @@ Public Class clsDBSchemaExportTool
     End Function
 
     ''' <summary>
-    ''' Export database schema to the specified folder
+    ''' Export database schema to the specified directory
     ''' </summary>
-    ''' <param name="outputFolderPath">Output folder path</param>
+    ''' <param name="outputDirectoryPath">Output directory path</param>
     ''' <param name="serverName">Server name</param>
-    ''' <param name="dctDatabaseNamesAndOutputPaths">Dictionary where keys are database names and values will be updated to have the output folder path used</param>
+    ''' <param name="dctDatabaseNamesAndOutputPaths">Dictionary where keys are database names and values will be updated to have the output directory path used</param>
     ''' <returns>True if success, false if a problem</returns>
     ''' <remarks>
-    ''' If CreateFolderForEachDB is true, or if dctDatabaseNamesAndOutputPaths contains more than one entry,
-    ''' then each database will be scripted to a subfolder below the output folder
+    ''' If CreatedDirectoryForEachDB is true, or if dctDatabaseNamesAndOutputPaths contains more than one entry,
+    ''' then each database will be scripted to a subdirectory below the output directory
     ''' </remarks>
     Public Function ExportSchema(
-      outputFolderPath As String,
+      outputDirectoryPath As String,
       serverName As String,
       ByRef dctDatabaseNamesAndOutputPaths As Dictionary(Of String, String)) As Boolean
 
-        Return ExportSchema(outputFolderPath, serverName, dctDatabaseNamesAndOutputPaths, True, "", "")
+        Return ExportSchema(outputDirectoryPath, serverName, dctDatabaseNamesAndOutputPaths, True, "", "")
 
     End Function
 
     ''' <summary>
-    ''' Export database schema to the specified folder
+    ''' Export database schema to the specified directory
     ''' </summary>
-    ''' <param name="outputFolderPath">Output folder path</param>
+    ''' <param name="outputDirectoryPath">Output directory path</param>
     ''' <param name="serverName">Server name</param>
-    ''' <param name="dctDatabaseNamesAndOutputPaths">Dictionary where keys are database names and values will be updated to have the output folder path used</param>
+    ''' <param name="dctDatabaseNamesAndOutputPaths">Dictionary where keys are database names and values will be updated to have the output directory path used</param>
     ''' <param name="useIntegratedAuthentication">True for integrated authentication, false to use loginUsername and loginPassword</param>
     ''' <param name="loginUsername">Sql server login to use when useIntegratedAuthentication is false</param>
     ''' <param name="loginPassword">Sql server password to use when useIntegratedAuthentication is false</param>
     ''' <returns>True if success, false if a problem</returns>
     ''' <remarks>
-    ''' If CreateFolderForEachDB is true, or if dctDatabaseNamesAndOutputPaths contains more than one entry,
-    ''' then each database will be scripted to a subfolder below the output folder
+    ''' If CreateDirectoryForEachDB is true, or if dctDatabaseNamesAndOutputPaths contains more than one entry,
+    ''' then each database will be scripted to a subdirectory below the output directory
     ''' </remarks>
     Public Function ExportSchema(
-      outputFolderPath As String,
+      outputDirectoryPath As String,
       serverName As String,
       ByRef dctDatabaseNamesAndOutputPaths As Dictionary(Of String, String),
       useIntegratedAuthentication As Boolean,
@@ -162,24 +162,24 @@ Public Class clsDBSchemaExportTool
       loginPassword As String) As Boolean
 
         Try
-            If String.IsNullOrWhiteSpace(outputFolderPath) Then
-                Throw New ArgumentException("Output folder cannot be empty", NameOf(outputFolderPath))
+            If String.IsNullOrWhiteSpace(outputDirectoryPath) Then
+                Throw New ArgumentException("Output directory cannot be empty", NameOf(outputDirectoryPath))
             End If
 
-            If Not Directory.Exists(outputFolderPath) Then
-                ' Try to create the missing folder
-                ShowMessage("Creating " & outputFolderPath)
-                Directory.CreateDirectory(outputFolderPath)
+            If Not Directory.Exists(outputDirectoryPath) Then
+                ' Try to create the missing directory
+                ShowMessage("Creating " & outputDirectoryPath)
+                Directory.CreateDirectory(outputDirectoryPath)
             End If
 
             With mSchemaExportOptions
-                .OutputFolderPath = outputFolderPath
+                .OutputDirectoryPath = outputDirectoryPath
 
-                .OutputFolderNamePrefix = Me.DatabaseSubfolderPrefix
-                .CreateFolderForEachDB = Me.CreateFolderForEachDB
+                .OutputDirectoryNamePrefix = Me.DatabaseSubdirectoryPrefix
+                .CreateDirectoryForEachDB = Me.CreateDirectoryForEachDB
 
                 If dctDatabaseNamesAndOutputPaths.Count > 0 Then
-                    .CreateFolderForEachDB = True
+                    .CreateDirectoryForEachDB = True
                 End If
 
                 .AutoSelectTableNamesForDataExport = Me.AutoSelectTableDataToExport
@@ -228,22 +228,22 @@ Public Class clsDBSchemaExportTool
 
             Dim success = mDBSchemaExporter.ScriptServerAndDBObjects(mSchemaExportOptions, lstDatabaseList, lstTableNamesForDataExport)
 
-            ' Populate a dictionary with the database names (properly capitalized) and the output folder path used for each
-            Dim dctdatabaseNameLookup = New Dictionary(Of String, String)(StringComparer.CurrentCultureIgnoreCase)
+            ' Populate a dictionary with the database names (properly capitalized) and the output directory path used for each
+            Dim databaseNameToDirectoryMap = New Dictionary(Of String, String)(StringComparer.CurrentCultureIgnoreCase)
 
-            For Each exportedDatabase In mDBSchemaExporter.SchemaOutputFolders
-                dctdatabaseNameLookup.Add(exportedDatabase.Key, exportedDatabase.Value)
+            For Each exportedDatabase In mDBSchemaExporter.SchemaOutputDirectories
+                databaseNameToDirectoryMap.Add(exportedDatabase.Key, exportedDatabase.Value)
             Next
 
             ' Add any other databases in lstDatabaseList that are missing (as would be the case if it doesn't exist on the server)
             For Each databaseName In lstDatabaseList
-                If Not dctdatabaseNameLookup.ContainsKey(databaseName) Then
-                    dctdatabaseNameLookup.Add(databaseName, String.Empty)
+                If Not databaseNameToDirectoryMap.ContainsKey(databaseName) Then
+                    databaseNameToDirectoryMap.Add(databaseName, String.Empty)
                 End If
             Next
 
-            ' Now update dctDatabaseNamesAndOutputPaths to match dctdatabaseNameLookup (which has properly capitalized database names)
-            dctDatabaseNamesAndOutputPaths = dctdatabaseNameLookup
+            ' Now update dctDatabaseNamesAndOutputPaths to match databaseNameToDirectoryMap (which has properly capitalized database names)
+            dctDatabaseNamesAndOutputPaths = databaseNameToDirectoryMap
 
             If Me.ShowStats Then
                 Console.WriteLine("Exported database schema in " & DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds.ToString("0.0") & " seconds")
@@ -514,15 +514,15 @@ Public Class clsDBSchemaExportTool
 
         Me.TableDataToExportFile = String.Empty
 
-        Me.CreateFolderForEachDB = True
+        Me.CreateDirectoryForEachDB = True
 
-        Me.DatabaseSubfolderPrefix = clsExportDBSchema.DEFAULT_DB_OUTPUT_FOLDER_NAME_PREFIX
+        Me.DatabaseSubdirectoryPrefix = clsExportDBSchema.DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX
 
         Me.PreviewExport = False
         Me.ShowStats = False
         Me.Sync = False
 
-        Me.SyncFolderPath = String.Empty
+        Me.SyncDirectoryPath = String.Empty
 
         Me.GitUpdate = False
         Me.HgUpdate = False
@@ -564,11 +564,10 @@ Public Class clsDBSchemaExportTool
                         MyBase.LogMessagesToFile = True
                     End If
 
-                    Dim value = objSettingsFile.GetParam(OPTIONS_SECTION, "LogFolder", String.Empty)
+                    Dim value = objSettingsFile.GetParam(OPTIONS_SECTION, "LogDirectory", String.Empty)
                     If Not String.IsNullOrEmpty(value) Then
-                        MyBase.LogFolderPath = value
+                        MyBase.LogDirectoryPath = value
                     End If
-
 
                 End If
             End If
@@ -623,7 +622,7 @@ Public Class clsDBSchemaExportTool
     End Function
 
     Private Function ParseGitStatus(
-     diTargetFolder As FileSystemInfo,
+     diTargetDirectory As FileSystemInfo,
      standardOutput As String,
      ByRef intModifiedFileCount As Integer) As Boolean
 
@@ -657,17 +656,17 @@ Public Class clsDBSchemaExportTool
                 If String.IsNullOrWhiteSpace(statusLine) OrElse statusLine.Length < 4 Then Continue While
 
                 If statusLine.StartsWith("fatal: Not a git repository") Then
-                    ShowErrorMessage("Folder is not tracked by Git: " & diTargetFolder.FullName)
+                    ShowErrorMessage("Directory is not tracked by Git: " & diTargetDirectory.FullName)
                     Return False
                 End If
 
                 Dim fileIndexStatus As Char = statusLine.Chars(0)
-                Dim fileWorktreeStatus As Char = statusLine.Chars(1)
+                Dim fileWorkTreeStatus As Char = statusLine.Chars(1)
                 ' Dim filePath = statusLine.Substring(3)
 
                 If fileIndexStatus = "?"c Then
                     ' New file; added by the calling function
-                ElseIf lstNewOrModifiedStatusSymbols.Contains(fileIndexStatus) OrElse lstNewOrModifiedStatusSymbols.Contains(fileWorktreeStatus) Then
+                ElseIf lstNewOrModifiedStatusSymbols.Contains(fileIndexStatus) OrElse lstNewOrModifiedStatusSymbols.Contains(fileWorkTreeStatus) Then
                     intModifiedFileCount += 1
                 End If
 
@@ -679,7 +678,7 @@ Public Class clsDBSchemaExportTool
     End Function
 
     Private Function ParseSvnHgStatus(
-      diTargetFolder As FileSystemInfo,
+      diTargetDirectory As FileSystemInfo,
       standardOutput As String,
       eRepoManager As eRepoManagerType,
       ByRef intModifiedFileCount As Integer) As Boolean
@@ -714,10 +713,10 @@ Public Class clsDBSchemaExportTool
                 If String.IsNullOrWhiteSpace(statusLine) OrElse statusLine.Length < minimumLineLength Then Continue While
 
                 If statusLine.StartsWith("svn: warning") AndAlso statusLine.Contains("is not a working copy") Then
-                    ShowErrorMessage("Folder is not tracked by SVN: " & diTargetFolder.FullName)
+                    ShowErrorMessage("Directory is not tracked by SVN: " & diTargetDirectory.FullName)
                     Return False
                 ElseIf statusLine.StartsWith("abort: no repository found in ") Then
-                    ShowErrorMessage("Folder is not tracked by Hg: " & diTargetFolder.FullName)
+                    ShowErrorMessage("Directory is not tracked by Hg: " & diTargetDirectory.FullName)
                     Return False
                 End If
 
@@ -754,33 +753,33 @@ Public Class clsDBSchemaExportTool
       blnResetErrorCode As Boolean) As Boolean
         ' Returns True if success, False if failure
 
-        ' Assume the input folder points to the target folder where the database schema files will be created
+        ' Assume the input directory points to the target directory where the database schema files will be created
 
-        Return ProcessDatabase(strInputFolderPath, mServer, mDatabase)
+        Return ProcessDatabase(strInputDirectoryPath, mServer, mDatabase)
 
     End Function
 
-    Public Shadows Function ProcessAndRecurseFolders(strInputFolderPath As String) As Boolean
-        Return ProcessAndRecurseFolders(strInputFolderPath, String.Empty)
+    Public Shadows Function ProcessAndRecurseDirectories(strInputDirectoryPath As String) As Boolean
+        Return ProcessAndRecurseDirectories(strInputDirectoryPath, String.Empty)
     End Function
 
-    Public Shadows Function ProcessAndRecurseFolders(strInputFolderPath As String, intRecurseFoldersMaxLevels As Integer) As Boolean
-        Return ProcessAndRecurseFolders(strInputFolderPath, String.Empty, String.Empty, intRecurseFoldersMaxLevels)
+    Public Shadows Function ProcessAndRecurseDirectories(strInputDirectoryPath As String, intMaxLevelsToRecurse As Integer) As Boolean
+        Return ProcessAndRecurseDirectories(strInputDirectoryPath, String.Empty, String.Empty, intMaxLevelsToRecurse)
     End Function
 
-    Public Shadows Function ProcessAndRecurseFolders(strInputFolderPath As String, strOutputFolderAlternatePath As String) As Boolean
-        Return ProcessAndRecurseFolders(strInputFolderPath, strOutputFolderAlternatePath, String.Empty)
+    Public Shadows Function ProcessAndRecurseDirectories(strInputDirectoryPath As String, strOutputDirectoryAlternatePath As String) As Boolean
+        Return ProcessAndRecurseDirectories(strInputDirectoryPath, strOutputDirectoryAlternatePath, String.Empty)
     End Function
 
-    Public Shadows Function ProcessAndRecurseFolders(strInputFolderPath As String, strOutputFolderAlternatePath As String, strParameterFilePath As String) As Boolean
-        Return ProcessAndRecurseFolders(strInputFolderPath, strOutputFolderAlternatePath, strParameterFilePath, 0)
+    Public Shadows Function ProcessAndRecurseDirectories(strInputDirectoryPath As String, strOutputDirectoryAlternatePath As String, strParameterFilePath As String) As Boolean
+        Return ProcessAndRecurseDirectories(strInputDirectoryPath, strOutputDirectoryAlternatePath, strParameterFilePath, 0)
     End Function
 
-    Public Shadows Function ProcessAndRecurseFolders(
-      strInputFolderPath As String,
-      strOutputFolderAlternatePath As String,
+    Public Shadows Function ProcessAndRecurseDirectories(
+      strInputDirectoryPath As String,
+      strOutputDirectoryAlternatePath As String,
       strParameterFilePath As String,
-      intRecurseFoldersMaxLevels As Integer) As Boolean
+      intMaxLevelsToRecurse As Integer) As Boolean
         ' Returns True if success, False if failure
 
         Return ProcessDirectory(strInputDirectoryPath, strOutputDirectoryAlternatePath, strParameterFilePath, True)
@@ -790,15 +789,15 @@ Public Class clsDBSchemaExportTool
     ''' <summary>
     ''' Script the objects for one or more databases
     ''' </summary>
-    ''' <param name="outputFolderPath">Output folder path</param>
+    ''' <param name="outputDirectoryPath">Output directory path</param>
     ''' <param name="serverName">Server name</param>
     ''' <param name="databaseList">Database names to script</param>
     ''' <returns>True if success, false if a problem</returns>
-    Public Function ProcessDatabase(outputFolderPath As String, serverName As String, databaseList As IEnumerable(Of String)) As Boolean
+    Public Function ProcessDatabase(outputDirectoryPath As String, serverName As String, databaseList As IEnumerable(Of String)) As Boolean
         Dim success As Boolean
 
-        If String.IsNullOrWhiteSpace(outputFolderPath) Then
-            Throw New ArgumentException("Output folder path must be defined", NameOf(outputFolderPath))
+        If String.IsNullOrWhiteSpace(outputDirectoryPath) Then
+            Throw New ArgumentException("Output directory path must be defined", NameOf(outputDirectoryPath))
         End If
 
         If String.IsNullOrWhiteSpace(serverName) Then
@@ -811,17 +810,17 @@ Public Class clsDBSchemaExportTool
 
         Try
             ' Keys in this dictionary are database names
-            ' Values are the output folder path used (values will be defined by ExportSchema then used by SyncSchemaFiles)
+            ' Values are the output directory path used (values will be defined by ExportSchema then used by SyncSchemaFiles)
 
             Dim dctDatabaseNamesAndOutputPaths = New Dictionary(Of String, String)
             For Each databaseName In databaseList
                 dctDatabaseNamesAndOutputPaths.Add(databaseName, String.Empty)
             Next
 
-            success = ExportSchema(outputFolderPath, serverName, dctDatabaseNamesAndOutputPaths)
+            success = ExportSchema(outputDirectoryPath, serverName, dctDatabaseNamesAndOutputPaths)
 
             If success AndAlso Sync Then
-                success = SyncSchemaFiles(dctDatabaseNamesAndOutputPaths, SyncFolderPath)
+                success = SyncSchemaFiles(dctDatabaseNamesAndOutputPaths, SyncDirectoryPath)
             End If
 
             Return success
@@ -836,15 +835,15 @@ Public Class clsDBSchemaExportTool
     ''' <summary>
     ''' Script the objects for one database
     ''' </summary>
-    ''' <param name="outputFolderPath">Output folder path</param>
+    ''' <param name="outputDirectoryPath">Output directory path</param>
     ''' <param name="serverName">Server name</param>
     ''' <param name="databaseName">Database name to script</param>
     ''' <returns>True if success, false if a problem</returns>
-    Public Function ProcessDatabase(outputFolderPath As String, serverName As String, databaseName As String) As Boolean
+    Public Function ProcessDatabase(outputDirectoryPath As String, serverName As String, databaseName As String) As Boolean
 
         Dim databaseList As New List(Of String) From {databaseName}
 
-        Return ProcessDatabase(outputFolderPath, serverName, databaseList)
+        Return ProcessDatabase(outputDirectoryPath, serverName, databaseList)
 
     End Function
 
@@ -939,11 +938,11 @@ Public Class clsDBSchemaExportTool
 
     End Function
 
-    Private Function SyncSchemaFiles(lstDatabaseNamesAndOutputPaths As ICollection(Of KeyValuePair(Of String, String)), folderPathForSync As String) As Boolean
+    Private Function SyncSchemaFiles(lstDatabaseNamesAndOutputPaths As ICollection(Of KeyValuePair(Of String, String)), directoryPathForSync As String) As Boolean
         Try
             Dim dtStartTime = DateTime.UtcNow
 
-            ResetProgress("Synchronizing with " & folderPathForSync)
+            ResetProgress("Synchronizing with " & directoryPathForSync)
 
             Dim intDBsProcessed = 0
             Dim includeDbNameInCommitMessage = (lstDatabaseNamesAndOutputPaths.Count > 1)
@@ -951,10 +950,10 @@ Public Class clsDBSchemaExportTool
             For Each dbEntry In lstDatabaseNamesAndOutputPaths
 
                 Dim databaseName = dbEntry.Key
-                Dim schemaOutputFolder = dbEntry.Value
+                Dim schemaOutputDirectory = dbEntry.Value
 
-                If String.IsNullOrWhiteSpace(schemaOutputFolder) Then
-                    ShowErrorMessage("Schema output folder was not reported for " & databaseName & "; unable to synchronize")
+                If String.IsNullOrWhiteSpace(schemaOutputDirectory) Then
+                    ShowErrorMessage("Schema output directory was not reported for " & databaseName & "; unable to synchronize")
                     Continue For
                 End If
 
@@ -962,68 +961,66 @@ Public Class clsDBSchemaExportTool
 
                 UpdateProgress("Synchronizing database " & databaseName, percentComplete)
 
-                Dim diSourceFolder = New DirectoryInfo(schemaOutputFolder)
+                Dim diSourceDirectory = New DirectoryInfo(schemaOutputDirectory)
 
-                Dim targetFolderPath = String.Copy(folderPathForSync)
-                If lstDatabaseNamesAndOutputPaths.Count > 1 OrElse CreateFolderForEachDB Then
-                    targetFolderPath = Path.Combine(targetFolderPath, databaseName)
+                Dim targetDirectoryPath = String.Copy(directoryPathForSync)
+                If lstDatabaseNamesAndOutputPaths.Count > 1 OrElse CreateDirectoryForEachDB Then
+                    targetDirectoryPath = Path.Combine(targetDirectoryPath, databaseName)
                 End If
 
-                Dim diTargetFolder = New DirectoryInfo(targetFolderPath)
+                Dim diTargetDirectory = New DirectoryInfo(targetDirectoryPath)
 
-                If Not diSourceFolder.Exists Then
-                    ShowErrorMessage("Source folder not found; cannot synchronize: " & diSourceFolder.FullName)
+                If Not diSourceDirectory.Exists Then
+                    ShowErrorMessage("Source directory not found; cannot synchronize: " & diSourceDirectory.FullName)
                     Return False
                 End If
 
-                If Not diTargetFolder.Exists Then
-                    ShowMessage("Creating target folder for synchronization: " & diTargetFolder.FullName)
-                    diTargetFolder.Create()
+                If Not diTargetDirectory.Exists Then
+                    ShowMessage("Creating target directory for synchronization: " & diTargetDirectory.FullName)
+                    diTargetDirectory.Create()
                 End If
 
-                If diSourceFolder.FullName = diTargetFolder.FullName Then
-                    ShowErrorMessage("Sync folder is identical to the output SchemaFileFolder; cannot synchronize")
+                If diSourceDirectory.FullName = diTargetDirectory.FullName Then
+                    ShowErrorMessage("Sync directory is identical to the output SchemaFileDirectory; cannot synchronize")
                     Return False
                 End If
 
                 Dim fileProcessCount = 0
                 Dim fileCopyCount = 0
 
-                ' This list holds the the files that are copied from diSourceFolder to diTargetFolder
+                ' This list holds the the files that are copied from diSourceDirectory to diTargetDirectory
                 Dim lstNewFilePaths = New List(Of String)
 
-                Dim lstfilesToCopy = diSourceFolder.GetFiles()
+                Dim filesToCopy = diSourceDirectory.GetFiles()
 
-                For Each fiFile As FileInfo In lstfilesToCopy
+                For Each sourceFile As FileInfo In filesToCopy
 
-                    Dim fileNameLcase = fiFile.Name.ToLower()
-
-                    If fileNameLcase.StartsWith("x_") OrElse
-                       fileNameLcase.StartsWith("t_tmp_") OrElse
-                       fileNameLcase.StartsWith("t_candidatemodsseqwork_") OrElse
-                       fileNameLcase.StartsWith("t_candidateseqwork_") Then
-                        ShowMessage("Skipping " & databaseName & " object " & fiFile.Name)
+                    If sourceFile.Name.StartsWith("x_", StringComparison.OrdinalIgnoreCase) OrElse
+                       sourceFile.Name.StartsWith("t_tmp_", StringComparison.OrdinalIgnoreCase) OrElse
+                       sourceFile.Name.StartsWith("t_CandidateModsSeqWork_", StringComparison.OrdinalIgnoreCase) OrElse
+                       sourceFile.Name.StartsWith("t_CandidateSeqWork_", StringComparison.OrdinalIgnoreCase) Then
+                        ShowMessage("Skipping " & databaseName & " object " & sourceFile.Name)
                         Continue For
                     End If
 
-                    Dim fiTargetFile = New FileInfo(Path.Combine(diTargetFolder.FullName, fiFile.Name))
+                    Dim fiTargetFile = New FileInfo(Path.Combine(diTargetDirectory.FullName, sourceFile.Name))
                     Dim eDifferenceReason As eDifferenceReasonType
 
-                    If FilesDiffer(fiFile, fiTargetFile, eDifferenceReason) Then
+                    If FilesDiffer(sourceFile, fiTargetFile, eDifferenceReason) Then
 
-                        Dim subtaskPercentComplete As Single = fileProcessCount / CSng(lstfilesToCopy.Count) * 100
+                        Dim subtaskPercentComplete As Single = fileProcessCount / CSng(filesToCopy.Count) * 100
 
                         Select Case eDifferenceReason
                             Case eDifferenceReasonType.NewFile
-                                UpdateSubtaskProgress("  Copying new file " & fiFile.Name, subtaskPercentComplete)
+                                UpdateSubtaskProgress("  Copying new file " & sourceFile.Name, subtaskPercentComplete)
                                 lstNewFilePaths.Add(fiTargetFile.FullName)
                             Case eDifferenceReasonType.Changed
-                                UpdateSubtaskProgress("  Copying changed file " & fiFile.Name, subtaskPercentComplete)
+                                UpdateSubtaskProgress("  Copying changed file " & sourceFile.Name, subtaskPercentComplete)
                             Case Else
-                                UpdateSubtaskProgress("  Copying file " & fiFile.Name, subtaskPercentComplete)
+                                UpdateSubtaskProgress("  Copying file " & sourceFile.Name, subtaskPercentComplete)
                         End Select
 
-                        fiFile.CopyTo(fiTargetFile.FullName, True)
+                        sourceFile.CopyTo(fiTargetFile.FullName, True)
                         fileCopyCount += 1
 
                     End If
@@ -1037,15 +1034,15 @@ Public Class clsDBSchemaExportTool
                 End If
 
                 If Me.SvnUpdate Then
-                    UpdateRepoChanges(diTargetFolder, fileCopyCount, lstNewFilePaths, eRepoManagerType.Svn, commitMessageAppend)
+                    UpdateRepoChanges(diTargetDirectory, fileCopyCount, lstNewFilePaths, eRepoManagerType.Svn, commitMessageAppend)
                 End If
 
                 If Me.HgUpdate Then
-                    UpdateRepoChanges(diTargetFolder, fileCopyCount, lstNewFilePaths, eRepoManagerType.Hg, commitMessageAppend)
+                    UpdateRepoChanges(diTargetDirectory, fileCopyCount, lstNewFilePaths, eRepoManagerType.Hg, commitMessageAppend)
                 End If
 
                 If Me.GitUpdate Then
-                    UpdateRepoChanges(diTargetFolder, fileCopyCount, lstNewFilePaths, eRepoManagerType.Git, commitMessageAppend)
+                    UpdateRepoChanges(diTargetDirectory, fileCopyCount, lstNewFilePaths, eRepoManagerType.Git, commitMessageAppend)
                 End If
 
                 intDBsProcessed += 1
@@ -1065,7 +1062,7 @@ Public Class clsDBSchemaExportTool
     End Function
 
     Private Function UpdateRepoChanges(
-      diTargetFolder As FileSystemInfo,
+      diTargetDirectory As FileSystemInfo,
       fileCopyCount As Integer,
       lstNewFilePaths As ICollection(Of String),
       eRepoManager As eRepoManagerType,
@@ -1143,14 +1140,14 @@ Public Class clsDBSchemaExportTool
                 Console.WriteLine()
             End If
 
-            UpdateProgress("Looking for modified files tracked by " & strToolName & " at " & diTargetFolder.FullName)
+            UpdateProgress("Looking for modified files tracked by " & strToolName & " at " & diTargetDirectory.FullName)
 
             ' Count the number of new or modified files
-            cmdArgs = " status """ & diTargetFolder.FullName & """"
+            cmdArgs = " status """ & diTargetDirectory.FullName & """"
             maxRuntimeSeconds = 300
             If eRepoManager = eRepoManagerType.Git Then cmdArgs = " status -s -u"
 
-            success = RunCommand(fiRepoExe.FullName, cmdArgs, diTargetFolder.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
+            success = RunCommand(fiRepoExe.FullName, cmdArgs, diTargetDirectory.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
             If Not success Then Return False
             If eRepoManager = eRepoManagerType.Git AndAlso errorOutput.StartsWith("fatal") Then
                 ShowMessage("Error reported for " & strToolName & ": " & errorOutput)
@@ -1160,10 +1157,10 @@ Public Class clsDBSchemaExportTool
             Dim modifiedFileCount = 0
 
             If eRepoManager = eRepoManagerType.Svn Or eRepoManager = eRepoManagerType.Hg Then
-                success = ParseSvnHgStatus(diTargetFolder, standardOutput, eRepoManager, modifiedFileCount)
+                success = ParseSvnHgStatus(diTargetDirectory, standardOutput, eRepoManager, modifiedFileCount)
             Else
                 ' Git
-                success = ParseGitStatus(diTargetFolder, standardOutput, modifiedFileCount)
+                success = ParseGitStatus(diTargetDirectory, standardOutput, modifiedFileCount)
             End If
 
             If Not success Then Return False
@@ -1194,10 +1191,10 @@ Public Class clsDBSchemaExportTool
                     UpdateProgress("Commiting changes to " & strToolName & ": " & commitMessage)
 
                     ' Commit the changes
-                    cmdArgs = " commit """ & diTargetFolder.FullName & """ --message """ & commitMessage & """"
+                    cmdArgs = " commit """ & diTargetDirectory.FullName & """ --message """ & commitMessage & """"
                     maxRuntimeSeconds = 120
 
-                    success = RunCommand(fiRepoExe.FullName, cmdArgs, diTargetFolder.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
+                    success = RunCommand(fiRepoExe.FullName, cmdArgs, diTargetDirectory.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
 
                     If Not success Then
                         ShowErrorMessage("Commit error" & ControlChars.NewLine & standardOutput)
@@ -1205,7 +1202,7 @@ Public Class clsDBSchemaExportTool
                     ElseIf eRepoManager = eRepoManagerType.Git AndAlso errorOutput.StartsWith("fatal") Then
                         ShowMessage("Error reported for " & strToolName & ": " & errorOutput)
                         Return False
-                    ElseIf eRepoManager = eRepoManagerType.svn AndAlso errorOutput.Contains("Commit failed") Then
+                    ElseIf eRepoManager = eRepoManagerType.Svn AndAlso errorOutput.Contains("Commit failed") Then
                         ShowMessage("Error reported for " & strToolName & ": " & errorOutput)
                         Return False
                     End If
@@ -1227,7 +1224,7 @@ Public Class clsDBSchemaExportTool
 
                             maxRuntimeSeconds = 300
 
-                            success = RunCommand(fiRepoExe.FullName, cmdArgs, diTargetFolder.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
+                            success = RunCommand(fiRepoExe.FullName, cmdArgs, diTargetDirectory.FullName, standardOutput, errorOutput, maxRuntimeSeconds)
 
                             If eRepoManager = eRepoManagerType.Hg Then
                                 Exit For
