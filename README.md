@@ -29,7 +29,7 @@ DB_Schema_Export_Tool.exe
   /DBList:Manager_Control,Protein_Sequences 
   /sync:"F:\Projects\Database_Schema\DMS" 
   /Git /Commit 
-  /L /LogFolder:Logs 
+  /L /LogDir:Logs 
   /Data:ProteinSeqs_Data_Tables.txt
 ```
 
@@ -38,31 +38,31 @@ DB_Schema_Export_Tool.exe
 
 ```
 DB_Schema_Export_Tool.exe
- SchemaFileFolder /Server:ServerName
+ SchemaFileDirectory /Server:ServerName
  /DB:Database /DBList:CommaSeparatedDatabaseName
- [/FolderPrefix:PrefixText] [/NoSubfolder]
+ [/DirectoryPrefix:PrefixText] [/NoSubdirectory]
  [/Data:TableDataToExport.txt] [/NoAutoData]
- [/Sync:TargetFolderPath] [/Git] [/Svn] [/Hg] [/Commit]
- [/L[:LogFilePath]] [/LogFolder:LogFolderPath] [/Preview] [/Stats]
+ [/Sync:TargetDirectoryPath] [/Git] [/Svn] [/Hg] [/Commit]
+ [/L[:LogFilePath]] [/LogDir:LogDirectoryPath] [/Preview] [/Stats]
 ```
 
-SchemaFileFolder is the path to the folder where the schema files will be saved
+SchemaFileDirectory is the path to the directory where the schema files will be saved
 
 To process a single database, use /Server and /DB
 
 Use /DBList to process several databases (separate names with commas)
 
-By default, a subfolder named DBSchema__DatabaseName will be created below SchemaFileFolder/ 
-Customize this the prefix text using /FolderPrefix
+By default, a subdirectory named DBSchema__DatabaseName will be created below SchemaFileDirectory/ 
+Customize this the prefix text using /DirectoryPrefix
 
-Use /NoSubfolder to disable auto creating a subfolder for the database being exported. 
-* Note: subfolders will always be created if you use /DBList and specify more than one database
+Use /NoSubdirectory to disable auto creating a subdirectory for the database being exported. 
+* Note: subsirectories will always be created if you use /DBList and specify more than one database
 
 Use /Data to define a text file with table names (one name per line) for which the data 
 should be exported. In addition to table names defined in /Data, there are default tables 
 which will have their data exported; disable the defaults using /NoAutoData
 
-Use /Sync to copy new/changed files from the output folder to an alternative folder. 
+Use /Sync to copy new/changed files from the output directory to an alternative directory. 
 * This is advantageous to prevent file timestamps from getting updated every time the schema is exported
 
 Use /Git to auto-update any new or changed files using Git
@@ -75,7 +75,7 @@ Use /Commit to commit any updates to the repository
 
 Use /L to log messages to a file; you can optionally specify a log file name using /L:LogFilePath.
 
-Use /LogFolder to specify the folder to save the log file in. 
+Use /LogDirectory to specify the directory to save the log file in. 
 * By default, the log file is created in the current working directory.
 
 Use /Preview to count the number of database objects that would be exported
@@ -84,7 +84,7 @@ Use /Stats to show (but not log) export stats
 
 ## Software Dependencies
 
-This program leverages SMO from Sql Server 2012.  The required DLLs are in the Lib folder
+This program leverages SMO from Sql Server 2012.  The required DLLs are in the Lib directory
 
 In order to use the /Git, /Svn, or /Hg switches, you need the following software installed
 and the executables present at a specific location.
