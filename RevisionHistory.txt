@@ -1,5 +1,12 @@
 DB Schema Export Tool
 
+Version 1.2.6869; October 22, 2018
+	- Update PRISM.dll with renamed classes
+	- Rename parameters
+		/FolderPrefix to /DirectoryPrefix 
+		/NoSubfolder to /NoSubdirectory
+		/LogFolder to /LogDir
+
 Version 1.2.6796; August 10, 2018
 	- Update PRISM.dll from NuGet
 
