@@ -213,7 +213,7 @@ Module modMain
     End Function
 
     Private Function GetAppVersion() As String
-        Return ProcessFoldersBase.GetAppVersion(PROGRAM_DATE)
+        Return ProcessFilesOrDirectoriesBase.GetAppVersion(PROGRAM_DATE)
     End Function
 
     Private Function SetOptionsUsingCommandLineParameters(objParseCommandLine As clsParseCommandLine) As Boolean

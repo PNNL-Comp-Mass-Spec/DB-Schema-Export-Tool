@@ -21,7 +21,7 @@ Imports PRISM
 ''' This class exports the schema for one or more databases on a server
 ''' </summary>
 Public Class clsDBSchemaExportTool
-    Inherits FileProcessor.ProcessFoldersBase
+    Inherits FileProcessor.ProcessDirectoriesBase
 
     ''' <summary>
     ''' Constructor
@@ -389,8 +389,8 @@ Public Class clsDBSchemaExportTool
 
         Dim strErrorMessage As String
 
-        If MyBase.ErrorCode = eProcessFoldersErrorCodes.LocalizedError OrElse
-           MyBase.ErrorCode = eProcessFoldersErrorCodes.NoError Then
+        If MyBase.ErrorCode = ProcessDirectoriesErrorCodes.LocalizedError OrElse
+           MyBase.ErrorCode = ProcessDirectoriesErrorCodes.NoError Then
             Select Case mLocalErrorCode
                 Case eDBSchemaExportTool.NoError
                     strErrorMessage = ""
@@ -549,7 +549,7 @@ Public Class clsDBSchemaExportTool
                 ' See if strParameterFilePath points to a file in the same directory as the application
                 strParameterFilePath = Path.Combine(Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location), Path.GetFileName(strParameterFilePath))
                 If Not File.Exists(strParameterFilePath) Then
-                    MyBase.SetBaseClassErrorCode(eProcessFoldersErrorCodes.ParameterFileNotFound)
+                    MyBase.SetBaseClassErrorCode(ProcessDirectoriesErrorCodes.ParameterFileNotFound)
                     Return False
                 End If
             End If
@@ -557,7 +557,7 @@ Public Class clsDBSchemaExportTool
             If objSettingsFile.LoadSettings(strParameterFilePath) Then
                 If Not objSettingsFile.SectionPresent(OPTIONS_SECTION) Then
                     ShowErrorMessage("The node '<section name=""" & OPTIONS_SECTION & """> was not found in the parameter file: " & strParameterFilePath)
-                    MyBase.SetBaseClassErrorCode(eProcessFoldersErrorCodes.InvalidParameterFile)
+                    MyBase.SetBaseClassErrorCode(ProcessDirectoriesErrorCodes.InvalidParameterFile)
                     Return False
                 Else
                     If objSettingsFile.GetParam(OPTIONS_SECTION, "LogMessages", False) Then
@@ -748,8 +748,8 @@ Public Class clsDBSchemaExportTool
 
     End Function
 
-    Public Overloads Overrides Function ProcessFolder(strInputFolderPath As String,
-      strOutputFolderAlternatePath As String,
+    Public Overloads Overrides Function ProcessDirectory(strInputDirectoryPath As String,
+      strOutputDirectoryAlternatePath As String,
       strParameterFilePath As String,
       blnResetErrorCode As Boolean) As Boolean
         ' Returns True if success, False if failure
@@ -783,7 +783,7 @@ Public Class clsDBSchemaExportTool
       intRecurseFoldersMaxLevels As Integer) As Boolean
         ' Returns True if success, False if failure
 
-        Return ProcessFolder(strInputFolderPath, strOutputFolderAlternatePath, strParameterFilePath, True)
+        Return ProcessDirectory(strInputDirectoryPath, strOutputDirectoryAlternatePath, strParameterFilePath, True)
 
     End Function
 
