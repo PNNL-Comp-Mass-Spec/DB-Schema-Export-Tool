@@ -77,9 +77,6 @@ Public Class clsDBSchemaExportTool
 
     Private ReadOnly mDateMatcher As Regex
 
-    'Runs specified program
-    Private WithEvents m_ProgRunner As ProgRunner
-
 #End Region
 
 #Region "Properties"
@@ -860,8 +857,8 @@ Public Class clsDBSchemaExportTool
 
         Try
 
-            m_ProgRunner = New ProgRunner
-            With m_ProgRunner
+            Dim programRunner = New ProgRunner
+            With programRunner
                 .Arguments = cmdArgs
                 .CreateNoWindow = True
                 .MonitoringInterval = 100
@@ -875,26 +872,27 @@ Public Class clsDBSchemaExportTool
                 .WriteConsoleOutputToFile = False
                 .ConsoleOutputFilePath = String.Empty
             End With
+            RegisterEvents(programRunner)
 
             Dim dtStartTime = DateTime.UtcNow
             Dim dtLastStatus = DateTime.UtcNow
             Dim executionAborted = False
 
             ' Start the program executing
-            m_ProgRunner.StartAndMonitorProgram()
+            programRunner.StartAndMonitorProgram()
 
             ' Wait for it to exit
             If maxRuntimeSeconds < 10 Then maxRuntimeSeconds = 10
 
             ' Loop until program is complete, or until maxRuntimeSeconds seconds elapses
-            While (m_ProgRunner.State <> ProgRunner.States.NotMonitoring)
+            While (programRunner.State <> ProgRunner.States.NotMonitoring)
                 Threading.Thread.Sleep(100)
 
                 Dim elapsedSeconds = DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds
 
                 If elapsedSeconds > maxRuntimeSeconds Then
                     ShowErrorMessage("Program execution has surpassed " & maxRuntimeSeconds & " seconds; aborting " & exePath)
-                    m_ProgRunner.StopMonitoringProgram(kill:=True)
+                    programRunner.StopMonitoringProgram(kill:=True)
                     executionAborted = True
                 End If
 
@@ -906,11 +904,11 @@ Public Class clsDBSchemaExportTool
             End While
 
             If executionAborted Then
-                Console.WriteLine("ProgRunner was aborted for " & exePath)
+                Console.WriteLine("ProgramRunner was aborted for " & exePath)
                 Return True
             Else
-                standardOutput = m_ProgRunner.CachedConsoleOutput
-                errorOutput = m_ProgRunner.CachedConsoleError
+                standardOutput = programRunner.CachedConsoleOutput
+                errorOutput = programRunner.CachedConsoleError
                 Return True
             End If
 
@@ -1291,14 +1289,6 @@ Public Class clsDBSchemaExportTool
 
     Private Sub mDBSchemaExporter_SubtaskProgressReset() Handles mDBSchemaExporter.SubtaskProgressReset
         ShowMessage("  " & mDBSchemaExporter.SubtaskProgressStepDescription)
-    End Sub
-
-    Private Sub m_ProgRunner_ConsoleErrorEvent(NewText As String) Handles m_ProgRunner.ConsoleErrorEvent
-        ShowErrorMessage(NewText)
-    End Sub
-
-    Private Sub m_ProgRunner_ConsoleOutputEvent(NewText As String) Handles m_ProgRunner.ConsoleOutputEvent
-        ShowMessage(NewText)
     End Sub
 
 #End Region
