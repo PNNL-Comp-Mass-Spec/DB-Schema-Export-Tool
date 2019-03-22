@@ -21,7 +21,7 @@ Imports System.Collections.Specialized
 Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Text
-Imports SharedVBNetRoutines
+Imports PRISM
 
 ''' <summary>
 ''' This class will export all of the specified object types
@@ -1987,7 +1987,7 @@ Public Class clsExportDBSchema
         Try
 
             ' Process each database in lstDatabaseListToProcess
-            ResetProgress("Exporting DB objects to: " & VBNetRoutines.CompactPathString(schemaExportOptions.OutputDirectoryPath), lstDatabaseListToProcess.Count)
+            ResetProgress("Exporting DB objects to: " & PathUtils.CompactPathString(schemaExportOptions.OutputDirectoryPath), lstDatabaseListToProcess.Count)
 
             mSchemaOutputDirectories.Clear()
 
@@ -2096,7 +2096,7 @@ Public Class clsExportDBSchema
         End Try
 
         Try
-            ResetProgress("Exporting Server objects to: " & VBNetRoutines.CompactPathString(schemaExportOptions.OutputDirectoryPath), PROGRESS_STEP_COUNT)
+            ResetProgress("Exporting Server objects to: " & PathUtils.CompactPathString(schemaExportOptions.OutputDirectoryPath), PROGRESS_STEP_COUNT)
             ResetSubtaskProgress("Exporting server options")
 
             ' Export the overall server configuration and options (this is quite fast, so we won't increment mProgressStep after this)
@@ -2174,7 +2174,7 @@ Public Class clsExportDBSchema
         End If
 
 
-        ResetProgress("Exporting schema to: " & VBNetRoutines.CompactPathString(schemaExportOptions.OutputDirectoryPath), 1)
+        ResetProgress("Exporting schema to: " & PathUtils.CompactPathString(schemaExportOptions.OutputDirectoryPath), 1)
         ResetSubtaskProgress("Connecting to " & schemaExportOptions.ConnectionInfo.ServerName)
 
         success = ConnectToServer(schemaExportOptions.ConnectionInfo)
