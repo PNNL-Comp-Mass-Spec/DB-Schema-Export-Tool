@@ -2,7 +2,9 @@
 using System.IO;
 using System.Reflection;
 using System.Threading;
+#if ENABLE_GUI
 using System.Windows.Forms;
+#endif
 using PRISM;
 
 namespace DB_Schema_Export_Tool
@@ -52,11 +54,16 @@ namespace DB_Schema_Export_Tool
 
             if (args.Length == 0)
             {
+#if ENABLE_GUI
                 // Show the GUI
 
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
                 Application.Run(new frmMain());
+#else
+                parser.PrintHelp();
+                Thread.Sleep(1500);
+#endif
                 return 0;
             }
 
@@ -102,6 +109,7 @@ namespace DB_Schema_Export_Tool
                 schemaExporter.ErrorEvent += Processor_ErrorEvent;
                 schemaExporter.StatusEvent += Processor_StatusEvent;
                 schemaExporter.WarningEvent += Processor_WarningEvent;
+                schemaExporter.ProgressUpdate += Processor_ProgressUpdate;
 
                 var success = schemaExporter.ProcessDatabases(options);
 
