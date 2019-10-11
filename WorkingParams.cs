@@ -1,22 +1,29 @@
-﻿Option Strict On
+﻿using System.IO;
 
-Public Class clsWorkingParams
-    Public Property ProcessCount As Integer
-    Public Property ProcessCountExpected As Integer
-    Public Property OutputDirectoryPathCurrentDB As String
-    Public Property CountObjectsOnly As Boolean
+namespace DB_Schema_Export_Tool
+{
+    internal class WorkingParams
+    {
+        public int ProcessCount { get; set; }
+        public int ProcessCountExpected { get; set; }
+        public string OutputDirectoryPathCurrentDB { get; set; }
+        public DirectoryInfo OutputDirectory { get; set; }
+        public bool CountObjectsOnly { get; set; }
 
-    ''' <summary>
-    ''' Constructor
-    ''' </summary>
-    Public Sub New()
-        Reset()
-    End Sub
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public WorkingParams()
+        {
+            Reset();
+        }
 
-    Public Sub Reset()
-        ProcessCount = 0
-        ProcessCountExpected = 0
-        OutputDirectoryPathCurrentDB = String.Empty
-        CountObjectsOnly = True
-    End Sub
-End Class
+        public void Reset()
+        {
+            ProcessCount = 0;
+            ProcessCountExpected = 0;
+            OutputDirectoryPathCurrentDB = string.Empty;
+            CountObjectsOnly = true;
+        }
+    }
+}

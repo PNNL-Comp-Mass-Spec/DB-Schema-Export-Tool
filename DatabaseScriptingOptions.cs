@@ -1,44 +1,55 @@
-﻿Option Strict On
+﻿namespace DB_Schema_Export_Tool
+{
 
-Public Class clsSchemaExportOptions
+    public class DatabaseScriptingOptions
+    {
 
-    ''' <summary>
-    ''' Target database type
-    ''' </summary>
-    ''' <remarks>Currently only SqlServer is supported</remarks>
-    Public Enum eTargetDatabaseTypeConstants
-        SqlServer = 0
-        MySql = 1
-        Postgres = 2
-        SqlLite = 3
-    End Enum
+        /// <summary>
+        /// Target database type
+        /// </summary>
+        /// <remarks>Currently only SqlServer is supported</remarks>
+        public enum TargetDatabaseTypeConstants
+        {
+            SqlServer = 0,
+            MySql = 1,
+            PostgreSQL = 2,
+            SqlLite = 3,
+        }
 
-    Public Property OutputDirectoryPath As String
-    Public Property OutputDirectoryNamePrefix As String
-    Public Property CreateDirectoryForEachDB As Boolean
-    Public Property IncludeSystemObjects As Boolean
-    Public Property IncludeTimestampInScriptFileHeader As Boolean
+        public bool IncludeSystemObjects { get; set; }
+        public bool IncludeTimestampInScriptFileHeader { get; set; }
+        public bool ExportServerSettingsLoginsAndJobs { get; set; }
+        public bool SaveDataAsInsertIntoStatements { get; set; }
+        public TargetDatabaseTypeConstants DatabaseTypeForInsertInto { get; set; }
+        public bool AutoSelectTableNamesForDataExport { get; set; }
+        public bool ExportDBSchemasAndRoles { get; set; }
+        public bool ExportTables { get; set; }
+        public bool ExportViews { get; set; }
+        public bool ExportStoredProcedures { get; set; }
+        public bool ExportUserDefinedFunctions { get; set; }
+        public bool ExportUserDefinedDataTypes { get; set; }
+        public bool ExportUserDefinedTypes { get; set; }
+        public bool ExportSynonyms { get; set; }
 
-    Public Property ExportServerSettingsLoginsAndJobs As Boolean
-    Public Property ServerOutputDirectoryNamePrefix As String
-
-    Public Property SaveDataAsInsertIntoStatements As Boolean
-    Public Property DatabaseTypeForInsertInto As eTargetDatabaseTypeConstants
-    Public Property AutoSelectTableNamesForDataExport As Boolean
-
-    Public Property ExportDBSchemasAndRoles As Boolean
-    Public Property ExportTables As Boolean
-    Public Property ExportViews As Boolean
-    Public Property ExportStoredProcedures As Boolean
-    Public Property ExportUserDefinedFunctions As Boolean
-    Public Property ExportUserDefinedDataTypes As Boolean
-    Public Property ExportUserDefinedTypes As Boolean                               ' Only supported in Sql Server 2005 or newer; see SqlServer2005OrNewer
-    Public Property ExportSynonyms As Boolean
-
-    Public Property ConnectionInfo As clsServerConnectionInfo
-
-    Public Sub New()
-        ConnectionInfo = New clsServerConnectionInfo("", True)
-    End Sub
-
-End Class
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public DatabaseScriptingOptions()
+        {
+            IncludeSystemObjects = false;
+            IncludeTimestampInScriptFileHeader = false;
+            ExportServerSettingsLoginsAndJobs = false;
+            SaveDataAsInsertIntoStatements = true;
+            DatabaseTypeForInsertInto = TargetDatabaseTypeConstants.SqlServer;
+            AutoSelectTableNamesForDataExport = true;
+            ExportDBSchemasAndRoles = true;
+            ExportTables = true;
+            ExportViews = true;
+            ExportStoredProcedures = true;
+            ExportUserDefinedFunctions = true;
+            ExportUserDefinedDataTypes = true;
+            ExportUserDefinedTypes = true;
+            ExportSynonyms = true;
+        }
+    }
+}

@@ -1,2382 +1,1997 @@
-Option Strict On
-
-' -------------------------------------------------------------------------------
-' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in 2006
-
-' E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov
-' Website: https://omics.pnl.gov/ or https://www.pnnl.gov/sysbio/ or https://panomics.pnnl.gov/
-' -------------------------------------------------------------------------------
-'
-' Licensed under the 2-Clause BSD License; you may not use this file except
-' in compliance with the License.  You may obtain a copy of the License at
-' https://opensource.org/licenses/BSD-2-Clause
-'
-' Copyright 2018 Battelle Memorial Institute
-
-Imports System.IO
-Imports Microsoft.SqlServer.Management.Common
-Imports Microsoft.SqlServer.Management.Smo
-Imports System.Text.RegularExpressions
-Imports System.Collections.Specialized
-Imports System.Runtime.InteropServices
-Imports System.Threading
-Imports System.Text
-Imports PRISM
-
-''' <summary>
-''' This class will export all of the specified object types
-''' from a specific Sql Server database
-''' </summary>
-Public Class clsExportDBSchema
-    Inherits PRISM.EventNotifier
-
-    ''' <summary>
-    ''' Constructor
-    ''' </summary>
-    ''' <remarks>use ConnectToServer to connect to the server</remarks>
-    Public Sub New()
-        InitializeLocalVariables(True)
-    End Sub
-
-    ''' <summary>
-    ''' Constructor
-    ''' </summary>
-    ''' <param name="serverConnectionInfo">Connection info</param>
-    ''' <remarks></remarks>
-    Public Sub New(serverConnectionInfo As clsServerConnectionInfo)
-        Me.New()
-        ConnectToServer(serverConnectionInfo)
-    End Sub
-
-#Region "Constants and Enums"
-    ' SQL Server Login Info
-    Public Const SQL_SERVER_NAME_DEFAULT As String = "Pogo"
-    Public Const SQL_SERVER_USERNAME_DEFAULT As String = "mtuser"
-    Public Const SQL_SERVER_PASSWORD_DEFAULT As String = "mt4fun"
-
-    Public Const DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX As String = "DBSchema__"
-    Public Const DEFAULT_SERVER_OUTPUT_DIRECTORY_NAME_PREFIX As String = "ServerSchema__"
-
-    ' Note: this value defines the maximum number of data rows that will be exported
-    ' from tables that are auto-added to the table list for data export
-    Public Const DATA_ROW_COUNT_WARNING_THRESHOLD As Integer = 1000
-
-    Public Const DB_DEFINITION_FILE_PREFIX = "DBDefinition_"
-
-    Private Const COMMENT_START_TEXT As String = "/****** "
-    Private Const COMMENT_END_TEXT As String = " ******/"
-    Private Const COMMENT_END_TEXT_SHORT As String = "*/"
-    Private Const COMMENT_SCRIPT_DATE_TEXT As String = "Script Date: "
-
-    Public Enum eDBSchemaExportErrorCodes
-        NoError = 0
-        GeneralError = 1
-        ConfigurationError = 2
-        DatabaseConnectionError = 3
-        OutputDirectoryAccessError = 4
-    End Enum
-
-    Public Enum ePauseStatusConstants
-        Unpaused = 0
-        PauseRequested = 1
-        Paused = 2
-        UnpauseRequested = 3
-    End Enum
-
-    Public Enum eMessageTypeConstants As Short
-        Normal = 0
-        HeaderLine = 1
-        ErrorMessage = 2
-    End Enum
-
-    Public Enum eSchemaObjectTypeConstants
-        SchemasAndRoles = 0
-        Tables = 1
-        Views = 2
-        StoredProcedures = 3
-        UserDefinedFunctions = 4
-        UserDefinedDataTypes = 5
-        UserDefinedTypes = 6
-        Synonyms = 7
-    End Enum
-
-    Public Enum eDataColumnTypeConstants
-        Numeric = 0
-        Text = 1
-        DateTime = 2
-        BinaryArray = 3
-        BinaryByte = 4
-        GUID = 5
-        SqlVariant = 6
-        ImageObject = 7
-        GeneralObject = 8
-    End Enum
-
-#End Region
-
-#Region "Classwide Variables"
-    Public Event DBExportStarting(databaseName As String)
-    Public Event PauseStatusChange()
-
-    Private mSqlServer As Server
-
-    Private mCurrentServerInfo As clsServerConnectionInfo
-    Private mConnectedToServer As Boolean
-
-    Private mColumnCharNonStandardRegEx As Regex
-    Private mNonStandardOSChars As Regex
-
-    Private mTableNamesToAutoSelect As List(Of String)
-
-    ' Note: Must contain valid RegEx statements (tested case-insensitive)
-    Private mTableNameAutoSelectRegEx As List(Of String)
-
-    ' Keys in the dictionary are DatabaseName
-    ' Values are the output directory path that was used
-    Private mSchemaOutputDirectories As Dictionary(Of String, String)
-
-    Private mShowStats As Boolean
-
-    Private mErrorCode As eDBSchemaExportErrorCodes
-    Private mStatusMessage As String
-
-    Private mAbortProcessing As Boolean
-    Private mPauseStatus As ePauseStatusConstants
-
-    Private mSchemaToIgnore As SortedSet(Of String)
-
-#End Region
-
-#Region "Progress Events and Variables"
-    Public Event ProgressReset()
-    Public Event ProgressComplete()
-
-    Public Event SubtaskProgressReset()
-    Public Event SubtaskProgressChanged(taskDescription As String, percentComplete As Single)     ' PercentComplete ranges from 0 to 100, but can contain decimal percentage values
-    Public Event SubtaskProgressComplete()
-
-    Private mProgressStepDescription As String = String.Empty
-    Private mProgressPercentComplete As Single              ' Ranges from 0 to 100, but can contain decimal percentage values
-    Private mProgressStep As Integer
-    Private mProgressStepCount As Integer
-
-    Private mSubtaskProgressStepDescription As String = String.Empty
-    Private mSubtaskProgressPercentComplete As Single           ' Ranges from 0 to 100, but can contain decimal percentage values
-#End Region
-
-#Region "Properties"
-
-    Public Property TableNamesToAutoSelect() As List(Of String)
-        Get
-            Return mTableNamesToAutoSelect
-        End Get
-        Set(value As List(Of String))
-            mTableNamesToAutoSelect = value
-        End Set
-    End Property
-
-    Public Property TableNameAutoSelectRegEx() As List(Of String)
-        Get
-            Return mTableNameAutoSelectRegEx
-        End Get
-        Set(value As List(Of String))
-            mTableNameAutoSelectRegEx = value
-        End Set
-    End Property
-
-    Public ReadOnly Property ConnectedToServer() As Boolean
-        Get
-            Return mConnectedToServer
-        End Get
-    End Property
-
-    Public ReadOnly Property ErrorCode() As eDBSchemaExportErrorCodes
-        Get
-            Return mErrorCode
-        End Get
-    End Property
-
-    Public ReadOnly Property PauseStatus() As ePauseStatusConstants
-        Get
-            Return mPauseStatus
-        End Get
-    End Property
-
-    Public Property PreviewExport As Boolean
-
-    Public ReadOnly Property SchemaOutputDirectories() As Dictionary(Of String, String)
-        Get
-            Return mSchemaOutputDirectories
-        End Get
-    End Property
-
-    Public Property ShowStats() As Boolean
-        Get
-            Return mShowStats
-        End Get
-        Set(value As Boolean)
-            mShowStats = value
-        End Set
-    End Property
-
-    Public ReadOnly Property StatusMessage() As String
-        Get
-            If mStatusMessage Is Nothing Then
-                Return String.Empty
-            Else
-                Return mStatusMessage
-            End If
-        End Get
-    End Property
-
-    Public ReadOnly Property ProgressStep() As Integer
-        Get
-            Return mProgressStep
-        End Get
-    End Property
-
-    Public ReadOnly Property ProgressStepCount() As Integer
-        Get
-            Return mProgressStepCount
-        End Get
-    End Property
-
-    Public ReadOnly Property ProgressStepDescription() As String
-        Get
-            Return mProgressStepDescription
-        End Get
-    End Property
-
-    ' ProgressPercentComplete ranges from 0 to 100, but can contain decimal percentage values
-    Public ReadOnly Property ProgressPercentComplete() As Single
-        Get
-            Return CType(Math.Round(mProgressPercentComplete, 2), Single)
-        End Get
-    End Property
-
-    Public ReadOnly Property SubtaskProgressStepDescription() As String
-        Get
-            Return mSubtaskProgressStepDescription
-        End Get
-    End Property
-
-    ' SubtaskProgressPercentComplete ranges from 0 to 100, but can contain decimal percentage values
-    Public ReadOnly Property SubtaskProgressPercentComplete() As Single
-        Get
-            Return CType(Math.Round(mSubtaskProgressPercentComplete, 2), Single)
-        End Get
-    End Property
-
-#End Region
-
-    ''' <summary>
-    ''' Request that processing be aborted
-    ''' </summary>
-    ''' <remarks>Useful when the scripting is running in another thread</remarks>
-    Public Sub AbortProcessingNow()
-        mAbortProcessing = True
-        Me.RequestUnpause()
-    End Sub
-
-    Private Function AutoSelectTableNamesForDataExport(
-      objDatabase As Database,
-      lstTableNamesForDataExport As IEnumerable(Of String)) As Dictionary(Of String, Int64)
-
-        Try
-            ResetSubtaskProgress("Auto-selecting tables to export data from")
-
-            ' Stores the table names and maximum number of data rows to export (0 means all rows)
-            Dim dctTableNames = New Dictionary(Of String, Int64)(StringComparison.CurrentCultureIgnoreCase)
-
-            ' Copy the table names from lstTableNamesForDataExport to dctTablesNames
-            ' Store 0 for the hash value since we want to export all of the data rows from the tables in lstTableNamesForDataExport
-            ' Simultaneously, populate intMaximumDataRowsToExport
-            If Not lstTableNamesForDataExport Is Nothing Then
-                For Each tableName In lstTableNamesForDataExport
-                    dctTableNames.Add(tableName, 0)
-                Next
-            End If
-
-            ' Copy the table names from mTableNamesToAutoSelect to dctTablesNames (if not yet present)
-            If Not mTableNamesToAutoSelect Is Nothing Then
-                For Each tableName In mTableNamesToAutoSelect
-                    If Not dctTableNames.ContainsKey(tableName) Then
-                        dctTableNames.Add(tableName, DATA_ROW_COUNT_WARNING_THRESHOLD)
-                    End If
-                Next
-            End If
-
-            ' Initialize lstRegEx (we'll fill it below if autoHiglightRows = True)
-            Const objRegExOptions As RegexOptions = RegexOptions.Compiled Or
-             RegexOptions.IgnoreCase Or
-             RegexOptions.Singleline
-
-            If Not mTableNameAutoSelectRegEx Is Nothing Then
-                Dim lstRegExSpecs = New List(Of Regex)
-
-                For Each regexItem In mTableNameAutoSelectRegEx
-                    lstRegExSpecs.Add(New Regex(regexItem, objRegExOptions))
-                Next
-
-                ' Step through the table names for this DB and compare to the RegEx values
-                Dim dtTables = objDatabase.EnumObjects(DatabaseObjectTypes.Table, SortOrder.Name)
-
-                For Each objRow As DataRow In dtTables.Rows
-                    Dim strTableName = objRow.Item("Name").ToString
-
-                    For Each regexMatcher In lstRegExSpecs
-                        If regexMatcher.Match(strTableName).Success Then
-                            If Not dctTableNames.ContainsKey(strTableName) Then
-                                dctTableNames.Add(strTableName, DATA_ROW_COUNT_WARNING_THRESHOLD)
-                            End If
-                            Exit For
-                        End If
-                    Next
-                Next objRow
-            End If
-
-            Return dctTableNames
-
-        Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.ConfigurationError, "Error in AutoSelectTableNamesForDataExport")
-            Return New Dictionary(Of String, Int64)
-        End Try
-
-    End Function
-
-    Private Sub CheckPauseStatus()
-        If mPauseStatus = ePauseStatusConstants.PauseRequested Then
-            SetPauseStatus(ePauseStatusConstants.Paused)
-        End If
-
-        Do While mPauseStatus = ePauseStatusConstants.Paused And Not mAbortProcessing
-            Thread.Sleep(150)
-        Loop
-
-        SetPauseStatus(ePauseStatusConstants.Unpaused)
-    End Sub
-
-    Private Function CleanNameForOS(strName As String) As String
-        ' Replace any invalid characters in strName with underscores
-
-        Return mNonStandardOSChars.Replace(strName, "_")
-    End Function
-
-    Private Function CleanSqlScript(lstInfo As IEnumerable(Of String), schemaExportOptions As clsSchemaExportOptions) As IEnumerable(Of String)
-        ' Calls CleanSqlScript with removeAllOccurrences = False and removeDuplicateHeaderLine = False
-        Return CleanSqlScript(lstInfo, schemaExportOptions, False, False)
-    End Function
-
-    Private Function CleanSqlScript(
-      lstInfo As IEnumerable(Of String),
-      schemaExportOptions As clsSchemaExportOptions,
-      removeAllScriptDateOccurrences As Boolean,
-      removeDuplicateHeaderLine As Boolean) As List(Of String)
-
-        Dim chWhiteSpaceChars = New Char() {" "c, ControlChars.Tab}
-
-        Dim lstInfoClean = New List(Of String)
-
-        Try
-            If schemaExportOptions.IncludeTimestampInScriptFileHeader Then
-                Return lstInfoClean
-            End If
-
-            ' Look for and remove the timestamp from the first line of the Sql script
-            ' For example: "Script Date: 08/14/2006 20:14:31" prior to each "******/"
-            '
-            ' If removeAllOccurrences = True, then searches for all occurrences
-            ' If removeAllOccurrences = False, then does not look past the first
-            '   carriage return of each entry in lstInfo
-
-            For Each strText In lstInfo
-
-                Dim intIndexStart = 0
-                Dim intFinalSearchIndex As Integer
-
-                If removeAllScriptDateOccurrences Then
-                    intFinalSearchIndex = strText.Length - 1
-                Else
-                    ' Find the first CrLf after the first non-blank line in strText
-                    ' However, if the script starts with several SET statements then we need to skip those lines
-                    Dim objectCommentStartIndex As Integer = strText.IndexOf(COMMENT_START_TEXT & "Object:", StringComparison.Ordinal)
-                    If strText.Trim().StartsWith("SET") AndAlso objectCommentStartIndex > 0 Then
-                        intIndexStart = objectCommentStartIndex
-                    End If
-
-                    Do
-                        intFinalSearchIndex = strText.IndexOf(ControlChars.NewLine, intIndexStart, StringComparison.Ordinal)
-                        If intFinalSearchIndex = intIndexStart Then
-                            intIndexStart += 2
-                        Else
-                            Exit Do
-                        End If
-                    Loop While intFinalSearchIndex >= 0 AndAlso intFinalSearchIndex < intIndexStart AndAlso intIndexStart < strText.Length
-
-                    If intFinalSearchIndex < 0 Then intFinalSearchIndex = strText.Length - 1
-                End If
-
-                Dim intIndexStartCurrent As Integer
-
-                Do
-                    intIndexStartCurrent = strText.IndexOf(COMMENT_SCRIPT_DATE_TEXT, intIndexStart, StringComparison.Ordinal)
-                    If intIndexStartCurrent > 0 AndAlso intIndexStartCurrent <= intFinalSearchIndex Then
-                        Dim intIndexEndCurrent = strText.IndexOf(COMMENT_END_TEXT_SHORT, intIndexStartCurrent, StringComparison.Ordinal)
-
-                        If intIndexEndCurrent > intIndexStartCurrent And intIndexEndCurrent <= intFinalSearchIndex Then
-                            strText = strText.Substring(0, intIndexStartCurrent).TrimEnd(chWhiteSpaceChars) &
-                                      COMMENT_END_TEXT &
-                                      strText.Substring(intIndexEndCurrent + COMMENT_END_TEXT_SHORT.Length)
-                        End If
-                    End If
-                Loop While removeAllScriptDateOccurrences And intIndexStartCurrent > 0
-
-                If removeDuplicateHeaderLine Then
-                    Dim intFirstCrLf = strText.IndexOf(ControlChars.NewLine, 0, StringComparison.Ordinal)
-                    If intFirstCrLf > 0 AndAlso intFirstCrLf < strText.Length Then
-                        Dim intIndexNextCrLf = strText.IndexOf(ControlChars.NewLine, intFirstCrLf + 1, StringComparison.Ordinal)
-
-                        If intIndexNextCrLf > intFirstCrLf Then
-                            If strText.Substring(0, intFirstCrLf) = strText.Substring(intFirstCrLf + 2, intIndexNextCrLf - intFirstCrLf - 2) Then
-                                strText = strText.Substring(intFirstCrLf + 2)
-                            End If
-                        End If
-                    End If
-                End If
-
-                lstInfoClean.Add(strText)
-
-            Next
-
-            Return lstInfoClean
-
-        Catch ex As Exception
-            Return lstInfoClean
-        End Try
-
-
-    End Function
-
-    ''' <summary>
-    ''' Connect to the specified server
-    ''' </summary>
-    ''' <param name="serverConnectionInfo">Connection info</param>
-    ''' <returns>True if successfully connected, false if a problem</returns>
-    Public Function ConnectToServer(serverConnectionInfo As clsServerConnectionInfo) As Boolean
-
-        Try
-
-            ' Initialize the current connection options
-            If mSqlServer Is Nothing Then
-                ResetSqlServerConnection(mCurrentServerInfo)
-            Else
-                If mConnectedToServer AndAlso Not mSqlServer Is Nothing AndAlso mSqlServer.State = SqlSmoState.Existing Then
-                    If String.Equals(mSqlServer.Name, serverConnectionInfo.ServerName, StringComparison.OrdinalIgnoreCase) Then
-                        ' Already connected; no need to re-connect
-                        Return True
-                    End If
-                End If
-            End If
-
-            ' Connect to server clsServerConnectionInfo.ServerName
-            Dim connected = LoginToServerWork(mSqlServer, serverConnectionInfo)
-            If Not connected Then
-                SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error logging into the server: " & serverConnectionInfo.ServerName)
-            End If
-
-            Return connected
-
-        Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error logging into the server: " & serverConnectionInfo.ServerName, ex)
-
-            mConnectedToServer = False
-            mSqlServer = Nothing
-            Return False
-        End Try
-
-    End Function
-
-    Private Function ExportDBObjectsUsingSMO(
-      objSqlServer As Server,
-      databaseName As String,
-      lstTableNamesForDataExport As IReadOnlyCollection(Of String),
-      schemaExportOptions As clsSchemaExportOptions,
-      <Out()> ByRef databaseNotFound As Boolean) As Boolean
-
-        Dim workingParams As New clsWorkingParams()
-        Dim scriptOptions As ScriptingOptions
-        Dim objDatabase As Database
-
-        Dim dctTablesToExport As Dictionary(Of String, Int64)
-
-        RaiseEvent DBExportStarting(databaseName)
-
-        Try
-            scriptOptions = GetDefaultScriptOptions()
-
-            objDatabase = objSqlServer.Databases(databaseName)
-            databaseNotFound = False
-        Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error connecting to database " & databaseName)
-            databaseNotFound = True
-            Return False
-        End Try
-
-        Try
-            ' Validate the strings in schemaExportOptions
-            ValidateSchemaExportOptions(schemaExportOptions)
-
-            ' Construct the path to the output directory
-            If schemaExportOptions.CreateDirectoryForEachDB Then
-                workingParams.OutputDirectoryPathCurrentDB = Path.Combine(schemaExportOptions.OutputDirectoryPath, schemaExportOptions.OutputDirectoryNamePrefix & objDatabase.Name)
-            Else
-                workingParams.OutputDirectoryPathCurrentDB = String.Copy(schemaExportOptions.OutputDirectoryPath)
-            End If
-
-            ' Create the directory if it doesn't exist
-            If Not Directory.Exists(workingParams.OutputDirectoryPathCurrentDB) AndAlso Not Me.PreviewExport Then
-                Directory.CreateDirectory(workingParams.OutputDirectoryPathCurrentDB)
-            End If
-
-            If mSchemaOutputDirectories.ContainsKey(databaseName) Then
-                mSchemaOutputDirectories(databaseName) = workingParams.OutputDirectoryPathCurrentDB
-            Else
-                mSchemaOutputDirectories.Add(databaseName, workingParams.OutputDirectoryPathCurrentDB)
-            End If
-
-            If schemaExportOptions.AutoSelectTableNamesForDataExport Then
-                dctTablesToExport = AutoSelectTableNamesForDataExport(objDatabase, lstTableNamesForDataExport)
-            Else
-                dctTablesToExport = New Dictionary(Of String, Int64)
-                For Each tableName In lstTableNamesForDataExport
-                    dctTablesToExport.Add(tableName, 0)
-                Next
-            End If
-
-        Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating or creating directory " & workingParams.OutputDirectoryPathCurrentDB)
-            Return False
-        End Try
-
-        Try
-            ResetSubtaskProgress("Counting number of objects to export")
-
-            ' Count the number of objects that will be exported
-            workingParams.CountObjectsOnly = True
-            ExportDBObjectsWork(objDatabase, scriptOptions, schemaExportOptions, workingParams)
-            workingParams.ProcessCountExpected = workingParams.ProcessCount
-
-            If Not lstTableNamesForDataExport Is Nothing Then
-                workingParams.ProcessCountExpected += lstTableNamesForDataExport.Count
-            End If
-
-            If Me.PreviewExport Then
-                ResetSubtaskProgress("  Found " & workingParams.ProcessCountExpected & " database objects to export")
-                If dctTablesToExport.Count > 0 Then
-                    ResetSubtaskProgress("  Would export table data for " & dctTablesToExport.Count & " tables")
-                End If
-                Return True
-            End If
-
-            workingParams.CountObjectsOnly = False
-            If workingParams.ProcessCount > 0 Then
-                ExportDBObjectsWork(objDatabase, scriptOptions, schemaExportOptions, workingParams)
-            End If
-
-            ' Export data from tables specified by dctTablesToExport
-            Dim success = ExportDBTableData(objDatabase, dctTablesToExport, schemaExportOptions, workingParams)
-            Return success
-
-        Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error scripting objects in database " & databaseName)
-            Return False
-        End Try
-
-    End Function
-
-    Private Sub ExportDBObjectsWork(
-      objDatabase As Database,
-      scriptOptions As ScriptingOptions,
-      schemaExportOptions As clsSchemaExportOptions,
-      workingParams As clsWorkingParams)
-
-        ' Do not include a Try block in this Function; let the calling function handle errors
-
-        ' Reset ProcessCount
-        workingParams.ProcessCount = 0
-
-        If schemaExportOptions.ExportDBSchemasAndRoles Then
-            ExportDBSchemasAndRoles(objDatabase, schemaExportOptions, scriptOptions, workingParams)
-            If mAbortProcessing Then Exit Sub
-        End If
-
-        If schemaExportOptions.ExportTables Then
-            ExportDBTables(objDatabase, schemaExportOptions, scriptOptions, workingParams)
-            If mAbortProcessing Then Exit Sub
-        End If
-
-        If schemaExportOptions.ExportViews OrElse
-           schemaExportOptions.ExportUserDefinedFunctions OrElse
-           schemaExportOptions.ExportStoredProcedures OrElse
-           schemaExportOptions.ExportSynonyms Then
-            ExportDBViewsProcsAndUDFs(objDatabase, schemaExportOptions, scriptOptions, workingParams)
-            If mAbortProcessing Then Exit Sub
-        End If
-
-        If schemaExportOptions.ExportUserDefinedDataTypes Then
-            ExportDBUserDefinedDataTypes(objDatabase, schemaExportOptions, scriptOptions, workingParams)
-            If mAbortProcessing Then Exit Sub
-        End If
-
-        If schemaExportOptions.ExportUserDefinedTypes Then
-            ExportDBUserDefinedTypes(objDatabase, schemaExportOptions, scriptOptions, workingParams)
-            If mAbortProcessing Then Exit Sub
-        End If
-
-    End Sub
-
-    Private Sub ExportDBSchemasAndRoles(
-      objDatabase As Database,
-      schemaExportOptions As clsSchemaExportOptions,
-      scriptOptions As ScriptingOptions,
-      workingParams As clsWorkingParams)
-
-        If workingParams.CountObjectsOnly Then
-            workingParams.ProcessCount += 1
-
-            If SqlServer2005OrNewer(objDatabase) Then
-                For index = 0 To objDatabase.Schemas.Count - 1
-                    If ExportSchema(objDatabase.Schemas(index)) Then
-                        workingParams.ProcessCount += 1
-                    End If
-                Next index
-            End If
-
-            For index = 0 To objDatabase.Roles.Count - 1
-                If ExportRole(objDatabase.Roles(index)) Then
-                    workingParams.ProcessCount += 1
-                End If
-            Next index
-            Exit Sub
-        End If
-
-        Try
-            WriteTextToFile(workingParams.OutputDirectoryPathCurrentDB, DB_DEFINITION_FILE_PREFIX & objDatabase.Name,
-             CleanSqlScript(StringCollectionToList(objDatabase.Script(scriptOptions)), schemaExportOptions))
-        Catch ex As Exception
-            ' User likely doesn't have privilege to script the DB; ignore the error
-            ReportMessage("Unable to script DB " & objDatabase.Name & ": " & ex.Message, eMessageTypeConstants.ErrorMessage)
-        End Try
-        workingParams.ProcessCount += 1
-
-        If SqlServer2005OrNewer(objDatabase) Then
-            For index = 0 To objDatabase.Schemas.Count - 1
-                If ExportSchema(objDatabase.Schemas(index)) Then
-                    WriteTextToFile(workingParams.OutputDirectoryPathCurrentDB, "Schema_" & objDatabase.Schemas(index).Name,
-                     CleanSqlScript(StringCollectionToList(objDatabase.Schemas(index).Script(scriptOptions)), schemaExportOptions))
-
-                    workingParams.ProcessCount += 1
-                    CheckPauseStatus()
-                    If mAbortProcessing Then
-                        UpdateProgress("Aborted processing")
-                        Exit Sub
-                    End If
-                End If
-            Next index
-        End If
-
-        For index = 0 To objDatabase.Roles.Count - 1
-            If ExportRole(objDatabase.Roles(index)) Then
-                WriteTextToFile(workingParams.OutputDirectoryPathCurrentDB, "Role_" & objDatabase.Roles(index).Name,
-                 CleanSqlScript(StringCollectionToList(objDatabase.Roles(index).Script(scriptOptions)), schemaExportOptions))
-
-                workingParams.ProcessCount += 1
-                CheckPauseStatus()
-                If mAbortProcessing Then
-                    UpdateProgress("Aborted processing")
-                    Exit Sub
-                End If
-            End If
-        Next index
-
-    End Sub
-
-    Private Sub ExportDBTables(
-      objDatabase As Database,
-      schemaExportOptions As clsSchemaExportOptions,
-      scriptOptions As ScriptingOptions,
-      workingParams As clsWorkingParams)
-
-        Const SYNC_OBJ_TABLE_PREFIX = "syncobj_0x"
-
-        If workingParams.CountObjectsOnly Then
-            ' Note: objDatabase.Tables includes system tables, so workingParams.ProcessCount will be
-            '       an overestimate if schemaExportOptions.IncludeSystemObjects = False
-            workingParams.ProcessCount += objDatabase.Tables.Count
-        Else
-            Dim dtStartTime = DateTime.UtcNow
-
-            ' Initialize the scripter and objSMOObject()
-            Dim objScripter = New Scripter(mSqlServer) With {
-                .Options = scriptOptions
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Data;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using DB_Schema_Export_Tool;
+using Microsoft.SqlServer.Management.Common;
+using Microsoft.SqlServer.Management.Smo;
+using PRISM;
+
+namespace DB_Schema_Export_Tool
+{
+    public sealed class DBSchemaExporterSQLServer : DBSchemaExporterBase
+    {
+        #region "Constants and Enums"
+
+        public const string SQL_SERVER_NAME_DEFAULT = "Pogo";
+        public const string SQL_SERVER_USERNAME_DEFAULT = "mtuser";
+        public const string SQL_SERVER_PASSWORD_DEFAULT = "mt4fun";
+
+        public const string DB_DEFINITION_FILE_PREFIX = "DBDefinition_";
+
+        public const string COMMENT_START_TEXT = "/****** ";
+        public const string COMMENT_END_TEXT = " ******/";
+        public const string COMMENT_END_TEXT_SHORT = "*/";
+        public const string COMMENT_SCRIPT_DATE_TEXT = "Script Date: ";
+
+        public enum DataColumnTypeConstants
+        {
+            Numeric = 0,
+            Text = 1,
+            DateTime = 2,
+            BinaryArray = 3,
+            BinaryByte = 4,
+            GUID = 5,
+            SqlVariant = 6,
+            ImageObject = 7,
+            GeneralObject = 8,
+        }
+
+        #endregion
+
+        #region "Classwide Variables"
+
+        private readonly SortedSet<string> mSchemaToIgnore;
+
+        private Server mSqlServer;
+
+        #endregion
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="options"></param>
+        /// <remarks>
+        /// Will auto-connect to the server if options contains a server name
+        /// Otherwise, explicitly call ConnectToServer
+        /// </remarks>
+        public DBSchemaExporterSQLServer(SchemaExportOptions options) : base(options)
+        {
+            mSchemaToIgnore = new SortedSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                // ReSharper disable StringLiteralTypo
+                "db_accessadmin",
+                "db_backupoperator",
+                "db_datareader",
+                "db_datawriter",
+                "db_ddladmin",
+                "db_denydatareader",
+                "db_denydatawriter",
+                "db_owner",
+                "db_securityadmin",
+                "dbo",
+                "guest",
+                "information_schema",
+                "sys"
+                // ReSharper restore StringLiteralTypo
+            };
+
+            if (!string.IsNullOrWhiteSpace(mOptions.ServerName))
+            {
+                var success = ConnectToServer();
+                OnWarningEvent("Unable to connect to server " + mOptions.ServerName);
+            }
+        }
+
+        /// <summary>
+        /// Determines the table names for which data will be exported
+        /// </summary>
+        /// <param name="objDatabase">SQL Server database</param>
+        /// <param name="tableNamesForDataExport">Table names that should be auto-selected</param>
+        /// <returns>Dictionary where keys are table names and values are the maximum number of rows to export</returns>
+        private Dictionary<string, int> AutoSelectTableNamesForDataExport(
+            Database objDatabase,
+            IEnumerable<string> tableNamesForDataExport)
+        {
+            var tableNamesInDatabase = GetDatabaseTableNames(objDatabase);
+
+            var tablesToExport = AutoSelectTableNamesForDataExport(tableNamesInDatabase, tableNamesForDataExport);
+            return tablesToExport;
+        }
+
+        /// <summary>
+        /// Connect to the server specified in mOptions
+        /// </summary>
+        /// <returns>True if successfully connected, false if a problem</returns>
+        protected override bool ConnectToServer()
+        {
+            try
+            {
+                // Initialize the current connection options
+                if (mSqlServer == null)
+                {
+                    ResetSqlServerConnection();
+                }
+                else if (mConnectedToServer && mSqlServer != null && mSqlServer.State == SqlSmoState.Existing)
+                {
+                    if (string.Equals(mSqlServer.Name, mOptions.ServerName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Already connected; no need to re-connect
+                        return true;
+                    }
+                }
+
+                // Connect to server mOptions.ServerName
+                var connected = LoginToServerWork(out mSqlServer);
+                if (!connected)
+                {
+                    if (ErrorCode == DBSchemaExportErrorCodes.NoError || string.IsNullOrWhiteSpace(mStatusMessage))
+                    {
+                        SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error logging into the server: " + mOptions.ServerName);
+                    }
+                }
+
+                return connected;
+            }
+            catch (Exception ex)
+            {
+                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error logging into the server: " + mOptions.ServerName, ex);
+                mConnectedToServer = false;
+                mSqlServer = null;
+                return false;
             }
 
-            For Each objTable As Table In objDatabase.Tables
-                Dim includeTable = True
-                If Not schemaExportOptions.IncludeSystemObjects Then
-                    If objTable.IsSystemObject Then
-                        includeTable = False
-                    Else
-                        If objTable.Name.Length >= SYNC_OBJ_TABLE_PREFIX.Length Then
-                            If objTable.Name.ToLower.Substring(0, SYNC_OBJ_TABLE_PREFIX.Length) = SYNC_OBJ_TABLE_PREFIX.ToLower Then
-                                includeTable = False
-                            End If
-                        End If
-                    End If
-                End If
-
-                If includeTable Then
-                    mSubtaskProgressStepDescription = objTable.Name
-                    UpdateSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected)
-
-                    Dim smoObjectArray As SqlSmoObject() = {objTable}
-
-                    WriteTextToFile(workingParams.OutputDirectoryPathCurrentDB, objTable.Name,
-                     CleanSqlScript(StringCollectionToList(objScripter.Script(smoObjectArray)), schemaExportOptions))
-                End If
-
-                workingParams.ProcessCount += 1
-                CheckPauseStatus()
-                If mAbortProcessing Then
-                    UpdateProgress("Aborted processing")
-                    Exit Sub
-                End If
-            Next objTable
-
-            If mShowStats Then
-                Console.WriteLine("Exported " & objDatabase.Tables.Count & " tables in " & DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds.ToString("0.0") & " seconds")
-            End If
-
-        End If
-    End Sub
-
-    Private Sub ExportDBUserDefinedDataTypes(
-      objDatabase As Database,
-      schemaExportOptions As clsSchemaExportOptions,
-      scriptOptions As ScriptingOptions,
-      workingParams As clsWorkingParams)
-
-        Dim intItemCount As Integer
-
-        If workingParams.CountObjectsOnly Then
-            workingParams.ProcessCount += objDatabase.UserDefinedDataTypes.Count
-        Else
-            intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedDataTypes, schemaExportOptions, scriptOptions, workingParams.ProcessCountExpected, workingParams.OutputDirectoryPathCurrentDB)
-            workingParams.ProcessCount += intItemCount
-        End If
-    End Sub
-
-    Private Sub ExportDBUserDefinedTypes(
-      objDatabase As Database,
-      schemaExportOptions As clsSchemaExportOptions,
-      scriptOptions As ScriptingOptions,
-      workingParams As clsWorkingParams)
-
-        Dim intItemCount As Integer
-
-        If SqlServer2005OrNewer(objDatabase) Then
-            If workingParams.CountObjectsOnly Then
-                workingParams.ProcessCount += objDatabase.UserDefinedTypes.Count
-            Else
-                intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedTypes, schemaExportOptions, scriptOptions, workingParams.ProcessCountExpected, workingParams.OutputDirectoryPathCurrentDB)
-                workingParams.ProcessCount += intItemCount
-            End If
-        End If
-
-    End Sub
-
-    Private Sub ExportDBViewsProcsAndUDFs(
-      objDatabase As Database,
-      schemaExportOptions As clsSchemaExportOptions,
-      scriptOptions As ScriptingOptions,
-      workingParams As clsWorkingParams)
-
-        ' Option 1) obtain the list of views, stored procedures, and UDFs is to use objDatabase.EnumObjects
-        ' However, this only returns the object name, type, and URN, not whether or not it is a system object
-        '
-        ' Option 2) use objDatabase.Views, objDatabase.StoredProcedures, etc.
-        ' However, on Sql Server 2005 this returns many system views and system procedures that we typically don't want to export
-        '
-        ' Option 3) query the sysobjects table and filter on the xtype field
-        ' Possible values for XType:
-        '   C = CHECK constraint
-        '   D = Default or DEFAULT constraint
-        '   F = FOREIGN KEY constraint
-        '   IF = Inline Function
-        '   FN = User Defined Function
-        '   TF = Table Valued Function
-        '   L = Log
-        '   P = Stored procedure
-        '   PK = PRIMARY KEY constraint (type is K)
-        '   RF = Replication filter stored procedure
-        '   S = System table
-        '   SN = Synonym
-        '   TR = Trigger
-        '   U = User table
-        '   UQ = UNIQUE constraint (type is K)
-        '   V = View
-        '   X = Extended stored procedure
-
-        ''Dim strXType As String
-        ''For intObjectIterator = 0 To 2
-        ''    strXType = String.Empty
-        ''    Select Case intObjectIterator
-        ''        Case 0
-        ''            ' Views
-        ''            If schemaExportOptions.ExportViews Then
-        ''                strXType = " = 'V'"
-        ''            End If
-        ''        Case 1
-        ''            ' Stored procedures
-        ''            If schemaExportOptions.ExportStoredProcedures Then
-        ''                strXType = " = 'P'"
-        ''            End If
-        ''        Case 2
-        ''            ' User defined functions
-        ''            If schemaExportOptions.ExportUserDefinedFunctions Then
-        ''                strXType = " IN ('IF', 'FN', 'TF')"
-        ''            End If
-        ''        Case Else
-        ''            ' Unknown value for intObjectIterator; skip it
-        ''    End Select
-
-        ''    If strXType.Length > 0 Then
-        ''        sql = "SELECT name FROM sysobjects WHERE xtype " & strXType
-        ''        If Not schemaExportOptions.IncludeSystemObjects Then
-        ''            sql &= " AND category = 0"
-        ''        End If
-        ''        sql &= " ORDER BY Name"
-        ''        dsObjects = objDatabase.ExecuteWithResults(sql)
-
-        ''        If workingParams.CountObjectsOnly Then
-        ''            workingParams.ProcessCount += dsObjects.Tables(0).Rows.Count
-        ''        Else
-        ''            For Each objRow In dsObjects.Tables(0).Rows
-        ''                strObjectName = objRow.Item(0).ToString
-        ''                mSubtaskProgressStepDescription = strObjectName
-        ''                UpdateSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected)
-
-        ''                Select Case intObjectIterator
-        ''                    Case 0
-        ''                        ' Views
-        ''                        smoObject = objDatabase.Views(strObjectName)
-        ''                    Case 1
-        ''                        ' Stored procedures
-        ''                        smoObject = objDatabase.StoredProcedures(strObjectName)
-        ''                    Case 2
-        ''                        ' User defined functions
-        ''                        smoObject = objDatabase.UserDefinedFunctions(strObjectName)
-        ''                    Case Else
-        ''                        ' Unknown value for intObjectIterator; skip it
-        ''                        smoObject = Nothing
-        ''                End Select
-
-        ''                If Not smoObject Is Nothing Then
-        ''                    WriteTextToFile(workingParams.OutputDirectoryPathCurrentDB, strObjectName,
-        ''                                      CleanSqlScript(objScripter.Script(objSMOObject), schemaExportOptions)))
-        ''                End If
-
-        ''                workingParams.ProcessCount += 1
-        ''                CheckPauseStatus()
-        ''                If mAbortProcessing Then
-        ''                    UpdateProgress("Aborted processing")
-        ''                    Exit Function
-        ''                End If
-        ''            Next objRow
-        ''        End If
-        ''    End If
-        ''Next intObjectIterator
-
-
-        ' Option 4) Query the INFORMATION_SCHEMA views
-
-        ' Initialize the scripter and objSMOObject()
-        Dim objScripter = New Scripter(mSqlServer) With {
-            .Options = scriptOptions
         }
 
-        For objectIterator = 0 To 3
-            Dim objectType = "unknown"
+        private bool ExportDBObjectsUsingSMO(
+            Server sqlServer,
+            string databaseName,
+            IReadOnlyCollection<string> tableNamesForDataExport,
+            out bool databaseNotFound)
+        {
+            var workingParams = new WorkingParams();
+
+            ScriptingOptions scriptOptions;
+            Database objDatabase;
+
+            // Keys are table names to export
+            // Values are the maximum number of rows to export
+            Dictionary<string, int> tablesToExport;
+
+            OnDBExportStarting(databaseName);
+
+            try
+            {
+                scriptOptions = GetDefaultScriptOptions();
+                objDatabase = sqlServer.Databases[databaseName];
+                databaseNotFound = false;
+            }
+            catch (Exception ex)
+            {
+                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error connecting to database " + databaseName, ex);
+                databaseNotFound = true;
+                return false;
+            }
+
+            try
+            {
+                // Construct the path to the output directory
+                if (mOptions.CreateDirectoryForEachDB)
+                {
+                    workingParams.OutputDirectoryPathCurrentDB =
+                        Path.Combine(mOptions.OutputDirectoryPath, mOptions.DatabaseSubdirectoryPrefix + objDatabase.Name);
+                }
+                else
+                {
+                    workingParams.OutputDirectoryPathCurrentDB = string.Copy(mOptions.OutputDirectoryPath);
+                }
+
+                workingParams.OutputDirectory = new DirectoryInfo(workingParams.OutputDirectoryPathCurrentDB);
+
+                // Create the directory if it doesn't exist
+                if (!workingParams.OutputDirectory.Exists && !mOptions.PreviewExport)
+                {
+                    workingParams.OutputDirectory.Create();
+                }
+
+                if (SchemaOutputDirectories.ContainsKey(databaseName))
+                {
+                    SchemaOutputDirectories[databaseName] = workingParams.OutputDirectoryPathCurrentDB;
+                }
+                else
+                {
+                    SchemaOutputDirectories.Add(databaseName, workingParams.OutputDirectoryPathCurrentDB);
+                }
+
+                if (mOptions.ScriptingOptions.AutoSelectTableNamesForDataExport)
+                {
+                    tablesToExport = AutoSelectTableNamesForDataExport(objDatabase, tableNamesForDataExport);
+                }
+                else
+                {
+                    tablesToExport = new Dictionary<string, int>();
+                    foreach (var tableName in tableNamesForDataExport)
+                    {
+                        tablesToExport.Add(tableName, 0);
+                    }
+
+                }
+
+            }
+            catch (Exception ex)
+            {
+                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError,
+                              "Error validating or creating directory " + workingParams.OutputDirectoryPathCurrentDB);
+                return false;
+            }
+
+            try
+            {
+                OnDebugEvent("Counting number of objects to export");
+
+                // Count the number of objects that will be exported
+                workingParams.CountObjectsOnly = true;
+                ExportDBObjectsWork(objDatabase, scriptOptions, workingParams);
+
+                workingParams.ProcessCountExpected = workingParams.ProcessCount;
+                if (tableNamesForDataExport != null)
+                {
+                    workingParams.ProcessCountExpected += tableNamesForDataExport.Count;
+                }
+
+                if (mOptions.PreviewExport)
+                {
+                    OnStatusEvent(string.Format("  Found {0} database objects to export", workingParams.ProcessCountExpected));
+
+                    if (tablesToExport.Count > 0)
+                    {
+                        OnStatusEvent(string.Format("  Would export table data for {0} tables", tablesToExport.Count));
+                    }
+
+                    return true;
+                }
+
+                workingParams.CountObjectsOnly = false;
+                if (workingParams.ProcessCount > 0)
+                {
+                    ExportDBObjectsWork(objDatabase, scriptOptions, workingParams);
+                }
+
+                // Export data from tables specified by tablesToExport
+                var success = ExportDBTableData(objDatabase, tablesToExport, workingParams);
+                return success;
+            }
+            catch (Exception ex)
+            {
+                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error scripting objects in database " + databaseName, ex);
+                return false;
+            }
 
-            Dim sql = String.Empty
-            Select Case objectIterator
-                Case 0
-                    ' Views
-                    objectType = "Views"
-                    If schemaExportOptions.ExportViews Then
-                        sql = "SELECT table_schema, table_name FROM INFORMATION_SCHEMA.tables WHERE table_type = 'view' "
-                        If Not schemaExportOptions.IncludeSystemObjects Then
-                            sql &= " AND table_name NOT IN ('sysconstraints', 'syssegments') "
-                        End If
-                        sql &= " ORDER BY table_name"
-                    End If
-                Case 1
-                    ' Stored procedures
-                    objectType = "Stored procedures"
-                    If schemaExportOptions.ExportStoredProcedures Then
-                        sql = "SELECT routine_schema, routine_name FROM INFORMATION_SCHEMA.routines WHERE routine_type = 'procedure' "
-                        If Not schemaExportOptions.IncludeSystemObjects Then
-                            sql &= " AND routine_name NOT LIKE 'dt[_]%' "
-                        End If
-                        sql &= " ORDER BY routine_name"
-                    End If
-                Case 2
-                    ' User defined functions
-                    objectType = "User defined functions"
-                    If schemaExportOptions.ExportUserDefinedFunctions Then
-                        sql = "SELECT routine_schema, routine_name FROM INFORMATION_SCHEMA.routines " +
-                              "WHERE routine_type = 'function' " +
-                              "ORDER BY routine_name"
-                    End If
-                Case 3
-                    ' Synonyms
-                    objectType = "Synonyms"
-                    If schemaExportOptions.ExportSynonyms Then
-                        sql = "SELECT B.name AS SchemaName, A.name FROM sys.synonyms A " +
-                              "INNER JOIN sys.schemas B ON A.schema_id = B.schema_id " +
-                              "ORDER BY A.Name"
-                    End If
-                Case Else
-                    ' Unknown value for intObjectIterator; skip it
-            End Select
-
-            If String.IsNullOrWhiteSpace(sql) Then Continue For
-
-            Dim dtStartTime = DateTime.UtcNow
-
-            Dim dsObjects = objDatabase.ExecuteWithResults(sql)
-
-            If workingParams.CountObjectsOnly Then
-                workingParams.ProcessCount += dsObjects.Tables(0).Rows.Count
-            Else
-
-                For Each objRow As DataRow In dsObjects.Tables(0).Rows
-                    ' The first column is the schema
-                    ' The second column is the name
-                    Dim objectSchema = objRow.Item(0).ToString()
-                    Dim objectName = objRow.Item(1).ToString()
-
-                    mSubtaskProgressStepDescription = objectName
-                    UpdateSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected)
-
-                    Dim smoObject As SqlSmoObject
-
-                    Select Case objectIterator
-                        Case 0
-                            ' Views
-                            smoObject = objDatabase.Views(objectName, objectSchema)
-                        Case 1
-                            ' Stored procedures
-                            smoObject = objDatabase.StoredProcedures(objectName, objectSchema)
-                        Case 2
-                            ' User defined functions
-                            smoObject = objDatabase.UserDefinedFunctions(objectName, objectSchema)
-                        Case 3
-                            ' Synonyms
-                            smoObject = objDatabase.Synonyms(objectName, objectSchema)
-                        Case Else
-                            ' Unknown value for intObjectIterator; skip it
-                            smoObject = Nothing
-                    End Select
-
-                    If Not smoObject Is Nothing Then
-                        Dim smoObjectArray As SqlSmoObject() = {smoObject}
-
-                        WriteTextToFile(workingParams.OutputDirectoryPathCurrentDB, objectName,
-                         CleanSqlScript(StringCollectionToList(objScripter.Script(smoObjectArray)), schemaExportOptions))
-                    End If
-
-                    workingParams.ProcessCount += 1
-                    CheckPauseStatus()
-                    If mAbortProcessing Then
-                        UpdateProgress("Aborted processing")
-                        Exit Sub
-                    End If
-                Next objRow
-
-                If mShowStats Then
-                    Console.WriteLine("Exported " & dsObjects.Tables(0).Rows.Count & " " & objectType & " in " & DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds.ToString("0.0") & " seconds")
-                End If
-            End If
-        Next
-    End Sub
-
-    Private Function ExportDBTableData(
-      objDatabase As Database,
-      dctTablesToExport As Dictionary(Of String, Int64),
-      schemaExportOptions As clsSchemaExportOptions,
-      workingParams As clsWorkingParams) As Boolean
-
-        Try
-            If dctTablesToExport Is Nothing OrElse dctTablesToExport.Count = 0 Then
-                Return True
-            End If
-
-            Dim sbCurrentRow = New StringBuilder
-
-            For Each tableItem In dctTablesToExport
-
-                Dim maximumDataRowsToExport = tableItem.Value
-
-                mSubtaskProgressStepDescription = "Exporting data from " & tableItem.Key
-                UpdateSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected)
-
-                Dim objTable As Table
-
-                If objDatabase.Tables.Contains(tableItem.Key) Then
-                    objTable = objDatabase.Tables(tableItem.Key)
-                ElseIf objDatabase.Tables.Contains(tableItem.Key, "dbo") Then
-                    objTable = objDatabase.Tables(tableItem.Key, "dbo")
-                Else
-                    Continue For
-                End If
-
-                ' See if any of the columns in the table is an identity column
-                Dim identityColumnFound = False
-                For Each objColumn As Column In objTable.Columns
-                    If objColumn.Identity Then
-                        identityColumnFound = True
-                        Exit For
-                    End If
-                Next
-
-                ' Export the data from objTable, possibly limiting the number of rows to export
-                Dim sql = "SELECT "
-
-                If maximumDataRowsToExport > 0 Then
-                    sql &= "TOP " & maximumDataRowsToExport.ToString
-                End If
-
-                sql &= " * FROM [" & objTable.Name & "]"
-
-                ' Read method #1: Populate a DataSet
-                Dim dsCurrentTable As DataSet = objDatabase.ExecuteWithResults(sql)
-
-                Dim lstTableRows = New List(Of String)
-
-                Dim header = COMMENT_START_TEXT & "Object:  Table [" & objTable.Name & "]"
-                If schemaExportOptions.IncludeTimestampInScriptFileHeader Then
-                    header &= "    " & COMMENT_SCRIPT_DATE_TEXT & GetTimeStamp()
-                End If
-                header &= COMMENT_END_TEXT
-                lstTableRows.Add(header)
-
-                lstTableRows.Add(COMMENT_START_TEXT & "RowCount: " & objTable.RowCount & COMMENT_END_TEXT)
-
-                Dim columnCount = dsCurrentTable.Tables(0).Columns.Count
-                Dim lstColumnTypes = New List(Of eDataColumnTypeConstants)
-
-                ' Construct the column name list and determine the column data types
-                sbCurrentRow.Clear()
-                For intColumnIndex = 0 To columnCount - 1
-                    Dim objColumn As DataColumn = dsCurrentTable.Tables(0).Columns(intColumnIndex)
-
-                    ' Initially assume the column's data type is numeric
-                    Dim eDataColumnType = eDataColumnTypeConstants.Numeric
-
-                    ' Now check for other data types
-                    If objColumn.DataType Is Type.GetType("System.String") Then
-                        eDataColumnType = eDataColumnTypeConstants.Text
-
-                    ElseIf objColumn.DataType Is Type.GetType("System.DateTime") Then
-                        ' Date column
-                        eDataColumnType = eDataColumnTypeConstants.DateTime
-
-                    ElseIf objColumn.DataType Is Type.GetType("System.Byte[]") Then
-                        Select Case objColumn.DataType.Name
-                            Case "image"
-                                eDataColumnType = eDataColumnTypeConstants.ImageObject
-                            Case "timestamp"
-                                eDataColumnType = eDataColumnTypeConstants.BinaryArray
-                            Case Else
-                                eDataColumnType = eDataColumnTypeConstants.BinaryArray
-                        End Select
-
-                    ElseIf objColumn.DataType Is Type.GetType("System.Guid") Then
-                        eDataColumnType = eDataColumnTypeConstants.GUID
-
-                    ElseIf objColumn.DataType Is Type.GetType("System.Boolean") Then
-                        ' This may be a binary column
-                        Select Case objColumn.DataType.Name
-                            Case "binary", "bit"
-                                eDataColumnType = eDataColumnTypeConstants.BinaryByte
-                            Case Else
-                                eDataColumnType = eDataColumnTypeConstants.Text
-                        End Select
-
-                    ElseIf objColumn.DataType Is Type.GetType("System.Object") Then
-                        Select Case objColumn.DataType.Name
-                            Case "sql_variant"
-                                eDataColumnType = eDataColumnTypeConstants.SqlVariant
-                            Case Else
-                                eDataColumnType = eDataColumnTypeConstants.GeneralObject
-                        End Select
-
-                    End If
-
-                    lstColumnTypes.Add(eDataColumnType)
-
-                    If schemaExportOptions.SaveDataAsInsertIntoStatements Then
-                        sbCurrentRow.Append(PossiblyQuoteColumnName(objColumn.ColumnName))
-                        If intColumnIndex < columnCount - 1 Then
-                            sbCurrentRow.Append(", ")
-                        End If
-                    Else
-                        sbCurrentRow.Append(objColumn.ColumnName)
-                        If intColumnIndex < columnCount - 1 Then
-                            sbCurrentRow.Append(ControlChars.Tab)
-                        End If
-                    End If
-
-                Next
-
-                Dim insertIntoLine As String = String.Empty
-                Dim chColSepChar As Char
-
-                If schemaExportOptions.SaveDataAsInsertIntoStatements Then
-                    ' Future capability:
-                    ''Select Case schemaExportOptions.DatabaseTypeForInsertInto
-                    ''    Case eTargetDatabaseTypeConstants.SqlServer
-                    ''    Case Else
-                    ''        ' Unsupported mode
-                    ''End Select
-
-                    If identityColumnFound Then
-                        insertIntoLine = "INSERT INTO [" & objTable.Name & "] (" & sbCurrentRow.ToString & ") VALUES ("
-                        lstTableRows.Add("SET IDENTITY_INSERT [" & objTable.Name & "] ON")
-                    Else
-                        ' Identity column not present; no need to explicitly list the column names
-                        insertIntoLine = "INSERT INTO [" & objTable.Name & "] VALUES ("
-
-                        ' However, we'll display the column names in the output file
-                        lstTableRows.Add(COMMENT_START_TEXT & "Columns: " & sbCurrentRow.ToString & COMMENT_END_TEXT)
-                    End If
-                    chColSepChar = ","c
-                Else
-                    lstTableRows.Add(sbCurrentRow.ToString)
-                    chColSepChar = ControlChars.Tab
-                End If
-
-
-                For Each objRow As DataRow In dsCurrentTable.Tables(0).Rows
-                    sbCurrentRow.Clear()
-                    If schemaExportOptions.SaveDataAsInsertIntoStatements Then
-                        sbCurrentRow.Append(insertIntoLine)
-                    End If
-
-                    For columnIndex = 0 To columnCount - 1
-                        Select Case lstColumnTypes(columnIndex)
-                            Case eDataColumnTypeConstants.Numeric
-                                sbCurrentRow.Append(objRow.Item(columnIndex).ToString)
-                            Case eDataColumnTypeConstants.Text, eDataColumnTypeConstants.DateTime, eDataColumnTypeConstants.GUID
-                                If schemaExportOptions.SaveDataAsInsertIntoStatements Then
-                                    sbCurrentRow.Append(PossiblyQuoteText(objRow.Item(columnIndex).ToString))
-                                Else
-                                    sbCurrentRow.Append(objRow.Item(columnIndex).ToString)
-                                End If
-
-                            Case eDataColumnTypeConstants.BinaryArray
-                                Try
-                                    Dim bytData = CType(CType(objRow.Item(columnIndex), Array), Byte())
-
-                                    ' Convert the bytes to a string; however, do not write any leading zeroes
-                                    ' The string will be of the form '0x020D89'
-                                    sbCurrentRow.Append("0x")
-
-                                    Dim dataFound = False
-                                    For byteIndex = 0 To bytData.Length - 1
-                                        If dataFound OrElse bytData(byteIndex) <> 0 Then
-                                            dataFound = True
-                                            ' Convert the byte to Hex (0 to 255 -> 00 to FF)
-                                            sbCurrentRow.Append(bytData(byteIndex).ToString("X2"))
-                                        End If
-                                    Next byteIndex
-
-                                    If Not dataFound Then
-                                        sbCurrentRow.Append("00")
-                                    End If
-
-                                Catch ex As Exception
-                                    sbCurrentRow.Append("[Byte]")
-                                End Try
-
-                            Case eDataColumnTypeConstants.BinaryByte
-                                Try
-                                    sbCurrentRow.Append("0x" & Convert.ToByte(objRow.Item(columnIndex)).ToString("X2"))
-                                Catch ex As Exception
-                                    sbCurrentRow.Append("[Byte]")
-                                End Try
-                            Case eDataColumnTypeConstants.ImageObject
-                                sbCurrentRow.Append("[Image]")
-                            Case eDataColumnTypeConstants.GeneralObject
-                                sbCurrentRow.Append("[Object]")
-                            Case eDataColumnTypeConstants.SqlVariant
-                                sbCurrentRow.Append("[Sql_Variant]")
-
-                            Case Else
-                                ' No need to quote
-                                sbCurrentRow.Append(objRow.Item(columnIndex).ToString)
-                        End Select
-
-                        If columnIndex < columnCount - 1 Then
-                            sbCurrentRow.Append(chColSepChar)
-                        End If
-                    Next
-                    If schemaExportOptions.SaveDataAsInsertIntoStatements Then
-                        sbCurrentRow.Append(")")
-                    End If
-
-                    lstTableRows.Add(sbCurrentRow.ToString)
-                Next
-
-                If identityColumnFound AndAlso schemaExportOptions.SaveDataAsInsertIntoStatements Then
-                    lstTableRows.Add("SET IDENTITY_INSERT [" & objTable.Name & "] OFF")
-                End If
-
-                ' '' Read method #2: Use a SqlDataReader to read row-by-row
-                ''objReader = objSqlServer.ConnectionContext.ExecuteReader(sql)
-
-                ''If objReader.HasRows Then
-                ''    Do While objReader.Read
-                ''        If objReader.FieldCount > 0 Then
-                ''            strCurrentRow = objReader.GetValue(0).ToString
-                ''            objReader.GetDataTypeName()
-                ''        End If
-
-                ''        For intColumnIndex = 1 To objReader.FieldCount - 1
-                ''            strCurrentRow &= ControlChars.Tab & objReader.GetValue(intColumnIndex).ToString
-                ''        Next
-                ''    Loop
-                ''End If
-
-                WriteTextToFile(workingParams.OutputDirectoryPathCurrentDB,
-                 objTable.Name & "_Data",
-                 lstTableRows, False)
-
-
-                workingParams.ProcessCount += 1
-                CheckPauseStatus()
-                If mAbortProcessing Then
-                    UpdateProgress("Aborted processing")
-                    Exit Function
-                End If
-            Next
-
-            SetSubtaskProgressComplete()
-
-            Return True
-
-        Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error in ExportDBTableData", ex)
-            Return False
-        End Try
-
-    End Function
-
-    Private Function ExportRole(objDatabaseRole As DatabaseRole) As Boolean
-
-        Try
-            If objDatabaseRole.IsFixedRole Then
-                Return False
-            ElseIf objDatabaseRole.Name.ToLower = "public" Then
-                Return False
-            Else
-                Return True
-            End If
-        Catch ex As Exception
-            Return False
-        End Try
-
-    End Function
-
-    Private Function ExportSchema(objDatabaseSchema As NamedSmoObject) As Boolean
-
-        Try
-            Return Not mSchemaToIgnore.Contains(objDatabaseSchema.Name)
-        Catch ex As Exception
-            Return False
-        End Try
-
-    End Function
-
-    Private Sub AppendToList(lstInfo As ICollection(Of String), propertyName As String, propertyValue As String)
-        If Not (propertyName Is Nothing Or propertyValue Is Nothing) Then
-            lstInfo.Add(propertyName & "=" & propertyValue)
-        End If
-    End Sub
-
-    Private Sub AppendToList(lstInfo As ICollection(Of String), propertyName As String, propertyValue As Integer)
-        If Not propertyName Is Nothing Then
-            lstInfo.Add(propertyName & "=" & propertyValue.ToString)
-        End If
-    End Sub
-
-    Private Sub AppendToList(lstInfo As ICollection(Of String), propertyName As String, propertyValue As Boolean)
-        If Not propertyName Is Nothing Then
-            lstInfo.Add(propertyName & "=" & propertyValue.ToString)
-        End If
-    End Sub
-
-    Private Sub AppendToList(lstInfo As ICollection(Of String), objConfigProperty As ConfigProperty)
-        If Not objConfigProperty Is Nothing AndAlso Not objConfigProperty.DisplayName Is Nothing Then
-            lstInfo.Add(objConfigProperty.DisplayName & "=" & objConfigProperty.ConfigValue)
-        End If
-    End Sub
-
-    Private Sub ExportSQLServerConfiguration(
-      objSqlServer As Server,
-      schemaExportOptions As clsSchemaExportOptions,
-      scriptOptions As ScriptingOptions,
-      outputDirectoryPathCurrentServer As String)
-
-        Dim lstInfo As New List(Of String)
-
-        ' Do not include a Try block in this Function; let the calling function handle errors
-
-        ' First save the Server Information to file ServerInformation
-        lstInfo.Clear()
-        With objSqlServer.Information
-            lstInfo.Add("[Server Information for " & objSqlServer.Name & "]")
-            AppendToList(lstInfo, "BuildClrVersion", .BuildClrVersionString)
-            AppendToList(lstInfo, "Collation", .Collation)
-            AppendToList(lstInfo, "Edition", .Edition)
-            AppendToList(lstInfo, "ErrorLogPath", .ErrorLogPath)
-            AppendToList(lstInfo, "IsCaseSensitive", .IsCaseSensitive)
-            AppendToList(lstInfo, "IsClustered", .IsClustered)
-            AppendToList(lstInfo, "IsFullTextInstalled", .IsFullTextInstalled)
-            AppendToList(lstInfo, "IsSingleUser", .IsSingleUser)
-            AppendToList(lstInfo, "Language", .Language)
-            AppendToList(lstInfo, "MasterDBLogPath", .MasterDBLogPath)
-            AppendToList(lstInfo, "MasterDBPath", .MasterDBPath)
-            AppendToList(lstInfo, "MaxPrecision", .MaxPrecision)
-            AppendToList(lstInfo, "NetName", .NetName)
-            AppendToList(lstInfo, "OSVersion", .OSVersion)
-            AppendToList(lstInfo, "PhysicalMemory", .PhysicalMemory)
-            AppendToList(lstInfo, "Platform", .Platform)
-            AppendToList(lstInfo, "Processors", .Processors)
-            AppendToList(lstInfo, "Product", .Product)
-            AppendToList(lstInfo, "ProductLevel", .ProductLevel)
-            AppendToList(lstInfo, "RootDirectory", .RootDirectory)
-            AppendToList(lstInfo, "VersionString", .VersionString)
-        End With
-
-        WriteTextToFile(outputDirectoryPathCurrentServer, "ServerInformation", lstInfo, False, ".ini")
-
-
-        ' Next save the Server Configuration to file ServerConfiguration
-        lstInfo.Clear()
-        With objSqlServer.Configuration
-            lstInfo.Add("[Server Configuration for " & objSqlServer.Name & "]")
-            AppendToList(lstInfo, .AdHocDistributedQueriesEnabled)
-            AppendToList(lstInfo, .Affinity64IOMask)
-            AppendToList(lstInfo, .Affinity64Mask)
-            AppendToList(lstInfo, .AffinityIOMask)
-            AppendToList(lstInfo, .AffinityMask)
-            AppendToList(lstInfo, .AgentXPsEnabled)
-            AppendToList(lstInfo, .AllowUpdates)
-            AppendToList(lstInfo, .BlockedProcessThreshold)
-            AppendToList(lstInfo, .C2AuditMode)
-            AppendToList(lstInfo, .CommonCriteriaComplianceEnabled)
-            AppendToList(lstInfo, .CostThresholdForParallelism)
-            AppendToList(lstInfo, .CrossDBOwnershipChaining)
-            AppendToList(lstInfo, .CursorThreshold)
-            AppendToList(lstInfo, .DatabaseMailEnabled)
-            AppendToList(lstInfo, .DefaultBackupCompression)
-            AppendToList(lstInfo, .DefaultFullTextLanguage)
-            AppendToList(lstInfo, .DefaultLanguage)
-            AppendToList(lstInfo, .DefaultTraceEnabled)
-            AppendToList(lstInfo, .DisallowResultsFromTriggers)
-            AppendToList(lstInfo, .ExtensibleKeyManagementEnabled)
-            AppendToList(lstInfo, .FilestreamAccessLevel)
-            AppendToList(lstInfo, .FillFactor)
-            AppendToList(lstInfo, .IndexCreateMemory)
-            AppendToList(lstInfo, .InDoubtTransactionResolution)
-            AppendToList(lstInfo, .IsSqlClrEnabled)
-            AppendToList(lstInfo, .LightweightPooling)
-            AppendToList(lstInfo, .Locks)
-            AppendToList(lstInfo, .MaxDegreeOfParallelism)
-            AppendToList(lstInfo, .MaxServerMemory)
-            AppendToList(lstInfo, .MaxWorkerThreads)
-            AppendToList(lstInfo, .MediaRetention)
-            AppendToList(lstInfo, .MinMemoryPerQuery)
-            AppendToList(lstInfo, .MinServerMemory)
-            AppendToList(lstInfo, .NestedTriggers)
-            AppendToList(lstInfo, .NetworkPacketSize)
-            AppendToList(lstInfo, .OleAutomationProceduresEnabled)
-            AppendToList(lstInfo, .OpenObjects)
-            AppendToList(lstInfo, .OptimizeAdhocWorkloads)
-            AppendToList(lstInfo, .PrecomputeRank)
-            AppendToList(lstInfo, .PriorityBoost)
-            AppendToList(lstInfo, .ProtocolHandlerTimeout)
-            AppendToList(lstInfo, .QueryGovernorCostLimit)
-            AppendToList(lstInfo, .QueryWait)
-            AppendToList(lstInfo, .RecoveryInterval)
-            AppendToList(lstInfo, .RemoteAccess)
-            AppendToList(lstInfo, .RemoteDacConnectionsEnabled)
-            AppendToList(lstInfo, .RemoteLoginTimeout)
-            AppendToList(lstInfo, .RemoteProcTrans)
-            AppendToList(lstInfo, .RemoteQueryTimeout)
-            AppendToList(lstInfo, .ReplicationMaxTextSize)
-            AppendToList(lstInfo, .ReplicationXPsEnabled)
-            AppendToList(lstInfo, .ScanForStartupProcedures)
-            AppendToList(lstInfo, .ServerTriggerRecursionEnabled)
-            AppendToList(lstInfo, .SetWorkingSetSize)
-            AppendToList(lstInfo, .ShowAdvancedOptions)
-            AppendToList(lstInfo, .SmoAndDmoXPsEnabled)
-            AppendToList(lstInfo, .SqlMailXPsEnabled)
-            AppendToList(lstInfo, .TransformNoiseWords)
-            AppendToList(lstInfo, .TwoDigitYearCutoff)
-            AppendToList(lstInfo, .UserConnections)
-            AppendToList(lstInfo, .UserOptions)
-            AppendToList(lstInfo, .XPCmdShellEnabled)
-        End With
-
-        WriteTextToFile(outputDirectoryPathCurrentServer, "ServerConfiguration", lstInfo, False, ".ini")
-
-
-        ' Next save the Mail settings to file ServerMail
-        ' Can only do this for Sql Server 2005 or newer
-        If SqlServer2005OrNewer(objSqlServer) Then
-            lstInfo = CleanSqlScript(StringCollectionToList(objSqlServer.Mail.Script(scriptOptions)), schemaExportOptions, False, False)
-            WriteTextToFile(outputDirectoryPathCurrentServer, "ServerMail", lstInfo, True)
-        End If
-
-
-        ' Next save the Registry Settings to file ServerRegistrySettings
-        lstInfo = CleanSqlScript(StringCollectionToList(objSqlServer.Settings.Script(scriptOptions)), schemaExportOptions, False, False)
-        lstInfo.Insert(0, "-- Registry Settings for " & objSqlServer.Name)
-
-        WriteTextToFile(outputDirectoryPathCurrentServer, "ServerRegistrySettings", lstInfo, False)
-
-
-    End Sub
-
-    Private Sub ExportSQLServerLogins(
-      objSqlServer As Server,
-      schemaExportOptions As clsSchemaExportOptions,
-      scriptOptions As ScriptingOptions,
-      outputDirectoryPathCurrentServer As String)
-
-        ' Do not include a Try block in this Function; let the calling function handle errors
-
-        ' Export the server logins
-        Dim processCountExpected = objSqlServer.Logins.Count
-        ResetSubtaskProgress("Exporting SQL Server logins")
-        For index = 0 To objSqlServer.Logins.Count - 1
-            Dim strCurrentLogin = objSqlServer.Logins.Item(index).Name
-            UpdateSubtaskProgress("Exporting login " & strCurrentLogin, mSubtaskProgressPercentComplete)
-
-            Dim success = WriteTextToFile(outputDirectoryPathCurrentServer, "Login_" & strCurrentLogin,
-             CleanSqlScript(StringCollectionToList(objSqlServer.Logins.Item(index).Script(scriptOptions)), schemaExportOptions, True, True))
-
-            UpdateSubtaskProgress(index + 1, processCountExpected)
-            CheckPauseStatus()
-            If mAbortProcessing Then
-                UpdateProgress("Aborted processing")
-                Exit For
-            End If
-
-            If success Then
-                ReportMessage("Processing completed for login " & strCurrentLogin, eMessageTypeConstants.HeaderLine)
-            Else
-                SetLocalError(eDBSchemaExportErrorCodes.GeneralError, "Processing failed for server " & schemaExportOptions.ConnectionInfo.ServerName & "; login " & strCurrentLogin)
-            End If
-        Next
-
-    End Sub
-
-
-    Private Sub ExportSQLServerAgentJobs(
-      objSqlServer As Server,
-      schemaExportOptions As clsSchemaExportOptions,
-      scriptOptions As ScriptingOptions,
-      outputDirectoryPathCurrentServer As String)
-
-        ' Do not include a Try block in this Function; let the calling function handle errors
-
-        ' Export the SQL Server Agent jobs
-        Dim processCountExpected = objSqlServer.JobServer.Jobs.Count
-        ResetSubtaskProgress("Exporting SQL Server Agent jobs")
-        For index = 0 To objSqlServer.JobServer.Jobs.Count - 1
-            Dim strCurrentJob = objSqlServer.JobServer.Jobs(index).Name
-            UpdateSubtaskProgress("Exporting job " & strCurrentJob, mSubtaskProgressPercentComplete)
-
-            Dim success = WriteTextToFile(outputDirectoryPathCurrentServer, "AgentJob_" & strCurrentJob,
-             CleanSqlScript(StringCollectionToList(objSqlServer.JobServer.Jobs(index).Script(scriptOptions)), schemaExportOptions, True, True))
-
-            UpdateSubtaskProgress(index + 1, processCountExpected)
-            CheckPauseStatus()
-            If mAbortProcessing Then
-                UpdateProgress("Aborted processing")
-                Exit For
-            End If
-
-            If success Then
-                ReportMessage("Processing completed for job " & strCurrentJob, eMessageTypeConstants.HeaderLine)
-            Else
-                SetLocalError(eDBSchemaExportErrorCodes.GeneralError, "Processing failed for server " & schemaExportOptions.ConnectionInfo.ServerName & "; job " & strCurrentJob)
-            End If
-
-        Next index
-
-    End Sub
-
-    Private Function GetDefaultScriptOptions() As ScriptingOptions
-
-        Dim scriptOptions As New ScriptingOptions
-
-        With scriptOptions
-            '.Bindings = True
-            .Default = True
-            .DriAll = True
-            '.DriAllKeys = True
-            '.ExtendedProperties = True
-            .IncludeHeaders = True          ' If True, then includes a line of the form: /****** Object:  Table [dbo].[T_Analysis_Description]    Script Date: 08/14/2006 12:14:31 ******/
-            .IncludeDatabaseContext = False
-            .IncludeIfNotExists = False     ' If True, then the entire SP is placed inside an nvarchar variable
-            .Indexes = True
-            '.NoCollation = True
-            .NoCommandTerminator = False
-            .Permissions = True
-            '.PrimaryObject = True
-            .SchemaQualify = True           ' If True, then adds extra [dbo]. prefixes
-            '.ScriptDrops = True            ' If True, the script only contains Drop commands, not Create commands
-            .Statistics = True
-            .Triggers = True
-            .ToFileOnly = False
-            .WithDependencies = False       ' Scripting speed will be much slower if this is set to true
-        End With
-
-        Return scriptOptions
-    End Function
-
-    ''' <summary>
-    ''' Determines the databases on the current server
-    ''' </summary>
-    ''' <returns>List of databases</returns>
-    Public Function GetSqlServerDatabases() As List(Of String)
-
-        Try
-            InitializeLocalVariables(False)
-
-            If Not mConnectedToServer OrElse mSqlServer Is Nothing OrElse mSqlServer.State <> SqlSmoState.Existing Then
-                mStatusMessage = "Not connected to a server"
-            Else
-                ' Obtain a list of all databases actually residing on the server (according to the Master database)
-                ResetProgress("Obtaining list of databases on " & mCurrentServerInfo.ServerName)
-
-                Dim lstDatabases = GetSqlserverDatabasesWork(True)
-
-                If Not mAbortProcessing Then
-                    UpdateProgress("Done")
-                    SetProgressComplete()
-                End If
-
-                Return lstDatabases
-
-            End If
-        Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error obtaining list of databases on current server", ex)
-        End Try
-
-        Return New List(Of String)
-
-    End Function
-
-    Private Function GetSqlserverDatabasesWork(reportProgress As Boolean) As List(Of String)
-
-        Dim lstDatabases = New List(Of String)
-
-        ' Obtain the databases collection
-        Dim objDatabases = mSqlServer.Databases
-
-        If objDatabases.Count > 0 Then
-
-            If reportProgress Then
-                ResetProgressStepCount(objDatabases.Count)
-            End If
-
-            For index = 0 To objDatabases.Count - 1
-                lstDatabases.Add(objDatabases(index).Name)
-
-                mProgressStep = index + 1
-                If reportProgress Then
-                    UpdateProgress(mProgressStep)
-                End If
-
-                If mAbortProcessing Then
-                    UpdateProgress("Aborted processing")
-                    Exit For
-                End If
-            Next index
-
-            lstDatabases.Sort()
-
-        End If
-
-        Return lstDatabases
-
-    End Function
-
-    ''' <summary>
-    ''' Lookup the table names in the specified database, optionally also determining table row counts
-    ''' </summary>
-    ''' <param name="databaseName">Database to query</param>
-    ''' <param name="includeTableRowCounts">When true, then determines the row count in each table</param>
-    ''' <param name="includeSystemObjects">When true, then also returns system object tables</param>
-    ''' <returns>Dictionary where key is table name and value is row counts (if includeTableRowCounts = true)</returns>
-    ''' <remarks></remarks>
-    Public Function GetSqlServerDatabaseTableNames(
-      databaseName As String,
-      includeTableRowCounts As Boolean,
-      includeSystemObjects As Boolean) As Dictionary(Of String, Int64)
-
-        Try
-            InitializeLocalVariables(False)
-
-            Dim dctTables = New Dictionary(Of String, Int64)
-
-            If databaseName Is Nothing Then
-                mStatusMessage = "Empty database name sent to GetSqlServerDatabaseTableNames"
-                Return dctTables
-            ElseIf Not mConnectedToServer OrElse mSqlServer Is Nothing OrElse mSqlServer.State <> SqlSmoState.Existing Then
-                mStatusMessage = "Not connected to a server"
-                Return dctTables
-            ElseIf Not mSqlServer.Databases.Contains(databaseName) Then
-                mStatusMessage = "Database " & databaseName & " not found on server " & mCurrentServerInfo.ServerName
-                Return dctTables
-            End If
-
-            ' Obtain a list of all databases actually residing on the server (according to the Master database)
-            ResetProgress("Obtaining list of tables in database " & databaseName & " on server " & mCurrentServerInfo.ServerName)
-
-            ' Connect to database databaseName
-            Dim objDatabase = mSqlServer.Databases(databaseName)
-
-            ' Obtain a list of the tables in objDatabase
-            Dim objTables = objDatabase.Tables
-            If objTables.Count > 0 Then
-
-                ResetProgressStepCount(objTables.Count)
-
-                For index = 0 To objTables.Count - 1
-                    If includeSystemObjects OrElse Not objTables(index).IsSystemObject Then
-
-                        Dim tableRowCount As Int64 = 0
-
-                        If includeTableRowCounts Then
-                            tableRowCount = objTables(index).RowCount
-                        End If
-
-                        dctTables.Add(objTables(index).Name, tableRowCount)
-
-                        mProgressStep = index + 1
-                        UpdateProgress(mProgressStep)
-                        If mAbortProcessing Then
-                            UpdateProgress("Aborted processing")
-                            Exit For
-                        End If
-
-                    End If
-                Next index
-
-            End If
-
-            If Not mAbortProcessing Then
-                UpdateProgress("Done")
-                SetProgressComplete()
-            End If
-
-            Return dctTables
-
-        Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error obtaining list of tables in database " & databaseName & " on current server", ex)
-        End Try
-
-        Return New Dictionary(Of String, Int64)
-
-    End Function
-
-    Private Function GetTimeStamp() As String
-        ' Return a timestamp in the form: 08/12/2006 23:01:20
-
-        Return DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss")
-
-    End Function
-
-    Public Shared Function GetDefaultSchemaExportOptions() As clsSchemaExportOptions
-
-        Dim schemaExportOptions = New clsSchemaExportOptions()
-
-        With schemaExportOptions
-            .OutputDirectoryPath = String.Empty
-            .OutputDirectoryNamePrefix = DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX
-
-            .CreateDirectoryForEachDB = True           ' This will be forced to true if more than one DB is to be scripted
-            .IncludeSystemObjects = False
-            .IncludeTimestampInScriptFileHeader = False
-
-            .ExportServerSettingsLoginsAndJobs = False
-            .ServerOutputDirectoryNamePrefix = DEFAULT_SERVER_OUTPUT_DIRECTORY_NAME_PREFIX
-
-            .SaveDataAsInsertIntoStatements = True
-            .DatabaseTypeForInsertInto = clsSchemaExportOptions.eTargetDatabaseTypeConstants.SqlServer
-            .AutoSelectTableNamesForDataExport = True
-
-            .ExportDBSchemasAndRoles = True
-            .ExportTables = True
-            .ExportViews = True
-            .ExportStoredProcedures = True
-            .ExportUserDefinedFunctions = True
-            .ExportUserDefinedDataTypes = True
-            .ExportUserDefinedTypes = True
-            .ExportSynonyms = True
-
-            ResetSqlServerConnection(.ConnectionInfo)
-        End With
-
-        Return schemaExportOptions
-
-    End Function
-
-    Private Sub InitializeLocalVariables(resetServerConnection As Boolean)
-        mErrorCode = eDBSchemaExportErrorCodes.NoError
-        mStatusMessage = String.Empty
-
-        mCurrentServerInfo = New clsServerConnectionInfo(String.Empty, True)
-
-        If mTableNamesToAutoSelect Is Nothing Then
-            mTableNamesToAutoSelect = clsDBSchemaExportTool.GetTableNamesToAutoExportData()
-        End If
-
-        If mTableNameAutoSelectRegEx Is Nothing Then
-            mTableNameAutoSelectRegEx = clsDBSchemaExportTool.GetTableRegExToAutoExportData()
-        End If
-
-        Dim objRegExOptions As RegexOptions
-        objRegExOptions = RegexOptions.Compiled Or
-           RegexOptions.IgnoreCase Or
-           RegexOptions.Singleline
-
-        mColumnCharNonStandardRegEx = New Regex("[^a-z0-9_]", objRegExOptions)
-
-        mNonStandardOSChars = New Regex("[^a-z0-9_ =+-,.';`~!@#$%^&(){}\[\]]", objRegExOptions)
-
-        If resetServerConnection Then
-            ResetSqlServerConnection(mCurrentServerInfo)
-            mConnectedToServer = False
-        End If
-
-        mSchemaOutputDirectories = New Dictionary(Of String, String)
-
-        mAbortProcessing = False
-        SetPauseStatus(ePauseStatusConstants.Unpaused)
-
-        mSchemaToIgnore = New SortedSet(Of String)(StringComparer.InvariantCultureIgnoreCase) From {
-            "db_accessadmin",
-            "db_backupoperator",
-            "db_datareader",
-            "db_datawriter",
-            "db_ddladmin",
-            "db_denydatareader",
-            "db_denydatawriter",
-            "db_owner",
-            "db_securityadmin",
-            "dbo",
-            "guest",
-            "information_schema",
-            "sys"
         }
 
-    End Sub
-
-    Private Function LoginToServerWork(
-      <Out()> ByRef objSQLServer As Server,
-      serverConnectionInfo As clsServerConnectionInfo) As Boolean
-
-        ' Returns True if success, False otherwise
-
-        Dim objServerConnection As ServerConnection
-        Dim objConnectionInfo As SqlConnectionInfo
-
-        Try
-            objConnectionInfo = New SqlConnectionInfo(serverConnectionInfo.ServerName)
-            With objConnectionInfo
-                .UseIntegratedSecurity = serverConnectionInfo.UseIntegratedAuthentication
-                If Not .UseIntegratedSecurity Then
-                    .UserName = serverConnectionInfo.UserName
-                    .Password = serverConnectionInfo.Password
-                End If
-                .ConnectionTimeout = 10
-            End With
-
-            objServerConnection = New ServerConnection(objConnectionInfo)
-
-            objSQLServer = New Server(objServerConnection)
-
-            ' If no error occurred, set .Connected = True and duplicate the connection info
-            mConnectedToServer = True
-            mCurrentServerInfo = serverConnectionInfo
-
-        Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error logging in to server " & serverConnectionInfo.ServerName, ex)
-            objSQLServer = Nothing
-            Return False
-        End Try
-
-        Return True
-
-    End Function
-
-    Private Function PossiblyQuoteColumnName(strColumnName As String) As String
-
-        If mColumnCharNonStandardRegEx.Match(strColumnName).Success Then
-            Return "[" & strColumnName & "]"
-        Else
-            Return strColumnName
-        End If
-
-    End Function
-
-    Private Function PossiblyQuoteText(strText As String) As String
-        Return "'" & strText.Replace("'", "''") & "'"
-    End Function
-
-    ''' <summary>
-    ''' Pause / unpause the scripting
-    ''' </summary>
-    ''' <remarks>Useful when the scripting is running in another thread</remarks>
-    Public Sub TogglePause()
-        If mPauseStatus = ePauseStatusConstants.Unpaused Then
-            SetPauseStatus(ePauseStatusConstants.PauseRequested)
-        ElseIf mPauseStatus = ePauseStatusConstants.Paused Then
-            SetPauseStatus(ePauseStatusConstants.UnpauseRequested)
-        End If
-    End Sub
-
-    Private Sub ReportMessage(message As String, eMessageType As eMessageTypeConstants)
-        If eMessageType = eMessageTypeConstants.ErrorMessage Then
-            OnErrorEvent(message)
-        Else
-            OnStatusEvent(message)
-        End If
-
-    End Sub
-
-    ''' <summary>
-    ''' Request that scripting be paused
-    ''' </summary>
-    ''' <remarks>Useful when the scripting is running in another thread</remarks>
-    Public Sub RequestPause()
-        If Not (mPauseStatus = ePauseStatusConstants.Paused OrElse
-          mPauseStatus = ePauseStatusConstants.PauseRequested) Then
-            SetPauseStatus(ePauseStatusConstants.PauseRequested)
-        End If
-    End Sub
-
-    ''' <summary>
-    ''' Request that scripting be unpaused
-    ''' </summary>
-    ''' <remarks>Useful when the scripting is running in another thread</remarks>
-    Public Sub RequestUnpause()
-        If Not (mPauseStatus = ePauseStatusConstants.Unpaused OrElse
-          mPauseStatus = ePauseStatusConstants.UnpauseRequested) Then
-            SetPauseStatus(ePauseStatusConstants.UnpauseRequested)
-        End If
-    End Sub
-
-    Private Sub ResetProgress()
-        ResetProgress(String.Empty)
-        ResetSubtaskProgress(String.Empty)
-    End Sub
-
-    Private Sub ResetProgress(strProgressStepDescription As String)
-        ResetProgress(strProgressStepDescription, mProgressStepCount)
-    End Sub
-
-    Private Sub ResetProgress(strProgressStepDescription As String, intStepCount As Integer)
-        mProgressStepDescription = String.Copy(strProgressStepDescription)
-        mProgressPercentComplete = 0
-        ResetProgressStepCount(intStepCount)
-        RaiseEvent ProgressReset()
-    End Sub
-
-    Private Sub ResetProgressStepCount(intStepCount As Integer)
-        mProgressStep = 0
-        mProgressStepCount = intStepCount
-    End Sub
-
-    Private Sub ResetSubtaskProgress()
-        RaiseEvent SubtaskProgressReset()
-    End Sub
-
-    Private Sub ResetSubtaskProgress(strSubtaskProgressStepDescription As String)
-        mSubtaskProgressStepDescription = String.Copy(strSubtaskProgressStepDescription)
-        mSubtaskProgressPercentComplete = 0
-        RaiseEvent SubtaskProgressReset()
-    End Sub
-
-    Private Sub ResetSqlServerConnection()
-        mConnectedToServer = False
-        ResetSqlServerConnection(mCurrentServerInfo)
-    End Sub
-
-    Public Shared Sub ResetSqlServerConnection(connectionInfo As clsServerConnectionInfo)
-        connectionInfo.Reset()
-    End Sub
-
-    ''' <summary>
-    '''
-    ''' </summary>
-    ''' <param name="objSchemaCollection">IEnumerable of type SchemaCollectionBase</param>
-    ''' <param name="schemaExportOptions">Export options</param>
-    ''' <param name="scriptOptions">Script options</param>
-    ''' <param name="processCountExpected">Expected number of items</param>
-    ''' <param name="strOutputDirectoryPathCurrentDB">Output directory path</param>
-    ''' <returns></returns>
-    Private Function ScriptCollectionOfObjects(
-      objSchemaCollection As IEnumerable,
-      schemaExportOptions As clsSchemaExportOptions,
-      scriptOptions As ScriptingOptions,
-      processCountExpected As Integer,
-      strOutputDirectoryPathCurrentDB As String) As Integer
-
-        ' Scripts the objects in objSchemaCollection
-        ' Returns the number of objects scripted
-
-        Dim intProcessCount = 0
-
-        For Each objItem As Schema In objSchemaCollection
-            mSubtaskProgressStepDescription = objItem.Name
-            UpdateSubtaskProgress(intProcessCount, processCountExpected)
-
-            WriteTextToFile(strOutputDirectoryPathCurrentDB, objItem.Name,
-                            CleanSqlScript(StringCollectionToList(objItem.Script(scriptOptions)), schemaExportOptions))
-
-            intProcessCount += 1
-
-            CheckPauseStatus()
-            If mAbortProcessing Then
-                UpdateProgress("Aborted processing")
-                Exit Function
-            End If
-        Next
-
-        Return intProcessCount
-
-    End Function
-
-    Private Function ScriptDBObjects(
-      objSqlServer As Server,
-      schemaExportOptions As clsSchemaExportOptions,
-      lstDatabaseListToProcess As IReadOnlyCollection(Of String),
-      lstTableNamesForDataExport As IReadOnlyCollection(Of String)) As Boolean
-
-        Dim lstProcessedDBList = New SortedSet(Of String)
-
-        Try
-
-            ' Process each database in lstDatabaseListToProcess
-            ResetProgress("Exporting DB objects to: " & PathUtils.CompactPathString(schemaExportOptions.OutputDirectoryPath), lstDatabaseListToProcess.Count)
-
-            mSchemaOutputDirectories.Clear()
-
-            ' Lookup the database names with the proper capitalization
-
-            UpdateProgress("Obtaining list of databases on " & mCurrentServerInfo.ServerName)
-
-            Dim lstDatabasesOnServer As List(Of String) = GetSqlserverDatabasesWork(False)
-
-            ' Populate a dictionary where keys are lower case database names and values are the properly capitalized database names
-            Dim dctDatabasesOnServer = New Dictionary(Of String, String)
-            For Each dbItem In lstDatabasesOnServer
-                dctDatabasesOnServer.Add(dbItem.ToLower(), dbItem)
-            Next
-
-            For Each strCurrentDB In lstDatabaseListToProcess
-                Dim databaseNotFound = True
-
-                If String.IsNullOrWhiteSpace(strCurrentDB) Then
-                    ' DB name is empty; this shouldn't happen
-                    Continue For
-                End If
-
-                If lstProcessedDBList.Contains(strCurrentDB) Then
-                    ' DB has already been processed
-                    Continue For
-                End If
-
-                lstProcessedDBList.Add(strCurrentDB)
-                Dim success As Boolean
-                Dim currentDbName As String = String.Empty
-
-                If dctDatabasesOnServer.TryGetValue(strCurrentDB.ToLower(), currentDbName) Then
-
-                    strCurrentDB = String.Copy(currentDbName)
-                    UpdateProgress("Exporting objects from database " & currentDbName)
-
-                    success = ExportDBObjectsUsingSMO(objSqlServer, currentDbName, lstTableNamesForDataExport, schemaExportOptions, databaseNotFound)
-
-                    If Not databaseNotFound Then
-                        If Not success Then Exit For
-
-                        If Not mAbortProcessing Then
-                            SetSubtaskProgressComplete()
-                        End If
-                    End If
-                Else
-                    ' Database not actually present on the server; skip it
-                    databaseNotFound = True
-                End If
-
-                mProgressStep = lstProcessedDBList.Count
-                UpdateProgress(mProgressStep)
-                CheckPauseStatus()
-                If mAbortProcessing Then
-                    UpdateProgress("Aborted processing")
-                    Exit For
-                End If
-
-                If success Then
-                    ReportMessage("Processing completed for database " & strCurrentDB, eMessageTypeConstants.HeaderLine)
-                ElseIf databaseNotFound Then
-                    SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Database " & strCurrentDB & " not found on server " & schemaExportOptions.ConnectionInfo.ServerName)
-                Else
-                    SetLocalError(eDBSchemaExportErrorCodes.GeneralError, "Processing failed for server " & schemaExportOptions.ConnectionInfo.ServerName)
-                End If
-
-            Next
-
-            Return True
-
-        Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.GeneralError, "Error exporting DB schema objects: " & schemaExportOptions.OutputDirectoryPath, ex)
-        End Try
-
-        Return False
-
-    End Function
-
-    Private Function ScriptServerObjects(
-      objSqlServer As Server,
-      schemaExportOptions As clsSchemaExportOptions) As Boolean
-
-        Const PROGRESS_STEP_COUNT = 2
-
-        ' Export the Server Settings and Sql Server Agent jobs
-
-        Dim scriptOptions As ScriptingOptions
-
-        Dim outputDirectoryPathCurrentServer As String = String.Empty
-
-        scriptOptions = GetDefaultScriptOptions()
-
-        Try
-            ' Construct the path to the output directory
-            outputDirectoryPathCurrentServer = Path.Combine(schemaExportOptions.OutputDirectoryPath, schemaExportOptions.ServerOutputDirectoryNamePrefix & objSqlServer.Name)
-
-            ' Create the directory if it doesn't exist
-            If Not Directory.Exists(outputDirectoryPathCurrentServer) AndAlso Not Me.PreviewExport Then
-                Directory.CreateDirectory(outputDirectoryPathCurrentServer)
-            End If
-
-        Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating or creating directory " & outputDirectoryPathCurrentServer)
-            Return False
-        End Try
-
-        Try
-            ResetProgress("Exporting Server objects to: " & PathUtils.CompactPathString(schemaExportOptions.OutputDirectoryPath), PROGRESS_STEP_COUNT)
-            ResetSubtaskProgress("Exporting server options")
-
-            ' Export the overall server configuration and options (this is quite fast, so we won't increment mProgressStep after this)
-            ExportSQLServerConfiguration(objSqlServer, schemaExportOptions, scriptOptions, outputDirectoryPathCurrentServer)
-            If mAbortProcessing Then Return False
-
-            ' Export the logins
-            ExportSQLServerLogins(objSqlServer, schemaExportOptions, scriptOptions, outputDirectoryPathCurrentServer)
-            mProgressStep += 1
-            UpdateProgress(mProgressStep)
-            If mAbortProcessing Then Return False
-
-            ' Export the Sql Server Agent Jobs
-            ExportSQLServerAgentJobs(objSqlServer, schemaExportOptions, scriptOptions, outputDirectoryPathCurrentServer)
-            mProgressStep += 1
-            UpdateProgress(mProgressStep)
-            If mAbortProcessing Then Return False
-
-            Return True
-
-        Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error scripting objects for server " & objSqlServer.Name)
-            Return False
-        End Try
-
-    End Function
-
-    ''' <summary>
-    ''' Scripts out the objects on the current server
-    ''' </summary>
-    ''' <param name="schemaExportOptions">Export options</param>
-    ''' <param name="lstDatabaseListToProcess">Database names to export></param>
-    ''' <param name="lstTableNamesForDataExport">Table names for which data should be exported</param>
-    ''' <returns>True if success, false if a problem</returns>
-    Public Function ScriptServerAndDBObjects(
-      schemaExportOptions As clsSchemaExportOptions,
-      lstDatabaseListToProcess As List(Of String),
-      lstTableNamesForDataExport As List(Of String)) As Boolean
-
-        Dim success = False
-
-        InitializeLocalVariables(False)
-
-        Try
-            success = False
-            If schemaExportOptions.ConnectionInfo.ServerName Is Nothing OrElse schemaExportOptions.ConnectionInfo.ServerName.Length = 0 Then
-                SetLocalError(eDBSchemaExportErrorCodes.ConfigurationError, "Server name is not defined")
-            ElseIf lstDatabaseListToProcess Is Nothing OrElse lstDatabaseListToProcess.Count = 0 Then
-                If schemaExportOptions.ExportServerSettingsLoginsAndJobs Then
-                    ' No databases are defined, but we are exporting server settings; this is OK
-                    success = True
-                Else
-                    SetLocalError(eDBSchemaExportErrorCodes.ConfigurationError, "Database list to process is empty")
-                End If
-            Else
-                If lstDatabaseListToProcess.Count > 1 Then
-                    ' Force CreateDirectoryForEachDB to true
-                    schemaExportOptions.CreateDirectoryForEachDB = True
-                End If
-                success = True
-            End If
-        Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating the Schema Export Options", ex)
-        End Try
-
-        If Not success Then Return False
-
-        ' Validate the strings in schemaExportOptions
-        ValidateSchemaExportOptions(schemaExportOptions)
-
-        ' Confirm that the output directory exists
-        If Not Directory.Exists(schemaExportOptions.OutputDirectoryPath) Then
-            SetLocalError(eDBSchemaExportErrorCodes.OutputDirectoryAccessError, "Output directory not found: " & schemaExportOptions.OutputDirectoryPath)
-            Return False
-        End If
-
-
-        ResetProgress("Exporting schema to: " & PathUtils.CompactPathString(schemaExportOptions.OutputDirectoryPath), 1)
-        ResetSubtaskProgress("Connecting to " & schemaExportOptions.ConnectionInfo.ServerName)
-
-        success = ConnectToServer(schemaExportOptions.ConnectionInfo)
-        If Not success Then Return False
-
-        If schemaExportOptions.ExportServerSettingsLoginsAndJobs Then
-            success = ScriptServerObjects(mSqlServer, schemaExportOptions)
-            If mAbortProcessing Then success = False
-        End If
-
-        If Not success Then Return False
-
-        If Not lstDatabaseListToProcess Is Nothing AndAlso lstDatabaseListToProcess.Count > 0 Then
-            success = ScriptDBObjects(mSqlServer, schemaExportOptions, lstDatabaseListToProcess, lstTableNamesForDataExport)
-            If mAbortProcessing Then success = False
-        End If
-
-        If Not success Then Return False
-
-        ' Set the overall progress to Complete
-        If mAbortProcessing Then
-            UpdateProgress("Done", 100)
-            SetProgressComplete()
-        End If
-
-        Return True
-
-    End Function
-
-    Private Sub SetLocalError(eErrorCode As eDBSchemaExportErrorCodes, message As String)
-        SetLocalError(eErrorCode, message, Nothing)
-    End Sub
-
-    Private Sub SetLocalError(eErrorCode As eDBSchemaExportErrorCodes, message As String, exException As Exception)
-        Try
-            mErrorCode = eErrorCode
-
-            If message Is Nothing Then message = String.Empty
-            mStatusMessage = String.Copy(message)
-
-            If Not exException Is Nothing Then
-                mStatusMessage &= ": " & exException.Message
-            End If
-
-            ReportMessage("Error -- " & mStatusMessage, eMessageTypeConstants.ErrorMessage)
-        Catch ex As Exception
-            ' Ignore errors here
-        End Try
-    End Sub
-
-    Private Sub SetPauseStatus(eNewPauseStatus As ePauseStatusConstants)
-        mPauseStatus = eNewPauseStatus
-        RaiseEvent PauseStatusChange()
-    End Sub
-
-    Private Sub SetProgressComplete()
-        UpdateProgress(100)
-        RaiseEvent ProgressComplete()
-    End Sub
-
-    Private Sub SetSubtaskProgressComplete()
-        UpdateSubtaskProgress(100)
-        RaiseEvent SubtaskProgressComplete()
-    End Sub
-
-    Private Function SqlServer2005OrNewer(objDatabase As Database) As Boolean
-        Return SqlServer2005OrNewer(objDatabase.Parent)
-    End Function
-
-    Private Function SqlServer2005OrNewer(objServer As Server) As Boolean
-        If objServer.Information.Version.Major >= 9 Then
-            Return True
-        Else
-            Return False
-        End If
-    End Function
-
-    Private Function StringCollectionToList(objItems As StringCollection) As IEnumerable(Of String)
-
-        Dim lstInfo = New List(Of String)
-
-        For Each entry As String In objItems
-            lstInfo.Add(entry)
-        Next
-
-        Return lstInfo
-
-    End Function
-
-    Private Sub UpdateProgress(intStepNumber As Integer)
-        If mProgressStepCount <= 0 Then
-            UpdateProgress(0)
-        Else
-            UpdateProgress(intStepNumber / CSng(mProgressStepCount) * 100.0!)
-        End If
-    End Sub
-
-    Private Sub UpdateProgress(intStepNumber As Integer, intStepCount As Integer)
-        If intStepCount <= 0 Then
-            UpdateProgress(0)
-        Else
-            UpdateProgress(intStepNumber / CSng(intStepCount) * 100.0!)
-        End If
-    End Sub
-
-    Private Sub UpdateProgress(sngPercentComplete As Single)
-        UpdateProgress(Me.ProgressStepDescription, sngPercentComplete)
-    End Sub
-
-    Private Sub UpdateProgress(strProgressStepDescription As String)
-        UpdateProgress(strProgressStepDescription, mProgressPercentComplete)
-    End Sub
-
-    Private Sub UpdateProgress(strProgressStepDescription As String, sngPercentComplete As Single)
-        mProgressStepDescription = String.Copy(strProgressStepDescription)
-        If sngPercentComplete < 0 Then
-            sngPercentComplete = 0
-        ElseIf sngPercentComplete >= 100 Then
-            sngPercentComplete = 100
-            mProgressStep = mProgressStepCount
-        End If
-        mProgressPercentComplete = sngPercentComplete
-
-        OnProgressUpdate(Me.ProgressStepDescription, Me.ProgressPercentComplete)
-    End Sub
-
-    Private Sub UpdateSubtaskProgress(intStepNumber As Integer, intStepCount As Integer)
-        If intStepCount <= 0 Then
-            UpdateSubtaskProgress(0)
-        Else
-            UpdateSubtaskProgress(intStepNumber / CSng(intStepCount) * 100.0!)
-        End If
-    End Sub
-
-    Private Sub UpdateSubtaskProgress(sngPercentComplete As Single)
-        UpdateSubtaskProgress(Me.SubtaskProgressStepDescription, sngPercentComplete)
-    End Sub
-
-    Private Sub UpdateSubtaskProgress(strSubtaskProgressStepDescription As String, sngPercentComplete As Single)
-        mSubtaskProgressStepDescription = String.Copy(strSubtaskProgressStepDescription)
-        If sngPercentComplete < 0 Then
-            sngPercentComplete = 0
-        ElseIf sngPercentComplete > 100 Then
-            sngPercentComplete = 100
-        End If
-        mSubtaskProgressPercentComplete = sngPercentComplete
-
-        RaiseEvent SubtaskProgressChanged(Me.SubtaskProgressStepDescription, Me.SubtaskProgressPercentComplete)
-    End Sub
-
-    Private Sub ValidateSchemaExportOptions(schemaExportOptions As clsSchemaExportOptions)
-        With schemaExportOptions
-            If .OutputDirectoryPath Is Nothing Then
-                .OutputDirectoryPath = String.Empty
-            End If
-
-            If .OutputDirectoryNamePrefix Is Nothing Then
-                .OutputDirectoryNamePrefix = DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX
-            End If
-
-            If .ServerOutputDirectoryNamePrefix Is Nothing Then
-                .ServerOutputDirectoryNamePrefix = DEFAULT_SERVER_OUTPUT_DIRECTORY_NAME_PREFIX
-            End If
-        End With
-    End Sub
-
-
-    Private Function WriteTextToFile(outputDirectoryPath As String, strObjectName As String, lstInfo As IEnumerable(Of String)) As Boolean
-        ' Calls WriteTextToFile with autoAddGoStatements = True
-        Return WriteTextToFile(outputDirectoryPath, strObjectName, lstInfo, True)
-    End Function
-
-    Private Function WriteTextToFile(outputDirectoryPath As String, strObjectName As String, lstInfo As IEnumerable(Of String), autoAddGoStatements As Boolean) As Boolean
-        Return WriteTextToFile(outputDirectoryPath, strObjectName, lstInfo, autoAddGoStatements, ".sql")
-    End Function
-
-    Private Function WriteTextToFile(outputDirectoryPath As String, strObjectName As String, lstInfo As IEnumerable(Of String), autoAddGoStatements As Boolean, strFileExtension As String) As Boolean
-
-        Dim strOutFilePath = "??"
-
-        Try
-            ' Make sure strObjectName doesn't contain any invalid characters
-            strObjectName = CleanNameForOS(strObjectName)
-
-            strOutFilePath = Path.Combine(outputDirectoryPath, strObjectName & strFileExtension)
-            Using swOutFile = New StreamWriter(strOutFilePath, False)
-                For Each sqlItem In lstInfo
-                    swOutFile.WriteLine(sqlItem)
-
-                    If autoAddGoStatements Then
-                        swOutFile.WriteLine("GO")
-                    End If
-                Next
-            End Using
-
-        Catch ex As Exception
-            SetLocalError(eDBSchemaExportErrorCodes.OutputDirectoryAccessError, "Error saving file " & strOutFilePath)
-            Return False
-        End Try
-
-        Return True
-
-    End Function
-
-End Class
+        private void ExportDBObjectsWork(Database objDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
+        {
+            // Do not include a Try block in this Function; let the calling function handle errors
+            // Reset ProcessCount
+            workingParams.ProcessCount = 0;
+            if (mOptions.ScriptingOptions.ExportDBSchemasAndRoles)
+            {
+                ExportDBSchemasAndRoles(objDatabase, scriptOptions, workingParams);
+                if (mAbortProcessing)
+                {
+                    return;
+                }
+            }
+
+            if (mOptions.ScriptingOptions.ExportTables)
+            {
+                ExportDBTables(objDatabase, scriptOptions, workingParams);
+                if (mAbortProcessing)
+                {
+                    return;
+                }
+            }
+
+            if (mOptions.ScriptingOptions.ExportViews ||
+                mOptions.ScriptingOptions.ExportUserDefinedFunctions ||
+                mOptions.ScriptingOptions.ExportStoredProcedures ||
+                mOptions.ScriptingOptions.ExportSynonyms)
+            {
+                ExportDBViewsProcsAndUDFs(objDatabase, scriptOptions, workingParams);
+                if (mAbortProcessing)
+                {
+                    return;
+                }
+            }
+
+            if (mOptions.ScriptingOptions.ExportUserDefinedDataTypes)
+            {
+                ExportDBUserDefinedDataTypes(objDatabase, scriptOptions, workingParams);
+                if (mAbortProcessing)
+                {
+                    return;
+                }
+            }
+
+            if (mOptions.ScriptingOptions.ExportUserDefinedTypes)
+            {
+                ExportDBUserDefinedTypes(objDatabase, scriptOptions, workingParams);
+                if (mAbortProcessing)
+                {
+                    return;
+                }
+
+            }
+        }
+
+        private void ExportDBSchemasAndRoles(
+            Database objDatabase,
+            ScriptingOptions scriptOptions,
+            WorkingParams workingParams)
+        {
+            if (workingParams.CountObjectsOnly)
+            {
+                workingParams.ProcessCount++;
+                if (SqlServer2005OrNewer(objDatabase))
+                {
+                    for (var index = 0; index <= objDatabase.Schemas.Count - 1; index++)
+                    {
+                        if (ExportSchema(objDatabase.Schemas[index]))
+                        {
+                            workingParams.ProcessCount++;
+                        }
+
+                    }
+
+                }
+
+                for (var index = 0; index <= objDatabase.Roles.Count - 1; index++)
+                {
+                    if (ExportRole(objDatabase.Roles[index]))
+                    {
+                        workingParams.ProcessCount++;
+                    }
+
+                }
+
+                return;
+            }
+
+            try
+            {
+                var scriptInfo = CleanSqlScript(StringCollectionToList(objDatabase.Script(scriptOptions)));
+                WriteTextToFile(workingParams.OutputDirectory, DB_DEFINITION_FILE_PREFIX + objDatabase.Name, scriptInfo);
+            }
+            catch (Exception ex)
+            {
+                // User likely doesn't have privilege to script the DB; ignore the error
+                OnErrorEvent("Unable to script DB " + objDatabase.Name, ex);
+            }
+
+            workingParams.ProcessCount++;
+            if (SqlServer2005OrNewer(objDatabase))
+            {
+                for (var index = 0; index <= objDatabase.Schemas.Count - 1; index++)
+                {
+                    if (ExportSchema(objDatabase.Schemas[index]))
+                    {
+                        var scriptInfo = CleanSqlScript(StringCollectionToList(objDatabase.Schemas[index].Script(scriptOptions)));
+
+                        WriteTextToFile(workingParams.OutputDirectory, "Schema_" + objDatabase.Schemas[index].Name, scriptInfo);
+                        workingParams.ProcessCount++;
+                        CheckPauseStatus();
+                        if (mAbortProcessing)
+                        {
+                            OnWarningEvent("Aborted processing");
+                            return;
+                        }
+
+                    }
+
+                }
+
+            }
+
+            for (var index = 0; index <= objDatabase.Roles.Count - 1; index++)
+            {
+                if (ExportRole(objDatabase.Roles[index]))
+                {
+                    var scriptInfo = CleanSqlScript(StringCollectionToList(objDatabase.Roles[index].Script(scriptOptions)));
+                    WriteTextToFile(workingParams.OutputDirectory, "Role_" + objDatabase.Roles[index].Name, scriptInfo);
+                    workingParams.ProcessCount++;
+                    CheckPauseStatus();
+                    if (mAbortProcessing)
+                    {
+                        OnWarningEvent("Aborted processing");
+                        return;
+                    }
+
+                }
+
+            }
+
+        }
+
+        private void ExportDBTables(Database objDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
+        {
+            const string SYNC_OBJ_TABLE_PREFIX = "syncobj_0x";
+
+            if (workingParams.CountObjectsOnly)
+            {
+                // Note: objDatabase.Tables includes system tables, so workingParams.ProcessCount will be
+                //       an overestimate if mOptions.ScriptingOptions.IncludeSystemObjects = False
+                workingParams.ProcessCount +=  objDatabase.Tables.Count;
+            }
+            else
+            {
+                var dtStartTime = DateTime.UtcNow;
+
+                // Initialize the scripter and objSMOObject()
+                var objScripter = new Scripter(mSqlServer)
+                {
+                    Options = scriptOptions
+                };
+
+                foreach (Table objTable in objDatabase.Tables)
+                {
+                    var includeTable = true;
+                    if (!mOptions.ScriptingOptions.IncludeSystemObjects)
+                    {
+                        if (objTable.IsSystemObject)
+                        {
+                            includeTable = false;
+                        }
+                        else if (objTable.Name.Length >= SYNC_OBJ_TABLE_PREFIX.Length)
+                        {
+                            if (objTable.Name.Substring(0, SYNC_OBJ_TABLE_PREFIX.Length)
+                                .Equals(SYNC_OBJ_TABLE_PREFIX, StringComparison.OrdinalIgnoreCase))
+                            {
+                                includeTable = false;
+                            }
+
+                        }
+
+                    }
+
+                    if (includeTable)
+                    {
+                        var percentComplete = workingParams.ProcessCount / (float)workingParams.ProcessCountExpected * 100;
+
+                        OnProgressUpdate("Scripting " + objTable.Name, percentComplete);
+
+                        var smoObjectArray = new SqlSmoObject[] {
+                            objTable
+                        };
+
+                        var scriptInfo = CleanSqlScript(StringCollectionToList(objScripter.Script(smoObjectArray)));
+                        WriteTextToFile(workingParams.OutputDirectory, objTable.Name, scriptInfo);
+                    }
+
+                    workingParams.ProcessCount++;
+                    CheckPauseStatus();
+                    if (mAbortProcessing)
+                    {
+                        OnWarningEvent("Aborted processing");
+                        return;
+                    }
+
+                }
+
+                if (mOptions.ShowStats)
+                {
+                    OnDebugEvent(string.Format(
+                                     "Exported {0} tables in {1:0.0} seconds",
+                                     objDatabase.Tables.Count, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
+                }
+
+            }
+
+        }
+
+        private void ExportDBUserDefinedDataTypes(Database objDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
+        {
+            if (workingParams.CountObjectsOnly)
+            {
+                workingParams.ProcessCount += objDatabase.UserDefinedDataTypes.Count;
+            }
+
+            else
+            {
+                var intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedDataTypes, scriptOptions,
+                                                             workingParams.ProcessCountExpected, workingParams.OutputDirectory);
+                workingParams.ProcessCount += intItemCount;
+            }
+
+        }
+
+
+        private void ExportDBUserDefinedTypes(Database objDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
+        {
+            if (SqlServer2005OrNewer(objDatabase))
+            {
+                if (workingParams.CountObjectsOnly)
+                {
+                    workingParams.ProcessCount += objDatabase.UserDefinedTypes.Count;
+                }
+                else
+                {
+                    var intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedTypes, scriptOptions, workingParams.ProcessCountExpected, workingParams.OutputDirectory);
+                    workingParams.ProcessCount += intItemCount;
+                }
+
+            }
+
+        }
+
+        private void ExportDBViewsProcsAndUDFs(Database objDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
+        {
+            // Option 1) obtain the list of views, stored procedures, and UDFs is to use objDatabase.EnumObjects
+            // However, this only returns the var name, type, and URN, not whether or not it is a system var
+            //
+            // Option 2) use objDatabase.Views, objDatabase.StoredProcedures, etc.
+            // However, on Sql Server 2005 this returns many system views and system procedures that we typically don't want to export
+            //
+            // Option 3) query the sysobjects table and filter on the xtype field
+            // Possible values for XType:
+            //   C = CHECK constraint
+            //   D = Default or DEFAULT constraint
+            //   F = FOREIGN KEY constraint
+            //   IF = Inline Function
+            //   FN = User Defined Function
+            //   TF = Table Valued Function
+            //   L = Log
+            //   P = Stored procedure
+            //   PK = PRIMARY KEY constraint (type is K)
+            //   RF = Replication filter stored procedure
+            //   S = System table
+            //   SN = Synonym
+            //   TR = Trigger
+            //   U = User table
+            //   UQ = UNIQUE constraint (type is K)
+            //   V = View
+            //   X = Extended stored procedure
+
+            // Dim strXType As String
+            // For intObjectIterator = 0 To 2
+            //    strXType = String.Empty
+            //    Select Case intObjectIterator
+            //        Case 0
+            //            ' Views
+            //            If mOptions.ScriptingOptions.ExportViews Then
+            //                strXType = " = 'V'"
+            //            End If
+            //        Case 1
+            //            ' Stored procedures
+            //            If mOptions.ScriptingOptions.ExportStoredProcedures Then
+            //                strXType = " = 'P'"
+            //            End If
+            //        Case 2
+            //            ' User defined functions
+            //            If mOptions.ScriptingOptions.ExportUserDefinedFunctions Then
+            //                strXType = " IN ('IF', 'FN', 'TF')"
+            //            End If
+            //        Case Else
+            //            ' Unknown value for intObjectIterator; skip it
+            //    End Select
+            //    If strXType.Length > 0 Then
+            //        sql = "SELECT name FROM sysobjects WHERE xtype " & strXType
+            //        If Not mOptions.ScriptingOptions.IncludeSystemObjects Then
+            //            sql &= " AND category = 0"
+            //        End If
+            //        sql &= " ORDER BY Name"
+            //        dsObjects = objDatabase.ExecuteWithResults(sql)
+            //        If workingParams.CountObjectsOnly Then
+            //            workingParams.ProcessCount += dsObjects.Tables(0).Rows.Count
+            //        Else
+            //            For Each objRow In dsObjects.Tables(0).Rows
+            //                strObjectName = objRow.Item(0).ToString
+            //                mSubtaskProgressStepDescription = strObjectName
+            //                UpdateSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected)
+            //                Select Case intObjectIterator
+            //                    Case 0
+            //                        ' Views
+            //                        smoObject = objDatabase.Views(strObjectName)
+            //                    Case 1
+            //                        ' Stored procedures
+            //                        smoObject = objDatabase.StoredProcedures(strObjectName)
+            //                    Case 2
+            //                        ' User defined functions
+            //                        smoObject = objDatabase.UserDefinedFunctions(strObjectName)
+            //                    Case Else
+            //                        ' Unknown value for intObjectIterator; skip it
+            //                        smoObject = Nothing
+            //                End Select
+            //                If Not smoObject Is Nothing Then
+            //                    WriteTextToFile(workingParams.OutputDirectoryPathCurrentDB, strObjectName,
+            //                                      CleanSqlScript(objScripter.Script(objSMOObject), schemaExportOptions)))
+            //                End If
+            //                workingParams.ProcessCount += 1
+            //                CheckPauseStatus()
+            //                If mAbortProcessing Then
+            //                    UpdateProgress("Aborted processing")
+            //                    Exit Function
+            //                End If
+            //            Next objRow
+            //        End If
+            //    End If
+            // Next intObjectIterator
+
+
+            // Option 4) Query the INFORMATION_SCHEMA views
+            // Initialize the scripter and objSMOObject()
+            var objScripter = new Scripter(mSqlServer)
+            {
+                Options = scriptOptions
+            };
+
+            for (var objectIterator = 0; objectIterator <= 3; objectIterator++)
+            {
+                var objectType = "unknown";
+                var sql = String.Empty;
+                switch (objectIterator)
+                {
+                    case 0:
+                        // Views
+                        objectType = "Views";
+                        if (mOptions.ScriptingOptions.ExportViews)
+                        {
+                            sql = "SELECT table_schema, table_name FROM INFORMATION_SCHEMA.tables WHERE table_type = 'view' ";
+                            if (!mOptions.ScriptingOptions.IncludeSystemObjects)
+                            {
+                                sql += " AND table_name NOT IN ('sysconstraints', 'syssegments') ";
+                            }
+
+                            sql += " ORDER BY table_name";
+                        }
+
+                        break;
+                    case 1:
+                        // Stored procedures
+                        objectType = "Stored procedures";
+                        if (mOptions.ScriptingOptions.ExportStoredProcedures)
+                        {
+                            sql = "SELECT routine_schema, routine_name FROM INFORMATION_SCHEMA.routines WHERE routine_type = 'procedure'";
+                            if (!mOptions.ScriptingOptions.IncludeSystemObjects)
+                            {
+                                sql += " AND routine_name NOT LIKE 'dt[_]%' ";
+                            }
+
+                            sql += " ORDER BY routine_name";
+                        }
+
+                        break;
+                    case 2:
+                        // User defined functions
+                        objectType = "User defined functions";
+                        if (mOptions.ScriptingOptions.ExportUserDefinedFunctions)
+                        {
+                            sql = "SELECT routine_schema, routine_name FROM INFORMATION_SCHEMA.routines " +
+                                  "WHERE routine_type = 'function' " +
+                                  "ORDER BY routine_name";
+                        }
+
+                        break;
+                    case 3:
+                        // Synonyms
+                        objectType = "Synonyms";
+                        if (mOptions.ScriptingOptions.ExportSynonyms)
+                        {
+                            sql = "SELECT B.name AS SchemaName, A.name FROM sys.synonyms A " +
+                                  "INNER JOIN sys.schemas B ON A.schema_id = B.schema_id " +
+                                  "ORDER BY A.Name";
+                        }
+
+                        break;
+                }
+
+                if (string.IsNullOrWhiteSpace(sql))
+                    continue;
+
+                var dtStartTime = DateTime.UtcNow;
+                var dsObjects = objDatabase.ExecuteWithResults(sql);
+                if (workingParams.CountObjectsOnly)
+                {
+                    workingParams.ProcessCount += dsObjects.Tables[0].Rows.Count;
+                }
+                else
+                {
+                    foreach (DataRow objRow in dsObjects.Tables[0].Rows)
+                    {
+                        // The first column is the schema
+                        // The second column is the name
+                        var objectSchema = objRow[0].ToString();
+                        var objectName = objRow[1].ToString();
+
+                        OnDebugEvent(string.Format("Processing {0}; {1} / {2}",
+                                                   objectName, workingParams.ProcessCount, workingParams.ProcessCountExpected));
+
+                        SqlSmoObject smoObject;
+                        switch (objectIterator)
+                        {
+                            case 0:
+                                // Views
+                                smoObject = objDatabase.Views[objectName, objectSchema];
+                                break;
+                            case 1:
+                                // Stored procedures
+                                smoObject = objDatabase.StoredProcedures[objectName, objectSchema];
+                                break;
+                            case 2:
+                                // User defined functions
+                                smoObject = objDatabase.UserDefinedFunctions[objectName, objectSchema];
+                                break;
+                            case 3:
+                                // Synonyms
+                                smoObject = objDatabase.Synonyms[objectName, objectSchema];
+                                break;
+                            default:
+                                smoObject = null;
+                                break;
+                        }
+
+                        if (smoObject != null)
+                        {
+                            var smoObjectArray = new SqlSmoObject[] { smoObject };
+
+                            var scriptInfo = CleanSqlScript(StringCollectionToList(objScripter.Script(smoObjectArray)));
+                            WriteTextToFile(workingParams.OutputDirectory, objectName, scriptInfo);
+                        }
+
+                        workingParams.ProcessCount++;
+                        CheckPauseStatus();
+                        if (mAbortProcessing)
+                        {
+                            OnWarningEvent("Aborted processing");
+                            return;
+                        }
+
+                    }
+
+                    if (mOptions.ShowStats)
+                    {
+                        OnDebugEvent(string.Format(
+                                         "Exported {0} {1} in {1:0.0} seconds",
+                                         dsObjects.Tables[0].Rows.Count, objectType, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
+                    }
+
+                }
+
+            }
+        }
+
+        private bool ExportDBTableData(Database objDatabase, Dictionary<string, int> tablesToExport, WorkingParams workingParams)
+        {
+            try
+            {
+                if (tablesToExport == null || tablesToExport.Count == 0)
+                {
+                    return true;
+                }
+
+                var sbCurrentRow = new StringBuilder();
+                foreach (var tableItem in tablesToExport)
+                {
+                    var maximumDataRowsToExport = tableItem.Value;
+                    OnDebugEvent(string.Format("Exporting data from {0}; {1} / {2}",
+                                               tableItem.Key, workingParams.ProcessCount, workingParams.ProcessCountExpected));
+
+                    Table objTable;
+                    if (objDatabase.Tables.Contains(tableItem.Key))
+                    {
+                        objTable = objDatabase.Tables[tableItem.Key];
+                    }
+                    else if (objDatabase.Tables.Contains(tableItem.Key, "dbo"))
+                    {
+                        objTable = objDatabase.Tables[tableItem.Key, "dbo"];
+                    }
+                    else
+                    {
+                        continue;
+                    }
+
+                    // See if any of the columns in the table is an identity column
+                    var identityColumnFound = false;
+                    foreach (Column objColumn in objTable.Columns)
+                    {
+                        if (objColumn.Identity)
+                        {
+                            identityColumnFound = true;
+                            break;
+                        }
+
+                    }
+
+                    // Export the data from objTable, possibly limiting the number of rows to export
+                    var sql = "SELECT ";
+                    if (maximumDataRowsToExport > 0)
+                    {
+                        sql += "TOP " + maximumDataRowsToExport;
+                    }
+
+                    sql += " * FROM [" + objTable.Name + "]";
+
+                    var dsCurrentTable = objDatabase.ExecuteWithResults(sql);
+                    var lstTableRows = new List<string>();
+                    var header = COMMENT_START_TEXT + "var:  Table [" + objTable.Name + "]";
+
+                    if (mOptions.ScriptingOptions.IncludeTimestampInScriptFileHeader)
+                    {
+                        header += "    " + COMMENT_SCRIPT_DATE_TEXT + GetTimeStamp();
+                    }
+
+                    header += COMMENT_END_TEXT;
+                    lstTableRows.Add(header);
+                    lstTableRows.Add(COMMENT_START_TEXT + "RowCount: " + objTable.RowCount + COMMENT_END_TEXT);
+
+                    var columnCount = dsCurrentTable.Tables[0].Columns.Count;
+                    var lstColumnTypes = new List<DataColumnTypeConstants>();
+                    sbCurrentRow.Clear();
+
+                    for (var columnIndex = 0; columnIndex <= columnCount - 1; columnIndex++)
+                    {
+                        var objColumn = dsCurrentTable.Tables[0].Columns[columnIndex];
+
+                        // Initially assume the column's data type is numeric
+                        var eDataColumnType = DataColumnTypeConstants.Numeric;
+                        // Now check for other data types
+                        if (objColumn.DataType == Type.GetType("System.String"))
+                        {
+                            eDataColumnType = DataColumnTypeConstants.Text;
+                        }
+                        else if (objColumn.DataType == Type.GetType("System.DateTime"))
+                        {
+                            // Date column
+                            eDataColumnType = DataColumnTypeConstants.DateTime;
+                        }
+                        else if (objColumn.DataType == Type.GetType("System.Byte[]"))
+                        {
+                            switch (objColumn.DataType?.Name)
+                            {
+                                case "image":
+                                    eDataColumnType = DataColumnTypeConstants.ImageObject;
+                                    break;
+                                case "timestamp":
+                                    eDataColumnType = DataColumnTypeConstants.BinaryArray;
+                                    break;
+                                default:
+                                    eDataColumnType = DataColumnTypeConstants.BinaryArray;
+                                    break;
+                            }
+                        }
+                        else if (objColumn.DataType == Type.GetType("System.Guid"))
+                        {
+                            eDataColumnType = DataColumnTypeConstants.GUID;
+                        }
+                        else if (objColumn.DataType == Type.GetType("System.Boolean"))
+                        {
+                            // This may be a binary column
+                            switch (objColumn.DataType?.Name)
+                            {
+                                case "binary":
+                                case "bit":
+                                    eDataColumnType = DataColumnTypeConstants.BinaryByte;
+                                    break;
+                                default:
+                                    eDataColumnType = DataColumnTypeConstants.Text;
+                                    break;
+                            }
+                        }
+                        else if (objColumn.DataType == Type.GetType("System.var"))
+                        {
+                            switch (objColumn.DataType?.Name)
+                            {
+                                case "sql_variant":
+                                    eDataColumnType = DataColumnTypeConstants.SqlVariant;
+                                    break;
+                                default:
+                                    eDataColumnType = DataColumnTypeConstants.GeneralObject;
+                                    break;
+                            }
+                        }
+
+                        lstColumnTypes.Add(eDataColumnType);
+                        if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+                        {
+                            sbCurrentRow.Append(PossiblyQuoteColumnName(objColumn.ColumnName, true));
+                            if (columnIndex < columnCount - 1)
+                            {
+                                sbCurrentRow.Append(", ");
+                            }
+
+                        }
+                        else
+                        {
+                            sbCurrentRow.Append(objColumn.ColumnName);
+                            if (columnIndex < columnCount - 1)
+                            {
+                                sbCurrentRow.Append("\t");
+                            }
+
+                        }
+
+                    }
+
+                    var insertIntoLine = string.Empty;
+                    char chColSepChar;
+                    if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+                    {
+                        // Future capability:
+                        // 'Select Case mOptions.ScriptingOptions.DatabaseTypeForInsertInto
+                        // '    Case eTargetDatabaseTypeConstants.SqlServer
+                        // '    Case Else
+                        // '        ' Unsupported mode
+                        // 'End Select
+                        if (identityColumnFound)
+                        {
+                            insertIntoLine = string.Format("INSERT INTO [{0}] ({1}) VALUES (", objTable.Name, sbCurrentRow.ToString());
+
+                            lstTableRows.Add("SET IDENTITY_INSERT [" + objTable.Name + "] ON");
+                        }
+                        else
+                        {
+                            // Identity column not present; no need to explicitly list the column names
+                            insertIntoLine = string.Format("INSERT INTO [{0}] VALUES (", objTable.Name);
+
+                            lstTableRows.Add(COMMENT_START_TEXT + "Columns: " + sbCurrentRow + COMMENT_END_TEXT);
+                        }
+
+                        chColSepChar = ',';
+                    }
+                    else
+                    {
+                        lstTableRows.Add(sbCurrentRow.ToString());
+                        chColSepChar = '\t';
+                    }
+
+                    foreach (DataRow objRow in dsCurrentTable.Tables[0].Rows)
+                    {
+                        sbCurrentRow.Clear();
+                        if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+                        {
+                            sbCurrentRow.Append(insertIntoLine);
+                        }
+
+                        for (var columnIndex = 0; columnIndex <= columnCount - 1; columnIndex++)
+                        {
+                            switch (lstColumnTypes[columnIndex])
+                            {
+                                case DataColumnTypeConstants.Numeric:
+                                    sbCurrentRow.Append(objRow[columnIndex]);
+                                    break;
+
+                                case DataColumnTypeConstants.Text:
+                                case DataColumnTypeConstants.DateTime:
+                                case DataColumnTypeConstants.GUID:
+                                    if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+                                    {
+                                        sbCurrentRow.Append(PossiblyQuoteText(objRow[columnIndex].ToString()));
+                                    }
+                                    else
+                                    {
+                                        sbCurrentRow.Append(objRow[columnIndex].ToString());
+                                    }
+                                    break;
+
+                                case DataColumnTypeConstants.BinaryArray:
+                                    try
+                                    {
+                                        var bytData = (byte[])(Array)objRow[columnIndex];
+                                        sbCurrentRow.Append("0x");
+                                        var dataFound = false;
+                                        for (var byteIndex = 0; byteIndex <= bytData.Length - 1; byteIndex++)
+                                        {
+                                            if (dataFound || bytData[byteIndex] != 0)
+                                            {
+                                                dataFound = true;
+                                                sbCurrentRow.Append(bytData[byteIndex].ToString("X2"));
+                                            }
+
+                                        }
+
+                                        if (!dataFound)
+                                        {
+                                            sbCurrentRow.Append("00");
+                                        }
+
+                                    }
+                                    catch (Exception)
+                                    {
+                                        sbCurrentRow.Append("[Byte]");
+                                    }
+                                    break;
+
+                                case DataColumnTypeConstants.BinaryByte:
+                                    try
+                                    {
+                                        sbCurrentRow.Append(("0x" + Convert.ToByte(objRow[columnIndex]).ToString("X2")));
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        sbCurrentRow.Append("[Byte]");
+                                    }
+
+                                    break;
+
+                                case DataColumnTypeConstants.ImageObject:
+                                    sbCurrentRow.Append("[Image]");
+                                    break;
+
+                                case DataColumnTypeConstants.GeneralObject:
+                                    sbCurrentRow.Append("[var]");
+                                    break;
+
+                                case DataColumnTypeConstants.SqlVariant:
+                                    sbCurrentRow.Append("[Sql_Variant]");
+                                    break;
+
+                                default:
+                                    sbCurrentRow.Append(objRow[columnIndex]);
+                                    break;
+                            }
+                            if (columnIndex < columnCount - 1)
+                            {
+                                sbCurrentRow.Append(chColSepChar);
+                            }
+
+                        }
+
+                        if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+                        {
+                            sbCurrentRow.Append(")");
+                        }
+
+                        lstTableRows.Add(sbCurrentRow.ToString());
+                    }
+
+                    if (identityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+                    {
+                        lstTableRows.Add("SET IDENTITY_INSERT [" + objTable.Name + "] OFF");
+                    }
+
+                    // // Read method #2: Use a SqlDataReader to read row-by-row
+                    // objReader = sqlServer.ConnectionContext.ExecuteReader(sql)
+                    // If objReader.HasRows Then
+                    //    Do While objReader.Read
+                    //        If objReader.FieldCount > 0 Then
+                    //            strCurrentRow = objReader.GetValue(0).ToString
+                    //            objReader.GetDataTypeName()
+                    //        End If
+                    //        For columnIndex = 1 To objReader.FieldCount - 1
+                    //            strCurrentRow &= ControlChars.Tab & objReader.GetValue(columnIndex).ToString
+                    //        Next
+                    //    Loop
+                    // End If
+
+                    WriteTextToFile(workingParams.OutputDirectory, objTable.Name + "_Data", lstTableRows, false);
+
+                    workingParams.ProcessCount++;
+
+                    CheckPauseStatus();
+                    if (mAbortProcessing)
+                    {
+                        OnWarningEvent("Aborted processing");
+                        return false;
+                    }
+
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                SetLocalError(DBSchemaExporterBase.DBSchemaExportErrorCodes.DatabaseConnectionError, "Error in ExportDBTableData", ex);
+                return false;
+            }
+        }
+
+
+        private bool ExportRole(DatabaseRole databaseRole)
+        {
+            try
+            {
+                if (databaseRole.IsFixedRole)
+                {
+                    return false;
+                }
+
+                if (databaseRole.Name.Equals("public", StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+
+        }
+
+        private bool ExportSchema(NamedSmoObject objDatabaseSchema)
+        {
+            try
+            {
+                return !mSchemaToIgnore.Contains(objDatabaseSchema.Name);
+            }
+            catch
+            {
+                return false;
+            }
+
+        }
+
+        private void AppendToList(ICollection<string> serverInfo, string propertyName, string propertyValue)
+        {
+            if (propertyName != null && propertyValue != null)
+            {
+                serverInfo.Add((propertyName + "=" + propertyValue));
+            }
+
+        }
+
+        private void AppendToList(ICollection<string> serverInfo, string propertyName, int propertyValue)
+        {
+            if (propertyName != null)
+            {
+                serverInfo.Add(propertyName + "=" + propertyValue);
+            }
+
+        }
+
+        private void AppendToList(ICollection<string> serverInfo, string propertyName, bool propertyValue)
+        {
+            if (propertyName != null)
+            {
+                serverInfo.Add(propertyName + "=" + propertyValue);
+            }
+
+        }
+
+        private void AppendToList(ICollection<string> serverInfo, ConfigProperty objConfigProperty)
+        {
+            if (objConfigProperty?.DisplayName != null)
+            {
+                serverInfo.Add(objConfigProperty.DisplayName + "=" + objConfigProperty.ConfigValue);
+            }
+
+        }
+
+        private IEnumerable<string> CleanSqlScript(IEnumerable<string> scriptInfo)
+        {
+            return CleanSqlScript(scriptInfo, false, false);
+        }
+
+        private List<string> CleanSqlScript(IEnumerable<string> scriptInfo, bool removeAllScriptDateOccurrences, bool removeDuplicateHeaderLine)
+        {
+            var whitespaceChars = new[] {
+                ' ',
+                '\t'
+            };
+
+            var cleanScriptInfo = new List<string>();
+
+            try
+            {
+                if (mOptions.ScriptingOptions.IncludeTimestampInScriptFileHeader)
+                {
+                    return cleanScriptInfo;
+                }
+
+                // Look for and remove the timestamp from the first line of the Sql script
+                // For example: "Script Date: 08/14/2006 20:14:31" prior to each "******/"
+                //
+                // If removeAllOccurrences = True, searches for all occurrences
+                // If removeAllOccurrences = False, does not look past the first carriage return of each entry in scriptInfo
+                foreach (var item in scriptInfo)
+                {
+                    var currentLine = string.Copy(item);
+
+                    var indexStart = 0;
+                    int finalSearchIndex;
+                    if (removeAllScriptDateOccurrences)
+                    {
+                        finalSearchIndex = currentLine.Length - 1;
+                    }
+                    else
+                    {
+                        // Find the first CrLf after the first non-blank line in currentLine
+                        // However, if the script starts with several SET statements, we need to skip those lines
+                        var objectCommentStartIndex = currentLine.IndexOf(COMMENT_START_TEXT + "var:", StringComparison.Ordinal);
+                        if (currentLine.Trim().StartsWith("SET") && objectCommentStartIndex > 0)
+                        {
+                            indexStart = objectCommentStartIndex;
+                        }
+
+                        while (true)
+                        {
+                            finalSearchIndex = currentLine.IndexOf("\n", indexStart, StringComparison.Ordinal);
+
+                            if (finalSearchIndex == indexStart)
+                            {
+                                indexStart += 2;
+                            }
+
+                            if (!(finalSearchIndex >= 0 && finalSearchIndex < indexStart && indexStart < currentLine.Length))
+                                break;
+                        }
+
+                        if (finalSearchIndex < 0)
+                        {
+                            finalSearchIndex = currentLine.Length - 1;
+                        }
+
+                    }
+
+                    while (true)
+                    {
+                        var indexStartCurrent = currentLine.IndexOf(COMMENT_SCRIPT_DATE_TEXT, indexStart, StringComparison.Ordinal);
+
+                        if (indexStartCurrent > 0 && indexStartCurrent <= finalSearchIndex)
+                        {
+                            var indexEndCurrent = currentLine.IndexOf(COMMENT_END_TEXT_SHORT, indexStartCurrent, StringComparison.Ordinal);
+                            if (indexEndCurrent > indexStartCurrent && indexEndCurrent <= finalSearchIndex)
+                            {
+                                currentLine = currentLine.Substring(0, indexStartCurrent).TrimEnd(whitespaceChars) +
+                                              COMMENT_END_TEXT +
+                                              currentLine.Substring(indexEndCurrent + COMMENT_END_TEXT_SHORT.Length);
+                            }
+
+                        }
+
+                        if (!(removeAllScriptDateOccurrences && indexStartCurrent > 0))
+                            break;
+                    }
+
+                    if (removeDuplicateHeaderLine)
+                    {
+                        var firstCrLf = currentLine.IndexOf("\n", 0, StringComparison.Ordinal);
+                        if (firstCrLf > 0 && firstCrLf < currentLine.Length)
+                        {
+                            var nextCrLf = currentLine.IndexOf("\n", firstCrLf + 1, StringComparison.Ordinal);
+                            if (nextCrLf > firstCrLf)
+                            {
+                                if (currentLine.Substring(0, firstCrLf) ==
+                                    currentLine.Substring(firstCrLf + 2, nextCrLf - (firstCrLf - 2)))
+                                {
+                                    currentLine = currentLine.Substring(firstCrLf + 2);
+                                }
+                            }
+                        }
+                    }
+
+                    cleanScriptInfo.Add(currentLine);
+
+                }
+
+                return cleanScriptInfo;
+
+            }
+            catch (Exception ex)
+            {
+                OnWarningEvent("Error in CleanSqlScript: " + ex.Message);
+                return cleanScriptInfo;
+            }
+
+        }
+
+        private void ExportSQLServerConfiguration(Server sqlServer, ScriptingOptions scriptOptions, DirectoryInfo outputDirectoryPathCurrentServer)
+        {
+            // Save SQL Server info to ServerInformation.ini
+            ExportSQLServerInfoToIni(sqlServer, scriptOptions, outputDirectoryPathCurrentServer);
+
+            // Save the SQL Server configuration info to ServerConfiguration.ini
+            ExportSQLServerConfigToIni(sqlServer, scriptOptions, outputDirectoryPathCurrentServer);
+
+            // Save the Mail settings to file ServerMail.sql
+            // Can only do this for SQL Server 2005 or newer
+            if (SqlServer2005OrNewer(sqlServer))
+            {
+                var mailInfo = StringCollectionToList(sqlServer.Mail.Script(scriptOptions));
+                var cleanedMailInfo = CleanSqlScript(mailInfo, false, false);
+                WriteTextToFile(outputDirectoryPathCurrentServer, "ServerMail", cleanedMailInfo, true);
+            }
+
+            // Save the Registry Settings to file ServerRegistrySettings.sql
+            var serverSettings = StringCollectionToList(sqlServer.Settings.Script(scriptOptions));
+            var cleanedServerSettings = CleanSqlScript(serverSettings, false, false);
+            cleanedServerSettings.Insert(0, "-- Registry Settings for " + sqlServer.Name);
+            WriteTextToFile(outputDirectoryPathCurrentServer, "ServerRegistrySettings", cleanedServerSettings, false);
+        }
+
+        private void ExportSQLServerInfoToIni(Server sqlServer, ScriptingOptions scriptOptions, DirectoryInfo outputDirectoryPathCurrentServer)
+        {
+            var serverInfo = new List<string>
+                {
+                    "[Server Information for " + sqlServer.Name + "]"
+                };
+
+            AppendToList(serverInfo, "BuildClrVersion", sqlServer.Information.BuildClrVersionString);
+            AppendToList(serverInfo, "Collation", sqlServer.Information.Collation);
+            AppendToList(serverInfo, "Edition", sqlServer.Information.Edition);
+            AppendToList(serverInfo, "ErrorLogPath", sqlServer.Information.ErrorLogPath);
+            AppendToList(serverInfo, "IsCaseSensitive", sqlServer.Information.IsCaseSensitive);
+            AppendToList(serverInfo, "IsClustered", sqlServer.Information.IsClustered);
+            AppendToList(serverInfo, "IsFullTextInstalled", sqlServer.Information.IsFullTextInstalled);
+            AppendToList(serverInfo, "IsSingleUser", sqlServer.Information.IsSingleUser);
+            AppendToList(serverInfo, "Language", sqlServer.Information.Language);
+            AppendToList(serverInfo, "MasterDBLogPath", sqlServer.Information.MasterDBLogPath);
+            AppendToList(serverInfo, "MasterDBPath", sqlServer.Information.MasterDBPath);
+            AppendToList(serverInfo, "MaxPrecision", sqlServer.Information.MaxPrecision);
+            AppendToList(serverInfo, "NetName", sqlServer.Information.NetName);
+            AppendToList(serverInfo, "OSVersion", sqlServer.Information.OSVersion);
+            AppendToList(serverInfo, "PhysicalMemory", sqlServer.Information.PhysicalMemory);
+            AppendToList(serverInfo, "Platform", sqlServer.Information.Platform);
+            AppendToList(serverInfo, "Processors", sqlServer.Information.Processors);
+            AppendToList(serverInfo, "Product", sqlServer.Information.Product);
+            AppendToList(serverInfo, "ProductLevel", sqlServer.Information.ProductLevel);
+            AppendToList(serverInfo, "RootDirectory", sqlServer.Information.RootDirectory);
+            AppendToList(serverInfo, "VersionString", sqlServer.Information.VersionString);
+
+            WriteTextToFile(outputDirectoryPathCurrentServer, "ServerInformation", serverInfo, false, ".ini");
+        }
+
+        private void ExportSQLServerConfigToIni(Server sqlServer, ScriptingOptions scriptOptions, DirectoryInfo outputDirectoryPathCurrentServer)
+        {
+            var serverConfig = new List<string>
+                {
+                    "[Server Configuration for " + sqlServer.Name + "]"
+                };
+
+            AppendToList(serverConfig, sqlServer.Configuration.AdHocDistributedQueriesEnabled);
+            AppendToList(serverConfig, sqlServer.Configuration.Affinity64IOMask);
+            AppendToList(serverConfig, sqlServer.Configuration.Affinity64Mask);
+            AppendToList(serverConfig, sqlServer.Configuration.AffinityIOMask);
+            AppendToList(serverConfig, sqlServer.Configuration.AffinityMask);
+            AppendToList(serverConfig, sqlServer.Configuration.AgentXPsEnabled);
+            AppendToList(serverConfig, sqlServer.Configuration.AllowUpdates);
+            AppendToList(serverConfig, sqlServer.Configuration.BlockedProcessThreshold);
+            AppendToList(serverConfig, sqlServer.Configuration.C2AuditMode);
+            AppendToList(serverConfig, sqlServer.Configuration.CommonCriteriaComplianceEnabled);
+            AppendToList(serverConfig, sqlServer.Configuration.CostThresholdForParallelism);
+            AppendToList(serverConfig, sqlServer.Configuration.CrossDBOwnershipChaining);
+            AppendToList(serverConfig, sqlServer.Configuration.CursorThreshold);
+            AppendToList(serverConfig, sqlServer.Configuration.DatabaseMailEnabled);
+            AppendToList(serverConfig, sqlServer.Configuration.DefaultBackupCompression);
+            AppendToList(serverConfig, sqlServer.Configuration.DefaultFullTextLanguage);
+            AppendToList(serverConfig, sqlServer.Configuration.DefaultLanguage);
+            AppendToList(serverConfig, sqlServer.Configuration.DefaultTraceEnabled);
+            AppendToList(serverConfig, sqlServer.Configuration.DisallowResultsFromTriggers);
+            AppendToList(serverConfig, sqlServer.Configuration.ExtensibleKeyManagementEnabled);
+            AppendToList(serverConfig, sqlServer.Configuration.FilestreamAccessLevel);
+            AppendToList(serverConfig, sqlServer.Configuration.FillFactor);
+            AppendToList(serverConfig, sqlServer.Configuration.IndexCreateMemory);
+            AppendToList(serverConfig, sqlServer.Configuration.InDoubtTransactionResolution);
+            AppendToList(serverConfig, sqlServer.Configuration.IsSqlClrEnabled);
+            AppendToList(serverConfig, sqlServer.Configuration.LightweightPooling);
+            AppendToList(serverConfig, sqlServer.Configuration.Locks);
+            AppendToList(serverConfig, sqlServer.Configuration.MaxDegreeOfParallelism);
+            AppendToList(serverConfig, sqlServer.Configuration.MaxServerMemory);
+            AppendToList(serverConfig, sqlServer.Configuration.MaxWorkerThreads);
+            AppendToList(serverConfig, sqlServer.Configuration.MediaRetention);
+            AppendToList(serverConfig, sqlServer.Configuration.MinMemoryPerQuery);
+            AppendToList(serverConfig, sqlServer.Configuration.MinServerMemory);
+            AppendToList(serverConfig, sqlServer.Configuration.NestedTriggers);
+            AppendToList(serverConfig, sqlServer.Configuration.NetworkPacketSize);
+            AppendToList(serverConfig, sqlServer.Configuration.OleAutomationProceduresEnabled);
+            AppendToList(serverConfig, sqlServer.Configuration.OpenObjects);
+            AppendToList(serverConfig, sqlServer.Configuration.OptimizeAdhocWorkloads);
+            AppendToList(serverConfig, sqlServer.Configuration.PrecomputeRank);
+            AppendToList(serverConfig, sqlServer.Configuration.PriorityBoost);
+            AppendToList(serverConfig, sqlServer.Configuration.ProtocolHandlerTimeout);
+            AppendToList(serverConfig, sqlServer.Configuration.QueryGovernorCostLimit);
+            AppendToList(serverConfig, sqlServer.Configuration.QueryWait);
+            AppendToList(serverConfig, sqlServer.Configuration.RecoveryInterval);
+            AppendToList(serverConfig, sqlServer.Configuration.RemoteAccess);
+            AppendToList(serverConfig, sqlServer.Configuration.RemoteDacConnectionsEnabled);
+            AppendToList(serverConfig, sqlServer.Configuration.RemoteLoginTimeout);
+            AppendToList(serverConfig, sqlServer.Configuration.RemoteProcTrans);
+            AppendToList(serverConfig, sqlServer.Configuration.RemoteQueryTimeout);
+            AppendToList(serverConfig, sqlServer.Configuration.ReplicationMaxTextSize);
+            AppendToList(serverConfig, sqlServer.Configuration.ReplicationXPsEnabled);
+            AppendToList(serverConfig, sqlServer.Configuration.ScanForStartupProcedures);
+            AppendToList(serverConfig, sqlServer.Configuration.ServerTriggerRecursionEnabled);
+            AppendToList(serverConfig, sqlServer.Configuration.SetWorkingSetSize);
+            AppendToList(serverConfig, sqlServer.Configuration.ShowAdvancedOptions);
+            AppendToList(serverConfig, sqlServer.Configuration.SmoAndDmoXPsEnabled);
+            AppendToList(serverConfig, sqlServer.Configuration.SqlMailXPsEnabled);
+            AppendToList(serverConfig, sqlServer.Configuration.TransformNoiseWords);
+            AppendToList(serverConfig, sqlServer.Configuration.TwoDigitYearCutoff);
+            AppendToList(serverConfig, sqlServer.Configuration.UserConnections);
+            AppendToList(serverConfig, sqlServer.Configuration.UserOptions);
+            AppendToList(serverConfig, sqlServer.Configuration.XPCmdShellEnabled);
+
+            WriteTextToFile(outputDirectoryPathCurrentServer, "ServerConfiguration", serverConfig, false, ".ini");
+        }
+
+        private void ExportSQLServerLogins(Server sqlServer, ScriptingOptions scriptOptions, DirectoryInfo outputDirectoryPathCurrentServer)
+        {
+            // Do not include a Try block in this Function; let the calling function handle errors
+            // Export the server logins
+            OnDebugEvent("Exporting SQL Server logins");
+
+            for (var index = 0; index <= sqlServer.Logins.Count - 1; index++)
+            {
+                var currentLogin = sqlServer.Logins[index].Name;
+                OnDebugEvent("Exporting login " + currentLogin);
+
+                var scriptInfo = CleanSqlScript(StringCollectionToList(sqlServer.Logins[index].Script(scriptOptions)), true, true);
+                var success = WriteTextToFile(outputDirectoryPathCurrentServer, ("Login_" + currentLogin), scriptInfo);
+
+                CheckPauseStatus();
+                if (mAbortProcessing)
+                {
+                    OnWarningEvent("Aborted processing");
+                    break;
+                }
+
+                if (success)
+                {
+                    OnDebugEvent("Processing completed for login " + currentLogin);
+                }
+                else
+                {
+                    SetLocalError(DBSchemaExporterBase.DBSchemaExportErrorCodes.GeneralError,
+                                  string.Format("Processing failed for server {0}; login {1}", mOptions.ServerName, currentLogin));
+                }
+
+            }
+
+        }
+
+        private void ExportSQLServerAgentJobs(Server sqlServer, ScriptingOptions scriptOptions, DirectoryInfo outputDirectoryPathCurrentServer)
+        {
+            // Do not include a Try block in this Function; let the calling function handle errors
+            // Export the SQL Server Agent jobs
+
+            OnStatusEvent("Exporting SQL Server Agent jobs");
+
+            for (var index = 0; index <= sqlServer.JobServer.Jobs.Count - 1; index++)
+            {
+                var currentJob = sqlServer.JobServer.Jobs[index].Name;
+
+                OnDebugEvent("Exporting job " + currentJob);
+                var scriptInfo = CleanSqlScript(StringCollectionToList(sqlServer.JobServer.Jobs[index].Script(scriptOptions)), true, true);
+                var success = WriteTextToFile(outputDirectoryPathCurrentServer, "AgentJob_" + currentJob, scriptInfo);
+
+                base.CheckPauseStatus();
+                if (mAbortProcessing)
+                {
+                    OnWarningEvent("Aborted processing");
+                    break;
+                }
+
+                if (success)
+                {
+                    OnDebugEvent("Processing completed for job " + currentJob);
+                }
+                else
+                {
+                    SetLocalError(DBSchemaExporterBase.DBSchemaExportErrorCodes.GeneralError,
+                                  string.Format("Processing failed for server {0}; job {1}", mOptions.ServerName, currentJob));
+                }
+
+            }
+
+        }
+
+        private ScriptingOptions GetDefaultScriptOptions()
+        {
+            var scriptOptions = new ScriptingOptions
+            {
+                // scriptOptions.Bindings = True
+                Default = true,
+                DriAll = true,
+                IncludeHeaders = true,
+                IncludeDatabaseContext = false,
+                IncludeIfNotExists = false,
+                Indexes = true,
+                NoCommandTerminator = false,
+                Permissions = true,
+                SchemaQualify = true,
+                Statistics = true,
+                Triggers = true,
+                ToFileOnly = false,
+                WithDependencies = false
+            };
+
+            return scriptOptions;
+        }
+
+        public IEnumerable<string> GetDatabaseTableNames(Database objDatabase)
+        {
+            // Step through the table names for this DB and compare to the RegEx values
+            var dtTables = objDatabase.EnumObjects(DatabaseObjectTypes.Table, Microsoft.SqlServer.Management.Smo.SortOrder.Name);
+
+            return (from DataRow item in dtTables.Rows select item["Name"].ToString());
+        }
+
+        /// <summary>
+        /// Determines the databases on the current server
+        /// </summary>
+        /// <returns>List of databases</returns>
+        public List<string> GetSqlServerDatabases()
+        {
+            try
+            {
+                InitializeLocalVariables();
+
+                if (!mConnectedToServer || mSqlServer == null || mSqlServer.State != SqlSmoState.Existing)
+                {
+                    mStatusMessage = "Not connected to a server";
+                    OnWarningEvent(string.Format("{0}; cannot retrieve the list of the server's databases", mStatusMessage));
+                    return new List<string>();
+                }
+
+                // Obtain a list of all databases actually residing on the server (according to the Master database)
+                OnStatusEvent("Obtaining list of databases on " + mCurrentServerInfo.ServerName);
+
+                var databaseNames = GetSqlServerDatabasesWork();
+                if (!mAbortProcessing)
+                {
+                    OnProgressUpdate("Done", 100);
+                }
+
+                return databaseNames;
+
+            }
+            catch (Exception ex)
+            {
+                SetLocalError(DBSchemaExporterBase.DBSchemaExportErrorCodes.DatabaseConnectionError, "Error obtaining list of databases on current server", ex);
+                return new List<string>();
+            }
+
+        }
+
+        private List<string> GetSqlServerDatabasesWork()
+        {
+            var databaseNames = new List<string>();
+            var objDatabases = mSqlServer.Databases;
+            if (objDatabases.Count <= 0)
+                return databaseNames;
+
+            for (var index = 0; index <= objDatabases.Count - 1; index++)
+            {
+                databaseNames.Add(objDatabases[index].Name);
+            }
+
+            databaseNames.Sort();
+
+            return databaseNames;
+        }
+
+        /// <summary>
+        /// Lookup the table names in the specified database, optionally also determining table row counts
+        /// </summary>
+        /// <param name="databaseName">Database to query</param>
+        /// <param name="includeTableRowCounts">When true, then determines the row count in each table</param>
+        /// <param name="includeSystemObjects">When true, then also returns system var tables</param>
+        /// <returns>Dictionary where key is table name and value is row counts (if includeTableRowCounts = true)</returns>
+        /// <remarks></remarks>
+        public Dictionary<string, long> GetSqlServerDatabaseTableNames(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
+        {
+            try
+            {
+                InitializeLocalVariables();
+                var dctTables = new Dictionary<string, long>();
+                if (databaseName == null)
+                {
+                    mStatusMessage = "Empty database name sent to GetSqlServerDatabaseTableNames";
+                    OnWarningEvent(mStatusMessage);
+                    return dctTables;
+                }
+
+                if (!mConnectedToServer || mSqlServer == null || mSqlServer.State != SqlSmoState.Existing)
+                {
+                    mStatusMessage = "Not connected to a server";
+                    OnWarningEvent(mStatusMessage);
+                    return dctTables;
+                }
+
+                if (!mSqlServer.Databases.Contains(databaseName))
+                {
+                    mStatusMessage = string.Format("Database {0} not found on sever {1}", databaseName, mCurrentServerInfo.ServerName);
+                    OnWarningEvent(mStatusMessage);
+                    return dctTables;
+                }
+
+                // Get the list of tables in this database
+                OnStatusEvent(string.Format("Obtaining list of tables in database {0} on server {1}",
+                                            databaseName, mCurrentServerInfo.ServerName));
+
+                // Connect to database databaseName
+                var objDatabase = mSqlServer.Databases[databaseName];
+
+                var objTables = objDatabase.Tables;
+                if (objTables.Count > 0)
+                {
+                    for (var index = 0; index <= objTables.Count - 1; index++)
+                    {
+                        if (includeSystemObjects || !objTables[index].IsSystemObject)
+                        {
+                            long tableRowCount = 0;
+                            if (includeTableRowCounts)
+                            {
+                                tableRowCount = objTables[index].RowCount;
+                            }
+
+                            dctTables.Add(objTables[index].Name, tableRowCount);
+
+                            if (mAbortProcessing)
+                            {
+                                OnWarningEvent("Aborted processing");
+                                break;
+                            }
+
+                        }
+
+                    }
+
+                }
+
+                return dctTables;
+            }
+            catch (Exception ex)
+            {
+                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError,
+                              string.Format("Error obtaining list of tables in database {0} on the current server", databaseName), ex);
+            }
+
+            return new Dictionary<string, long>();
+        }
+
+        private string GetTimeStamp()
+        {
+            // Return a timestamp in the form: 08/12/2006 23:01:20
+            return DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
+        }
+
+        private bool LoginToServerWork(out Server sqlServer)
+        {
+            // Returns True if success, False otherwise
+            try
+            {
+                var objConnectionInfo = new SqlConnectionInfo(mOptions.ServerName)
+                {
+                    ConnectionTimeout = 10
+                };
+
+                if (string.IsNullOrWhiteSpace(mOptions.DBUser))
+                {
+                    objConnectionInfo.UseIntegratedSecurity = true;
+                }
+                else
+                {
+                    objConnectionInfo.UseIntegratedSecurity = false;
+                    objConnectionInfo.UserName = mOptions.DBUser;
+                    objConnectionInfo.Password = mOptions.DBUserPassword;
+                }
+
+
+                var sqlServerConnection = new ServerConnection(objConnectionInfo);
+                sqlServer = new Server(sqlServerConnection);
+
+                // If no error occurred, set .Connected = True and duplicate the connection info
+                mConnectedToServer = true;
+                mCurrentServerInfo.UpdateInfo(mOptions);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error logging into server " + mOptions.ServerName, ex);
+                sqlServer = null;
+                return false;
+            }
+        }
+
+        private void ResetSqlServerConnection()
+        {
+            base.ResetServerConnection();
+        }
+
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="objSchemaCollection">IEnumerable of type SchemaCollectionBase</param>
+        /// <param name="scriptOptions">Script options</param>
+        /// <param name="processCountExpected">Expected number of items</param>
+        /// <param name="outputDirectory">Output directory</param>
+        /// <returns></returns>
+        private int ScriptCollectionOfObjects(
+            IEnumerable objSchemaCollection,
+            ScriptingOptions scriptOptions,
+            int processCountExpected,
+            DirectoryInfo outputDirectory)
+        {
+            // Scripts the objects in objSchemaCollection
+            // Returns the number of objects scripted
+            var processCount = 0;
+            foreach (Schema objItem in objSchemaCollection)
+            {
+                var scriptInfo = CleanSqlScript(StringCollectionToList(objItem.Script(scriptOptions)));
+
+                WriteTextToFile(outputDirectory, objItem.Name, scriptInfo);
+                processCount++;
+                CheckPauseStatus();
+
+                if (mAbortProcessing)
+                {
+                    OnWarningEvent("Aborted processing");
+                    return processCount;
+                }
+
+            }
+
+            return processCount;
+        }
+
+
+        private bool ScriptDBObjects(Server sqlServer, IReadOnlyCollection<string> databaseListToProcess, IReadOnlyCollection<string> tableNamesForDataExport)
+        {
+            var processedDBList = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            try
+            {
+                // Process each database in databaseListToProcess
+                OnStatusEvent("Exporting DB objects to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
+                SchemaOutputDirectories.Clear();
+
+                // Lookup the database names with the proper capitalization
+                OnProgressUpdate("Obtaining list of databases on " + mCurrentServerInfo.ServerName, 0);
+
+                var databaseNames = GetSqlServerDatabasesWork();
+
+                // Populate a dictionary where keys are lower case database names and values are the properly capitalized database names
+                var dctDatabasesOnServer = new Dictionary<string, string>();
+
+                foreach (var item in databaseNames)
+                {
+                    dctDatabasesOnServer.Add(item.ToLower(), item);
+                }
+
+                foreach (var item in databaseListToProcess)
+                {
+                    var currentDB = string.Copy(item);
+
+                    bool databaseNotFound;
+                    if (string.IsNullOrWhiteSpace(currentDB))
+                    {
+                        // DB name is empty; this shouldn't happen
+                        continue;
+                    }
+
+                    if (processedDBList.Contains(currentDB))
+                    {
+                        // DB has already been processed
+                        continue;
+                    }
+
+                    processedDBList.Add(currentDB);
+                    bool success;
+                    if (dctDatabasesOnServer.TryGetValue(currentDB.ToLower(), out var currentDbName))
+                    {
+                        currentDB = string.Copy(currentDbName);
+                        OnDebugEvent("Exporting objects from database " + currentDbName);
+                        success = ExportDBObjectsUsingSMO(sqlServer, currentDbName, tableNamesForDataExport, out databaseNotFound);
+                        if (!databaseNotFound)
+                        {
+                            if (!success)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Database not actually present on the server; skip it
+                        databaseNotFound = true;
+                        success = false;
+                    }
+
+                    var percentComplete = processedDBList.Count / (float)databaseListToProcess.Count * 100;
+
+                    OnProgressUpdate("Exporting objects from database " + currentDB, percentComplete);
+
+                    CheckPauseStatus();
+                    if (mAbortProcessing)
+                    {
+                        OnWarningEvent("Aborted processing");
+                        break;
+                    }
+
+                    if (success)
+                    {
+                        OnDebugEvent("Processing completed for database " + currentDB);
+                    }
+                    else
+                    {
+                        SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError,
+                                      string.Format("Database {0} not found on server {1}", currentDB, mOptions.ServerName));
+                    }
+
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                SetLocalError(DBSchemaExportErrorCodes.GeneralError,
+                              "Error exporting DB schema objects: " + mOptions.OutputDirectoryPath, ex);
+            }
+
+            return false;
+        }
+
+        private bool ScriptServerObjects(Server sqlServer)
+        {
+            // Export the Server Settings and Sql Server Agent jobs
+
+            var outputDirectoryPath = "??";
+
+            DirectoryInfo outputDirectoryPathCurrentServer;
+            var scriptOptions = GetDefaultScriptOptions();
+
+            try
+            {
+                // Construct the path to the output directory
+                outputDirectoryPath = Path.Combine(mOptions.OutputDirectoryPath, mOptions.ServerOutputDirectoryNamePrefix + sqlServer.Name);
+                outputDirectoryPathCurrentServer = new DirectoryInfo(outputDirectoryPath);
+
+                // Create the directory if it doesn't exist
+                if (!outputDirectoryPathCurrentServer.Exists && !mOptions.PreviewExport)
+                {
+                    outputDirectoryPathCurrentServer.Create();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                SetLocalError(DBSchemaExporterBase.DBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating or creating directory " + outputDirectoryPath, ex);
+                return false;
+            }
+
+            try
+            {
+                OnStatusEvent("Exporting Server objects to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
+                OnDebugEvent("Exporting server options");
+                // Export the overall server configuration and options (this is quite fast, so we won't increment mProgressStep after this)
+                ExportSQLServerConfiguration(sqlServer, scriptOptions, outputDirectoryPathCurrentServer);
+                if (mAbortProcessing)
+                {
+                    return false;
+                }
+
+                ExportSQLServerLogins(sqlServer, scriptOptions, outputDirectoryPathCurrentServer);
+
+                if (mAbortProcessing)
+                {
+                    return false;
+                }
+
+                ExportSQLServerAgentJobs(sqlServer, scriptOptions, outputDirectoryPathCurrentServer);
+
+                if (mAbortProcessing)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error scripting objects for server " + sqlServer.Name, ex);
+                return false;
+            }
+
+        }
+
+        /// <summary>
+        /// Scripts out the objects on the current server
+        /// </summary>
+        /// <param name="databaseList">Database names to export></param>
+        /// <param name="tableNamesForDataExport">Table names for which data should be exported</param>
+        /// <returns>True if success, false if a problem</returns>
+        public override bool ScriptServerAndDBObjects(List<string> databaseList, List<string> tableNamesForDataExport)
+        {
+            InitializeLocalVariables();
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(mOptions.ServerName))
+                {
+                    SetLocalError(DBSchemaExporterBase.DBSchemaExportErrorCodes.ConfigurationError, "Server name is not defined");
+                    return false;
+                }
+
+                if (databaseList == null || databaseList.Count == 0)
+                {
+                    if (mOptions.ScriptingOptions.ExportServerSettingsLoginsAndJobs)
+                    {
+                        // No databases are defined, but we are exporting server settings; this is OK
+                    }
+                    else
+                    {
+                        SetLocalError(DBSchemaExporterBase.DBSchemaExportErrorCodes.ConfigurationError, "Database list to process is empty");
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (databaseList.Count > 1)
+                    {
+                        // Force CreateDirectoryForEachDB to true
+                        mOptions.CreateDirectoryForEachDB = true;
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+                SetLocalError(DBSchemaExporterBase.DBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating the Schema Export Options", ex);
+                return false;
+            }
+
+            if (!base.ValidateOutputOptions())
+                return false;
+
+            OnStatusEvent("Exporting schema to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
+            OnDebugEvent("Connecting to " + mOptions.ServerName);
+
+            if (!ConnectToServer())
+            {
+                return false;
+            }
+
+            if (mOptions.ExportServerInfo)
+            {
+                var success = ScriptServerObjects(mSqlServer);
+                if (!success || mAbortProcessing)
+                {
+                    return false;
+                }
+            }
+
+            if (databaseList != null && databaseList.Count > 0)
+            {
+                var success = ScriptDBObjects(mSqlServer, databaseList, tableNamesForDataExport);
+                if (!success || mAbortProcessing)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+
+        }
+
+        private bool SqlServer2005OrNewer(Database currentDatabase)
+        {
+            return SqlServer2005OrNewer(currentDatabase.Parent);
+        }
+
+        private bool SqlServer2005OrNewer(Server currentServer)
+        {
+            return currentServer.Information.Version.Major >= 9;
+        }
+
+        private IEnumerable<string> StringCollectionToList(StringCollection items)
+        {
+            var scriptInfo = new List<string>();
+            foreach (var item in items)
+            {
+                scriptInfo.Add(item);
+            }
+
+            return scriptInfo;
+        }
+    }
+}
