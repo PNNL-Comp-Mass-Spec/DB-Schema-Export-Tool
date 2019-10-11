@@ -229,7 +229,7 @@ namespace DB_Schema_Export_Tool
                     OnStatusEvent("Ignoring date values in file " + baseFile.Name);
                     ignoreInsertIntoDates = true;
                 }
-                else if ((baseFile.Length != comparisonFile.Length))
+                else if (baseFile.Length != comparisonFile.Length)
                 {
                     differenceReason = DifferenceReasonType.Changed;
                     return true;
@@ -304,7 +304,7 @@ namespace DB_Schema_Export_Tool
                             //  Truncate each of the data lines at the first occurrence of a date
                             var matchBaseFile = mDateMatcher.Match(dataLine);
                             var matchComparisonFile = mDateMatcher.Match(comparisonLine);
-                            if ((matchBaseFile.Success && matchComparisonFile.Success))
+                            if (matchBaseFile.Success && matchComparisonFile.Success)
                             {
                                 dataLine = dataLine.Substring(0, matchBaseFile.Index);
                                 comparisonLine = comparisonLine.Substring(0, matchComparisonFile.Index);
@@ -564,7 +564,7 @@ namespace DB_Schema_Export_Tool
 
                     if (statusLine.StartsWith("fatal: Not a git repository"))
                     {
-                        OnErrorEvent(("Directory is not tracked by Git: " + targetDirectory.FullName));
+                        OnErrorEvent("Directory is not tracked by Git: " + targetDirectory.FullName);
                         return false;
                     }
 
@@ -629,13 +629,13 @@ namespace DB_Schema_Export_Tool
 
                     if (statusLine.StartsWith("svn: warning") && statusLine.Contains("is not a working copy"))
                     {
-                        OnErrorEvent(("Directory is not tracked by SVN: " + targetDirectory.FullName));
+                        OnErrorEvent("Directory is not tracked by SVN: " + targetDirectory.FullName);
                         return false;
                     }
 
                     if (statusLine.StartsWith("abort: no repository found in "))
                     {
-                        OnErrorEvent(("Directory is not tracked by Hg: " + targetDirectory.FullName));
+                        OnErrorEvent("Directory is not tracked by Hg: " + targetDirectory.FullName);
                         return false;
                     }
 
@@ -760,17 +760,17 @@ namespace DB_Schema_Export_Tool
                 programRunner.StartAndMonitorProgram();
 
                 //  Wait for it to exit
-                if ((maxRuntimeSeconds < 10))
+                if (maxRuntimeSeconds < 10)
                 {
                     maxRuntimeSeconds = 10;
                 }
 
                 //  Loop until program is complete, or until maxRuntimeSeconds seconds elapses
-                while ((programRunner.State != ProgRunner.States.NotMonitoring))
+                while (programRunner.State != ProgRunner.States.NotMonitoring)
                 {
                     System.Threading.Thread.Sleep(100);
                     var elapsedSeconds = DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds;
-                    if ((elapsedSeconds > maxRuntimeSeconds))
+                    if (elapsedSeconds > maxRuntimeSeconds)
                     {
                         OnErrorEvent(string.Format("Program execution has surpassed {0} seconds; aborting {1}", maxRuntimeSeconds, exePath));
 
@@ -826,15 +826,14 @@ namespace DB_Schema_Export_Tool
                 OnProgressUpdate("Synchronizing with " + directoryPathForSync, 0);
 
                 var intDBsProcessed = 0;
-                var includeDbNameInCommitMessage = (DatabaseNamesAndOutputPaths.Count > 1);
+                var includeDbNameInCommitMessage = DatabaseNamesAndOutputPaths.Count > 1;
                 foreach (var dbEntry in DatabaseNamesAndOutputPaths)
                 {
                     var databaseName = dbEntry.Key;
                     var schemaOutputDirectory = dbEntry.Value;
                     if (string.IsNullOrWhiteSpace(schemaOutputDirectory))
                     {
-                        OnErrorEvent(("Schema output directory was not reported for "
-                                        + (databaseName + "; unable to synchronize")));
+                        OnErrorEvent("Schema output directory was not reported for " + databaseName + "; unable to synchronize");
                         continue;
                     }
 
@@ -851,7 +850,7 @@ namespace DB_Schema_Export_Tool
                     var targetDirectory = new DirectoryInfo(targetDirectoryPath);
                     if (!diSourceDirectory.Exists)
                     {
-                        OnErrorEvent(("Source directory not found; cannot synchronize: " + diSourceDirectory.FullName));
+                        OnErrorEvent("Source directory not found; cannot synchronize: " + diSourceDirectory.FullName);
                         return false;
                     }
 
@@ -992,13 +991,13 @@ namespace DB_Schema_Export_Tool
                         toolName = "Git";
                         break;
                     default:
-                        OnErrorEvent(("Unsupported RepoManager type: " + repoManagerType));
+                        OnErrorEvent("Unsupported RepoManager type: " + repoManagerType);
                         return false;
                 }
 
                 if (!repoExe.Exists)
                 {
-                    OnErrorEvent(("Repo exe not found at " + repoExe.FullName));
+                    OnErrorEvent("Repo exe not found at " + repoExe.FullName);
                     OnStatusEvent(repoSource);
                     return false;
                 }
@@ -1204,7 +1203,7 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                OnErrorEvent(("Error in UpdateRepoChanges for tool " + toolName), ex);
+                OnErrorEvent("Error in UpdateRepoChanges for tool " + toolName, ex);
                 return false;
             }
 
