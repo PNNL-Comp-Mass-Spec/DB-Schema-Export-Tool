@@ -1281,6 +1281,8 @@ namespace DB_Schema_Export_Tool
 
         private void ExportSQLServerConfiguration(Server sqlServer, ScriptingOptions scriptOptions, DirectoryInfo outputDirectoryPathCurrentServer)
         {
+            OnProgressUpdate("Exporting server configuration info", 0);
+
             // Save SQL Server info to ServerInformation.ini
             ExportSQLServerInfoToIni(sqlServer, outputDirectoryPathCurrentServer);
 
@@ -1411,10 +1413,10 @@ namespace DB_Schema_Export_Tool
         private void ExportSQLServerLogins(Server sqlServer, ScriptingOptions scriptOptions, DirectoryInfo outputDirectoryPathCurrentServer)
         {
             // Do not include a Try block in this Function; let the calling function handle errors
-            // Export the server logins
-            OnDebugEvent("Exporting SQL Server logins");
 
-            for (var index = 0; index <= sqlServer.Logins.Count - 1; index++)
+            OnProgressUpdate("Exporting SQL Server logins", 0);
+
+            for (var index = 0; index < sqlServer.Logins.Count; index++)
             {
                 var currentLogin = sqlServer.Logins[index].Name;
                 OnDebugEvent("Exporting login " + currentLogin);
@@ -1446,9 +1448,8 @@ namespace DB_Schema_Export_Tool
         private void ExportSQLServerAgentJobs(Server sqlServer, ScriptingOptions scriptOptions, DirectoryInfo outputDirectoryPathCurrentServer)
         {
             // Do not include a Try block in this Function; let the calling function handle errors
-            // Export the SQL Server Agent jobs
 
-            OnStatusEvent("Exporting SQL Server Agent jobs");
+            OnProgressUpdate("Exporting SQL Server Agent jobs", 0);
 
             for (var index = 0; index < sqlServer.JobServer.Jobs.Count; index++)
             {
@@ -1599,9 +1600,10 @@ namespace DB_Schema_Export_Tool
                     return dctTables;
                 }
 
+
                 // Get the list of tables in this database
-                OnStatusEvent(string.Format("Obtaining list of tables in database {0} on server {1}",
-                                            databaseName, mCurrentServerInfo.ServerName));
+                OnDebugEvent(string.Format("Obtaining list of tables in database {0} on server {1}",
+                                           databaseName, mCurrentServerInfo.ServerName));
 
                 // Connect to database databaseName
                 var objDatabase = mSqlServer.Databases[databaseName];
@@ -1772,6 +1774,9 @@ namespace DB_Schema_Export_Tool
                         continue;
                     }
 
+                    var percentComplete = processedDBList.Count / (float)databaseListToProcess.Count * 100;
+                    OnProgressUpdate("Exporting objects from database " + currentDB, percentComplete);
+
                     processedDBList.Add(currentDB);
                     bool success;
                     if (dctDatabasesOnServer.TryGetValue(currentDB.ToLower(), out var currentDbName))
@@ -1793,10 +1798,6 @@ namespace DB_Schema_Export_Tool
                         databaseNotFound = true;
                         success = false;
                     }
-
-                    var percentComplete = processedDBList.Count / (float)databaseListToProcess.Count * 100;
-
-                    OnProgressUpdate("Exporting objects from database " + currentDB, percentComplete);
 
                     CheckPauseStatus();
                     if (mAbortProcessing)
@@ -1859,7 +1860,7 @@ namespace DB_Schema_Export_Tool
             try
             {
                 OnStatusEvent("Exporting Server objects to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
-                OnDebugEvent("Exporting server options");
+
                 // Export the overall server configuration and options (this is quite fast, so we won't increment mProgressStep after this)
                 ExportSQLServerConfiguration(sqlServer, scriptOptions, outputDirectoryPathCurrentServer);
                 if (mAbortProcessing)
@@ -1965,6 +1966,8 @@ namespace DB_Schema_Export_Tool
                     return false;
                 }
             }
+
+            OnProgressComplete();
 
             return true;
 

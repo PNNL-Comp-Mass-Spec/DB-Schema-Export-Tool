@@ -464,7 +464,7 @@ namespace DB_Schema_Export_Tool
                 {
                     Console.WriteLine();
                     OnStatusEvent("Table Data File not found; default tables will be used");
-                    OnWarningEvent(("File not found: " + dataFile.FullName));
+                    OnWarningEvent("File not found: " + dataFile.FullName);
                     return tableNames.ToList();
                 }
 
@@ -490,6 +490,36 @@ namespace DB_Schema_Export_Tool
             }
 
             return tableNames.ToList();
+        }
+
+        protected new void OnErrorEvent(string message)
+        {
+            base.OnErrorEvent(message);
+            StatusMessage = message;
+        }
+
+        protected new void OnErrorEvent(string message, Exception ex)
+        {
+            base.OnErrorEvent(message, ex);
+            if (ex != null && !message.Contains(ex.Message))
+            {
+                StatusMessage = message + ": " + ex.Message;
+            }
+            else
+            {
+                StatusMessage = message;
+            }
+        }
+
+        protected new void OnWarningEvent(string message)
+        {
+            base.OnWarningEvent(message);
+            StatusMessage = message;
+        }
+        protected new void OnStatusEvent(string message)
+        {
+            base.OnStatusEvent(message);
+            StatusMessage = message;
         }
 
         private bool ParseGitStatus(FileSystemInfo targetDirectory, string consoleOutput, out int modifiedFileCount)
@@ -759,7 +789,7 @@ namespace DB_Schema_Export_Tool
 
                 if (executionAborted)
                 {
-                    Console.WriteLine(("ProgramRunner was aborted for " + exePath));
+                    OnWarningEvent("ProgramRunner was aborted for " + exePath);
                     return true;
                 }
 
@@ -909,8 +939,8 @@ namespace DB_Schema_Export_Tool
 
                 if (mOptions.ShowStats)
                 {
-                    Console.WriteLine(("Synchronized schema files in "
-                                    + (DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds.ToString("0.0") + " seconds")));
+                    OnDebugEvent(string.Format(
+                                     "Synchronized schema files in {0:0.0} seconds", DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
                 }
 
                 return true;

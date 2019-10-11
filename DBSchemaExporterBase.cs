@@ -84,6 +84,8 @@ namespace DB_Schema_Export_Tool
 
         public event PauseStatusChangeHandler PauseStatusChange;
 
+        public event ProgressCompleteHandler ProgressComplete;
+
         /// <summary>
         /// Event is raised when we start exporting the objects from a database
         /// </summary>
@@ -91,6 +93,8 @@ namespace DB_Schema_Export_Tool
         public delegate void DBExportStartingHandler(string databaseName);
 
         public delegate void PauseStatusChangeHandler();
+
+        public delegate void ProgressCompleteHandler();
 
         #endregion
 
@@ -222,13 +226,19 @@ namespace DB_Schema_Export_Tool
             SchemaOutputDirectories.Clear();
         }
 
+        protected void OnDBExportStarting(string databaseName)
+        {
+            DBExportStarting?.Invoke(databaseName);
+        }
+
         private void OnPauseStatusChange()
         {
             PauseStatusChange?.Invoke();
         }
-        protected void OnDBExportStarting(string databaseName)
+
+        protected void OnProgressComplete()
         {
-            DBExportStarting?.Invoke(databaseName);
+            ProgressComplete?.Invoke();
         }
 
         protected string PossiblyQuoteColumnName(string strColumnName, bool quoteWithSquareBrackets)
