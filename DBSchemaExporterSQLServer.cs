@@ -128,7 +128,7 @@ namespace DB_Schema_Export_Tool
                 var connected = LoginToServerWork(out mSqlServer);
                 if (!connected)
                 {
-                    if (ErrorCode == DBSchemaExportErrorCodes.NoError || string.IsNullOrWhiteSpace(mStatusMessage))
+                    if (ErrorCode == DBSchemaExportErrorCodes.NoError)
                     {
                         SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error logging into the server: " + mOptions.ServerName);
                     }
@@ -1523,8 +1523,7 @@ namespace DB_Schema_Export_Tool
 
                 if (!mConnectedToServer || mSqlServer == null || mSqlServer.State != SqlSmoState.Existing)
                 {
-                    mStatusMessage = "Not connected to a server";
-                    OnWarningEvent(string.Format("{0}; cannot retrieve the list of the server's databases", mStatusMessage));
+                    OnWarningEvent("Not connected to a server; cannot retrieve the list of the server's databases");
                     return new List<string>();
                 }
 
@@ -1581,22 +1580,16 @@ namespace DB_Schema_Export_Tool
                 var dctTables = new Dictionary<string, long>();
                 if (databaseName == null)
                 {
-                    mStatusMessage = "Empty database name sent to GetSqlServerDatabaseTableNames";
-                    OnWarningEvent(mStatusMessage);
                     return dctTables;
                 }
 
                 if (!mConnectedToServer || mSqlServer == null || mSqlServer.State != SqlSmoState.Existing)
                 {
-                    mStatusMessage = "Not connected to a server";
-                    OnWarningEvent(mStatusMessage);
                     return dctTables;
                 }
 
                 if (!mSqlServer.Databases.Contains(databaseName))
                 {
-                    mStatusMessage = string.Format("Database {0} not found on sever {1}", databaseName, mCurrentServerInfo.ServerName);
-                    OnWarningEvent(mStatusMessage);
                     return dctTables;
                 }
 
