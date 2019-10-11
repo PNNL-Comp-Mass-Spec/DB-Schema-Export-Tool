@@ -71,7 +71,6 @@ namespace DB_Schema_Export_Tool
 
         protected readonly SchemaExportOptions mOptions;
 
-        protected PauseStatusConstants mPauseStatus;
 
         protected string mStatusMessage;
 
@@ -80,6 +79,8 @@ namespace DB_Schema_Export_Tool
         #region "Properties"
 
         public DBSchemaExportErrorCodes ErrorCode { get; private set; }
+
+        public PauseStatusConstants PauseStatus { get; protected set; }
 
         public Dictionary<string, string> SchemaOutputDirectories { get; }
 
@@ -202,12 +203,12 @@ namespace DB_Schema_Export_Tool
 
         protected void CheckPauseStatus()
         {
-            if (mPauseStatus == PauseStatusConstants.PauseRequested)
+            if (PauseStatus == PauseStatusConstants.PauseRequested)
             {
                 SetPauseStatus(PauseStatusConstants.Paused);
             }
 
-            while (mPauseStatus == PauseStatusConstants.Paused && !mAbortProcessing)
+            while (PauseStatus == PauseStatusConstants.Paused && !mAbortProcessing)
             {
                 Thread.Sleep(150);
             }
@@ -280,7 +281,7 @@ namespace DB_Schema_Export_Tool
         /// <remarks>Useful when the scripting is running in another thread</remarks>
         public void RequestPause()
         {
-            if (!(mPauseStatus == PauseStatusConstants.Paused || mPauseStatus == PauseStatusConstants.PauseRequested))
+            if (!(PauseStatus == PauseStatusConstants.Paused || PauseStatus == PauseStatusConstants.PauseRequested))
             {
                 SetPauseStatus(PauseStatusConstants.PauseRequested);
             }
@@ -293,7 +294,7 @@ namespace DB_Schema_Export_Tool
         /// <remarks>Useful when the scripting is running in another thread</remarks>
         public void RequestUnpause()
         {
-            if (!(mPauseStatus == PauseStatusConstants.Unpaused || mPauseStatus == PauseStatusConstants.UnpauseRequested))
+            if (!(PauseStatus == PauseStatusConstants.Unpaused || PauseStatus == PauseStatusConstants.UnpauseRequested))
             {
                 SetPauseStatus(PauseStatusConstants.UnpauseRequested);
             }
@@ -331,7 +332,7 @@ namespace DB_Schema_Export_Tool
 
         private void SetPauseStatus(PauseStatusConstants newPauseStatus)
         {
-            mPauseStatus = newPauseStatus;
+            PauseStatus = newPauseStatus;
             OnPauseStatusChange();
         }
 
@@ -351,7 +352,6 @@ namespace DB_Schema_Export_Tool
             {
                 TableNamesToAutoSelect.Add(item);
             }
-
         }
 
         /// <summary>
@@ -360,11 +360,11 @@ namespace DB_Schema_Export_Tool
         /// <remarks>Useful when the scripting is running in another thread</remarks>
         public void TogglePause()
         {
-            if (mPauseStatus == PauseStatusConstants.Unpaused)
+            if (PauseStatus == PauseStatusConstants.Unpaused)
             {
                 SetPauseStatus(PauseStatusConstants.PauseRequested);
             }
-            else if (mPauseStatus == PauseStatusConstants.Paused)
+            else if (PauseStatus == PauseStatusConstants.Paused)
             {
                 SetPauseStatus(PauseStatusConstants.UnpauseRequested);
             }
