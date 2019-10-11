@@ -836,35 +836,36 @@ namespace DB_Schema_Export_Tool
                         var objColumn = dsCurrentTable.Tables[0].Columns[columnIndex];
 
                         // Initially assume the column's data type is numeric
-                        var eDataColumnType = DataColumnTypeConstants.Numeric;
+                        var dataColumnType = DataColumnTypeConstants.Numeric;
+
                         // Now check for other data types
                         if (objColumn.DataType == Type.GetType("System.String"))
                         {
-                            eDataColumnType = DataColumnTypeConstants.Text;
+                            dataColumnType = DataColumnTypeConstants.Text;
                         }
                         else if (objColumn.DataType == Type.GetType("System.DateTime"))
                         {
                             // Date column
-                            eDataColumnType = DataColumnTypeConstants.DateTime;
+                            dataColumnType = DataColumnTypeConstants.DateTime;
                         }
                         else if (objColumn.DataType == Type.GetType("System.Byte[]"))
                         {
                             switch (objColumn.DataType?.Name)
                             {
                                 case "image":
-                                    eDataColumnType = DataColumnTypeConstants.ImageObject;
+                                    dataColumnType = DataColumnTypeConstants.ImageObject;
                                     break;
                                 case "timestamp":
-                                    eDataColumnType = DataColumnTypeConstants.BinaryArray;
+                                    dataColumnType = DataColumnTypeConstants.BinaryArray;
                                     break;
                                 default:
-                                    eDataColumnType = DataColumnTypeConstants.BinaryArray;
+                                    dataColumnType = DataColumnTypeConstants.BinaryArray;
                                     break;
                             }
                         }
                         else if (objColumn.DataType == Type.GetType("System.Guid"))
                         {
-                            eDataColumnType = DataColumnTypeConstants.GUID;
+                            dataColumnType = DataColumnTypeConstants.GUID;
                         }
                         else if (objColumn.DataType == Type.GetType("System.Boolean"))
                         {
@@ -873,10 +874,10 @@ namespace DB_Schema_Export_Tool
                             {
                                 case "binary":
                                 case "bit":
-                                    eDataColumnType = DataColumnTypeConstants.BinaryByte;
+                                    dataColumnType = DataColumnTypeConstants.BinaryByte;
                                     break;
                                 default:
-                                    eDataColumnType = DataColumnTypeConstants.Text;
+                                    dataColumnType = DataColumnTypeConstants.Text;
                                     break;
                             }
                         }
@@ -885,15 +886,15 @@ namespace DB_Schema_Export_Tool
                             switch (objColumn.DataType?.Name)
                             {
                                 case "sql_variant":
-                                    eDataColumnType = DataColumnTypeConstants.SqlVariant;
+                                    dataColumnType = DataColumnTypeConstants.SqlVariant;
                                     break;
                                 default:
-                                    eDataColumnType = DataColumnTypeConstants.GeneralObject;
+                                    dataColumnType = DataColumnTypeConstants.GeneralObject;
                                     break;
                             }
                         }
 
-                        lstColumnTypes.Add(eDataColumnType);
+                        lstColumnTypes.Add(dataColumnType);
                         if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
                         {
                             sbCurrentRow.Append(PossiblyQuoteColumnName(objColumn.ColumnName, true));
