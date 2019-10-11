@@ -6,10 +6,6 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using DB_Schema_Export_Tool;
 using Microsoft.SqlServer.Management.Common;
 using Microsoft.SqlServer.Management.Smo;
 using PRISM;
@@ -225,7 +221,7 @@ namespace DB_Schema_Export_Tool
                 }
 
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError,
                               "Error validating or creating directory " + workingParams.OutputDirectoryPathCurrentDB);
@@ -421,13 +417,14 @@ namespace DB_Schema_Export_Tool
 
         private void ExportDBTables(Database objDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
+            // ReSharper disable once StringLiteralTypo
             const string SYNC_OBJ_TABLE_PREFIX = "syncobj_0x";
 
             if (workingParams.CountObjectsOnly)
             {
                 // Note: objDatabase.Tables includes system tables, so workingParams.ProcessCount will be
                 //       an overestimate if mOptions.ScriptingOptions.IncludeSystemObjects = False
-                workingParams.ProcessCount +=  objDatabase.Tables.Count;
+                workingParams.ProcessCount += objDatabase.Tables.Count;
             }
             else
             {
@@ -738,7 +735,7 @@ namespace DB_Schema_Export_Tool
 
                         if (smoObject != null)
                         {
-                            var smoObjectArray = new SqlSmoObject[] { smoObject };
+                            var smoObjectArray = new[] { smoObject };
 
                             var scriptInfo = CleanSqlScript(StringCollectionToList(objScripter.Script(smoObjectArray)));
                             WriteTextToFile(workingParams.OutputDirectory, objectName, scriptInfo);
@@ -757,7 +754,7 @@ namespace DB_Schema_Export_Tool
                     if (mOptions.ShowStats)
                     {
                         OnDebugEvent(string.Format(
-                                         "Exported {0} {1} in {1:0.0} seconds",
+                                         "Exported {0} {1} in {2:0.0} seconds",
                                          dsObjects.Tables[0].Rows.Count, objectType, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
                     }
 
@@ -930,7 +927,7 @@ namespace DB_Schema_Export_Tool
                         // 'End Select
                         if (identityColumnFound)
                         {
-                            insertIntoLine = string.Format("INSERT INTO [{0}] ({1}) VALUES (", objTable.Name, sbCurrentRow.ToString());
+                            insertIntoLine = string.Format("INSERT INTO [{0}] ({1}) VALUES (", objTable.Name, sbCurrentRow);
 
                             lstTableRows.Add("SET IDENTITY_INSERT [" + objTable.Name + "] ON");
                         }
@@ -975,7 +972,7 @@ namespace DB_Schema_Export_Tool
                                     }
                                     else
                                     {
-                                        sbCurrentRow.Append(objRow[columnIndex].ToString());
+                                        sbCurrentRow.Append(objRow[columnIndex]);
                                     }
                                     break;
 
@@ -1012,7 +1009,7 @@ namespace DB_Schema_Export_Tool
                                     {
                                         sbCurrentRow.Append(("0x" + Convert.ToByte(objRow[columnIndex]).ToString("X2")));
                                     }
-                                    catch (Exception ex)
+                                    catch (Exception)
                                     {
                                         sbCurrentRow.Append("[Byte]");
                                     }
@@ -1086,7 +1083,7 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExporterBase.DBSchemaExportErrorCodes.DatabaseConnectionError, "Error in ExportDBTableData", ex);
+                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error in ExportDBTableData", ex);
                 return false;
             }
         }
@@ -1438,7 +1435,7 @@ namespace DB_Schema_Export_Tool
                 }
                 else
                 {
-                    SetLocalError(DBSchemaExporterBase.DBSchemaExportErrorCodes.GeneralError,
+                    SetLocalError(DBSchemaExportErrorCodes.GeneralError,
                                   string.Format("Processing failed for server {0}; login {1}", mOptions.ServerName, currentLogin));
                 }
 
@@ -1461,7 +1458,7 @@ namespace DB_Schema_Export_Tool
                 var scriptInfo = CleanSqlScript(StringCollectionToList(sqlServer.JobServer.Jobs[index].Script(scriptOptions)), true, true);
                 var success = WriteTextToFile(outputDirectoryPathCurrentServer, "AgentJob_" + currentJob, scriptInfo);
 
-                base.CheckPauseStatus();
+                CheckPauseStatus();
                 if (mAbortProcessing)
                 {
                     OnWarningEvent("Aborted processing");
@@ -1474,7 +1471,7 @@ namespace DB_Schema_Export_Tool
                 }
                 else
                 {
-                    SetLocalError(DBSchemaExporterBase.DBSchemaExportErrorCodes.GeneralError,
+                    SetLocalError(DBSchemaExportErrorCodes.GeneralError,
                                   string.Format("Processing failed for server {0}; job {1}", mOptions.ServerName, currentJob));
                 }
 
@@ -1508,7 +1505,7 @@ namespace DB_Schema_Export_Tool
         public IEnumerable<string> GetDatabaseTableNames(Database objDatabase)
         {
             // Step through the table names for this DB and compare to the RegEx values
-            var dtTables = objDatabase.EnumObjects(DatabaseObjectTypes.Table, Microsoft.SqlServer.Management.Smo.SortOrder.Name);
+            var dtTables = objDatabase.EnumObjects(DatabaseObjectTypes.Table, SortOrder.Name);
 
             return (from DataRow item in dtTables.Rows select item["Name"].ToString());
         }
@@ -1544,7 +1541,7 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExporterBase.DBSchemaExportErrorCodes.DatabaseConnectionError, "Error obtaining list of databases on current server", ex);
+                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error obtaining list of databases on current server", ex);
                 return new List<string>();
             }
 
