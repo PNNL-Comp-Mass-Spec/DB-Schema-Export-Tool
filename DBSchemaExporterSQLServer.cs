@@ -1285,10 +1285,10 @@ namespace DB_Schema_Export_Tool
         private void ExportSQLServerConfiguration(Server sqlServer, ScriptingOptions scriptOptions, DirectoryInfo outputDirectoryPathCurrentServer)
         {
             // Save SQL Server info to ServerInformation.ini
-            ExportSQLServerInfoToIni(sqlServer, scriptOptions, outputDirectoryPathCurrentServer);
+            ExportSQLServerInfoToIni(sqlServer, outputDirectoryPathCurrentServer);
 
             // Save the SQL Server configuration info to ServerConfiguration.ini
-            ExportSQLServerConfigToIni(sqlServer, scriptOptions, outputDirectoryPathCurrentServer);
+            ExportSQLServerConfigToIni(sqlServer, outputDirectoryPathCurrentServer);
 
             // Save the Mail settings to file ServerMail.sql
             // Can only do this for SQL Server 2005 or newer
@@ -1306,7 +1306,7 @@ namespace DB_Schema_Export_Tool
             WriteTextToFile(outputDirectoryPathCurrentServer, "ServerRegistrySettings", cleanedServerSettings, false);
         }
 
-        private void ExportSQLServerInfoToIni(Server sqlServer, ScriptingOptions scriptOptions, DirectoryInfo outputDirectoryPathCurrentServer)
+        private void ExportSQLServerInfoToIni(Server sqlServer, DirectoryInfo outputDirectoryPathCurrentServer)
         {
             var serverInfo = new List<string>
                 {
@@ -1338,7 +1338,7 @@ namespace DB_Schema_Export_Tool
             WriteTextToFile(outputDirectoryPathCurrentServer, "ServerInformation", serverInfo, false, ".ini");
         }
 
-        private void ExportSQLServerConfigToIni(Server sqlServer, ScriptingOptions scriptOptions, DirectoryInfo outputDirectoryPathCurrentServer)
+        private void ExportSQLServerConfigToIni(Server sqlServer, DirectoryInfo outputDirectoryPathCurrentServer)
         {
             var serverConfig = new List<string>
                 {
