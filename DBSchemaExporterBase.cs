@@ -121,7 +121,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="tableNamesInDatabase">Tables in the database</param>
         /// <param name="tableNamesForDataExport">Table names that should be auto-selected</param>
         /// <returns>Dictionary where keys are table names and values are the maximum number of rows to export</returns>
-        protected Dictionary<string, int> AutoSelectTableNamesForDataExport(
+        protected Dictionary<string, long> AutoSelectTableNamesForDataExport(
             IEnumerable<string> tableNamesInDatabase,
             IEnumerable<string> tableNamesForDataExport)
         {
@@ -130,7 +130,7 @@ namespace DB_Schema_Export_Tool
                 OnDebugEvent("Auto-selecting tables to export data from");
 
                 //  Tracks the table names and maximum number of data rows to export (0 means all rows)
-                var tablesToExport = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                var tablesToExport = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
 
                 //  Copy the table names from tableNamesForDataExport to dctTablesNames
                 //  Store 0 for the hash value since we want to export all of the data rows from the tables in tableNamesForDataExport
@@ -184,7 +184,7 @@ namespace DB_Schema_Export_Tool
             catch (Exception ex)
             {
                 SetLocalError(DBSchemaExportErrorCodes.ConfigurationError, "Error in AutoSelectTableNamesForDataExport", ex);
-                return new Dictionary<string, int>();
+                return new Dictionary<string, long>();
             }
         }
 

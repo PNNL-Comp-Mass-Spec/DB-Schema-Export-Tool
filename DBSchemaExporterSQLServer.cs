@@ -92,7 +92,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="objDatabase">SQL Server database</param>
         /// <param name="tableNamesForDataExport">Table names that should be auto-selected</param>
         /// <returns>Dictionary where keys are table names and values are the maximum number of rows to export</returns>
-        private Dictionary<string, int> AutoSelectTableNamesForDataExport(
+        private Dictionary<string, long> AutoSelectTableNamesForDataExport(
             Database objDatabase,
             IEnumerable<string> tableNamesForDataExport)
         {
@@ -159,7 +159,7 @@ namespace DB_Schema_Export_Tool
 
             // Keys are table names to export
             // Values are the maximum number of rows to export
-            Dictionary<string, int> tablesToExport;
+            Dictionary<string, long> tablesToExport;
 
             OnDBExportStarting(databaseName);
 
@@ -212,7 +212,7 @@ namespace DB_Schema_Export_Tool
                 }
                 else
                 {
-                    tablesToExport = new Dictionary<string, int>();
+                    tablesToExport = new Dictionary<string, long>();
                     foreach (var tableName in tableNamesForDataExport)
                     {
                         tablesToExport.Add(tableName, 0);
@@ -763,7 +763,7 @@ namespace DB_Schema_Export_Tool
             }
         }
 
-        private bool ExportDBTableData(Database objDatabase, Dictionary<string, int> tablesToExport, WorkingParams workingParams)
+        private bool ExportDBTableData(Database objDatabase, Dictionary<string, long> tablesToExport, WorkingParams workingParams)
         {
             try
             {
@@ -1639,9 +1639,9 @@ namespace DB_Schema_Export_Tool
             {
                 SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError,
                               string.Format("Error obtaining list of tables in database {0} on the current server", databaseName), ex);
-            }
 
-            return new Dictionary<string, long>();
+                return new Dictionary<string, long>();
+            }
         }
 
         private string GetTimeStamp()
