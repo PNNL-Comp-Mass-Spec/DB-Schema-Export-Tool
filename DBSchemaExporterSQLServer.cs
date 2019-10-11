@@ -337,7 +337,7 @@ namespace DB_Schema_Export_Tool
                 workingParams.ProcessCount++;
                 if (SqlServer2005OrNewer(objDatabase))
                 {
-                    for (var index = 0; index <= objDatabase.Schemas.Count - 1; index++)
+                    for (var index = 0; index < objDatabase.Schemas.Count; index++)
                     {
                         if (ExportSchema(objDatabase.Schemas[index]))
                         {
@@ -348,7 +348,7 @@ namespace DB_Schema_Export_Tool
 
                 }
 
-                for (var index = 0; index <= objDatabase.Roles.Count - 1; index++)
+                for (var index = 0; index < objDatabase.Roles.Count; index++)
                 {
                     if (ExportRole(objDatabase.Roles[index]))
                     {
@@ -374,7 +374,7 @@ namespace DB_Schema_Export_Tool
             workingParams.ProcessCount++;
             if (SqlServer2005OrNewer(objDatabase))
             {
-                for (var index = 0; index <= objDatabase.Schemas.Count - 1; index++)
+                for (var index = 0; index < objDatabase.Schemas.Count; index++)
                 {
                     if (ExportSchema(objDatabase.Schemas[index]))
                     {
@@ -831,7 +831,7 @@ namespace DB_Schema_Export_Tool
                     var lstColumnTypes = new List<DataColumnTypeConstants>();
                     sbCurrentRow.Clear();
 
-                    for (var columnIndex = 0; columnIndex <= columnCount - 1; columnIndex++)
+                    for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
                     {
                         var objColumn = dsCurrentTable.Tables[0].Columns[columnIndex];
 
@@ -956,7 +956,7 @@ namespace DB_Schema_Export_Tool
                             sbCurrentRow.Append(insertIntoLine);
                         }
 
-                        for (var columnIndex = 0; columnIndex <= columnCount - 1; columnIndex++)
+                        for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
                         {
                             switch (lstColumnTypes[columnIndex])
                             {
@@ -983,14 +983,13 @@ namespace DB_Schema_Export_Tool
                                         var bytData = (byte[])(Array)objRow[columnIndex];
                                         sbCurrentRow.Append("0x");
                                         var dataFound = false;
-                                        for (var byteIndex = 0; byteIndex <= bytData.Length - 1; byteIndex++)
+                                        foreach (var value in bytData)
                                         {
-                                            if (dataFound || bytData[byteIndex] != 0)
+                                            if (dataFound || value != 0)
                                             {
                                                 dataFound = true;
-                                                sbCurrentRow.Append(bytData[byteIndex].ToString("X2"));
+                                                sbCurrentRow.Append(value.ToString("X2"));
                                             }
-
                                         }
 
                                         if (!dataFound)
@@ -1451,7 +1450,7 @@ namespace DB_Schema_Export_Tool
 
             OnStatusEvent("Exporting SQL Server Agent jobs");
 
-            for (var index = 0; index <= sqlServer.JobServer.Jobs.Count - 1; index++)
+            for (var index = 0; index < sqlServer.JobServer.Jobs.Count; index++)
             {
                 var currentJob = sqlServer.JobServer.Jobs[index].Name;
 
@@ -1555,7 +1554,7 @@ namespace DB_Schema_Export_Tool
             if (objDatabases.Count <= 0)
                 return databaseNames;
 
-            for (var index = 0; index <= objDatabases.Count - 1; index++)
+            for (var index = 0; index < objDatabases.Count; index++)
             {
                 databaseNames.Add(objDatabases[index].Name);
             }

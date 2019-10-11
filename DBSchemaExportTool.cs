@@ -278,7 +278,7 @@ namespace DB_Schema_Export_Tool
                             if (lstSourceCols.Count == lstComparisonCols.Count)
                             {
                                 linesMatch = true;
-                                for (var dataColumnIndex = 0; dataColumnIndex <= lstSourceCols.Count - 1; dataColumnIndex++)
+                                for (var dataColumnIndex = 0; dataColumnIndex < lstSourceCols.Count; dataColumnIndex++)
                                 {
                                     var sourceValue = lstSourceCols[dataColumnIndex].Trim();
                                     var comparisonValue = lstComparisonCols[dataColumnIndex].Trim();
