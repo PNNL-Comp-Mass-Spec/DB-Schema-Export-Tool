@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.SqlServer.Management.SqlParser.MetadataProvider;
+
 using PRISM;
 
 namespace DB_Schema_Export_Tool
@@ -34,13 +32,6 @@ namespace DB_Schema_Export_Tool
             PauseRequested = 1,
             Paused = 2,
             UnpauseRequested = 3,
-        }
-
-        public enum MessageTypeConstants : short
-        {
-            Normal = 0,
-            HeaderLine = 1,
-            ErrorMessage = 2,
         }
 
         public enum SchemaObjectTypeConstants
@@ -71,9 +62,6 @@ namespace DB_Schema_Export_Tool
 
         protected readonly SchemaExportOptions mOptions;
 
-
-        protected string mStatusMessage;
-
         #endregion
 
         #region "Properties"
@@ -91,7 +79,6 @@ namespace DB_Schema_Export_Tool
         #endregion
 
         #region "Events"
-
 
         public event DBExportStartingHandler DBExportStarting;
 
@@ -231,10 +218,6 @@ namespace DB_Schema_Export_Tool
             mAbortProcessing = false;
 
             ErrorCode = DBSchemaExportErrorCodes.NoError;
-            mStatusMessage = string.Empty;
-
-            mConnectedToServer = false;
-            mCurrentServerInfo = new ServerConnectionInfo(string.Empty, true);
 
             SchemaOutputDirectories.Clear();
         }
@@ -319,9 +302,7 @@ namespace DB_Schema_Export_Tool
             try
             {
                 ErrorCode = eErrorCode;
-                mStatusMessage = string.IsNullOrWhiteSpace(message) ? string.Empty : message;
-
-                OnErrorEvent(mStatusMessage, ex);
+                OnErrorEvent(message, ex);
             }
             catch (Exception)
             {
