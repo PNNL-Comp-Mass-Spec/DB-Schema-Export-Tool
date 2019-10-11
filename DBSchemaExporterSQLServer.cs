@@ -304,7 +304,7 @@ namespace DB_Schema_Export_Tool
                 mOptions.ScriptingOptions.ExportStoredProcedures ||
                 mOptions.ScriptingOptions.ExportSynonyms)
             {
-                ExportDBViewsProcsAndUDFs(objDatabase, scriptOptions, workingParams);
+                ExportDBViewsProceduresAndUDFs(objDatabase, scriptOptions, workingParams);
                 if (mAbortProcessing)
                 {
                     return;
@@ -530,7 +530,7 @@ namespace DB_Schema_Export_Tool
 
         }
 
-        private void ExportDBViewsProcsAndUDFs(Database objDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
+        private void ExportDBViewsProceduresAndUDFs(Database objDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
             // Option 1) obtain the list of views, stored procedures, and UDFs is to use objDatabase.EnumObjects
             // However, this only returns the var name, type, and URN, not whether or not it is a system var
