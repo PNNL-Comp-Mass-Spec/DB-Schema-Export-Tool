@@ -41,6 +41,18 @@ namespace DB_Schema_Export_Tool
             Error = 3
         }
 
+        public enum SchemaObjectTypeConstants
+        {
+            SchemasAndRoles = 0,
+            Tables = 1,
+            Views = 2,
+            StoredProcedures = 3,
+            UserDefinedFunctions = 4,
+            UserDefinedDataTypes = 5,
+            UserDefinedTypes = 6,
+            Synonyms = 7,
+        }
+
         #endregion
 
         #region "Classwide variables"
@@ -733,14 +745,14 @@ namespace DB_Schema_Export_Tool
                 cboTableNamesToExportSortOrder.SelectedIndex = (int)TableNameSortModeConstants.RowCount;
 
                 lstObjectTypesToScript.Items.Clear();
-                lstObjectTypesToScript.Items.Insert((int)DBSchemaExporterBase.SchemaObjectTypeConstants.SchemasAndRoles, "Schemas and Roles");
-                lstObjectTypesToScript.Items.Insert((int)DBSchemaExporterBase.SchemaObjectTypeConstants.Tables, "Tables");
-                lstObjectTypesToScript.Items.Insert((int)DBSchemaExporterBase.SchemaObjectTypeConstants.Views, "Views");
-                lstObjectTypesToScript.Items.Insert((int)DBSchemaExporterBase.SchemaObjectTypeConstants.StoredProcedures, "Stored Procedures");
-                lstObjectTypesToScript.Items.Insert((int)DBSchemaExporterBase.SchemaObjectTypeConstants.UserDefinedFunctions, "User Defined Functions");
-                lstObjectTypesToScript.Items.Insert((int)DBSchemaExporterBase.SchemaObjectTypeConstants.UserDefinedDataTypes, "User Defined Data Types");
-                lstObjectTypesToScript.Items.Insert((int)DBSchemaExporterBase.SchemaObjectTypeConstants.UserDefinedTypes, "User Defined Types");
-                lstObjectTypesToScript.Items.Insert((int)DBSchemaExporterBase.SchemaObjectTypeConstants.Synonyms, "Synonyms");
+                lstObjectTypesToScript.Items.Insert((int)SchemaObjectTypeConstants.SchemasAndRoles, "Schemas and Roles");
+                lstObjectTypesToScript.Items.Insert((int)SchemaObjectTypeConstants.Tables, "Tables");
+                lstObjectTypesToScript.Items.Insert((int)SchemaObjectTypeConstants.Views, "Views");
+                lstObjectTypesToScript.Items.Insert((int)SchemaObjectTypeConstants.StoredProcedures, "Stored Procedures");
+                lstObjectTypesToScript.Items.Insert((int)SchemaObjectTypeConstants.UserDefinedFunctions, "User Defined Functions");
+                lstObjectTypesToScript.Items.Insert((int)SchemaObjectTypeConstants.UserDefinedDataTypes, "User Defined Data Types");
+                lstObjectTypesToScript.Items.Insert((int)SchemaObjectTypeConstants.UserDefinedTypes, "User Defined Types");
+                lstObjectTypesToScript.Items.Insert((int)SchemaObjectTypeConstants.Synonyms, "Synonyms");
 
                 // Auto-select all of the options
                 int index;
@@ -1298,30 +1310,30 @@ namespace DB_Schema_Export_Tool
             for (var index = 0; index < lstObjectTypesToScript.Items.Count; index++)
             {
                 var selected = lstObjectTypesToScript.GetSelected(index);
-                switch ((DBSchemaExporterBase.SchemaObjectTypeConstants)index)
+                switch ((SchemaObjectTypeConstants)index)
                 {
-                    case DBSchemaExporterBase.SchemaObjectTypeConstants.SchemasAndRoles:
+                    case SchemaObjectTypeConstants.SchemasAndRoles:
                         mSchemaExportOptions.ScriptingOptions.ExportDBSchemasAndRoles = selected;
                         break;
-                    case DBSchemaExporterBase.SchemaObjectTypeConstants.Tables:
+                    case SchemaObjectTypeConstants.Tables:
                         mSchemaExportOptions.ScriptingOptions.ExportTables = selected;
                         break;
-                    case DBSchemaExporterBase.SchemaObjectTypeConstants.Views:
+                    case SchemaObjectTypeConstants.Views:
                         mSchemaExportOptions.ScriptingOptions.ExportViews = selected;
                         break;
-                    case DBSchemaExporterBase.SchemaObjectTypeConstants.StoredProcedures:
+                    case SchemaObjectTypeConstants.StoredProcedures:
                         mSchemaExportOptions.ScriptingOptions.ExportStoredProcedures = selected;
                         break;
-                    case DBSchemaExporterBase.SchemaObjectTypeConstants.UserDefinedFunctions:
+                    case SchemaObjectTypeConstants.UserDefinedFunctions:
                         mSchemaExportOptions.ScriptingOptions.ExportUserDefinedFunctions = selected;
                         break;
-                    case DBSchemaExporterBase.SchemaObjectTypeConstants.UserDefinedDataTypes:
+                    case SchemaObjectTypeConstants.UserDefinedDataTypes:
                         mSchemaExportOptions.ScriptingOptions.ExportUserDefinedDataTypes = selected;
                         break;
-                    case DBSchemaExporterBase.SchemaObjectTypeConstants.UserDefinedTypes:
+                    case SchemaObjectTypeConstants.UserDefinedTypes:
                         mSchemaExportOptions.ScriptingOptions.ExportUserDefinedTypes = selected;
                         break;
-                    case DBSchemaExporterBase.SchemaObjectTypeConstants.Synonyms:
+                    case SchemaObjectTypeConstants.Synonyms:
                         mSchemaExportOptions.ScriptingOptions.ExportSynonyms = selected;
                         break;
                 }

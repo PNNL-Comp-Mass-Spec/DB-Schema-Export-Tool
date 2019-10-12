@@ -34,18 +34,6 @@ namespace DB_Schema_Export_Tool
             UnpauseRequested = 3,
         }
 
-        public enum SchemaObjectTypeConstants
-        {
-            SchemasAndRoles = 0,
-            Tables = 1,
-            Views = 2,
-            StoredProcedures = 3,
-            UserDefinedFunctions = 4,
-            UserDefinedDataTypes = 5,
-            UserDefinedTypes = 6,
-            Synonyms = 7,
-        }
-
         #endregion
 
         #region "Classwide Variables"
@@ -174,7 +162,6 @@ namespace DB_Schema_Export_Tool
                             tablesToExport.Add(tableName, DATA_ROW_COUNT_WARNING_THRESHOLD);
                         }
                     }
-
                 }
 
                 const RegexOptions objRegExOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline;
@@ -491,6 +478,5 @@ namespace DB_Schema_Export_Tool
 
             return true;
         }
-
     }
 }
