@@ -284,65 +284,66 @@ namespace DB_Schema_Export_Tool
         public void OutputSetOptions()
         {
             Console.WriteLine("Options:");
+            Console.WriteLine();
 
-            Console.WriteLine(" Output directory path: {0}", OutputDirectoryPath);
+            Console.WriteLine(" {0,-48} {1}", "Output directory path:", OutputDirectoryPath);
 
-            Console.WriteLine(" Server: {0}", ServerName);
+            Console.WriteLine(" {0,-48} {1}", "Server:", ServerName);
 
             if (!PostgreSQL)
             {
-                Console.WriteLine(" Server type:   Microsoft SQL Server");
+                Console.WriteLine(" {0,-48} {1}", "Server type:", "Microsoft SQL Server");
                 if (string.IsNullOrWhiteSpace(DBUser))
                 {
-                    Console.WriteLine(" Database user: <integrated authentication>");
+                    Console.WriteLine(" {0,-48} {1}", "Database user:", "<integrated authentication>");
                 }
                 else
                 {
-                    Console.WriteLine(" Database user: {0}", DBUser);
+                    Console.WriteLine(" {0,-48} {1}", "Database user:", DBUser);
                     if (string.IsNullOrWhiteSpace(DBUserPassword))
-                        Console.WriteLine(" Password:      {0}", "Error: undefined");
+                        Console.WriteLine(" {0,-48} {1}", "Password:", "Error: undefined");
                     else
-                        Console.WriteLine(" Password:      {0}", "Provided");
+                        Console.WriteLine(" {0,-48} {1}", "Password:", "Provided");
                 }
             }
             else
             {
-                Console.WriteLine(" Server type: PostgreSQL");
+                Console.WriteLine(" {0,-48} {1}", "Server type:", "PostgreSQL");
 
                 if (string.IsNullOrWhiteSpace(PgUser))
-                    Console.WriteLine(" Username:    {0}", "Error: undefined");
+                    Console.WriteLine(" {0,-48} {1}", "Username:", "Error: undefined");
                 else
-                    Console.WriteLine(" Username:    {0}", PgUser);
+                    Console.WriteLine(" {0,-48} {1}", "Username:", PgUser);
 
                 if (string.IsNullOrWhiteSpace(PgPass))
                 {
                     if (SystemInfo.IsLinux)
-                        Console.WriteLine(" Password:    {0}", "Will be read from ~/.pgpass");
+                        Console.WriteLine(" {0,-48} {1}", "Password:", "Will be read from ~/.pgpass");
                     else
-                        Console.WriteLine(" Password:    {0}", @"Will be read from %APPDATA%\postgresql\pgpass.conf");
+                        Console.WriteLine(" {0,-48} {1}", "Password:", @"Will be read from %APPDATA%\postgresql\pgpass.conf");
                 }
                 else
                 {
-                    Console.WriteLine(" Password:      {0}", "Provided");
+                    Console.WriteLine(" {0,-48} {1}", "Password:", "Provided");
                 }
 
-                Console.WriteLine(" Port:        {0}", PgPort);
+                Console.WriteLine(" {0,-48} {1}", "Port:", PgPort);
             }
 
             if (DatabasesToProcess.Count == 0)
             {
-                Console.WriteLine(" Database to export: {0}", "Error: Undefined");
+                Console.WriteLine(" {0,-48} {1}", "Database to export:", "Error: Undefined");
             }
             else if (DatabasesToProcess.Count == 1)
             {
-                Console.WriteLine(" Database to export: {0}", DatabasesToProcess.First());
+                Console.WriteLine(" {0,-48} {1}", "Database to export:", DatabasesToProcess.First());
             }
             else
             {
-                Console.WriteLine(" Databases to export: {0}", DatabaseList);
+                Console.WriteLine(" {0,-48} {1}", "Databases to export:", DatabaseList);
             }
 
-            Console.WriteLine(" Database Subdirectory Prefix: {0}", DatabaseSubdirectoryPrefix);
+            Console.WriteLine(" {0,-48} {1}", "Database Subdirectory Prefix:", DatabaseSubdirectoryPrefix);
 
             if (NoSubdirectory)
             {
@@ -351,36 +352,36 @@ namespace DB_Schema_Export_Tool
 
             if (!string.IsNullOrWhiteSpace(TableDataToExportFile))
             {
-                Console.WriteLine(" Table name text file: {0}", DatabaseList);
+                Console.WriteLine(" {0,-48} {1}", "Table name text file:", DatabaseList);
             }
 
-            Console.WriteLine(" Data export from standard tables: {0}", BoolToEnabledDisabled(!DisableAutoDataExport));
+            Console.WriteLine(" {0,-48} {1}", "Data export from standard tables:", BoolToEnabledDisabled(!DisableAutoDataExport));
 
-            Console.WriteLine(" Export server settings, logins, and jobs: {0}", BoolToEnabledDisabled(ScriptingOptions.ExportServerSettingsLoginsAndJobs));
+            Console.WriteLine(" {0,-48} {1}", "Export server settings, logins, and jobs:", BoolToEnabledDisabled(ScriptingOptions.ExportServerSettingsLoginsAndJobs));
 
             if (Sync)
             {
-                Console.WriteLine(" Synchronizing schema files to: {0}", SyncDirectoryPath);
+                Console.WriteLine(" {0,-48} {1}", "Synchronizing schema files to:", SyncDirectoryPath);
             }
 
             if (GitUpdate || SvnUpdate || HgUpdate)
             {
                 if (GitUpdate)
                 {
-                    Console.WriteLine(" Auto-updating any new or changed files using Git");
+                    Console.WriteLine(" {0,-48} {1}", "Auto-updating any new or changed files using:", "Git");
                 }
 
                 if (SvnUpdate)
                 {
-                    Console.WriteLine(" Auto-updating any new or changed files using Subversion");
+                    Console.WriteLine(" {0,-48} {1}", "Auto-updating any new or changed files using:", "Subversion");
                 }
 
                 if (HgUpdate)
                 {
-                    Console.WriteLine(" Auto-updating any new or changed files using Mercurial");
+                    Console.WriteLine(" {0,-48} {1}", "Auto-updating any new or changed files using:", "Mercurial");
                 }
 
-                Console.WriteLine(" Commit updates: {0}", BoolToEnabledDisabled(CommitUpdates));
+                Console.WriteLine(" {0,-48} {1}", "Commit updates:", BoolToEnabledDisabled(CommitUpdates));
             }
 
 
@@ -388,19 +389,18 @@ namespace DB_Schema_Export_Tool
             {
                 if (string.IsNullOrWhiteSpace(LogFilePath))
                 {
-                    Console.WriteLine(" Logging messages to the default log file");
+                    Console.WriteLine(" {0,-48} {1}", "Logging messages to:", "Default log file");
                 }
                 else
                 {
-                    Console.WriteLine(" Logging messages to {0}", LogFilePath);
+                    Console.WriteLine(" {0,-48} {1}", "Logging messages to:", LogFilePath);
                 }
 
                 if (!string.IsNullOrWhiteSpace(LogDirectoryPath))
                 {
-                    Console.WriteLine(" Log directory path: {0}", LogDirectoryPath);
+                    Console.WriteLine(" {0,-48} {1}", "Log directory path:", LogDirectoryPath);
                 }
             }
-
 
             if (PreviewExport)
             {
