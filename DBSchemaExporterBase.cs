@@ -164,7 +164,7 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
-                const RegexOptions objRegExOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline;
+                const RegexOptions regExOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline;
 
                 if (TableNameAutoSelectRegEx == null)
                     return tablesToExport;
@@ -172,7 +172,7 @@ namespace DB_Schema_Export_Tool
                 var regExMatchers = new List<Regex>();
                 foreach (var regexItem in TableNameAutoSelectRegEx)
                 {
-                    regExMatchers.Add(new Regex(regexItem, objRegExOptions));
+                    regExMatchers.Add(new Regex(regexItem, regExOptions));
                 }
 
                 foreach (var tableName in tableNamesInDatabase)

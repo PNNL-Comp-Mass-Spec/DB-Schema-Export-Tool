@@ -92,14 +92,14 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Determines the table names for which data will be exported
         /// </summary>
-        /// <param name="objDatabase">SQL Server database</param>
+        /// <param name="currentDatabase">SQL Server database</param>
         /// <param name="tableNamesForDataExport">Table names that should be auto-selected</param>
         /// <returns>Dictionary where keys are table names and values are the maximum number of rows to export</returns>
         private Dictionary<string, long> AutoSelectTableNamesForDataExport(
-            Database objDatabase,
+            Database currentDatabase,
             IEnumerable<string> tableNamesForDataExport)
         {
-            var tableNamesInDatabase = GetDatabaseTableNames(objDatabase);
+            var tableNamesInDatabase = GetDatabaseTableNames(currentDatabase);
 
             var tablesToExport = AutoSelectTableNamesForDataExport(tableNamesInDatabase, tableNamesForDataExport);
             return tablesToExport;
@@ -158,7 +158,7 @@ namespace DB_Schema_Export_Tool
             var workingParams = new WorkingParams();
 
             ScriptingOptions scriptOptions;
-            Database objDatabase;
+            Database currentDatabase;
 
             // Keys are table names to export
             // Values are the maximum number of rows to export
@@ -169,7 +169,7 @@ namespace DB_Schema_Export_Tool
             try
             {
                 scriptOptions = GetDefaultScriptOptions();
-                objDatabase = sqlServer.Databases[databaseName];
+                currentDatabase = sqlServer.Databases[databaseName];
                 databaseNotFound = false;
             }
             catch (Exception ex)
@@ -184,7 +184,7 @@ namespace DB_Schema_Export_Tool
                 // Construct the path to the output directory
                 if (mOptions.CreateDirectoryForEachDB)
                 {
-                    workingParams.OutputDirectoryPathCurrentDB = Path.Combine(mOptions.OutputDirectoryPath, mOptions.DatabaseSubdirectoryPrefix + objDatabase.Name);
+                    workingParams.OutputDirectoryPathCurrentDB = Path.Combine(mOptions.OutputDirectoryPath, mOptions.DatabaseSubdirectoryPrefix + currentDatabase.Name);
                 }
                 else
                 {
@@ -210,7 +210,7 @@ namespace DB_Schema_Export_Tool
 
                 if (mOptions.ScriptingOptions.AutoSelectTableNamesForDataExport)
                 {
-                    tablesToExport = AutoSelectTableNamesForDataExport(objDatabase, tableNamesForDataExport);
+                    tablesToExport = AutoSelectTableNamesForDataExport(currentDatabase, tableNamesForDataExport);
                 }
                 else
                 {
@@ -236,7 +236,7 @@ namespace DB_Schema_Export_Tool
 
                 // Count the number of objects that will be exported
                 workingParams.CountObjectsOnly = true;
-                ExportDBObjectsWork(objDatabase, scriptOptions, workingParams);
+                ExportDBObjectsWork(currentDatabase, scriptOptions, workingParams);
 
                 workingParams.ProcessCountExpected = workingParams.ProcessCount;
                 if (tableNamesForDataExport != null)
@@ -259,11 +259,11 @@ namespace DB_Schema_Export_Tool
                 workingParams.CountObjectsOnly = false;
                 if (workingParams.ProcessCount > 0)
                 {
-                    ExportDBObjectsWork(objDatabase, scriptOptions, workingParams);
+                    ExportDBObjectsWork(currentDatabase, scriptOptions, workingParams);
                 }
 
                 // Export data from tables specified by tablesToExport
-                var success = ExportDBTableData(objDatabase, tablesToExport, workingParams);
+                var success = ExportDBTableData(currentDatabase, tablesToExport, workingParams);
                 return success;
             }
             catch (Exception ex)
@@ -274,14 +274,14 @@ namespace DB_Schema_Export_Tool
 
         }
 
-        private void ExportDBObjectsWork(Database objDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
+        private void ExportDBObjectsWork(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
             // Do not include a Try block in this Function; let the calling function handle errors
             // Reset ProcessCount
             workingParams.ProcessCount = 0;
             if (mOptions.ScriptingOptions.ExportDBSchemasAndRoles)
             {
-                ExportDBSchemasAndRoles(objDatabase, scriptOptions, workingParams);
+                ExportDBSchemasAndRoles(currentDatabase, scriptOptions, workingParams);
                 if (mAbortProcessing)
                 {
                     return;
@@ -290,7 +290,7 @@ namespace DB_Schema_Export_Tool
 
             if (mOptions.ScriptingOptions.ExportTables)
             {
-                ExportDBTables(objDatabase, scriptOptions, workingParams);
+                ExportDBTables(currentDatabase, scriptOptions, workingParams);
                 if (mAbortProcessing)
                 {
                     return;
@@ -302,7 +302,7 @@ namespace DB_Schema_Export_Tool
                 mOptions.ScriptingOptions.ExportStoredProcedures ||
                 mOptions.ScriptingOptions.ExportSynonyms)
             {
-                ExportDBViewsProceduresAndUDFs(objDatabase, scriptOptions, workingParams);
+                ExportDBViewsProceduresAndUDFs(currentDatabase, scriptOptions, workingParams);
                 if (mAbortProcessing)
                 {
                     return;
@@ -311,7 +311,7 @@ namespace DB_Schema_Export_Tool
 
             if (mOptions.ScriptingOptions.ExportUserDefinedDataTypes)
             {
-                ExportDBUserDefinedDataTypes(objDatabase, scriptOptions, workingParams);
+                ExportDBUserDefinedDataTypes(currentDatabase, scriptOptions, workingParams);
                 if (mAbortProcessing)
                 {
                     return;
@@ -320,32 +320,32 @@ namespace DB_Schema_Export_Tool
 
             if (mOptions.ScriptingOptions.ExportUserDefinedTypes)
             {
-                ExportDBUserDefinedTypes(objDatabase, scriptOptions, workingParams);
+                ExportDBUserDefinedTypes(currentDatabase, scriptOptions, workingParams);
             }
         }
 
         private void ExportDBSchemasAndRoles(
-            Database objDatabase,
+            Database currentDatabase,
             ScriptingOptions scriptOptions,
             WorkingParams workingParams)
         {
             if (workingParams.CountObjectsOnly)
             {
                 workingParams.ProcessCount++;
-                if (SqlServer2005OrNewer(objDatabase))
+                if (SqlServer2005OrNewer(currentDatabase))
                 {
-                    for (var index = 0; index < objDatabase.Schemas.Count; index++)
+                    for (var index = 0; index < currentDatabase.Schemas.Count; index++)
                     {
-                        if (ExportSchema(objDatabase.Schemas[index]))
+                        if (ExportSchema(currentDatabase.Schemas[index]))
                         {
                             workingParams.ProcessCount++;
                         }
                     }
                 }
 
-                for (var index = 0; index < objDatabase.Roles.Count; index++)
+                for (var index = 0; index < currentDatabase.Roles.Count; index++)
                 {
-                    if (ExportRole(objDatabase.Roles[index]))
+                    if (ExportRole(currentDatabase.Roles[index]))
                     {
                         workingParams.ProcessCount++;
                     }
@@ -356,26 +356,26 @@ namespace DB_Schema_Export_Tool
 
             try
             {
-                var scriptInfo = CleanSqlScript(StringCollectionToList(objDatabase.Script(scriptOptions)));
-                WriteTextToFile(workingParams.OutputDirectory, DB_DEFINITION_FILE_PREFIX + objDatabase.Name, scriptInfo);
+                var scriptInfo = CleanSqlScript(StringCollectionToList(currentDatabase.Script(scriptOptions)));
+                WriteTextToFile(workingParams.OutputDirectory, DB_DEFINITION_FILE_PREFIX + currentDatabase.Name, scriptInfo);
             }
             catch (Exception ex)
             {
                 // User likely doesn't have privilege to script the DB; ignore the error
-                OnErrorEvent("Unable to script DB " + objDatabase.Name, ex);
+                OnErrorEvent("Unable to script DB " + currentDatabase.Name, ex);
             }
 
             workingParams.ProcessCount++;
-            if (SqlServer2005OrNewer(objDatabase))
+            if (SqlServer2005OrNewer(currentDatabase))
             {
-                for (var index = 0; index < objDatabase.Schemas.Count; index++)
+                for (var index = 0; index < currentDatabase.Schemas.Count; index++)
                 {
-                    if (!ExportSchema(objDatabase.Schemas[index]))
+                    if (!ExportSchema(currentDatabase.Schemas[index]))
                         continue;
 
-                    var scriptInfo = CleanSqlScript(StringCollectionToList(objDatabase.Schemas[index].Script(scriptOptions)));
+                    var scriptInfo = CleanSqlScript(StringCollectionToList(currentDatabase.Schemas[index].Script(scriptOptions)));
 
-                    WriteTextToFile(workingParams.OutputDirectory, "Schema_" + objDatabase.Schemas[index].Name, scriptInfo);
+                    WriteTextToFile(workingParams.OutputDirectory, "Schema_" + currentDatabase.Schemas[index].Name, scriptInfo);
                     workingParams.ProcessCount++;
                     CheckPauseStatus();
                     if (mAbortProcessing)
@@ -386,13 +386,13 @@ namespace DB_Schema_Export_Tool
                 }
             }
 
-            for (var index = 0; index < objDatabase.Roles.Count; index++)
+            for (var index = 0; index < currentDatabase.Roles.Count; index++)
             {
-                if (!ExportRole(objDatabase.Roles[index]))
+                if (!ExportRole(currentDatabase.Roles[index]))
                     continue;
 
-                var scriptInfo = CleanSqlScript(StringCollectionToList(objDatabase.Roles[index].Script(scriptOptions)));
-                WriteTextToFile(workingParams.OutputDirectory, "Role_" + objDatabase.Roles[index].Name, scriptInfo);
+                var scriptInfo = CleanSqlScript(StringCollectionToList(currentDatabase.Roles[index].Script(scriptOptions)));
+                WriteTextToFile(workingParams.OutputDirectory, "Role_" + currentDatabase.Roles[index].Name, scriptInfo);
                 workingParams.ProcessCount++;
                 CheckPauseStatus();
                 if (mAbortProcessing)
@@ -404,39 +404,39 @@ namespace DB_Schema_Export_Tool
 
         }
 
-        private void ExportDBTables(Database objDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
+        private void ExportDBTables(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
             // ReSharper disable once StringLiteralTypo
             const string SYNC_OBJ_TABLE_PREFIX = "syncobj_0x";
 
             if (workingParams.CountObjectsOnly)
             {
-                // Note: objDatabase.Tables includes system tables, so workingParams.ProcessCount will be
+                // Note: currentDatabase.Tables includes system tables, so workingParams.ProcessCount will be
                 //       an overestimate if mOptions.ScriptingOptions.IncludeSystemObjects = False
-                workingParams.ProcessCount += objDatabase.Tables.Count;
+                workingParams.ProcessCount += currentDatabase.Tables.Count;
             }
             else
             {
                 var dtStartTime = DateTime.UtcNow;
 
-                // Initialize the scripter and objSMOObject()
-                var objScripter = new Scripter(mSqlServer)
+                // Initialize the scripter and smoObjectArray
+                var scripter = new Scripter(mSqlServer)
                 {
                     Options = scriptOptions
                 };
 
-                foreach (Table objTable in objDatabase.Tables)
+                foreach (Table databaseTable in currentDatabase.Tables)
                 {
                     var includeTable = true;
                     if (!mOptions.ScriptingOptions.IncludeSystemObjects)
                     {
-                        if (objTable.IsSystemObject)
+                        if (databaseTable.IsSystemObject)
                         {
                             includeTable = false;
                         }
-                        else if (objTable.Name.Length >= SYNC_OBJ_TABLE_PREFIX.Length)
+                        else if (databaseTable.Name.Length >= SYNC_OBJ_TABLE_PREFIX.Length)
                         {
-                            if (objTable.Name.Substring(0, SYNC_OBJ_TABLE_PREFIX.Length)
+                            if (databaseTable.Name.Substring(0, SYNC_OBJ_TABLE_PREFIX.Length)
                                 .Equals(SYNC_OBJ_TABLE_PREFIX, StringComparison.OrdinalIgnoreCase))
                             {
                                 includeTable = false;
@@ -449,14 +449,14 @@ namespace DB_Schema_Export_Tool
                         var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
                         var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
 
-                        OnProgressUpdate(string.Format("Scripting {0}.{1}.{2}", objDatabase.Name, objTable.Schema, objTable.Name), percentComplete);
+                        OnProgressUpdate(string.Format("Scripting {0}.{1}.{2}", currentDatabase.Name, databaseTable.Schema, databaseTable.Name), percentComplete);
 
                         var smoObjectArray = new SqlSmoObject[] {
-                            objTable
+                            databaseTable
                         };
 
-                        var scriptInfo = CleanSqlScript(StringCollectionToList(objScripter.Script(smoObjectArray)));
-                        WriteTextToFile(workingParams.OutputDirectory, objTable.Name, scriptInfo);
+                        var scriptInfo = CleanSqlScript(StringCollectionToList(scripter.Script(smoObjectArray)));
+                        WriteTextToFile(workingParams.OutputDirectory, databaseTable.Name, scriptInfo);
                     }
 
                     workingParams.ProcessCount++;
@@ -472,48 +472,48 @@ namespace DB_Schema_Export_Tool
                 {
                     OnDebugEvent(string.Format(
                                      "Exported {0} tables in {1:0.0} seconds",
-                                     objDatabase.Tables.Count, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
+                                     currentDatabase.Tables.Count, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
                 }
             }
 
         }
 
-        private void ExportDBUserDefinedDataTypes(Database objDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
+        private void ExportDBUserDefinedDataTypes(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
             if (workingParams.CountObjectsOnly)
             {
-                workingParams.ProcessCount += objDatabase.UserDefinedDataTypes.Count;
+                workingParams.ProcessCount += currentDatabase.UserDefinedDataTypes.Count;
             }
 
             else
             {
-                var intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedDataTypes, scriptOptions, workingParams.OutputDirectory);
+                var intItemCount = ScriptCollectionOfObjects(currentDatabase.UserDefinedDataTypes, scriptOptions, workingParams.OutputDirectory);
                 workingParams.ProcessCount += intItemCount;
             }
         }
 
-        private void ExportDBUserDefinedTypes(Database objDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
+        private void ExportDBUserDefinedTypes(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
-            if (SqlServer2005OrNewer(objDatabase))
+            if (SqlServer2005OrNewer(currentDatabase))
             {
                 if (workingParams.CountObjectsOnly)
                 {
-                    workingParams.ProcessCount += objDatabase.UserDefinedTypes.Count;
+                    workingParams.ProcessCount += currentDatabase.UserDefinedTypes.Count;
                 }
                 else
                 {
-                    var intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedTypes, scriptOptions, workingParams.OutputDirectory);
+                    var intItemCount = ScriptCollectionOfObjects(currentDatabase.UserDefinedTypes, scriptOptions, workingParams.OutputDirectory);
                     workingParams.ProcessCount += intItemCount;
                 }
             }
         }
 
-        private void ExportDBViewsProceduresAndUDFs(Database objDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
+        private void ExportDBViewsProceduresAndUDFs(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
-            // Option 1) obtain the list of views, stored procedures, and UDFs is to use objDatabase.EnumObjects
+            // Option 1) obtain the list of views, stored procedures, and UDFs is to use currentDatabase.EnumObjects
             // However, this only returns the var name, type, and URN, not whether or not it is a system var
             //
-            // Option 2) use objDatabase.Views, objDatabase.StoredProcedures, etc.
+            // Option 2) use currentDatabase.Views, currentDatabase.StoredProcedures, etc.
             // However, on Sql Server 2005 this returns many system views and system procedures that we typically don't want to export
             //
             // Option 3) query the sysobjects table and filter on the xtype field
@@ -564,31 +564,31 @@ namespace DB_Schema_Export_Tool
             //            sql &= " AND category = 0"
             //        End If
             //        sql &= " ORDER BY Name"
-            //        dsObjects = objDatabase.ExecuteWithResults(sql)
+            //        dsObjects = currentDatabase.ExecuteWithResults(sql)
             //        If workingParams.CountObjectsOnly Then
             //            workingParams.ProcessCount += dsObjects.Tables(0).Rows.Count
             //        Else
-            //            For Each objRow In dsObjects.Tables(0).Rows
-            //                strObjectName = objRow.Item(0).ToString
+            //            For Each currentRow In dsObjects.Tables(0).Rows
+            //                strObjectName = currentRow.Item(0).ToString
             //                mSubtaskProgressStepDescription = strObjectName
             //                UpdateSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected)
             //                Select Case intObjectIterator
             //                    Case 0
             //                        ' Views
-            //                        smoObject = objDatabase.Views(strObjectName)
+            //                        smoObjectArray = currentDatabase.Views(strObjectName)
             //                    Case 1
             //                        ' Stored procedures
-            //                        smoObject = objDatabase.StoredProcedures(strObjectName)
+            //                        smoObjectArray = currentDatabase.StoredProcedures(strObjectName)
             //                    Case 2
             //                        ' User defined functions
-            //                        smoObject = objDatabase.UserDefinedFunctions(strObjectName)
+            //                        smoObjectArray = currentDatabase.UserDefinedFunctions(strObjectName)
             //                    Case Else
             //                        ' Unknown value for intObjectIterator; skip it
-            //                        smoObject = Nothing
+            //                        smoObjectArray = Nothing
             //                End Select
-            //                If Not smoObject Is Nothing Then
+            //                If Not smoObjectArray Is Nothing Then
             //                    WriteTextToFile(workingParams.OutputDirectoryPathCurrentDB, strObjectName,
-            //                                      CleanSqlScript(objScripter.Script(objSMOObject), schemaExportOptions)))
+            //                                      CleanSqlScript(scripter.Script(smoObjectArrayArray), schemaExportOptions)))
             //                End If
             //                workingParams.ProcessCount += 1
             //                CheckPauseStatus()
@@ -596,14 +596,15 @@ namespace DB_Schema_Export_Tool
             //                    UpdateProgress("Aborted processing")
             //                    Exit Function
             //                End If
-            //            Next objRow
+            //            Next currentRow
             //        End If
             //    End If
             // Next intObjectIterator
 
             // Option 4) Query the INFORMATION_SCHEMA views
-            // Initialize the scripter and objSMOObject()
-            var objScripter = new Scripter(mSqlServer)
+
+            // Initialize the scripter and smoObjectArrayArray()
+            var scripter = new Scripter(mSqlServer)
             {
                 Options = scriptOptions
             };
@@ -672,56 +673,56 @@ namespace DB_Schema_Export_Tool
                     continue;
 
                 var dtStartTime = DateTime.UtcNow;
-                var dsObjects = objDatabase.ExecuteWithResults(sql);
+                var queryResults= currentDatabase.ExecuteWithResults(sql);
                 if (workingParams.CountObjectsOnly)
                 {
-                    workingParams.ProcessCount += dsObjects.Tables[0].Rows.Count;
+                    workingParams.ProcessCount += queryResults.Tables[0].Rows.Count;
                 }
                 else
                 {
-                    foreach (DataRow objRow in dsObjects.Tables[0].Rows)
+                    foreach (DataRow currentRow in queryResults.Tables[0].Rows)
                     {
                         // The first column is the schema
                         // The second column is the name
-                        var objectSchema = objRow[0].ToString();
-                        var objectName = objRow[1].ToString();
+                        var objectSchema = currentRow[0].ToString();
+                        var objectName = currentRow[1].ToString();
 
                         var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
                         var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
 
-                        OnProgressUpdate(string.Format("Scripting {0}.{1}.{2}", objDatabase.Name, objectSchema, objectName), percentComplete);
+                        OnProgressUpdate(string.Format("Scripting {0}.{1}.{2}", currentDatabase.Name, objectSchema, objectName), percentComplete);
 
-                        SqlSmoObject smoObject;
+                        SqlSmoObject smoObjectArray;
                         switch (objectIterator)
                         {
                             case 0:
                                 // Views
-                                smoObject = objDatabase.Views[objectName, objectSchema];
+                                smoObjectArray = currentDatabase.Views[objectName, objectSchema];
                                 break;
                             case 1:
                                 // Stored procedures
-                                smoObject = objDatabase.StoredProcedures[objectName, objectSchema];
+                                smoObjectArray = currentDatabase.StoredProcedures[objectName, objectSchema];
                                 break;
                             case 2:
                                 // User defined functions
-                                smoObject = objDatabase.UserDefinedFunctions[objectName, objectSchema];
+                                smoObjectArray = currentDatabase.UserDefinedFunctions[objectName, objectSchema];
                                 break;
                             case 3:
                                 // Synonyms
-                                smoObject = objDatabase.Synonyms[objectName, objectSchema];
+                                smoObjectArray = currentDatabase.Synonyms[objectName, objectSchema];
                                 break;
                             default:
-                                smoObject = null;
+                                smoObjectArray = null;
                                 break;
                         }
 
-                        if (smoObject != null)
+                        if (smoObjectArray != null)
                         {
-                            var smoObjectArray = new[] {
-                                smoObject
+                            var smoObjectArrayArray = new[] {
+                                smoObjectArray
                             };
 
-                            var scriptInfo = CleanSqlScript(StringCollectionToList(objScripter.Script(smoObjectArray)));
+                            var scriptInfo = CleanSqlScript(StringCollectionToList(scripter.Script(smoObjectArrayArray)));
                             WriteTextToFile(workingParams.OutputDirectory, objectName, scriptInfo);
                         }
 
@@ -739,13 +740,13 @@ namespace DB_Schema_Export_Tool
                     {
                         OnDebugEvent(string.Format(
                                          "Exported {0} {1} in {2:0.0} seconds",
-                                         dsObjects.Tables[0].Rows.Count, objectType, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
+                                         queryResults.Tables[0].Rows.Count, objectType, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
                     }
                 }
             }
         }
 
-        private bool ExportDBTableData(Database objDatabase, Dictionary<string, long> tablesToExport, WorkingParams workingParams)
+        private bool ExportDBTableData(Database currentDatabase, Dictionary<string, long> tablesToExport, WorkingParams workingParams)
         {
             try
             {
@@ -754,7 +755,7 @@ namespace DB_Schema_Export_Tool
                     return true;
                 }
 
-                var sbCurrentRow = new StringBuilder();
+                var delimitedRowValues = new StringBuilder();
                 foreach (var tableItem in tablesToExport)
                 {
                     var maximumDataRowsToExport = tableItem.Value;
@@ -764,14 +765,14 @@ namespace DB_Schema_Export_Tool
 
                     OnProgressUpdate("Exporting data from " + tableItem.Key, percentComplete);
 
-                    Table objTable;
-                    if (objDatabase.Tables.Contains(tableItem.Key))
+                    Table databaseTable;
+                    if (currentDatabase.Tables.Contains(tableItem.Key))
                     {
-                        objTable = objDatabase.Tables[tableItem.Key];
+                        databaseTable = currentDatabase.Tables[tableItem.Key];
                     }
-                    else if (objDatabase.Tables.Contains(tableItem.Key, "dbo"))
+                    else if (currentDatabase.Tables.Contains(tableItem.Key, "dbo"))
                     {
-                        objTable = objDatabase.Tables[tableItem.Key, "dbo"];
+                        databaseTable = currentDatabase.Tables[tableItem.Key, "dbo"];
                     }
                     else
                     {
@@ -780,9 +781,9 @@ namespace DB_Schema_Export_Tool
 
                     // See if any of the columns in the table is an identity column
                     var identityColumnFound = false;
-                    foreach (Column objColumn in objTable.Columns)
+                    foreach (Column currentColumn in databaseTable.Columns)
                     {
-                        if (objColumn.Identity)
+                        if (currentColumn.Identity)
                         {
                             identityColumnFound = true;
                             break;
@@ -790,18 +791,18 @@ namespace DB_Schema_Export_Tool
 
                     }
 
-                    // Export the data from objTable, possibly limiting the number of rows to export
+                    // Export the data from databaseTable, possibly limiting the number of rows to export
                     var sql = "SELECT ";
                     if (maximumDataRowsToExport > 0)
                     {
                         sql += "TOP " + maximumDataRowsToExport;
                     }
 
-                    sql += " * FROM [" + objTable.Name + "]";
+                    sql += " * FROM [" + databaseTable.Name + "]";
 
-                    var dsCurrentTable = objDatabase.ExecuteWithResults(sql);
-                    var lstTableRows = new List<string>();
-                    var header = COMMENT_START_TEXT + "Object:  Table [" + objTable.Name + "]";
+                    var queryResults = currentDatabase.ExecuteWithResults(sql);
+                    var tableRows = new List<string>();
+                    var header = COMMENT_START_TEXT + "Object:  Table [" + databaseTable.Name + "]";
 
                     if (mOptions.ScriptingOptions.IncludeTimestampInScriptFileHeader)
                     {
@@ -809,33 +810,33 @@ namespace DB_Schema_Export_Tool
                     }
 
                     header += COMMENT_END_TEXT;
-                    lstTableRows.Add(header);
-                    lstTableRows.Add(COMMENT_START_TEXT + "RowCount: " + objTable.RowCount + COMMENT_END_TEXT);
+                    tableRows.Add(header);
+                    tableRows.Add(COMMENT_START_TEXT + "RowCount: " + databaseTable.RowCount + COMMENT_END_TEXT);
 
-                    var columnCount = dsCurrentTable.Tables[0].Columns.Count;
-                    var lstColumnTypes = new List<DataColumnTypeConstants>();
-                    sbCurrentRow.Clear();
+                    var columnCount = queryResults.Tables[0].Columns.Count;
+                    var columnTypes = new List<DataColumnTypeConstants>();
+                    delimitedRowValues.Clear();
 
                     for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
                     {
-                        var objColumn = dsCurrentTable.Tables[0].Columns[columnIndex];
+                        var currentColumn = queryResults.Tables[0].Columns[columnIndex];
 
                         // Initially assume the column's data type is numeric
                         var dataColumnType = DataColumnTypeConstants.Numeric;
 
                         // Now check for other data types
-                        if (objColumn.DataType == Type.GetType("System.String"))
+                        if (currentColumn.DataType == Type.GetType("System.String"))
                         {
                             dataColumnType = DataColumnTypeConstants.Text;
                         }
-                        else if (objColumn.DataType == Type.GetType("System.DateTime"))
+                        else if (currentColumn.DataType == Type.GetType("System.DateTime"))
                         {
                             // Date column
                             dataColumnType = DataColumnTypeConstants.DateTime;
                         }
-                        else if (objColumn.DataType == Type.GetType("System.Byte[]"))
+                        else if (currentColumn.DataType == Type.GetType("System.Byte[]"))
                         {
-                            switch (objColumn.DataType?.Name)
+                            switch (currentColumn.DataType?.Name)
                             {
                                 case "image":
                                     dataColumnType = DataColumnTypeConstants.ImageObject;
@@ -848,14 +849,14 @@ namespace DB_Schema_Export_Tool
                                     break;
                             }
                         }
-                        else if (objColumn.DataType == Type.GetType("System.Guid"))
+                        else if (currentColumn.DataType == Type.GetType("System.Guid"))
                         {
                             dataColumnType = DataColumnTypeConstants.GUID;
                         }
-                        else if (objColumn.DataType == Type.GetType("System.Boolean"))
+                        else if (currentColumn.DataType == Type.GetType("System.Boolean"))
                         {
                             // This may be a binary column
-                            switch (objColumn.DataType?.Name)
+                            switch (currentColumn.DataType?.Name)
                             {
                                 case "binary":
                                 case "bit":
@@ -866,9 +867,9 @@ namespace DB_Schema_Export_Tool
                                     break;
                             }
                         }
-                        else if (objColumn.DataType == Type.GetType("System.var"))
+                        else if (currentColumn.DataType == Type.GetType("System.var"))
                         {
-                            switch (objColumn.DataType?.Name)
+                            switch (currentColumn.DataType?.Name)
                             {
                                 case "sql_variant":
                                     dataColumnType = DataColumnTypeConstants.SqlVariant;
@@ -879,22 +880,22 @@ namespace DB_Schema_Export_Tool
                             }
                         }
 
-                        lstColumnTypes.Add(dataColumnType);
+                        columnTypes.Add(dataColumnType);
                         if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
                         {
-                            sbCurrentRow.Append(PossiblyQuoteColumnName(objColumn.ColumnName, true));
+                            delimitedRowValues.Append(PossiblyQuoteColumnName(currentColumn.ColumnName, true));
                             if (columnIndex < columnCount - 1)
                             {
-                                sbCurrentRow.Append(", ");
+                                delimitedRowValues.Append(", ");
                             }
 
                         }
                         else
                         {
-                            sbCurrentRow.Append(objColumn.ColumnName);
+                            delimitedRowValues.Append(currentColumn.ColumnName);
                             if (columnIndex < columnCount - 1)
                             {
-                                sbCurrentRow.Append("\t");
+                                delimitedRowValues.Append("\t");
                             }
 
                         }
@@ -913,40 +914,40 @@ namespace DB_Schema_Export_Tool
                         // 'End Select
                         if (identityColumnFound)
                         {
-                            insertIntoLine = string.Format("INSERT INTO [{0}] ({1}) VALUES (", objTable.Name, sbCurrentRow);
+                            insertIntoLine = string.Format("INSERT INTO [{0}] ({1}) VALUES (", databaseTable.Name, delimitedRowValues);
 
-                            lstTableRows.Add("SET IDENTITY_INSERT [" + objTable.Name + "] ON");
+                            tableRows.Add("SET IDENTITY_INSERT [" + databaseTable.Name + "] ON");
                         }
                         else
                         {
                             // Identity column not present; no need to explicitly list the column names
-                            insertIntoLine = string.Format("INSERT INTO [{0}] VALUES (", objTable.Name);
+                            insertIntoLine = string.Format("INSERT INTO [{0}] VALUES (", databaseTable.Name);
 
-                            lstTableRows.Add(COMMENT_START_TEXT + "Columns: " + sbCurrentRow + COMMENT_END_TEXT);
+                            tableRows.Add(COMMENT_START_TEXT + "Columns: " + delimitedRowValues + COMMENT_END_TEXT);
                         }
 
                         chColSepChar = ',';
                     }
                     else
                     {
-                        lstTableRows.Add(sbCurrentRow.ToString());
+                        tableRows.Add(delimitedRowValues.ToString());
                         chColSepChar = '\t';
                     }
 
-                    foreach (DataRow objRow in dsCurrentTable.Tables[0].Rows)
+                    foreach (DataRow currentRow in queryResults.Tables[0].Rows)
                     {
-                        sbCurrentRow.Clear();
+                        delimitedRowValues.Clear();
                         if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
                         {
-                            sbCurrentRow.Append(insertIntoLine);
+                            delimitedRowValues.Append(insertIntoLine);
                         }
 
                         for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
                         {
-                            switch (lstColumnTypes[columnIndex])
+                            switch (columnTypes[columnIndex])
                             {
                                 case DataColumnTypeConstants.Numeric:
-                                    sbCurrentRow.Append(objRow[columnIndex]);
+                                    delimitedRowValues.Append(currentRow[columnIndex]);
                                     break;
 
                                 case DataColumnTypeConstants.Text:
@@ -954,87 +955,87 @@ namespace DB_Schema_Export_Tool
                                 case DataColumnTypeConstants.GUID:
                                     if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
                                     {
-                                        sbCurrentRow.Append(PossiblyQuoteText(objRow[columnIndex].ToString()));
+                                        delimitedRowValues.Append(PossiblyQuoteText(currentRow[columnIndex].ToString()));
                                     }
                                     else
                                     {
-                                        sbCurrentRow.Append(objRow[columnIndex]);
+                                        delimitedRowValues.Append(currentRow[columnIndex]);
                                     }
                                     break;
 
                                 case DataColumnTypeConstants.BinaryArray:
                                     try
                                     {
-                                        var bytData = (byte[])(Array)objRow[columnIndex];
-                                        sbCurrentRow.Append("0x");
+                                        var bytData = (byte[])(Array)currentRow[columnIndex];
+                                        delimitedRowValues.Append("0x");
                                         var dataFound = false;
                                         foreach (var value in bytData)
                                         {
                                             if (dataFound || value != 0)
                                             {
                                                 dataFound = true;
-                                                sbCurrentRow.Append(value.ToString("X2"));
+                                                delimitedRowValues.Append(value.ToString("X2"));
                                             }
                                         }
 
                                         if (!dataFound)
                                         {
-                                            sbCurrentRow.Append("00");
+                                            delimitedRowValues.Append("00");
                                         }
 
                                     }
                                     catch (Exception)
                                     {
-                                        sbCurrentRow.Append("[Byte]");
+                                        delimitedRowValues.Append("[Byte]");
                                     }
                                     break;
 
                                 case DataColumnTypeConstants.BinaryByte:
                                     try
                                     {
-                                        sbCurrentRow.Append(("0x" + Convert.ToByte(objRow[columnIndex]).ToString("X2")));
+                                        delimitedRowValues.Append(("0x" + Convert.ToByte(currentRow[columnIndex]).ToString("X2")));
                                     }
                                     catch (Exception)
                                     {
-                                        sbCurrentRow.Append("[Byte]");
+                                        delimitedRowValues.Append("[Byte]");
                                     }
 
                                     break;
 
                                 case DataColumnTypeConstants.ImageObject:
-                                    sbCurrentRow.Append("[Image]");
+                                    delimitedRowValues.Append("[Image]");
                                     break;
 
                                 case DataColumnTypeConstants.GeneralObject:
-                                    sbCurrentRow.Append("[var]");
+                                    delimitedRowValues.Append("[var]");
                                     break;
 
                                 case DataColumnTypeConstants.SqlVariant:
-                                    sbCurrentRow.Append("[Sql_Variant]");
+                                    delimitedRowValues.Append("[Sql_Variant]");
                                     break;
 
                                 default:
-                                    sbCurrentRow.Append(objRow[columnIndex]);
+                                    delimitedRowValues.Append(currentRow[columnIndex]);
                                     break;
                             }
                             if (columnIndex < columnCount - 1)
                             {
-                                sbCurrentRow.Append(chColSepChar);
+                                delimitedRowValues.Append(chColSepChar);
                             }
 
                         }
 
                         if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
                         {
-                            sbCurrentRow.Append(")");
+                            delimitedRowValues.Append(")");
                         }
 
-                        lstTableRows.Add(sbCurrentRow.ToString());
+                        tableRows.Add(delimitedRowValues.ToString());
                     }
 
                     if (identityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
                     {
-                        lstTableRows.Add("SET IDENTITY_INSERT [" + objTable.Name + "] OFF");
+                        tableRows.Add("SET IDENTITY_INSERT [" + databaseTable.Name + "] OFF");
                     }
 
                     // // Read method #2: Use a SqlDataReader to read row-by-row
@@ -1051,7 +1052,8 @@ namespace DB_Schema_Export_Tool
                     //    Loop
                     // End If
 
-                    WriteTextToFile(workingParams.OutputDirectory, objTable.Name + "_Data", lstTableRows, false);
+
+                    WriteTextToFile(workingParams.OutputDirectory, databaseTable.Name + "_Data", tableRows, false);
 
                     workingParams.ProcessCount++;
 
@@ -1097,11 +1099,11 @@ namespace DB_Schema_Export_Tool
 
         }
 
-        private bool ExportSchema(NamedSmoObject objDatabaseSchema)
+        private bool ExportSchema(NamedSmoObject databaseSchema)
         {
             try
             {
-                return !mSchemaToIgnore.Contains(objDatabaseSchema.Name);
+                return !mSchemaToIgnore.Contains(databaseSchema.Name);
             }
             catch
             {
@@ -1137,11 +1139,11 @@ namespace DB_Schema_Export_Tool
 
         }
 
-        private void AppendToList(ICollection<string> serverInfo, ConfigProperty objConfigProperty)
+        private void AppendToList(ICollection<string> serverInfo, ConfigProperty configProperty)
         {
-            if (objConfigProperty?.DisplayName != null)
+            if (configProperty?.DisplayName != null)
             {
-                serverInfo.Add(objConfigProperty.DisplayName + "=" + objConfigProperty.ConfigValue);
+                serverInfo.Add(configProperty.DisplayName + "=" + configProperty.ConfigValue);
             }
 
         }
@@ -1515,11 +1517,11 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Retrieve a list of tables in the given SQL Server database
         /// </summary>
-        /// <param name="objDatabase"></param>
+        /// <param name="currentDatabase"></param>
         /// <returns></returns>
-        public IEnumerable<string> GetDatabaseTableNames(Database objDatabase)
+        public IEnumerable<string> GetDatabaseTableNames(Database currentDatabase)
         {
-            var dtTables = objDatabase.EnumObjects(DatabaseObjectTypes.Table, SortOrder.Name);
+            var dtTables = currentDatabase.EnumObjects(DatabaseObjectTypes.Table, SortOrder.Name);
             return from DataRow item in dtTables.Rows select item["Name"].ToString();
         }
 
@@ -1567,13 +1569,13 @@ namespace DB_Schema_Export_Tool
         private IEnumerable<string> GetSqlServerDatabasesWork()
         {
             var databaseNames = new List<string>();
-            var objDatabases = mSqlServer.Databases;
-            if (objDatabases.Count <= 0)
+            var databases = mSqlServer.Databases;
+            if (databases.Count <= 0)
                 return databaseNames;
 
-            for (var index = 0; index < objDatabases.Count; index++)
+            for (var index = 0; index < databases.Count; index++)
             {
-                databaseNames.Add(objDatabases[index].Name);
+                databaseNames.Add(databases[index].Name);
             }
 
             databaseNames.Sort();
@@ -1590,7 +1592,8 @@ namespace DB_Schema_Export_Tool
         /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
         public Dictionary<string, long> GetSqlServerDatabaseTableNames(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
         {
-            var databaseTables = new Dictionary<string, long>();
+            // Keys are table names; values are row counts
+            var databaseTableInfo = new Dictionary<string, long>();
 
             try
             {
@@ -1598,25 +1601,25 @@ namespace DB_Schema_Export_Tool
 
                 if (!ConnectToServer())
                 {
-                    return databaseTables;
+                    return databaseTableInfo;
                 }
 
                 if (!mConnectedToServer || mSqlServer == null || mSqlServer.State != SqlSmoState.Existing)
                 {
                     OnWarningEvent("Not connected to a server; cannot retrieve the list of the tables in database " + databaseName);
-                    return databaseTables;
+                    return databaseTableInfo;
                 }
 
                 if (string.IsNullOrWhiteSpace(databaseName))
                 {
                     OnWarningEvent("Empty database name sent to GetSqlServerDatabaseTableNames");
-                    return databaseTables;
+                    return databaseTableInfo;
                 }
 
                 if (!mSqlServer.Databases.Contains(databaseName))
                 {
                     OnWarningEvent(string.Format("Database {0} not found on sever {1}", databaseName, mCurrentServerInfo.ServerName));
-                    return databaseTables;
+                    return databaseTableInfo;
                 }
 
 
@@ -1625,22 +1628,22 @@ namespace DB_Schema_Export_Tool
                                            databaseName, mCurrentServerInfo.ServerName));
 
                 // Connect to database databaseName
-                var objDatabase = mSqlServer.Databases[databaseName];
+                var currentDatabase = mSqlServer.Databases[databaseName];
 
-                var objTables = objDatabase.Tables;
-                if (objTables.Count <= 0)
-                    return databaseTables;
+                var databaseTables = currentDatabase.Tables;
+                if (databaseTables.Count <= 0)
+                    return databaseTableInfo;
 
-                for (var index = 0; index < objTables.Count; index++)
+                for (var index = 0; index < databaseTables.Count; index++)
                 {
-                    if (!includeSystemObjects && objTables[index].IsSystemObject)
+                    if (!includeSystemObjects && databaseTables[index].IsSystemObject)
                         continue;
 
-                    var tableRowCount = includeTableRowCounts ? objTables[index].RowCount : 0;
+                    var tableRowCount = includeTableRowCounts ? databaseTables[index].RowCount : 0;
 
-                    databaseTables.Add(objTables[index].Name, tableRowCount);
+                    databaseTableInfo.Add(databaseTables[index].Name, tableRowCount);
 
-                    var percentComplete = ComputeSubtaskProgress(index, objTables.Count);
+                    var percentComplete = ComputeSubtaskProgress(index, databaseTables.Count);
                     OnProgressUpdate("Reading database tables", percentComplete);
 
                     if (mAbortProcessing)
@@ -1652,9 +1655,9 @@ namespace DB_Schema_Export_Tool
                 }
 
                 OnProgressComplete();
-                OnStatusEvent(string.Format("Found {0} tables", databaseTables.Count));
+                OnStatusEvent(string.Format("Found {0} tables", databaseTableInfo.Count));
 
-                return databaseTables;
+                return databaseTableInfo;
             }
             catch (Exception ex)
             {
@@ -1721,23 +1724,23 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Script a list of objects
         /// </summary>
-        /// <param name="objSchemaCollection">IEnumerable of type SchemaCollectionBase</param>
+        /// <param name="schemaCollection">IEnumerable of type SchemaCollectionBase</param>
         /// <param name="scriptOptions">Script options</param>
         /// <param name="outputDirectory">Output directory</param>
         /// <returns></returns>
         private int ScriptCollectionOfObjects(
-            IEnumerable objSchemaCollection,
+            IEnumerable schemaCollection,
             ScriptingOptions scriptOptions,
             DirectoryInfo outputDirectory)
         {
-            // Scripts the objects in objSchemaCollection
+            // Scripts the objects in schemaCollection
             // Returns the number of objects scripted
             var processCount = 0;
-            foreach (Schema objItem in objSchemaCollection)
+            foreach (Schema schemaItem in schemaCollection)
             {
-                var scriptInfo = CleanSqlScript(StringCollectionToList(objItem.Script(scriptOptions)));
+                var scriptInfo = CleanSqlScript(StringCollectionToList(schemaItem.Script(scriptOptions)));
 
-                WriteTextToFile(outputDirectory, objItem.Name, scriptInfo);
+                WriteTextToFile(outputDirectory, schemaItem.Name, scriptInfo);
                 processCount++;
                 CheckPauseStatus();
 
@@ -1768,11 +1771,11 @@ namespace DB_Schema_Export_Tool
                 var databaseNames = GetSqlServerDatabasesWork();
 
                 // Populate a dictionary where keys are lower case database names and values are the properly capitalized database names
-                var dctDatabasesOnServer = new Dictionary<string, string>();
+                var databasesOnServer = new Dictionary<string, string>();
 
                 foreach (var item in databaseNames)
                 {
-                    dctDatabasesOnServer.Add(item.ToLower(), item);
+                    databasesOnServer.Add(item.ToLower(), item);
                 }
 
                 foreach (var item in databaseListToProcess)
@@ -1799,7 +1802,7 @@ namespace DB_Schema_Export_Tool
 
                     processedDBList.Add(currentDB);
                     bool success;
-                    if (dctDatabasesOnServer.TryGetValue(currentDB.ToLower(), out var currentDbName))
+                    if (databasesOnServer.TryGetValue(currentDB.ToLower(), out var currentDbName))
                     {
                         currentDB = string.Copy(currentDbName);
                         OnDebugEvent("Exporting objects from database " + currentDbName);

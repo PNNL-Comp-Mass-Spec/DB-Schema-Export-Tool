@@ -317,16 +317,17 @@ namespace DB_Schema_Export_Tool
                         if (dbDefinitionFile && dataLine.StartsWith("( NAME =") && comparisonLine.StartsWith("( NAME ="))
                         {
                             //  DBDefinition file
-                            var lstSourceCols = dataLine.Split(',').ToList();
-                            var lstComparisonCols = comparisonLine.Split(',').ToList();
 
-                            if (lstSourceCols.Count == lstComparisonCols.Count)
+                            var sourceCols = dataLine.Split(',').ToList();
+                            var comparisonCols = comparisonLine.Split(',').ToList();
+
+                            if (sourceCols.Count == comparisonCols.Count)
                             {
                                 linesMatch = true;
-                                for (var dataColumnIndex = 0; dataColumnIndex < lstSourceCols.Count; dataColumnIndex++)
+                                for (var dataColumnIndex = 0; dataColumnIndex < sourceCols.Count; dataColumnIndex++)
                                 {
-                                    var sourceValue = lstSourceCols[dataColumnIndex].Trim();
-                                    var comparisonValue = lstComparisonCols[dataColumnIndex].Trim();
+                                    var sourceValue = sourceCols[dataColumnIndex].Trim();
+                                    var comparisonValue = comparisonCols[dataColumnIndex].Trim();
                                     if (sourceValue.StartsWith("SIZE") && comparisonValue.StartsWith("SIZE"))
                                     {
                                         //  Don't worry if these values differ
