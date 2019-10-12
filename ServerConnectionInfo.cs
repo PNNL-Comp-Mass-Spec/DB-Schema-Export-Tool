@@ -9,17 +9,17 @@ namespace DB_Schema_Export_Tool
         /// Server name
         /// </summary>
         public string ServerName { get; set; }
-        
+
         /// <summary>
         /// Database user name
         /// </summary>
         public string UserName { get; set; }
-        
+
         /// <summary>
         /// Database user password
         /// </summary>
         public string Password { get; set; }
-        
+
         /// <summary>
         /// When true, use integrated authentication (and thus UserName and Password are ignored)
         /// </summary>

@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using PRISM;
 
 namespace DB_Schema_Export_Tool
 {
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public class SchemaExportOptions
     {
         #region "Constants and Enums"

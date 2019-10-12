@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -7,6 +8,7 @@ using PRISM;
 
 namespace DB_Schema_Export_Tool
 {
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public class DBSchemaExportTool : EventNotifier
     {
 
