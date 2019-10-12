@@ -1956,6 +1956,11 @@ namespace DB_Schema_Export_Tool
                 return false;
             }
 
+            if (!mConnectedToServer || mSqlServer == null || mSqlServer.State != SqlSmoState.Existing)
+            {
+                return false;
+            }
+
             if (mOptions.ExportServerInfo)
             {
                 var success = ScriptServerObjects(mSqlServer);
