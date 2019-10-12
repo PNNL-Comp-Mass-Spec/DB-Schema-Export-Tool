@@ -1194,7 +1194,7 @@ namespace DB_Schema_Export_Tool
 
                         while (true)
                         {
-                            finalSearchIndex = currentLine.IndexOf("\n", indexStart, StringComparison.Ordinal);
+                            finalSearchIndex = currentLine.IndexOf("\r\n", indexStart, StringComparison.Ordinal);
 
                             if (finalSearchIndex == indexStart)
                             {
@@ -1234,10 +1234,10 @@ namespace DB_Schema_Export_Tool
 
                     if (removeDuplicateHeaderLine)
                     {
-                        var firstCrLf = currentLine.IndexOf("\n", 0, StringComparison.Ordinal);
+                        var firstCrLf = currentLine.IndexOf("\r\n", 0, StringComparison.Ordinal);
                         if (firstCrLf > 0 && firstCrLf < currentLine.Length)
                         {
-                            var nextCrLf = currentLine.IndexOf("\n", firstCrLf + 1, StringComparison.Ordinal);
+                            var nextCrLf = currentLine.IndexOf("\r\n", firstCrLf + 1, StringComparison.Ordinal);
                             if (nextCrLf > firstCrLf)
                             {
                                 if (currentLine.Substring(0, firstCrLf) ==
