@@ -18,7 +18,7 @@ namespace DB_Schema_Export_Tool
 
         }
 
-        public override bool ConnectToServer()
+        public override bool ConnectToServer(string databaseName = "")
         {
             throw new NotImplementedException();
         }
