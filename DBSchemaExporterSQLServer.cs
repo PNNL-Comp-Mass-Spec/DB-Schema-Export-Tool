@@ -120,7 +120,7 @@ namespace DB_Schema_Export_Tool
                 // Initialize the current connection options
                 if (mSqlServer == null)
                 {
-                    ResetSqlServerConnection();
+                    ResetServerConnection();
                 }
                 else if (mConnectedToServer && mSqlServer != null && mSqlServer.State == SqlSmoState.Existing)
                 {
@@ -1528,17 +1528,6 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
-        /// Retrieve a list of tables in the given SQL Server database
-        /// </summary>
-        /// <param name="currentDatabase"></param>
-        /// <returns></returns>
-        public IEnumerable<string> GetDatabaseTableNames(Database currentDatabase)
-        {
-            var dtTables = currentDatabase.EnumObjects(DatabaseObjectTypes.Table, SortOrder.Name);
-            return from DataRow item in dtTables.Rows select item["Name"].ToString();
-        }
-
-        /// <summary>
         /// Retrieve a list of database names for the current server
         /// </summary>
         /// <returns></returns>
@@ -1727,11 +1716,6 @@ namespace DB_Schema_Export_Tool
                 sqlServer = null;
                 return false;
             }
-        }
-
-        private void ResetSqlServerConnection()
-        {
-            ResetServerConnection();
         }
 
         /// <summary>
