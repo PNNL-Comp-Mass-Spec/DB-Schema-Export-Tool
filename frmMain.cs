@@ -1234,6 +1234,8 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
+                AppendNewMessage(string.Format("Found {0} databases on {1}", lstDatabasesToProcess.Items.Count, txtServerName.Text), MessageTypeConstants.Normal);
+
             }
             catch (Exception ex)
             {
