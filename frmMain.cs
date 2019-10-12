@@ -1,11 +1,13 @@
 ﻿using PRISM;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
+using PRISM.FileProcessor;
 using ShFolderBrowser.FolderBrowser;
 
 namespace DB_Schema_Export_Tool
@@ -179,7 +181,7 @@ namespace DB_Schema_Export_Tool
         {
             const string DEBUG_DIRECTORY_NAME = @"\debug";
 
-            var appDirectoryPath = PRISM.FileProcessor.ProcessFilesOrDirectoriesBase.GetAppDirectoryPath();
+            var appDirectoryPath = ProcessFilesOrDirectoriesBase.GetAppDirectoryPath();
 
             if (returnParentIfDirectoryNamedDebug)
             {
@@ -270,7 +272,7 @@ namespace DB_Schema_Export_Tool
 
         private string GetSettingsFilePath()
         {
-            return System.IO.Path.Combine(GetAppDirectoryPath(), XML_SETTINGS_FILE_NAME);
+            return Path.Combine(GetAppDirectoryPath(), XML_SETTINGS_FILE_NAME);
         }
 
         private void HandleDBExportStartingEvent(string databaseName)
@@ -323,7 +325,7 @@ namespace DB_Schema_Export_Tool
             {
                 try
                 {
-                    fileDialog.InitialDirectory = System.IO.Directory.GetParent(strFilePath).ToString();
+                    fileDialog.InitialDirectory = Directory.GetParent(strFilePath).ToString();
                 }
                 catch
                 {
@@ -408,7 +410,7 @@ namespace DB_Schema_Export_Tool
                 }
                 catch (Exception)
                 {
-                    var msg = "Invalid parameter in settings file: " + System.IO.Path.GetFileName(strFilePath);
+                    var msg = "Invalid parameter in settings file: " + Path.GetFileName(strFilePath);
                     MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                 }
             }
@@ -444,7 +446,7 @@ namespace DB_Schema_Export_Tool
             {
                 try
                 {
-                    fileDialog.InitialDirectory = System.IO.Directory.GetParent(strFilePath).ToString();
+                    fileDialog.InitialDirectory = Directory.GetParent(strFilePath).ToString();
                 }
                 catch
                 {
@@ -456,9 +458,9 @@ namespace DB_Schema_Export_Tool
                 fileDialog.InitialDirectory = GetAppDirectoryPath();
             }
 
-            if (System.IO.File.Exists(strFilePath))
+            if (File.Exists(strFilePath))
             {
-                fileDialog.FileName = System.IO.Path.GetFileName(strFilePath);
+                fileDialog.FileName = Path.GetFileName(strFilePath);
             }
             else
             {
@@ -516,7 +518,7 @@ namespace DB_Schema_Export_Tool
                 }
                 catch (Exception)
                 {
-                    var msg = "Error storing parameter in settings file: " + System.IO.Path.GetFileName(strFilePath);
+                    var msg = "Error storing parameter in settings file: " + Path.GetFileName(strFilePath);
                     MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                 }
 
@@ -696,7 +698,7 @@ namespace DB_Schema_Export_Tool
             {
                 mXmlSettingsFilePath = GetSettingsFilePath();
 
-                if (!System.IO.File.Exists(mXmlSettingsFilePath))
+                if (!File.Exists(mXmlSettingsFilePath))
                 {
                     IniFileSaveOptions(mXmlSettingsFilePath);
                 }
@@ -796,7 +798,7 @@ namespace DB_Schema_Export_Tool
                     txtOutputDirectoryPath.Text = GetAppDirectoryPath();
                 }
 
-                if (!System.IO.Directory.Exists(txtOutputDirectoryPath.Text))
+                if (!Directory.Exists(txtOutputDirectoryPath.Text))
                 {
                     message = "Output directory not found: " + txtOutputDirectoryPath.Text;
                     MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);

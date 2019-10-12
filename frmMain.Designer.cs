@@ -1,11 +1,16 @@
-﻿namespace DB_Schema_Export_Tool
+﻿using System;
+using System.ComponentModel;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace DB_Schema_Export_Tool
 {
     partial class frmMain
     {
         /// <summary>
         /// Required designer variable.
         /// </summary>
-        private System.ComponentModel.IContainer components = null;
+        private IContainer components = null;
 
         /// <summary>
         /// Clean up any resources being used.
@@ -49,6 +54,7 @@
             this.lstDatabasesToProcess = new System.Windows.Forms.ListBox();
             this.mnuFileSep1 = new System.Windows.Forms.MenuItem();
             this.fraStatus = new System.Windows.Forms.GroupBox();
+            this.lblMessage = new System.Windows.Forms.Label();
             this.pbarProgress = new System.Windows.Forms.ProgressBar();
             this.MainMenuControl = new System.Windows.Forms.MainMenu(this.components);
             this.mnuFile = new System.Windows.Forms.MenuItem();
@@ -91,7 +97,6 @@
             this.txtServerName = new System.Windows.Forms.TextBox();
             this.lblPassword = new System.Windows.Forms.Label();
             this.lblUsername = new System.Windows.Forms.Label();
-            this.lblMessage = new System.Windows.Forms.Label();
             this.fraStatus.SuspendLayout();
             this.fraControls.SuspendLayout();
             this.fraObjectTypesToScript.SuspendLayout();
@@ -372,7 +377,7 @@
             this.fraStatus.Controls.Add(this.pbarProgress);
             this.fraStatus.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.fraStatus.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.fraStatus.Location = new System.Drawing.Point(14, 481);
+            this.fraStatus.Location = new System.Drawing.Point(14, 473);
             this.fraStatus.Margin = new System.Windows.Forms.Padding(4);
             this.fraStatus.Name = "fraStatus";
             this.fraStatus.Padding = new System.Windows.Forms.Padding(4);
@@ -380,6 +385,21 @@
             this.fraStatus.Size = new System.Drawing.Size(773, 89);
             this.fraStatus.TabIndex = 9;
             this.fraStatus.TabStop = false;
+            // 
+            // lblMessage
+            // 
+            this.lblMessage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblMessage.BackColor = System.Drawing.SystemColors.Control;
+            this.lblMessage.Cursor = System.Windows.Forms.Cursors.Default;
+            this.lblMessage.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblMessage.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.lblMessage.Location = new System.Drawing.Point(9, 54);
+            this.lblMessage.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblMessage.Name = "lblMessage";
+            this.lblMessage.RightToLeft = System.Windows.Forms.RightToLeft.No;
+            this.lblMessage.Size = new System.Drawing.Size(752, 25);
+            this.lblMessage.TabIndex = 3;
             // 
             // pbarProgress
             // 
@@ -876,21 +896,6 @@
             this.lblUsername.TabIndex = 3;
             this.lblUsername.Text = "Username";
             // 
-            // lblMessage
-            // 
-            this.lblMessage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblMessage.BackColor = System.Drawing.SystemColors.Control;
-            this.lblMessage.Cursor = System.Windows.Forms.Cursors.Default;
-            this.lblMessage.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblMessage.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.lblMessage.Location = new System.Drawing.Point(9, 54);
-            this.lblMessage.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.lblMessage.Name = "lblMessage";
-            this.lblMessage.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.lblMessage.Size = new System.Drawing.Size(752, 25);
-            this.lblMessage.TabIndex = 3;
-            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
@@ -918,69 +923,69 @@
 
         #endregion
 
-        internal System.Windows.Forms.ListBox lstObjectTypesToScript;
-        internal System.Windows.Forms.MenuItem mnuHelp;
-        internal System.Windows.Forms.MenuItem mnuHelpAbout;
-        internal System.Windows.Forms.Label lblTableDataToExport;
-        internal System.Windows.Forms.Label lblServerOutputDirectoryNamePrefix;
-        internal System.Windows.Forms.Label lblProgress;
-        internal System.Windows.Forms.TextBox txtServerOutputDirectoryNamePrefix;
-        internal System.Windows.Forms.CheckBox chkExportServerSettingsLoginsAndJobs;
-        internal System.Windows.Forms.Label lblSelectDefaultDBs;
-        internal System.Windows.Forms.Button cmdSelectDefaultDMSDBs;
-        internal System.Windows.Forms.Button cmdSelectDefaultMTSDBs;
-        internal System.Windows.Forms.Label lblOutputDirectoryNamePrefix;
-        internal System.Windows.Forms.TextBox txtOutputDirectoryNamePrefix;
-        internal System.Windows.Forms.ComboBox cboTableNamesToExportSortOrder;
-        internal System.Windows.Forms.Button cmdRefreshDBList;
-        internal System.Windows.Forms.ListBox lstTableNamesToExportData;
-        internal System.Windows.Forms.Label lblOutputDirectoryPath;
-        internal System.Windows.Forms.ListBox lstDatabasesToProcess;
-        internal System.Windows.Forms.MenuItem mnuFileSep1;
-        internal System.Windows.Forms.GroupBox fraStatus;
-        internal System.Windows.Forms.ProgressBar pbarProgress;
-        internal System.Windows.Forms.MainMenu MainMenuControl;
-        internal System.Windows.Forms.MenuItem mnuFile;
-        internal System.Windows.Forms.MenuItem mnuFileSelectOutputDirectory;
-        internal System.Windows.Forms.MenuItem mnuFileLoadOptions;
-        internal System.Windows.Forms.MenuItem mnuFileSaveOptions;
-        internal System.Windows.Forms.MenuItem mnuFileSep2;
-        internal System.Windows.Forms.MenuItem mnuFileExit;
-        internal System.Windows.Forms.MenuItem mnuEdit;
-        internal System.Windows.Forms.MenuItem mnuEditStart;
-        internal System.Windows.Forms.MenuItem mnuEditIncludeSystemObjects;
-        internal System.Windows.Forms.MenuItem mnuEditSep1;
-        internal System.Windows.Forms.MenuItem mnuEditScriptObjectsThreaded;
-        internal System.Windows.Forms.MenuItem mnuEditPauseAfterEachDatabase;
-        internal System.Windows.Forms.MenuItem mnuEditIncludeTimestampInScriptFileHeader;
-        internal System.Windows.Forms.MenuItem mnuEditSep2;
-        internal System.Windows.Forms.MenuItem mnuEditIncludeTableRowCounts;
-        internal System.Windows.Forms.MenuItem mnuEditAutoSelectDefaultTableNames;
-        internal System.Windows.Forms.MenuItem mnuEditSep3;
-        internal System.Windows.Forms.MenuItem mnuEditWarnOnHighTableRowCount;
-        internal System.Windows.Forms.MenuItem mnuEditSaveDataAsInsertIntoStatements;
-        internal System.Windows.Forms.MenuItem mnuEditSep4;
-        internal System.Windows.Forms.MenuItem mnuEditResetOptions;
-        internal System.Windows.Forms.GroupBox fraControls;
-        internal System.Windows.Forms.Button cmdGo;
-        internal System.Windows.Forms.Button cmdExit;
-        internal System.Windows.Forms.Button cmdAbort;
-        internal System.Windows.Forms.Button cmdPauseUnpause;
-        internal System.Windows.Forms.TextBox txtOutputDirectoryPath;
-        internal System.Windows.Forms.GroupBox fraObjectTypesToScript;
-        internal System.Windows.Forms.GroupBox fraOutputOptions;
-        internal System.Windows.Forms.CheckBox chkCreateDirectoryForEachDB;
-        internal System.Windows.Forms.Button cmdUpdateTableNames;
-        internal System.Windows.Forms.GroupBox fraConnectionSettings;
-        internal System.Windows.Forms.CheckBox chkPostgreSQL;
-        internal System.Windows.Forms.Label lblServerName;
-        internal System.Windows.Forms.CheckBox chkUseIntegratedAuthentication;
-        internal System.Windows.Forms.TextBox txtPassword;
-        internal System.Windows.Forms.TextBox txtUsername;
-        internal System.Windows.Forms.TextBox txtServerName;
-        internal System.Windows.Forms.Label lblPassword;
-        internal System.Windows.Forms.Label lblUsername;
-        internal System.Windows.Forms.Label lblMessage;
+        internal ListBox lstObjectTypesToScript;
+        internal MenuItem mnuHelp;
+        internal MenuItem mnuHelpAbout;
+        internal Label lblTableDataToExport;
+        internal Label lblServerOutputDirectoryNamePrefix;
+        internal Label lblProgress;
+        internal TextBox txtServerOutputDirectoryNamePrefix;
+        internal CheckBox chkExportServerSettingsLoginsAndJobs;
+        internal Label lblSelectDefaultDBs;
+        internal Button cmdSelectDefaultDMSDBs;
+        internal Button cmdSelectDefaultMTSDBs;
+        internal Label lblOutputDirectoryNamePrefix;
+        internal TextBox txtOutputDirectoryNamePrefix;
+        internal ComboBox cboTableNamesToExportSortOrder;
+        internal Button cmdRefreshDBList;
+        internal ListBox lstTableNamesToExportData;
+        internal Label lblOutputDirectoryPath;
+        internal ListBox lstDatabasesToProcess;
+        internal MenuItem mnuFileSep1;
+        internal GroupBox fraStatus;
+        internal ProgressBar pbarProgress;
+        internal MainMenu MainMenuControl;
+        internal MenuItem mnuFile;
+        internal MenuItem mnuFileSelectOutputDirectory;
+        internal MenuItem mnuFileLoadOptions;
+        internal MenuItem mnuFileSaveOptions;
+        internal MenuItem mnuFileSep2;
+        internal MenuItem mnuFileExit;
+        internal MenuItem mnuEdit;
+        internal MenuItem mnuEditStart;
+        internal MenuItem mnuEditIncludeSystemObjects;
+        internal MenuItem mnuEditSep1;
+        internal MenuItem mnuEditScriptObjectsThreaded;
+        internal MenuItem mnuEditPauseAfterEachDatabase;
+        internal MenuItem mnuEditIncludeTimestampInScriptFileHeader;
+        internal MenuItem mnuEditSep2;
+        internal MenuItem mnuEditIncludeTableRowCounts;
+        internal MenuItem mnuEditAutoSelectDefaultTableNames;
+        internal MenuItem mnuEditSep3;
+        internal MenuItem mnuEditWarnOnHighTableRowCount;
+        internal MenuItem mnuEditSaveDataAsInsertIntoStatements;
+        internal MenuItem mnuEditSep4;
+        internal MenuItem mnuEditResetOptions;
+        internal GroupBox fraControls;
+        internal Button cmdGo;
+        internal Button cmdExit;
+        internal Button cmdAbort;
+        internal Button cmdPauseUnpause;
+        internal TextBox txtOutputDirectoryPath;
+        internal GroupBox fraObjectTypesToScript;
+        internal GroupBox fraOutputOptions;
+        internal CheckBox chkCreateDirectoryForEachDB;
+        internal Button cmdUpdateTableNames;
+        internal GroupBox fraConnectionSettings;
+        internal CheckBox chkPostgreSQL;
+        internal Label lblServerName;
+        internal CheckBox chkUseIntegratedAuthentication;
+        internal TextBox txtPassword;
+        internal TextBox txtUsername;
+        internal TextBox txtServerName;
+        internal Label lblPassword;
+        internal Label lblUsername;
+        internal Label lblMessage;
     }
 }
 
