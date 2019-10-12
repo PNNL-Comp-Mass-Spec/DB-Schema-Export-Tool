@@ -32,9 +32,25 @@ namespace DB_Schema_Export_Tool
 
         private readonly Regex mDateMatcher;
 
+        private DBSchemaExporterBase mDBSchemaExporter;
+
         private readonly SchemaExportOptions mOptions;
 
         #endregion
+
+        #region "Properties"
+
+        public DBSchemaExporterBase.DBSchemaExportErrorCodes ErrorCode => mDBSchemaExporter?.ErrorCode ?? DBSchemaExporterBase.DBSchemaExportErrorCodes.NoError;
+
+        public DBSchemaExporterBase.PauseStatusConstants PauseStatus => mDBSchemaExporter?.PauseStatus ?? DBSchemaExporterBase.PauseStatusConstants.Unpaused;
+
+        /// <summary>
+        /// Most recent Status, Warning, or Error message
+        /// </summary>
+        public string StatusMessage { get; private set; }
+
+        #endregion
+
 
         /// <summary>
         /// Constructor
@@ -45,6 +61,25 @@ namespace DB_Schema_Export_Tool
             mOptions = options;
 
             mDateMatcher = new Regex(@"'\d+/\d+/\d+ \d+:\d+:\d+ [AP]M'", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+            if (mOptions.PostgreSQL)
+            {
+                mDBSchemaExporter = new DBSchemaExporterPostgreSQL(mOptions);
+            }
+            else
+            {
+                mDBSchemaExporter = new DBSchemaExporterSQLServer(mOptions);
+            }
+            RegisterEvents(mDBSchemaExporter);
+        }
+
+        /// <summary>
+        /// Request that processing be aborted
+        /// </summary>
+        /// <remarks>Useful when the scripting is running in another thread</remarks>
+        public void AbortProcessingNow()
+        {
+            mDBSchemaExporter?.AbortProcessingNow();
         }
 
         private static void AddToSortedSetIfNew(ISet<string> filteredNames, string value)
@@ -56,6 +91,19 @@ namespace DB_Schema_Export_Tool
         private string CheckPlural(int value, string textIfOne, string textIfSeveral)
         {
             return value == 1 ? textIfOne : textIfSeveral;
+        }
+
+        /// <summary>
+        /// Connect to the server specified in mOptions
+        /// </summary>
+        /// <returns>True if successfully connected, false if a problem</returns>
+        public bool ConnectToServer()
+        {
+            var isValid = ValidateSchemaExporter();
+            if (!isValid)
+                return false;
+
+            return mDBSchemaExporter.ConnectToServer();
         }
 
         /// <summary>
@@ -104,28 +152,20 @@ namespace DB_Schema_Export_Tool
             try
             {
                 var dtStartTime = DateTime.UtcNow;
-                DBSchemaExporterBase dbSchemaExporter;
 
-                if (mOptions.PostgreSQL)
-                {
-                    dbSchemaExporter = new DBSchemaExporterPostgreSQL(mOptions);
-                }
-                else
-                {
-                    dbSchemaExporter = new DBSchemaExporterSQLServer(mOptions);
-                }
-
-                RegisterEvents(dbSchemaExporter);
+                var isValid = ValidateSchemaExporter();
+                if (!isValid)
+                    return false;
 
                 if (mOptions.DisableAutoDataExport)
                 {
-                    dbSchemaExporter.TableNamesToAutoSelect.Clear();
-                    dbSchemaExporter.TableNameAutoSelectRegEx.Clear();
+                    mDBSchemaExporter.TableNamesToAutoSelect.Clear();
+                    mDBSchemaExporter.TableNameAutoSelectRegEx.Clear();
                 }
                 else
                 {
-                    dbSchemaExporter.StoreTableNamesToAutoSelect(GetTableNamesToAutoExportData(mOptions.PostgreSQL));
-                    dbSchemaExporter.StoreTableNameAutoSelectRegEx(GetTableRegExToAutoExportData());
+                    mDBSchemaExporter.StoreTableNamesToAutoSelect(GetTableNamesToAutoExportData(mOptions.PostgreSQL));
+                    mDBSchemaExporter.StoreTableNameAutoSelectRegEx(GetTableRegExToAutoExportData());
                 }
 
                 var databaseList = databaseNamesAndOutputPaths.Keys.ToList();
@@ -136,11 +176,11 @@ namespace DB_Schema_Export_Tool
                     tableNamesForDataExport = LoadTableNamesForDataExport(mOptions.TableDataToExportFile);
                 }
 
-                var success = dbSchemaExporter.ScriptServerAndDBObjects(databaseList, tableNamesForDataExport);
+                var success = ScriptServerAndDBObjectsWork(databaseList, tableNamesForDataExport);
 
                 //  Populate a dictionary with the database names (properly capitalized) and the output directory path used for each
                 var databaseNameToDirectoryMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var exportedDatabase in dbSchemaExporter.SchemaOutputDirectories)
+                foreach (var exportedDatabase in mDBSchemaExporter.SchemaOutputDirectories)
                 {
                     databaseNameToDirectoryMap.Add(exportedDatabase.Key, exportedDatabase.Value);
                 }
@@ -173,9 +213,6 @@ namespace DB_Schema_Export_Tool
             }
 
         }
-
-
-
 
         /// <summary>
         /// Compare the contents of the two files using a line-by-line comparison
@@ -333,6 +370,27 @@ namespace DB_Schema_Export_Tool
                 return true;
             }
 
+        }
+
+        /// <summary>
+        /// Retrieve a list of tables in the given database
+        /// </summary>
+        /// <param name="databaseName">Database to query</param>
+        /// <param name="includeTableRowCounts">When true, then determines the row count in each table</param>
+        /// <param name="includeSystemObjects">When true, then also returns system var tables</param>
+        /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
+        public Dictionary<string, long> GetDatabaseTableNames(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
+        {
+            return mDBSchemaExporter.GetDatabaseTableNames(databaseName, includeTableRowCounts, includeSystemObjects);
+        }
+
+        /// <summary>
+        /// Retrieve a list of database names for the current server
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<string> GetServerDatabases()
+        {
+            return mDBSchemaExporter.GetServerDatabases();
         }
 
         public static SortedSet<string> GetTableNamesToAutoExportData(bool postgreSQLNames)
@@ -725,6 +783,25 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+
+        /// <summary>
+        /// Request that scripting be paused
+        /// </summary>
+        /// <remarks>Useful when the scripting is running in another thread</remarks>
+        public void RequestPause()
+        {
+            mDBSchemaExporter?.RequestPause();
+        }
+
+        /// <summary>
+        /// Request that scripting be unpaused
+        /// </summary>
+        /// <remarks>Useful when the scripting is running in another thread</remarks>
+        public void RequestUnpause()
+        {
+            mDBSchemaExporter?.RequestUnpause();
+        }
+
         private bool RunCommand(
             string exePath,
             string cmdArgs,
@@ -804,6 +881,33 @@ namespace DB_Schema_Export_Tool
                 return false;
             }
 
+        }
+
+        public bool ScriptServerAndDBObjects(List<string> databaseList, List<string> tableNamesForDataExport)
+        {
+            var isValid = ValidateSchemaExporter();
+            if (!isValid)
+                return false;
+
+            var success = ScriptServerAndDBObjectsWork(databaseList, tableNamesForDataExport);
+            return success;
+        }
+
+        private bool ScriptServerAndDBObjectsWork(List<string> databaseList, List<string> tableNamesForDataExport)
+        {
+            var success = mDBSchemaExporter.ScriptServerAndDBObjects(databaseList, tableNamesForDataExport);
+            return success;
+        }
+
+
+        public void StoreTableNameAutoSelectRegEx(SortedSet<string> tableNameRegExSpecs)
+        {
+            mDBSchemaExporter.StoreTableNameAutoSelectRegEx(tableNameRegExSpecs);
+        }
+
+        public void StoreTableNamesToAutoSelect(SortedSet<string> tableNames)
+        {
+            mDBSchemaExporter.StoreTableNameAutoSelectRegEx(tableNames);
         }
 
         /// <summary>
@@ -950,6 +1054,15 @@ namespace DB_Schema_Export_Tool
                 return false;
             }
 
+        }
+
+        /// <summary>
+        /// Pause / unpause the scripting
+        /// </summary>
+        /// <remarks>Useful when the scripting is running in another thread</remarks>
+        public void TogglePause()
+        {
+            mDBSchemaExporter?.TogglePause();
         }
 
         private bool UpdateRepoChanges(
@@ -1208,5 +1321,40 @@ namespace DB_Schema_Export_Tool
             }
 
         }
+
+        private bool ValidateSchemaExporter()
+        {
+            StatusMessage = string.Empty;
+
+            try
+            {
+                if (mOptions.PostgreSQL)
+                {
+                    if (!(mDBSchemaExporter is DBSchemaExporterPostgreSQL))
+                    {
+                        mDBSchemaExporter = new DBSchemaExporterPostgreSQL(mOptions);
+                        RegisterEvents(mDBSchemaExporter);
+                    }
+                }
+                else
+                {
+                    if (!(mDBSchemaExporter is DBSchemaExporterSQLServer))
+                    {
+                        mDBSchemaExporter = new DBSchemaExporterSQLServer(mOptions);
+                        RegisterEvents(mDBSchemaExporter);
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                if (string.IsNullOrWhiteSpace(StatusMessage))
+                {
+                    OnErrorEvent("Error in ValidateSchemaExporter", ex);
+                }
+                return false;
+            }
+        }
+
     }
 }
