@@ -1170,8 +1170,8 @@ namespace DB_Schema_Export_Tool
                 // Look for and remove the timestamp from the first line of the Sql script
                 // For example: "Script Date: 08/14/2006 20:14:31" prior to each "******/"
                 //
-                // If removeAllOccurrences = True, searches for all occurrences
-                // If removeAllOccurrences = False, does not look past the first carriage return of each entry in scriptInfo
+                // If removeAllScriptDateOccurrences = True, searches for all occurrences
+                // If removeAllScriptDateOccurrences = False, does not look past the first carriage return of each entry in scriptInfo
                 foreach (var item in scriptInfo)
                 {
                     var currentLine = string.Copy(item);
