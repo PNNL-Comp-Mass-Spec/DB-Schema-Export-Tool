@@ -23,6 +23,12 @@
         public bool UseIntegratedAuthentication { get; set; }
 
         /// <summary>
+        /// Current database
+        /// </summary>
+        /// <remarks>Empty string for SQL Server; database name for PostgreSQL</remarks>
+        public string DatabaseName { get; set; }
+
+        /// <summary>
         /// Database server port (only applicable to PostgreSQL)
         /// </summary>
         public int Port { get; set; }
@@ -61,7 +67,8 @@
         /// Update the cached server info
         /// </summary>
         /// <param name="options"></param>
-        public void UpdateInfo(SchemaExportOptions options)
+        /// <param name="currentDatabase"></param>
+        public void UpdateInfo(SchemaExportOptions options, string currentDatabase)
         {
             ServerName = options.ServerName;
             UserName = options.DBUser;
@@ -69,6 +76,7 @@
             UseIntegratedAuthentication = options.UseIntegratedAuthentication;
             Port = options.PgPort;
             PostgreSQL = options.PostgreSQL;
+            DatabaseName = currentDatabase;
         }
     }
 }

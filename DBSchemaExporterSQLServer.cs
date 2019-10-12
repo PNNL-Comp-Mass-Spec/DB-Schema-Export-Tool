@@ -1706,7 +1706,7 @@ namespace DB_Schema_Export_Tool
 
                 // If no error occurred, set .Connected = True and duplicate the connection info
                 mConnectedToServer = true;
-                mCurrentServerInfo.UpdateInfo(mOptions);
+                mCurrentServerInfo.UpdateInfo(mOptions, string.Empty);
 
                 return true;
             }
