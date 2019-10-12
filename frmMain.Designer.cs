@@ -91,6 +91,7 @@
             this.txtServerName = new System.Windows.Forms.TextBox();
             this.lblPassword = new System.Windows.Forms.Label();
             this.lblUsername = new System.Windows.Forms.Label();
+            this.lblMessage = new System.Windows.Forms.Label();
             this.fraStatus.SuspendLayout();
             this.fraControls.SuspendLayout();
             this.fraObjectTypesToScript.SuspendLayout();
@@ -107,7 +108,7 @@
             this.lstObjectTypesToScript.Margin = new System.Windows.Forms.Padding(4);
             this.lstObjectTypesToScript.Name = "lstObjectTypesToScript";
             this.lstObjectTypesToScript.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
-            this.lstObjectTypesToScript.Size = new System.Drawing.Size(223, 116);
+            this.lstObjectTypesToScript.Size = new System.Drawing.Size(224, 116);
             this.lstObjectTypesToScript.TabIndex = 0;
             this.lstObjectTypesToScript.KeyDown += new System.Windows.Forms.KeyEventHandler(this.lstObjectTypesToScript_KeyDown);
             this.lstObjectTypesToScript.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.lstObjectTypesToScript_KeyPress);
@@ -146,7 +147,7 @@
             this.lblServerOutputDirectoryNamePrefix.Cursor = System.Windows.Forms.Cursors.Default;
             this.lblServerOutputDirectoryNamePrefix.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblServerOutputDirectoryNamePrefix.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.lblServerOutputDirectoryNamePrefix.Location = new System.Drawing.Point(349, 278);
+            this.lblServerOutputDirectoryNamePrefix.Location = new System.Drawing.Point(349, 271);
             this.lblServerOutputDirectoryNamePrefix.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblServerOutputDirectoryNamePrefix.Name = "lblServerOutputDirectoryNamePrefix";
             this.lblServerOutputDirectoryNamePrefix.RightToLeft = System.Windows.Forms.RightToLeft.No;
@@ -166,7 +167,7 @@
             this.lblProgress.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblProgress.Name = "lblProgress";
             this.lblProgress.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.lblProgress.Size = new System.Drawing.Size(417, 30);
+            this.lblProgress.Size = new System.Drawing.Size(436, 30);
             this.lblProgress.TabIndex = 1;
             // 
             // txtServerOutputDirectoryNamePrefix
@@ -177,7 +178,7 @@
             this.txtServerOutputDirectoryNamePrefix.Cursor = System.Windows.Forms.Cursors.IBeam;
             this.txtServerOutputDirectoryNamePrefix.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtServerOutputDirectoryNamePrefix.ForeColor = System.Drawing.SystemColors.WindowText;
-            this.txtServerOutputDirectoryNamePrefix.Location = new System.Drawing.Point(516, 274);
+            this.txtServerOutputDirectoryNamePrefix.Location = new System.Drawing.Point(516, 267);
             this.txtServerOutputDirectoryNamePrefix.Margin = new System.Windows.Forms.Padding(4);
             this.txtServerOutputDirectoryNamePrefix.MaxLength = 0;
             this.txtServerOutputDirectoryNamePrefix.Name = "txtServerOutputDirectoryNamePrefix";
@@ -195,7 +196,7 @@
             this.chkExportServerSettingsLoginsAndJobs.Cursor = System.Windows.Forms.Cursors.Default;
             this.chkExportServerSettingsLoginsAndJobs.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.chkExportServerSettingsLoginsAndJobs.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.chkExportServerSettingsLoginsAndJobs.Location = new System.Drawing.Point(352, 251);
+            this.chkExportServerSettingsLoginsAndJobs.Location = new System.Drawing.Point(352, 244);
             this.chkExportServerSettingsLoginsAndJobs.Margin = new System.Windows.Forms.Padding(4);
             this.chkExportServerSettingsLoginsAndJobs.Name = "chkExportServerSettingsLoginsAndJobs";
             this.chkExportServerSettingsLoginsAndJobs.RightToLeft = System.Windows.Forms.RightToLeft.No;
@@ -211,7 +212,7 @@
             this.lblSelectDefaultDBs.Cursor = System.Windows.Forms.Cursors.Default;
             this.lblSelectDefaultDBs.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblSelectDefaultDBs.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.lblSelectDefaultDBs.Location = new System.Drawing.Point(13, 216);
+            this.lblSelectDefaultDBs.Location = new System.Drawing.Point(13, 209);
             this.lblSelectDefaultDBs.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblSelectDefaultDBs.Name = "lblSelectDefaultDBs";
             this.lblSelectDefaultDBs.RightToLeft = System.Windows.Forms.RightToLeft.No;
@@ -226,7 +227,7 @@
             this.cmdSelectDefaultDMSDBs.Cursor = System.Windows.Forms.Cursors.Default;
             this.cmdSelectDefaultDMSDBs.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.cmdSelectDefaultDMSDBs.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.cmdSelectDefaultDMSDBs.Location = new System.Drawing.Point(124, 212);
+            this.cmdSelectDefaultDMSDBs.Location = new System.Drawing.Point(124, 205);
             this.cmdSelectDefaultDMSDBs.Margin = new System.Windows.Forms.Padding(4);
             this.cmdSelectDefaultDMSDBs.Name = "cmdSelectDefaultDMSDBs";
             this.cmdSelectDefaultDMSDBs.RightToLeft = System.Windows.Forms.RightToLeft.No;
@@ -243,7 +244,7 @@
             this.cmdSelectDefaultMTSDBs.Cursor = System.Windows.Forms.Cursors.Default;
             this.cmdSelectDefaultMTSDBs.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.cmdSelectDefaultMTSDBs.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.cmdSelectDefaultMTSDBs.Location = new System.Drawing.Point(235, 212);
+            this.cmdSelectDefaultMTSDBs.Location = new System.Drawing.Point(235, 205);
             this.cmdSelectDefaultMTSDBs.Margin = new System.Windows.Forms.Padding(4);
             this.cmdSelectDefaultMTSDBs.Name = "cmdSelectDefaultMTSDBs";
             this.cmdSelectDefaultMTSDBs.RightToLeft = System.Windows.Forms.RightToLeft.No;
@@ -260,7 +261,7 @@
             this.lblOutputDirectoryNamePrefix.Cursor = System.Windows.Forms.Cursors.Default;
             this.lblOutputDirectoryNamePrefix.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblOutputDirectoryNamePrefix.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.lblOutputDirectoryNamePrefix.Location = new System.Drawing.Point(12, 281);
+            this.lblOutputDirectoryNamePrefix.Location = new System.Drawing.Point(12, 274);
             this.lblOutputDirectoryNamePrefix.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblOutputDirectoryNamePrefix.Name = "lblOutputDirectoryNamePrefix";
             this.lblOutputDirectoryNamePrefix.RightToLeft = System.Windows.Forms.RightToLeft.No;
@@ -276,7 +277,7 @@
             this.txtOutputDirectoryNamePrefix.Cursor = System.Windows.Forms.Cursors.IBeam;
             this.txtOutputDirectoryNamePrefix.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtOutputDirectoryNamePrefix.ForeColor = System.Drawing.SystemColors.WindowText;
-            this.txtOutputDirectoryNamePrefix.Location = new System.Drawing.Point(179, 278);
+            this.txtOutputDirectoryNamePrefix.Location = new System.Drawing.Point(179, 271);
             this.txtOutputDirectoryNamePrefix.Margin = new System.Windows.Forms.Padding(4);
             this.txtOutputDirectoryNamePrefix.MaxLength = 0;
             this.txtOutputDirectoryNamePrefix.Name = "txtOutputDirectoryNamePrefix";
@@ -290,7 +291,7 @@
             this.cboTableNamesToExportSortOrder.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.cboTableNamesToExportSortOrder.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboTableNamesToExportSortOrder.FormattingEnabled = true;
-            this.cboTableNamesToExportSortOrder.Location = new System.Drawing.Point(353, 212);
+            this.cboTableNamesToExportSortOrder.Location = new System.Drawing.Point(353, 205);
             this.cboTableNamesToExportSortOrder.Margin = new System.Windows.Forms.Padding(4);
             this.cboTableNamesToExportSortOrder.Name = "cboTableNamesToExportSortOrder";
             this.cboTableNamesToExportSortOrder.Size = new System.Drawing.Size(211, 24);
@@ -323,7 +324,7 @@
             this.lstTableNamesToExportData.Margin = new System.Windows.Forms.Padding(4);
             this.lstTableNamesToExportData.Name = "lstTableNamesToExportData";
             this.lstTableNamesToExportData.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
-            this.lstTableNamesToExportData.Size = new System.Drawing.Size(394, 84);
+            this.lstTableNamesToExportData.Size = new System.Drawing.Size(278, 84);
             this.lstTableNamesToExportData.TabIndex = 5;
             this.lstTableNamesToExportData.KeyDown += new System.Windows.Forms.KeyEventHandler(this.lstTableNamesToExportData_KeyDown);
             this.lstTableNamesToExportData.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.lstTableNamesToExportData_KeyPress);
@@ -366,18 +367,17 @@
             this.fraStatus.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.fraStatus.BackColor = System.Drawing.SystemColors.Control;
+            this.fraStatus.Controls.Add(this.lblMessage);
             this.fraStatus.Controls.Add(this.lblProgress);
             this.fraStatus.Controls.Add(this.pbarProgress);
-            this.fraStatus.Controls.Add(this.lblSubtaskProgress);
-            this.fraStatus.Controls.Add(this.pbarSubtaskProgress);
             this.fraStatus.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.fraStatus.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.fraStatus.Location = new System.Drawing.Point(21, 491);
+            this.fraStatus.Location = new System.Drawing.Point(14, 481);
             this.fraStatus.Margin = new System.Windows.Forms.Padding(4);
             this.fraStatus.Name = "fraStatus";
             this.fraStatus.Padding = new System.Windows.Forms.Padding(4);
             this.fraStatus.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.fraStatus.Size = new System.Drawing.Size(758, 96);
+            this.fraStatus.Size = new System.Drawing.Size(773, 89);
             this.fraStatus.TabIndex = 9;
             this.fraStatus.TabStop = false;
             // 
@@ -548,14 +548,13 @@
             // 
             // fraControls
             // 
-            this.fraControls.Controls.Add(this.lblMessage);
             this.fraControls.Controls.Add(this.cmdGo);
             this.fraControls.Controls.Add(this.cmdExit);
             this.fraControls.Controls.Add(this.cmdAbort);
             this.fraControls.Controls.Add(this.cmdPauseUnpause);
             this.fraControls.Font = new System.Drawing.Font("Arial", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.fraControls.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.fraControls.Location = new System.Drawing.Point(645, 5);
+            this.fraControls.Location = new System.Drawing.Point(659, 5);
             this.fraControls.Margin = new System.Windows.Forms.Padding(4);
             this.fraControls.Name = "fraControls";
             this.fraControls.Padding = new System.Windows.Forms.Padding(4);
@@ -642,7 +641,7 @@
             this.txtOutputDirectoryPath.MaxLength = 0;
             this.txtOutputDirectoryPath.Name = "txtOutputDirectoryPath";
             this.txtOutputDirectoryPath.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.txtOutputDirectoryPath.Size = new System.Drawing.Size(735, 23);
+            this.txtOutputDirectoryPath.Size = new System.Drawing.Size(619, 23);
             this.txtOutputDirectoryPath.TabIndex = 1;
             this.txtOutputDirectoryPath.Text = "C:\\Temp\\";
             // 
@@ -651,11 +650,11 @@
             this.fraObjectTypesToScript.Controls.Add(this.lstObjectTypesToScript);
             this.fraObjectTypesToScript.Font = new System.Drawing.Font("Arial", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.fraObjectTypesToScript.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.fraObjectTypesToScript.Location = new System.Drawing.Point(397, 5);
+            this.fraObjectTypesToScript.Location = new System.Drawing.Point(392, 5);
             this.fraObjectTypesToScript.Margin = new System.Windows.Forms.Padding(4);
             this.fraObjectTypesToScript.Name = "fraObjectTypesToScript";
             this.fraObjectTypesToScript.Padding = new System.Windows.Forms.Padding(4);
-            this.fraObjectTypesToScript.Size = new System.Drawing.Size(240, 155);
+            this.fraObjectTypesToScript.Size = new System.Drawing.Size(253, 155);
             this.fraObjectTypesToScript.TabIndex = 6;
             this.fraObjectTypesToScript.TabStop = false;
             this.fraObjectTypesToScript.Text = "Objects to Script";
@@ -685,12 +684,12 @@
             this.fraOutputOptions.Controls.Add(this.lstDatabasesToProcess);
             this.fraOutputOptions.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.fraOutputOptions.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.fraOutputOptions.Location = new System.Drawing.Point(21, 171);
+            this.fraOutputOptions.Location = new System.Drawing.Point(14, 168);
             this.fraOutputOptions.Margin = new System.Windows.Forms.Padding(4);
             this.fraOutputOptions.Name = "fraOutputOptions";
             this.fraOutputOptions.Padding = new System.Windows.Forms.Padding(4);
             this.fraOutputOptions.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.fraOutputOptions.Size = new System.Drawing.Size(759, 312);
+            this.fraOutputOptions.Size = new System.Drawing.Size(773, 305);
             this.fraOutputOptions.TabIndex = 8;
             this.fraOutputOptions.TabStop = false;
             this.fraOutputOptions.Text = "Output Options";
@@ -704,7 +703,7 @@
             this.chkCreateDirectoryForEachDB.Cursor = System.Windows.Forms.Cursors.Default;
             this.chkCreateDirectoryForEachDB.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.chkCreateDirectoryForEachDB.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.chkCreateDirectoryForEachDB.Location = new System.Drawing.Point(15, 251);
+            this.chkCreateDirectoryForEachDB.Location = new System.Drawing.Point(15, 244);
             this.chkCreateDirectoryForEachDB.Margin = new System.Windows.Forms.Padding(4);
             this.chkCreateDirectoryForEachDB.Name = "chkCreateDirectoryForEachDB";
             this.chkCreateDirectoryForEachDB.RightToLeft = System.Windows.Forms.RightToLeft.No;
@@ -742,12 +741,12 @@
             this.fraConnectionSettings.Controls.Add(this.lblUsername);
             this.fraConnectionSettings.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.fraConnectionSettings.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.fraConnectionSettings.Location = new System.Drawing.Point(21, 5);
+            this.fraConnectionSettings.Location = new System.Drawing.Point(14, 5);
             this.fraConnectionSettings.Margin = new System.Windows.Forms.Padding(4);
             this.fraConnectionSettings.Name = "fraConnectionSettings";
             this.fraConnectionSettings.Padding = new System.Windows.Forms.Padding(4);
             this.fraConnectionSettings.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.fraConnectionSettings.Size = new System.Drawing.Size(356, 155);
+            this.fraConnectionSettings.Size = new System.Drawing.Size(364, 155);
             this.fraConnectionSettings.TabIndex = 5;
             this.fraConnectionSettings.TabStop = false;
             this.fraConnectionSettings.Text = "Connection Settings";
@@ -813,7 +812,7 @@
             this.txtPassword.Name = "txtPassword";
             this.txtPassword.PasswordChar = '*';
             this.txtPassword.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.txtPassword.Size = new System.Drawing.Size(152, 23);
+            this.txtPassword.Size = new System.Drawing.Size(164, 23);
             this.txtPassword.TabIndex = 6;
             this.txtPassword.Text = "mt4fun";
             // 
@@ -829,7 +828,7 @@
             this.txtUsername.MaxLength = 0;
             this.txtUsername.Name = "txtUsername";
             this.txtUsername.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.txtUsername.Size = new System.Drawing.Size(152, 23);
+            this.txtUsername.Size = new System.Drawing.Size(164, 23);
             this.txtUsername.TabIndex = 4;
             this.txtUsername.Text = "mtuser";
             // 
@@ -845,7 +844,7 @@
             this.txtServerName.MaxLength = 0;
             this.txtServerName.Name = "txtServerName";
             this.txtServerName.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.txtServerName.Size = new System.Drawing.Size(152, 23);
+            this.txtServerName.Size = new System.Drawing.Size(164, 23);
             this.txtServerName.TabIndex = 1;
             this.txtServerName.Text = "Pogo";
             // 
@@ -877,11 +876,26 @@
             this.lblUsername.TabIndex = 3;
             this.lblUsername.Text = "Username";
             // 
+            // lblMessage
+            // 
+            this.lblMessage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblMessage.BackColor = System.Drawing.SystemColors.Control;
+            this.lblMessage.Cursor = System.Windows.Forms.Cursors.Default;
+            this.lblMessage.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblMessage.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.lblMessage.Location = new System.Drawing.Point(9, 54);
+            this.lblMessage.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblMessage.Name = "lblMessage";
+            this.lblMessage.RightToLeft = System.Windows.Forms.RightToLeft.No;
+            this.lblMessage.Size = new System.Drawing.Size(752, 25);
+            this.lblMessage.TabIndex = 3;
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 599);
+            this.ClientSize = new System.Drawing.Size(800, 573);
             this.Controls.Add(this.fraStatus);
             this.Controls.Add(this.fraControls);
             this.Controls.Add(this.fraObjectTypesToScript);
@@ -966,6 +980,7 @@
         internal System.Windows.Forms.TextBox txtServerName;
         internal System.Windows.Forms.Label lblPassword;
         internal System.Windows.Forms.Label lblUsername;
+        internal System.Windows.Forms.Label lblMessage;
     }
 }
 
