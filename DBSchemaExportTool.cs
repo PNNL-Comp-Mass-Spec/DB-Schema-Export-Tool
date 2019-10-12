@@ -52,6 +52,16 @@ namespace DB_Schema_Export_Tool
         #endregion
 
 
+        #region "Events"
+
+        public event DBSchemaExporterBase.DBExportStartingHandler DBExportStarting;
+
+        public event DBSchemaExporterBase.PauseStatusChangeHandler PauseStatusChange;
+
+        public event DBSchemaExporterBase.ProgressCompleteHandler ProgressComplete;
+
+        #endregion
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -782,6 +792,18 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        /// <summary>
+        /// Register the schema exporter's events
+        /// </summary>
+        /// <param name="schemaExporter"></param>
+        protected void RegisterEvents(DBSchemaExporterBase schemaExporter)
+        {
+            base.RegisterEvents(schemaExporter);
+
+            schemaExporter.DBExportStarting += DBExportStarting;
+            schemaExporter.PauseStatusChange += PauseStatusChange;
+            schemaExporter.ProgressComplete += ProgressComplete;
+        }
 
         /// <summary>
         /// Request that scripting be paused
