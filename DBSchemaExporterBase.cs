@@ -110,7 +110,6 @@ namespace DB_Schema_Export_Tool
             TableNamesToAutoSelect = new SortedSet<string>();
             TableNameAutoSelectRegEx = new SortedSet<string>();
 
-
             var regExOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline;
 
             mColumnCharNonStandardRegEx = new Regex("[^a-z0-9_]", regExOptions);
@@ -122,6 +121,15 @@ namespace DB_Schema_Export_Tool
 
         }
 
+        /// <summary>
+        /// Request that processing be aborted
+        /// </summary>
+        /// <remarks>Useful when the scripting is running in another thread</remarks>
+        public void AbortProcessingNow()
+        {
+            mAbortProcessing = true;
+            RequestUnpause();
+        }
 
         /// <summary>
         /// Determines the table names for which data will be exported

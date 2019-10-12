@@ -1507,6 +1507,17 @@ namespace DB_Schema_Export_Tool
             return scriptOptions;
         }
 
+        /// <summary>
+        /// Retrieve a list of tables in the given database
+        /// </summary>
+        /// <param name="databaseName">Database to query</param>
+        /// <param name="includeTableRowCounts">When true, then determines the row count in each table</param>
+        /// <param name="includeSystemObjects">When true, then also returns system var tables</param>
+        /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
+        public override Dictionary<string, long> GetDatabaseTableNames(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
+        {
+            return GetSqlServerDatabaseTableNames(databaseName, includeTableRowCounts, includeSystemObjects);
+        }
 
         /// <summary>
         /// Retrieve a list of tables in the given SQL Server database
@@ -1586,6 +1597,8 @@ namespace DB_Schema_Export_Tool
         /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
         public Dictionary<string, long> GetSqlServerDatabaseTableNames(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
         {
+            var databaseTables = new Dictionary<string, long>();
+
             try
             {
                 InitializeLocalVariables();
