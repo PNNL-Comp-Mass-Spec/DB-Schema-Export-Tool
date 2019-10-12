@@ -156,6 +156,7 @@ namespace DB_Schema_Export_Tool
             {
                 txtUsername.Enabled = !chkUseIntegratedAuthentication.Checked || chkPostgreSQL.Checked;
                 txtPassword.Enabled = !chkUseIntegratedAuthentication.Checked || chkPostgreSQL.Checked;
+                chkUseIntegratedAuthentication.Enabled = !chkPostgreSQL.Checked;
 
                 cmdGo.Visible = !mWorking;
                 cmdExit.Visible = !mWorking;
@@ -1344,8 +1345,9 @@ namespace DB_Schema_Export_Tool
             }
 
             mSchemaExportOptions.ServerName = txtServerName.Text;
+            mSchemaExportOptions.PostgreSQL = chkPostgreSQL.Checked;
 
-            if (chkUseIntegratedAuthentication.Checked)
+            if (chkUseIntegratedAuthentication.Checked && !mSchemaExportOptions.PostgreSQL)
             {
                 mSchemaExportOptions.DBUser = string.Empty;
                 mSchemaExportOptions.DBUserPassword = string.Empty;
@@ -1355,8 +1357,6 @@ namespace DB_Schema_Export_Tool
                 mSchemaExportOptions.DBUser = txtUsername.Text;
                 mSchemaExportOptions.DBUserPassword = txtPassword.Text;
             }
-
-            mSchemaExportOptions.PostgreSQL = chkPostgreSQL.Checked;
 
         }
 
