@@ -16,9 +16,11 @@ namespace DB_Schema_Export_Tool
     {
         #region "Constants and Enums"
 
+        // ReSharper disable UnusedMember.Global
         public const string SQL_SERVER_NAME_DEFAULT = "Pogo";
         public const string SQL_SERVER_USERNAME_DEFAULT = "mtuser";
         public const string SQL_SERVER_PASSWORD_DEFAULT = "mt4fun";
+        // ReSharper restore UnusedMember.Global
 
         public const string DB_DEFINITION_FILE_PREFIX = "DBDefinition_";
 
@@ -907,11 +909,15 @@ namespace DB_Schema_Export_Tool
                     if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
                     {
                         // Future capability:
-                        // 'Select Case mOptions.ScriptingOptions.DatabaseTypeForInsertInto
-                        // '    Case eTargetDatabaseTypeConstants.SqlServer
-                        // '    Case Else
-                        // '        ' Unsupported mode
-                        // 'End Select
+                        //switch (mOptions.ScriptingOptions.DatabaseTypeForInsertInto)
+                        //{
+                        //    case DatabaseScriptingOptions.TargetDatabaseTypeConstants.SqlServer:
+                        //        break;
+                        //    default:
+                        //        // Unsupported mode
+                        //        break;
+                        //}
+
                         if (identityColumnFound)
                         {
                             insertIntoLine = string.Format("INSERT INTO [{0}] ({1}) VALUES (", databaseTable.Name, delimitedRowValues);
@@ -1039,19 +1045,24 @@ namespace DB_Schema_Export_Tool
                     }
 
                     // // Read method #2: Use a SqlDataReader to read row-by-row
-                    // objReader = sqlServer.ConnectionContext.ExecuteReader(sql)
-                    // If objReader.HasRows Then
-                    //    Do While objReader.Read
-                    //        If objReader.FieldCount > 0 Then
-                    //            strCurrentRow = objReader.GetValue(0).ToString
-                    //            objReader.GetDataTypeName()
-                    //        End If
-                    //        For columnIndex = 1 To objReader.FieldCount - 1
-                    //            strCurrentRow &= ControlChars.Tab & objReader.GetValue(columnIndex).ToString
-                    //        Next
-                    //    Loop
-                    // End If
+                    //using (var reader = mSqlServer.ConnectionContext.ExecuteReader(sql))
+                    //{
+                    //    if (reader.HasRows)
+                    //    {
+                    //        while (reader.Read())
+                    //        {
+                    //            if (reader.FieldCount > 0)
+                    //            {
+                    //                delimitedRowValues.Append(reader.GetValue(0)));
+                    //            }
 
+                    //            for (var columnIndex = 1; columnIndex < reader.FieldCount; columnIndex++)
+                    //            {
+                    //                delimitedRowValues.Append("\t" + reader.GetValue(columnIndex));
+                    //            }
+                    //        }
+                    //    }
+                    //}
 
                     WriteTextToFile(workingParams.OutputDirectory, databaseTable.Name + "_Data", tableRows, false);
 

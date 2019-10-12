@@ -316,8 +316,10 @@ namespace DB_Schema_Export_Tool
 
                         if (dbDefinitionFile && dataLine.StartsWith("( NAME =") && comparisonLine.StartsWith("( NAME ="))
                         {
-                            //  DBDefinition file
+                            // DBDefinition file, example line:
+                            // NAME = N'Protein_Sequences_Data', FILENAME = N'J:\SQLServerData\Protein_Sequences.mdf' , SIZE = 174425088KB , MAXSIZE = UNLIMITED
 
+                            // Split on commas
                             var sourceCols = dataLine.Split(',').ToList();
                             var comparisonCols = comparisonLine.Split(',').ToList();
 
@@ -330,7 +332,8 @@ namespace DB_Schema_Export_Tool
                                     var comparisonValue = comparisonCols[dataColumnIndex].Trim();
                                     if (sourceValue.StartsWith("SIZE") && comparisonValue.StartsWith("SIZE"))
                                     {
-                                        //  Don't worry if these values differ
+                                        // Example: SIZE = 186294784KB  vs.  SIZE = 174425088KB
+                                        // Don't worry if these values differ
                                     }
                                     else if (!StringMatch(sourceValue, comparisonValue))
                                     {
@@ -590,25 +593,25 @@ namespace DB_Schema_Export_Tool
 
         private bool ParseGitStatus(FileSystemInfo targetDirectory, string consoleOutput, out int modifiedFileCount)
         {
-            //  Example output for Git with verbose output
-            //      # On branch master
-            //      # Your branch is behind 'origin/master' by 1 commit, and can be fast-forwarded.
-            //      #   (use "git pull" to update your local branch)
-            //      #
-            //     # Changes not staged for commit:
-            //     #   (use "git add <file>..." to update what will be committed)
-            //     #   (use "git checkout -- <file>..." to discard changes in working directory)
+            // Example output for Git with verbose output
+            //     # On branch master
+            //     # Your branch is behind 'origin/master' by 1 commit, and can be fast-forwarded.
+            //     #   (use "git pull" to update your local branch)
             //     #
-            //     #       modified:   PNNLOmics/Algorithms/Alignment/LcmsWarp/LcmsWarp.cs
-            //     #
-            //     # Untracked files:
-            //     #   (use "git add <file>..." to include in what will be committed)
-            //     #
-            //     #       MyNewFile.txt
-            //     no changes added to commit (use "git add" and/or "git commit -a")
-            //  Example output with Git for short output (-s)
-            //   M PNNLOmics/Algorithms/Alignment/LcmsWarp/LcmsWarp.cs
-            //  ?? MyNewFile.txt
+            //    # Changes not staged for commit:
+            //    #   (use "git add <file>..." to update what will be committed)
+            //    #   (use "git checkout -- <file>..." to discard changes in working directory)
+            //    #
+            //    #       modified:   PNNLOmics/Algorithms/Alignment/LcmsWarp/LcmsWarp.cs
+            //    #
+            //    # Untracked files:
+            //    #   (use "git add <file>..." to include in what will be committed)
+            //    #
+            //    #       MyNewFile.txt
+            //    no changes added to commit (use "git add" and/or "git commit -a")
+            // Example output with Git for short output (-s)
+            //  M PNNLOmics/Algorithms/Alignment/LcmsWarp/LcmsWarp.cs
+            // ?? MyNewFile.txt
 
             var newOrModifiedStatusSymbols = new List<char>
             {
@@ -654,17 +657,17 @@ namespace DB_Schema_Export_Tool
 
         private bool ParseSvnHgStatus(FileSystemInfo targetDirectory, string consoleOutput, RepoManagerType repoManagerType, out int modifiedFileCount)
         {
-            //  Example output for Svn where M is modified, ? is new, and ! means deleted
-            //         M       F:\Documents\Projects\DataMining\Database_Schema\DMS\DMS5\UpdateAnalysisJobStateNameCached.sql
-            //         ?       F:\Documents\Projects\DataMining\Database_Schema\DMS\DMS5\UpdateAnalysisJobToolNameCached.sql
-            //         M       F:\Documents\Projects\DataMining\Database_Schema\DMS\DMS5\V_Analysis_Job_List_Report_2.sql
-            //         M       F:\Documents\Projects\DataMining\Database_Schema\DMS\DMS5\V_GetPipelineJobParameters.sql
-            //         !       F:\Documents\Projects\DataMining\Database_Schema\DMS\DMS5\x_V_Analysis_Job.sql
-            //  Example output for Hg where M is modified, ? is new, and ! means deleted
-            //         M F:\Documents\Projects\DataMining\Database_Schema\DMS\DMS5\UpdateAnalysisJobStateNameCached.sql
-            //         ? F:\Documents\Projects\DataMining\Database_Schema\DMS\DMS5\UpdateAnalysisJobToolNameCached.sql
-            //         M F:\Documents\Projects\DataMining\Database_Schema\DMS\DMS5\V_Analysis_Job_List_Report_2.sql
-            //         M F:\Documents\Projects\DataMining\Database_Schema\DMS\DMS5\V_GetPipelineJobParameters.sql
+            // Example output for Svn where M is modified, ? is new, and ! means deleted
+            //        M       F:\Documents\Projects\DataMining\Database_Schema\DMS\DMS5\UpdateAnalysisJobStateNameCached.sql
+            //        ?       F:\Documents\Projects\DataMining\Database_Schema\DMS\DMS5\UpdateAnalysisJobToolNameCached.sql
+            //        M       F:\Documents\Projects\DataMining\Database_Schema\DMS\DMS5\V_Analysis_Job_List_Report_2.sql
+            //        M       F:\Documents\Projects\DataMining\Database_Schema\DMS\DMS5\V_GetPipelineJobParameters.sql
+            //        !       F:\Documents\Projects\DataMining\Database_Schema\DMS\DMS5\x_V_Analysis_Job.sql
+            // Example output for Hg where M is modified, ? is new, and ! means deleted
+            //        M F:\Documents\Projects\DataMining\Database_Schema\DMS\DMS5\UpdateAnalysisJobStateNameCached.sql
+            //        ? F:\Documents\Projects\DataMining\Database_Schema\DMS\DMS5\UpdateAnalysisJobToolNameCached.sql
+            //        M F:\Documents\Projects\DataMining\Database_Schema\DMS\DMS5\V_Analysis_Job_List_Report_2.sql
+            //        M F:\Documents\Projects\DataMining\Database_Schema\DMS\DMS5\V_GetPipelineJobParameters.sql
             var newOrModifiedStatusSymbols = new List<char>
                 {
                     'M',
