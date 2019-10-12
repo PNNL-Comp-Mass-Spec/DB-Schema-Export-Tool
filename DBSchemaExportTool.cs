@@ -142,7 +142,6 @@ namespace DB_Schema_Export_Tool
                     Directory.CreateDirectory(outputDirectoryPath);
                 }
 
-
                 mOptions.OutputDirectoryPath = outputDirectoryPath;
 
                 if (databaseNamesAndOutputPaths.Count > 1)
@@ -282,8 +281,7 @@ namespace DB_Schema_Export_Tool
 
                 //  Perform a line-by-line comparison
                 using (var baseFileReader = new StreamReader(new FileStream(baseFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
-                using (var comparisonFileReader =
-                    new StreamReader(new FileStream(comparisonFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+                using (var comparisonFileReader = new StreamReader(new FileStream(comparisonFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
                 {
                     while (!baseFileReader.EndOfStream)
                     {
@@ -514,7 +512,6 @@ namespace DB_Schema_Export_Tool
             return regExSpecs;
         }
 
-
         private List<string> LoadTableNamesForDataExport(string tableDataFilePath)
         {
             var tableNames = new SortedSet<string>();
@@ -623,7 +620,7 @@ namespace DB_Schema_Export_Tool
                 while (gitStatusReader.Peek() > -1)
                 {
                     var statusLine = gitStatusReader.ReadLine();
-                    if (string.IsNullOrWhiteSpace(statusLine)  || statusLine.Length < 4)
+                    if (string.IsNullOrWhiteSpace(statusLine) || statusLine.Length < 4)
                     {
                         continue;
                     }
