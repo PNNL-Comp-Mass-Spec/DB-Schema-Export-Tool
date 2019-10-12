@@ -286,11 +286,6 @@ namespace DB_Schema_Export_Tool
             pbarProgress.Minimum = 0;
             pbarProgress.Maximum = 100;
             pbarProgress.Value = 0;
-
-            lblSubtaskProgress.Text = string.Empty;
-            pbarSubtaskProgress.Minimum = 0;
-            pbarSubtaskProgress.Maximum = 100;
-            pbarSubtaskProgress.Value = 0;
         }
 
         /// <summary>
@@ -932,7 +927,7 @@ namespace DB_Schema_Export_Tool
 
             try
             {
-                lblSubtaskProgress.Text = "Schema export complete";
+                lblProgress.Text = "Schema export complete";
             }
             catch (Exception ex)
             {
@@ -1828,6 +1823,8 @@ namespace DB_Schema_Export_Tool
 
             Application.DoEvents();
         }
+
         #endregion
+
     }
 }

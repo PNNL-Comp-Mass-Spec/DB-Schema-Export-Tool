@@ -50,9 +50,6 @@
             this.mnuFileSep1 = new System.Windows.Forms.MenuItem();
             this.fraStatus = new System.Windows.Forms.GroupBox();
             this.pbarProgress = new System.Windows.Forms.ProgressBar();
-            this.lblSubtaskProgress = new System.Windows.Forms.Label();
-            this.pbarSubtaskProgress = new System.Windows.Forms.ProgressBar();
-            this.lblMessage = new System.Windows.Forms.Label();
             this.MainMenuControl = new System.Windows.Forms.MainMenu(this.components);
             this.mnuFile = new System.Windows.Forms.MenuItem();
             this.mnuFileSelectOutputDirectory = new System.Windows.Forms.MenuItem();
@@ -392,46 +389,6 @@
             this.pbarProgress.Size = new System.Drawing.Size(300, 25);
             this.pbarProgress.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
             this.pbarProgress.TabIndex = 0;
-            // 
-            // lblSubtaskProgress
-            // 
-            this.lblSubtaskProgress.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblSubtaskProgress.BackColor = System.Drawing.SystemColors.Control;
-            this.lblSubtaskProgress.Cursor = System.Windows.Forms.Cursors.Default;
-            this.lblSubtaskProgress.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblSubtaskProgress.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.lblSubtaskProgress.Location = new System.Drawing.Point(325, 54);
-            this.lblSubtaskProgress.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.lblSubtaskProgress.Name = "lblSubtaskProgress";
-            this.lblSubtaskProgress.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.lblSubtaskProgress.Size = new System.Drawing.Size(417, 30);
-            this.lblSubtaskProgress.TabIndex = 3;
-            // 
-            // pbarSubtaskProgress
-            // 
-            this.pbarSubtaskProgress.Location = new System.Drawing.Point(11, 57);
-            this.pbarSubtaskProgress.Margin = new System.Windows.Forms.Padding(4);
-            this.pbarSubtaskProgress.Name = "pbarSubtaskProgress";
-            this.pbarSubtaskProgress.Size = new System.Drawing.Size(300, 25);
-            this.pbarSubtaskProgress.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
-            this.pbarSubtaskProgress.TabIndex = 2;
-            // 
-            // lblMessage
-            // 
-            this.lblMessage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblMessage.BackColor = System.Drawing.SystemColors.Control;
-            this.lblMessage.Cursor = System.Windows.Forms.Cursors.Default;
-            this.lblMessage.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblMessage.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.lblMessage.Location = new System.Drawing.Point(8, 105);
-            this.lblMessage.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.lblMessage.Name = "lblMessage";
-            this.lblMessage.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.lblMessage.Size = new System.Drawing.Size(112, 21);
-            this.lblMessage.TabIndex = 2;
-            this.lblMessage.Visible = false;
             // 
             // MainMenuControl
             // 
@@ -968,9 +925,6 @@
         internal System.Windows.Forms.MenuItem mnuFileSep1;
         internal System.Windows.Forms.GroupBox fraStatus;
         internal System.Windows.Forms.ProgressBar pbarProgress;
-        internal System.Windows.Forms.Label lblSubtaskProgress;
-        internal System.Windows.Forms.ProgressBar pbarSubtaskProgress;
-        internal System.Windows.Forms.Label lblMessage;
         internal System.Windows.Forms.MainMenu MainMenuControl;
         internal System.Windows.Forms.MenuItem mnuFile;
         internal System.Windows.Forms.MenuItem mnuFileSelectOutputDirectory;
