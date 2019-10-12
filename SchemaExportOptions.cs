@@ -166,6 +166,24 @@ namespace DB_Schema_Export_Tool
             set => ScriptingOptions.ExportServerSettingsLoginsAndJobs = value;
         }
 
+        public bool IncludeSystemObjects
+        {
+            get => ScriptingOptions.IncludeSystemObjects;
+            set => ScriptingOptions.IncludeSystemObjects = value;
+        }
+
+        public bool IncludeTimestampInScriptFileHeader
+        {
+            get => ScriptingOptions.IncludeTimestampInScriptFileHeader;
+            set => ScriptingOptions.IncludeTimestampInScriptFileHeader = value;
+        }
+
+        public bool ExportServerSettingsLoginsAndJobs
+        {
+            get => ScriptingOptions.ExportServerSettingsLoginsAndJobs;
+            set => ScriptingOptions.ExportServerSettingsLoginsAndJobs = value;
+        }
+
         /// <summary>
         /// True when SyncDirectoryPath is not empty
         /// </summary>
