@@ -367,17 +367,17 @@ namespace DB_Schema_Export_Tool
             {
                 if (GitUpdate)
                 {
-                    Console.WriteLine("Auto-updating any new or changed files using Git");
+                    Console.WriteLine(" Auto-updating any new or changed files using Git");
                 }
 
                 if (SvnUpdate)
                 {
-                    Console.WriteLine("Auto-updating any new or changed files using Subversion");
+                    Console.WriteLine(" Auto-updating any new or changed files using Subversion");
                 }
 
                 if (HgUpdate)
                 {
-                    Console.WriteLine("Auto-updating any new or changed files using Mercurial");
+                    Console.WriteLine(" Auto-updating any new or changed files using Mercurial");
                 }
 
                 Console.WriteLine(" Commit updates: {0}", BoolToEnabledDisabled(CommitUpdates));
