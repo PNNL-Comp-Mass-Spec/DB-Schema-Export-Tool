@@ -316,12 +316,10 @@ namespace DB_Schema_Export_Tool
 
                 if (string.IsNullOrWhiteSpace(PgPass))
                 {
-                    // ReSharper disable StringLiteralTypo
                     if (SystemInfo.IsLinux)
                         Console.WriteLine(" Password:    {0}", "Will be read from ~/.pgpass");
                     else
-                        Console.WriteLine(" Password:    {0}", @"Will be read from %APPDATA%\postgresql");
-                    // ReSharper restore StringLiteralTypo
+                        Console.WriteLine(" Password:    {0}", @"Will be read from %APPDATA%\postgresql\pgpass.conf");
                 }
                 else
                 {
