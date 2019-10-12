@@ -449,7 +449,7 @@ namespace DB_Schema_Export_Tool
                         var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
                         var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
 
-                        OnProgressUpdate("Scripting " + objTable.Name, percentComplete);
+                        OnProgressUpdate(string.Format("Scripting {0}.{1}.{2}", objDatabase.Name, objTable.Schema, objTable.Name), percentComplete);
 
                         var smoObjectArray = new SqlSmoObject[] {
                             objTable
@@ -689,7 +689,7 @@ namespace DB_Schema_Export_Tool
                         var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
                         var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
 
-                        OnProgressUpdate("Processing " + objectName, percentComplete);
+                        OnProgressUpdate(string.Format("Scripting {0}.{1}.{2}", objDatabase.Name, objectSchema, objectName), percentComplete);
 
                         SqlSmoObject smoObject;
                         switch (objectIterator)

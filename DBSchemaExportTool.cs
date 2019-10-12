@@ -1002,8 +1002,7 @@ namespace DB_Schema_Export_Tool
                             sourceFile.Name.StartsWith("t_CandidateModsSeqWork_", StringComparison.OrdinalIgnoreCase) ||
                             sourceFile.Name.StartsWith("t_CandidateSeqWork_", StringComparison.OrdinalIgnoreCase))
                         {
-                            OnStatusEvent("Skipping "
-                                            + databaseName + " var " + sourceFile.Name);
+                            OnStatusEvent(string.Format("Skipping {0} object {1}", databaseName, sourceFile.Name));
                             continue;
                         }
 
