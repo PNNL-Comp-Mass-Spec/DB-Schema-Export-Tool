@@ -122,7 +122,7 @@ namespace DB_Schema_Export_Tool
                 {
                     ResetServerConnection();
                 }
-                else if (mConnectedToServer && mSqlServer != null && mSqlServer.State == SqlSmoState.Existing)
+                else if (ValidServerConnection())
                 {
                     if (string.Equals(mSqlServer.Name, mOptions.ServerName, StringComparison.OrdinalIgnoreCase))
                     {
@@ -1542,7 +1542,7 @@ namespace DB_Schema_Export_Tool
                     return new List<string>();
                 }
 
-                if (!mConnectedToServer || mSqlServer == null || mSqlServer.State != SqlSmoState.Existing)
+                if (!ValidServerConnection())
                 {
                     OnWarningEvent("Not connected to a server; cannot retrieve the list of the server's databases");
                     return new List<string>();
@@ -1606,7 +1606,7 @@ namespace DB_Schema_Export_Tool
                     return databaseTableInfo;
                 }
 
-                if (!mConnectedToServer || mSqlServer == null || mSqlServer.State != SqlSmoState.Existing)
+                if (!ValidServerConnection())
                 {
                     OnWarningEvent("Not connected to a server; cannot retrieve the list of the tables in database " + databaseName);
                     return databaseTableInfo;
@@ -1970,7 +1970,7 @@ namespace DB_Schema_Export_Tool
                 return false;
             }
 
-            if (!mConnectedToServer || mSqlServer == null || mSqlServer.State != SqlSmoState.Existing)
+            if (!ValidServerConnection())
             {
                 return false;
             }
@@ -2019,5 +2019,11 @@ namespace DB_Schema_Export_Tool
 
             return scriptInfo;
         }
+
+        private bool ValidServerConnection()
+        {
+            return mConnectedToServer && mSqlServer != null && mSqlServer.State == SqlSmoState.Existing;
+        }
+
     }
 }
