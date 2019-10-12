@@ -79,9 +79,12 @@ namespace DB_Schema_Export_Tool
                 // ReSharper restore StringLiteralTypo
             };
 
-            if (!string.IsNullOrWhiteSpace(mOptions.ServerName))
+            if (string.IsNullOrWhiteSpace(mOptions.ServerName))
+                return;
+
+            var success = ConnectToServer();
+            if (!success)
             {
-                var success = ConnectToServer();
                 OnWarningEvent("Unable to connect to server " + mOptions.ServerName);
             }
         }
@@ -319,11 +322,6 @@ namespace DB_Schema_Export_Tool
             if (mOptions.ScriptingOptions.ExportUserDefinedTypes)
             {
                 ExportDBUserDefinedTypes(objDatabase, scriptOptions, workingParams);
-                if (mAbortProcessing)
-                {
-                    return;
-                }
-
             }
         }
 
@@ -376,31 +374,12 @@ namespace DB_Schema_Export_Tool
             {
                 for (var index = 0; index < objDatabase.Schemas.Count; index++)
                 {
-                    if (ExportSchema(objDatabase.Schemas[index]))
-                    {
-                        var scriptInfo = CleanSqlScript(StringCollectionToList(objDatabase.Schemas[index].Script(scriptOptions)));
+                    if (!ExportSchema(objDatabase.Schemas[index]))
+                        continue;
 
-                        WriteTextToFile(workingParams.OutputDirectory, "Schema_" + objDatabase.Schemas[index].Name, scriptInfo);
-                        workingParams.ProcessCount++;
-                        CheckPauseStatus();
-                        if (mAbortProcessing)
-                        {
-                            OnWarningEvent("Aborted processing");
-                            return;
-                        }
+                    var scriptInfo = CleanSqlScript(StringCollectionToList(objDatabase.Schemas[index].Script(scriptOptions)));
 
-                    }
-
-                }
-
-            }
-
-            for (var index = 0; index <= objDatabase.Roles.Count - 1; index++)
-            {
-                if (ExportRole(objDatabase.Roles[index]))
-                {
-                    var scriptInfo = CleanSqlScript(StringCollectionToList(objDatabase.Roles[index].Script(scriptOptions)));
-                    WriteTextToFile(workingParams.OutputDirectory, "Role_" + objDatabase.Roles[index].Name, scriptInfo);
+                    WriteTextToFile(workingParams.OutputDirectory, "Schema_" + objDatabase.Schemas[index].Name, scriptInfo);
                     workingParams.ProcessCount++;
                     CheckPauseStatus();
                     if (mAbortProcessing)
@@ -409,6 +388,23 @@ namespace DB_Schema_Export_Tool
                         return;
                     }
 
+                }
+
+            }
+
+            for (var index = 0; index < objDatabase.Roles.Count; index++)
+            {
+                if (!ExportRole(objDatabase.Roles[index]))
+                    continue;
+
+                var scriptInfo = CleanSqlScript(StringCollectionToList(objDatabase.Roles[index].Script(scriptOptions)));
+                WriteTextToFile(workingParams.OutputDirectory, "Role_" + objDatabase.Roles[index].Name, scriptInfo);
+                workingParams.ProcessCount++;
+                CheckPauseStatus();
+                if (mAbortProcessing)
+                {
+                    OnWarningEvent("Aborted processing");
+                    return;
                 }
 
             }
@@ -1291,7 +1287,7 @@ namespace DB_Schema_Export_Tool
             {
                 var mailInfo = StringCollectionToList(sqlServer.Mail.Script(scriptOptions));
                 var cleanedMailInfo = CleanSqlScript(mailInfo, false, false);
-                WriteTextToFile(outputDirectoryPathCurrentServer, "ServerMail", cleanedMailInfo, true);
+                WriteTextToFile(outputDirectoryPathCurrentServer, "ServerMail", cleanedMailInfo);
             }
 
             // Save the Registry Settings to file ServerRegistrySettings.sql
@@ -1501,10 +1497,8 @@ namespace DB_Schema_Export_Tool
 
         public IEnumerable<string> GetDatabaseTableNames(Database objDatabase)
         {
-            // Step through the table names for this DB and compare to the RegEx values
             var dtTables = objDatabase.EnumObjects(DatabaseObjectTypes.Table, SortOrder.Name);
-
-            return (from DataRow item in dtTables.Rows select item["Name"].ToString());
+            return from DataRow item in dtTables.Rows select item["Name"].ToString();
         }
 
         /// <summary>
@@ -1548,7 +1542,7 @@ namespace DB_Schema_Export_Tool
 
         }
 
-        private List<string> GetSqlServerDatabasesWork()
+        private IEnumerable<string> GetSqlServerDatabasesWork()
         {
             var databaseNames = new List<string>();
             var objDatabases = mSqlServer.Databases;
@@ -1578,20 +1572,28 @@ namespace DB_Schema_Export_Tool
             try
             {
                 InitializeLocalVariables();
-                var dctTables = new Dictionary<string, long>();
-                if (databaseName == null)
+
+                if (!ConnectToServer())
                 {
-                    return dctTables;
+                    return databaseTables;
                 }
 
                 if (!mConnectedToServer || mSqlServer == null || mSqlServer.State != SqlSmoState.Existing)
                 {
-                    return dctTables;
+                    OnWarningEvent("Not connected to a server; cannot retrieve the list of the tables in database " + databaseName);
+                    return databaseTables;
+                }
+
+                if (string.IsNullOrWhiteSpace(databaseName))
+                {
+                    OnWarningEvent("Empty database name sent to GetSqlServerDatabaseTableNames");
+                    return databaseTables;
                 }
 
                 if (!mSqlServer.Databases.Contains(databaseName))
                 {
-                    return dctTables;
+                    OnWarningEvent(string.Format("Database {0} not found on sever {1}", databaseName, mCurrentServerInfo.ServerName));
+                    return databaseTables;
                 }
 
 
@@ -1603,33 +1605,27 @@ namespace DB_Schema_Export_Tool
                 var objDatabase = mSqlServer.Databases[databaseName];
 
                 var objTables = objDatabase.Tables;
-                if (objTables.Count > 0)
+                if (objTables.Count <= 0)
+                    return databaseTables;
+
+                for (var index = 0; index < objTables.Count; index++)
                 {
-                    for (var index = 0; index <= objTables.Count - 1; index++)
+                    if (!includeSystemObjects && objTables[index].IsSystemObject)
+                        continue;
+
+                    var tableRowCount = includeTableRowCounts ? objTables[index].RowCount : 0;
+
+                    databaseTables.Add(objTables[index].Name, tableRowCount);
+
+                    if (mAbortProcessing)
                     {
-                        if (includeSystemObjects || !objTables[index].IsSystemObject)
-                        {
-                            long tableRowCount = 0;
-                            if (includeTableRowCounts)
-                            {
-                                tableRowCount = objTables[index].RowCount;
-                            }
-
-                            dctTables.Add(objTables[index].Name, tableRowCount);
-
-                            if (mAbortProcessing)
-                            {
-                                OnWarningEvent("Aborted processing");
-                                break;
-                            }
-
-                        }
-
+                        OnWarningEvent("Aborted processing");
+                        break;
                     }
 
                 }
 
-                return dctTables;
+                return databaseTables;
             }
             catch (Exception ex)
             {
@@ -1687,9 +1683,8 @@ namespace DB_Schema_Export_Tool
 
         private void ResetSqlServerConnection()
         {
-            base.ResetServerConnection();
+            ResetServerConnection();
         }
-
 
         /// <summary>
         ///
@@ -1724,7 +1719,6 @@ namespace DB_Schema_Export_Tool
 
             return processCount;
         }
-
 
         private bool ScriptDBObjects(Server sqlServer, IReadOnlyCollection<string> databaseListToProcess, IReadOnlyCollection<string> tableNamesForDataExport)
         {
@@ -1845,7 +1839,7 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExporterBase.DBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating or creating directory " + outputDirectoryPath, ex);
+                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating or creating directory " + outputDirectoryPath, ex);
                 return false;
             }
 
@@ -1898,7 +1892,7 @@ namespace DB_Schema_Export_Tool
             {
                 if (string.IsNullOrWhiteSpace(mOptions.ServerName))
                 {
-                    SetLocalError(DBSchemaExporterBase.DBSchemaExportErrorCodes.ConfigurationError, "Server name is not defined");
+                    SetLocalError(DBSchemaExportErrorCodes.ConfigurationError, "Server name is not defined");
                     return false;
                 }
 
@@ -1910,7 +1904,7 @@ namespace DB_Schema_Export_Tool
                     }
                     else
                     {
-                        SetLocalError(DBSchemaExporterBase.DBSchemaExportErrorCodes.ConfigurationError, "Database list to process is empty");
+                        SetLocalError(DBSchemaExportErrorCodes.ConfigurationError, "Database list to process is empty");
                         return false;
                     }
                 }
@@ -1926,11 +1920,11 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExporterBase.DBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating the Schema Export Options", ex);
+                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating the Schema Export Options", ex);
                 return false;
             }
 
-            if (!base.ValidateOutputOptions())
+            if (!ValidateOutputOptions())
                 return false;
 
             OnStatusEvent("Exporting schema to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
