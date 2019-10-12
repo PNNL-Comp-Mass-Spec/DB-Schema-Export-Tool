@@ -455,7 +455,8 @@ namespace DB_Schema_Export_Tool
 
                     if (includeTable)
                     {
-                        var percentComplete = workingParams.ProcessCount / (float)workingParams.ProcessCountExpected * 100;
+                        var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
+                        var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
 
                         OnProgressUpdate("Scripting " + objTable.Name, percentComplete);
 
@@ -698,8 +699,10 @@ namespace DB_Schema_Export_Tool
                         var objectSchema = objRow[0].ToString();
                         var objectName = objRow[1].ToString();
 
-                        OnDebugEvent(string.Format("Processing {0}; {1} / {2}",
-                                                   objectName, workingParams.ProcessCount, workingParams.ProcessCountExpected));
+                        var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
+                        var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
+
+                        OnProgressUpdate("Processing " + objectName, percentComplete);
 
                         SqlSmoObject smoObject;
                         switch (objectIterator)
@@ -768,8 +771,11 @@ namespace DB_Schema_Export_Tool
                 foreach (var tableItem in tablesToExport)
                 {
                     var maximumDataRowsToExport = tableItem.Value;
-                    OnDebugEvent(string.Format("Exporting data from {0}; {1} / {2}",
-                                               tableItem.Key, workingParams.ProcessCount, workingParams.ProcessCountExpected));
+
+                    var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
+                    var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
+
+                    OnProgressUpdate("Exporting data from " + tableItem.Key, percentComplete);
 
                     Table objTable;
                     if (objDatabase.Tables.Contains(tableItem.Key))
@@ -1794,8 +1800,10 @@ namespace DB_Schema_Export_Tool
                         continue;
                     }
 
-                    var percentComplete = processedDBList.Count / (float)databaseListToProcess.Count * 100;
-                    OnProgressUpdate("Exporting objects from database " + currentDB, percentComplete);
+                    mPercentCompleteStart = processedDBList.Count / (float)databaseListToProcess.Count * 100;
+                    mPercentCompleteEnd = (processedDBList.Count + 1) / (float)databaseListToProcess.Count * 100;
+
+                    OnProgressUpdate("Exporting objects from database " + currentDB, mPercentCompleteStart);
 
                     processedDBList.Add(currentDB);
                     bool success;
@@ -1828,7 +1836,7 @@ namespace DB_Schema_Export_Tool
 
                     if (success)
                     {
-                        OnDebugEvent("Processing completed for database " + currentDB);
+                        OnStatusEvent("Processing completed for database " + currentDB);
                     }
                     else
                     {

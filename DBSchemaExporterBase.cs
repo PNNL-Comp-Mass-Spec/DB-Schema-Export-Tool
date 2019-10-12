@@ -62,6 +62,10 @@ namespace DB_Schema_Export_Tool
 
         protected readonly SchemaExportOptions mOptions;
 
+        protected float mPercentCompleteStart;
+
+        protected float mPercentCompleteEnd;
+
         #endregion
 
         #region "Properties"
@@ -223,6 +227,37 @@ namespace DB_Schema_Export_Tool
         {
             //  Replace any invalid characters in strName with underscores
             return mNonStandardOSChars.Replace(filename, "_");
+        }
+
+        /// <summary>
+        /// Computes the incremental progress that has been made beyond currentTaskProgressAtStart, based on the number of items processed and the next overall progress level
+        /// </summary>
+        /// <param name="currentTaskProgressAtStart">Progress at the start of the current subtask (value between 0 and 100)</param>
+        /// <param name="currentTaskProgressAtEnd">Progress at the start of the current subtask (value between 0 and 100)</param>
+        /// <param name="subTaskProgress">Progress of the current subtask (value between 0 and 100)</param>
+        /// <returns>Overall progress (value between 0 and 100)</returns>
+        /// <remarks></remarks>
+        protected float ComputeIncrementalProgress(float currentTaskProgressAtStart, float currentTaskProgressAtEnd, float subTaskProgress)
+        {
+            if (subTaskProgress < 0)
+            {
+                return currentTaskProgressAtStart;
+            }
+
+            if (subTaskProgress >= 100)
+            {
+                return currentTaskProgressAtEnd;
+            }
+
+            return (float)(currentTaskProgressAtStart + (subTaskProgress / 100.0) * (currentTaskProgressAtEnd - currentTaskProgressAtStart));
+        }
+
+        protected float ComputeSubtaskProgress(int itemsProcessed, int totalItems)
+        {
+            if (totalItems <= 0)
+                return 0;
+
+            return itemsProcessed / (float)totalItems * 100;
         }
 
         /// <summary>
