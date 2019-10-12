@@ -744,7 +744,7 @@ namespace DB_Schema_Export_Tool
 
                 // Auto-select all of the options
                 int index;
-                for (index = 0; index <= lstObjectTypesToScript.Items.Count; index++)
+                for (index = 0; index < lstObjectTypesToScript.Items.Count; index++)
                 {
                     lstObjectTypesToScript.SetSelected(index, true);
                 }
