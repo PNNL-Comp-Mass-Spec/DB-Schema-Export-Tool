@@ -19,7 +19,17 @@ namespace DB_Schema_Export_Tool
 
         }
 
-        protected override bool ConnectToServer()
+        public override bool ConnectToServer()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Dictionary<string, long> GetDatabaseTableNames(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override IEnumerable<string> GetServerDatabases()
         {
             throw new NotImplementedException();
         }

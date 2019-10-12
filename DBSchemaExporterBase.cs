@@ -213,7 +213,26 @@ namespace DB_Schema_Export_Tool
             return mNonStandardOSChars.Replace(filename, "_");
         }
 
-        protected abstract bool ConnectToServer();
+        /// <summary>
+        /// Connect to the server specified in mOptions
+        /// </summary>
+        /// <returns>True if successfully connected, false if a problem</returns>
+        public abstract bool ConnectToServer();
+
+        /// <summary>
+        /// Retrieve a list of tables in the given database
+        /// </summary>
+        /// <param name="databaseName">Database to query</param>
+        /// <param name="includeTableRowCounts">When true, then determines the row count in each table</param>
+        /// <param name="includeSystemObjects">When true, then also returns system var tables</param>
+        /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
+        public abstract Dictionary<string, long> GetDatabaseTableNames(string databaseName, bool includeTableRowCounts, bool includeSystemObjects);
+
+        /// <summary>
+        /// Retrieve a list of database names for the current server
+        /// </summary>
+        /// <returns></returns>
+        public abstract IEnumerable<string> GetServerDatabases();
 
         protected void InitializeLocalVariables()
         {

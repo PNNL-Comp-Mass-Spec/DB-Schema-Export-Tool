@@ -106,7 +106,7 @@ namespace DB_Schema_Export_Tool
         /// Connect to the server specified in mOptions
         /// </summary>
         /// <returns>True if successfully connected, false if a problem</returns>
-        protected override bool ConnectToServer()
+        public override bool ConnectToServer()
         {
             try
             {
@@ -1512,14 +1512,19 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
-        /// Determines the databases on the current server
+        /// Retrieve a list of database names for the current server
         /// </summary>
-        /// <returns>List of databases</returns>
-        public List<string> GetSqlServerDatabases()
+        /// <returns></returns>
+        public override IEnumerable<string> GetServerDatabases()
         {
             try
             {
                 InitializeLocalVariables();
+
+                if (!ConnectToServer())
+                {
+                    return new List<string>();
+                }
 
                 if (!mConnectedToServer || mSqlServer == null || mSqlServer.State != SqlSmoState.Existing)
                 {
