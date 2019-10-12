@@ -29,7 +29,7 @@ namespace DB_Schema_Export_Tool
         public SortedSet<string> DatabasesToProcess { get; }
 
         /// <summary>
-        /// Options defined what to script
+        /// Options defining what to script
         /// </summary>
         public DatabaseScriptingOptions ScriptingOptions { get; }
 

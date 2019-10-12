@@ -549,7 +549,7 @@ namespace DB_Schema_Export_Tool
 
             // Dim strXType As String
             // For intObjectIterator = 0 To 2
-            //    strXType = String.Empty
+            //    strXType = string.Empty
             //    Select Case intObjectIterator
             //        Case 0
             //            ' Views
@@ -623,7 +623,7 @@ namespace DB_Schema_Export_Tool
             for (var objectIterator = 0; objectIterator <= 3; objectIterator++)
             {
                 var objectType = "unknown";
-                var sql = String.Empty;
+                var sql = string.Empty;
                 switch (objectIterator)
                 {
                     case 0:
@@ -1402,6 +1402,12 @@ namespace DB_Schema_Export_Tool
             WriteTextToFile(outputDirectoryPathCurrentServer, "ServerConfiguration", serverConfig, false, ".ini");
         }
 
+        /// <summary>
+        /// Export the server logins
+        /// </summary>
+        /// <param name="sqlServer"></param>
+        /// <param name="scriptOptions"></param>
+        /// <param name="outputDirectoryPathCurrentServer"></param>
         private void ExportSQLServerLogins(Server sqlServer, ScriptingOptions scriptOptions, DirectoryInfo outputDirectoryPathCurrentServer)
         {
             // Do not include a Try block in this Function; let the calling function handle errors
@@ -1437,6 +1443,12 @@ namespace DB_Schema_Export_Tool
 
         }
 
+        /// <summary>
+        /// Export the SQL Server Agent jobs
+        /// </summary>
+        /// <param name="sqlServer"></param>
+        /// <param name="scriptOptions"></param>
+        /// <param name="outputDirectoryPathCurrentServer"></param>
         private void ExportSQLServerAgentJobs(Server sqlServer, ScriptingOptions scriptOptions, DirectoryInfo outputDirectoryPathCurrentServer)
         {
             // Do not include a Try block in this Function; let the calling function handle errors
@@ -1495,6 +1507,12 @@ namespace DB_Schema_Export_Tool
             return scriptOptions;
         }
 
+
+        /// <summary>
+        /// Retrieve a list of tables in the given SQL Server database
+        /// </summary>
+        /// <param name="objDatabase"></param>
+        /// <returns></returns>
         public IEnumerable<string> GetDatabaseTableNames(Database objDatabase)
         {
             var dtTables = objDatabase.EnumObjects(DatabaseObjectTypes.Table, SortOrder.Name);
@@ -1565,8 +1583,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="databaseName">Database to query</param>
         /// <param name="includeTableRowCounts">When true, then determines the row count in each table</param>
         /// <param name="includeSystemObjects">When true, then also returns system var tables</param>
-        /// <returns>Dictionary where key is table name and value is row counts (if includeTableRowCounts = true)</returns>
-        /// <remarks></remarks>
+        /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
         public Dictionary<string, long> GetSqlServerDatabaseTableNames(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
         {
             try
@@ -1642,9 +1659,13 @@ namespace DB_Schema_Export_Tool
             return DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
         }
 
+        /// <summary>
+        /// Login to the server
+        /// </summary>
+        /// <param name="sqlServer"></param>
+        /// <returns>True if success, otherwise false</returns>
         private bool LoginToServerWork(out Server sqlServer)
         {
-            // Returns True if success, False otherwise
             try
             {
                 var connectionInfo = new SqlConnectionInfo(mOptions.ServerName)
@@ -1687,7 +1708,7 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
-        ///
+        /// Script a list of objects
         /// </summary>
         /// <param name="objSchemaCollection">IEnumerable of type SchemaCollectionBase</param>
         /// <param name="scriptOptions">Script options</param>
