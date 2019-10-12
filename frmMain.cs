@@ -320,12 +320,12 @@ namespace DB_Schema_Export_Tool
                 FilterIndex = 1
             };
 
-            var strFilePath = string.Copy(mXmlSettingsFilePath);
-            if (strFilePath.Length > 0)
+            var filePath = string.Copy(mXmlSettingsFilePath);
+            if (filePath.Length > 0)
             {
                 try
                 {
-                    fileDialog.InitialDirectory = Directory.GetParent(strFilePath).ToString();
+                    fileDialog.InitialDirectory = Directory.GetParent(filePath).ToString();
                 }
                 catch
                 {
@@ -350,7 +350,7 @@ namespace DB_Schema_Export_Tool
 
         }
 
-        private void IniFileLoadOptions(string strFilePath, bool resetToDefaultsPriorToLoad, bool connectToServer)
+        private void IniFileLoadOptions(string filePath, bool resetToDefaultsPriorToLoad, bool connectToServer)
         {
             // Loads options from the given file
             var xmlFile = new XmlSettingsFileAccessor();
@@ -367,7 +367,7 @@ namespace DB_Schema_Export_Tool
 
                 // Read the settings from the XML file
                 // Pass True to .LoadSettings() to turn off case sensitive matching
-                xmlFile.LoadSettings(strFilePath, false);
+                xmlFile.LoadSettings(filePath, false);
                 try
                 {
                     this.Width = xmlFile.GetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowWidth", this.Width);
@@ -410,13 +410,13 @@ namespace DB_Schema_Export_Tool
                 }
                 catch (Exception)
                 {
-                    var msg = "Invalid parameter in settings file: " + Path.GetFileName(strFilePath);
+                    var msg = "Invalid parameter in settings file: " + Path.GetFileName(filePath);
                     MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                 }
             }
             catch (Exception)
             {
-                var msg = "Error loading settings from file: " + strFilePath;
+                var msg = "Error loading settings from file: " + filePath;
                 MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
 
@@ -441,12 +441,12 @@ namespace DB_Schema_Export_Tool
                 FilterIndex = 1
             };
 
-            var strFilePath = string.Copy(mXmlSettingsFilePath);
-            if (strFilePath.Length > 0)
+            var filePath = string.Copy(mXmlSettingsFilePath);
+            if (filePath.Length > 0)
             {
                 try
                 {
-                    fileDialog.InitialDirectory = Directory.GetParent(strFilePath).ToString();
+                    fileDialog.InitialDirectory = Directory.GetParent(filePath).ToString();
                 }
                 catch
                 {
@@ -458,9 +458,9 @@ namespace DB_Schema_Export_Tool
                 fileDialog.InitialDirectory = GetAppDirectoryPath();
             }
 
-            if (File.Exists(strFilePath))
+            if (File.Exists(filePath))
             {
-                fileDialog.FileName = Path.GetFileName(strFilePath);
+                fileDialog.FileName = Path.GetFileName(filePath);
             }
             else
             {
@@ -478,14 +478,14 @@ namespace DB_Schema_Export_Tool
         }
 
 
-        private void IniFileSaveOptions(string strFilePath, bool saveWindowDimensionsOnly = false)
+        private void IniFileSaveOptions(string filePath, bool saveWindowDimensionsOnly = false)
         {
             var xmlFile = new XmlSettingsFileAccessor();
 
             try
             {
                 // Pass True to .LoadSettings() here so that newly made Xml files will have the correct capitalization
-                xmlFile.LoadSettings(strFilePath, true);
+                xmlFile.LoadSettings(filePath, true);
                 try
                 {
                     xmlFile.SetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowWidth", this.Width);
@@ -518,7 +518,7 @@ namespace DB_Schema_Export_Tool
                 }
                 catch (Exception)
                 {
-                    var msg = "Error storing parameter in settings file: " + Path.GetFileName(strFilePath);
+                    var msg = "Error storing parameter in settings file: " + Path.GetFileName(filePath);
                     MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                 }
 
@@ -526,7 +526,7 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception)
             {
-                var msg = "Error saving settings to file: " + strFilePath;
+                var msg = "Error saving settings to file: " + filePath;
                 MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
         }

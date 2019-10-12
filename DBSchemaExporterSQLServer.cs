@@ -101,7 +101,8 @@ namespace DB_Schema_Export_Tool
             Database currentDatabase,
             IEnumerable<string> tableNamesForDataExport)
         {
-            var tableNamesInDatabase = GetDatabaseTableNames(currentDatabase);
+            var dtTables = currentDatabase.EnumObjects(DatabaseObjectTypes.Table, SortOrder.Name);
+            var tableNamesInDatabase = from DataRow item in dtTables.Rows select item["Name"].ToString();
 
             var tablesToExport = AutoSelectTableNamesForDataExport(tableNamesInDatabase, tableNamesForDataExport);
             return tablesToExport;
