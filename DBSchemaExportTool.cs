@@ -710,11 +710,6 @@ namespace DB_Schema_Export_Tool
                     if (repoManagerType == RepoManagerType.Svn)
                     {
                         filePropertyStatus = statusLine[1];
-                        //  var filePath = statusLine.Substring[8].Trim()
-                    }
-                    else
-                    {
-                        //  var filePath = statusLine.Substring[2].Trim()
                     }
 
                     if (newOrModifiedStatusSymbols.Contains(fileModStatus))
@@ -1083,7 +1078,7 @@ namespace DB_Schema_Export_Tool
             mDBSchemaExporter?.TogglePause();
         }
 
-        private bool UpdateRepoChanges(
+        private void UpdateRepoChanges(
             FileSystemInfo diTargetDirectory,
             int fileCopyCount, ICollection<string> newFilePaths,
             RepoManagerType repoManagerType,
@@ -1123,14 +1118,14 @@ namespace DB_Schema_Export_Tool
                         break;
                     default:
                         OnErrorEvent("Unsupported RepoManager type: " + repoManagerType);
-                        return false;
+                        return;
                 }
 
                 if (!repoExe.Exists)
                 {
                     OnErrorEvent("Repo exe not found at " + repoExe.FullName);
                     OnStatusEvent(repoSource);
-                    return false;
+                    return;
                 }
 
                 string cmdArgs;
@@ -1164,7 +1159,7 @@ namespace DB_Schema_Export_Tool
                         if (!success)
                         {
                             OnWarningEvent(string.Format("Error reported for {0}: {1}", toolName, addConsoleOutput));
-                            return false;
+                            return;
                         }
 
                         if (repoManagerType == RepoManagerType.Git && addErrorOutput.StartsWith("fatal", StringComparison.OrdinalIgnoreCase))
@@ -1192,7 +1187,7 @@ namespace DB_Schema_Export_Tool
                                      out var statusConsoleOutput, out var statusErrorOutput, maxRuntimeSeconds);
                 if (!success)
                 {
-                    return false;
+                    return;
                 }
 
                 if (repoManagerType == RepoManagerType.Git && statusErrorOutput.StartsWith("fatal", StringComparison.OrdinalIgnoreCase))
@@ -1201,7 +1196,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 Console.WriteLine();
-                var modifiedFileCount = 0;
+                int modifiedFileCount;
                 if (repoManagerType == RepoManagerType.Svn || repoManagerType == RepoManagerType.Hg)
                 {
                     success = ParseSvnHgStatus(diTargetDirectory, statusConsoleOutput, repoManagerType, out modifiedFileCount);
@@ -1214,7 +1209,7 @@ namespace DB_Schema_Export_Tool
 
                 if (!success)
                 {
-                    return false;
+                    return;
                 }
 
                 if (fileCopyCount > 0 && modifiedFileCount == 0)
@@ -1226,116 +1221,113 @@ namespace DB_Schema_Export_Tool
                     Console.WriteLine();
                 }
 
-                if (modifiedFileCount > 0 || newFilePaths.Count > 0)
+                if (modifiedFileCount <= 0 && newFilePaths.Count <= 0)
+                    return;
+
+                if (modifiedFileCount > 0)
                 {
-                    if (modifiedFileCount > 0)
+                    OnStatusEvent(string.Format("Found {0} modified {1}",
+                                                modifiedFileCount,
+                                                CheckPlural(modifiedFileCount, "file", "files")));
+                }
+
+                var commitMessage = string.Format("{0:yyyy-MM-dd} auto-commit", DateTime.Now);
+
+                if (!string.IsNullOrWhiteSpace(commitMessageAppend))
+                {
+                    if (commitMessageAppend.StartsWith(" "))
                     {
-                        OnStatusEvent(string.Format("Found {0} modified {1}",
-                                                    modifiedFileCount,
-                                                    CheckPlural(modifiedFileCount, "file", "files")));
-                    }
-
-                    var commitMessage = string.Format("{0:yyyy-MM-dd} auto-commit", DateTime.Now);
-
-                    if (!string.IsNullOrWhiteSpace(commitMessageAppend))
-                    {
-                        if (commitMessageAppend.StartsWith(" "))
-                        {
-                            commitMessage += commitMessageAppend;
-                        }
-                        else
-                        {
-                            commitMessage += " " + commitMessageAppend;
-                        }
-
-                    }
-
-                    if (!mOptions.CommitUpdates)
-                    {
-                        OnStatusEvent("Use /Commit to commit changes with commit message: " + commitMessage);
+                        commitMessage += commitMessageAppend;
                     }
                     else
                     {
-                        OnStatusEvent(string.Format("Commiting changes to {0}: {1}", toolName, commitMessage));
-
-                        //  Commit the changes
-                        cmdArgs = string.Format(" commit \"{0}\" --message \"{1}\"", diTargetDirectory.FullName, commitMessage);
-                        maxRuntimeSeconds = 120;
-
-                        success = RunCommand(repoExe.FullName, cmdArgs, diTargetDirectory.FullName,
-                                             out var commitConsoleOutput, out var commitErrorOutput, maxRuntimeSeconds);
-
-                        if (!success)
-                        {
-                            OnErrorEvent(string.Format("Commit error:\n{0}", commitConsoleOutput));
-                            return false;
-                        }
-
-                        if (repoManagerType == RepoManagerType.Git && commitErrorOutput.StartsWith("fatal", StringComparison.OrdinalIgnoreCase))
-                        {
-                            OnWarningEvent(string.Format("Error reported for {0}: {1}", toolName, commitErrorOutput));
-                            return false;
-                        }
-
-                        if (repoManagerType == RepoManagerType.Svn && commitErrorOutput.IndexOf("Commit failed", StringComparison.OrdinalIgnoreCase) >= 0)
-                        {
-                            OnWarningEvent(string.Format("Error reported for {0}: {1}", toolName, commitErrorOutput));
-                            return false;
-                        }
-
-                        if (repoManagerType == RepoManagerType.Hg || repoManagerType == RepoManagerType.Git)
-                        {
-                            for (var iteration = 1; iteration <= 2; iteration++)
-                            {
-                                if (repoManagerType == RepoManagerType.Hg)
-                                {
-                                    //  Push the changes
-                                    cmdArgs = " push";
-                                }
-                                else
-                                {
-                                    //  Push the changes to the master, both on origin and GitHub
-                                    if (iteration == 1)
-                                    {
-                                        cmdArgs = " push origin";
-                                    }
-                                    else
-                                    {
-                                        cmdArgs = " push GitHub";
-                                    }
-
-                                }
-
-                                maxRuntimeSeconds = 300;
-                                success = RunCommand(repoExe.FullName, cmdArgs, diTargetDirectory.FullName,
-                                                     out var pushConsoleOutput, out _, maxRuntimeSeconds);
-
-                                if (!success)
-                                {
-                                    OnErrorEvent(string.Format("Push error:\n{0}", pushConsoleOutput));
-                                    return false;
-                                }
-
-                                if (repoManagerType == RepoManagerType.Hg)
-                                {
-                                    break;
-                                }
-
-                            }
-
-                        }
-
-                        Console.WriteLine();
+                        commitMessage += " " + commitMessageAppend;
                     }
 
                 }
 
-                return true;
+                if (!mOptions.CommitUpdates)
+                {
+                    OnStatusEvent("Use /Commit to commit changes with commit message: " + commitMessage);
+                }
+                else
+                {
+                    OnStatusEvent(string.Format("Commiting changes to {0}: {1}", toolName, commitMessage));
+
+                    //  Commit the changes
+                    cmdArgs = string.Format(" commit \"{0}\" --message \"{1}\"", diTargetDirectory.FullName, commitMessage);
+                    maxRuntimeSeconds = 120;
+
+                    success = RunCommand(repoExe.FullName, cmdArgs, diTargetDirectory.FullName,
+                                         out var commitConsoleOutput, out var commitErrorOutput, maxRuntimeSeconds);
+
+                    if (!success)
+                    {
+                        OnErrorEvent(string.Format("Commit error:\n{0}", commitConsoleOutput));
+                        return;
+                    }
+
+                    if (repoManagerType == RepoManagerType.Git && commitErrorOutput.StartsWith("fatal", StringComparison.OrdinalIgnoreCase))
+                    {
+                        OnWarningEvent(string.Format("Error reported for {0}: {1}", toolName, commitErrorOutput));
+                        return;
+                    }
+
+                    if (repoManagerType == RepoManagerType.Svn && commitErrorOutput.IndexOf("Commit failed", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        OnWarningEvent(string.Format("Error reported for {0}: {1}", toolName, commitErrorOutput));
+                        return;
+                    }
+
+                    if (repoManagerType == RepoManagerType.Hg || repoManagerType == RepoManagerType.Git)
+                    {
+                        for (var iteration = 1; iteration <= 2; iteration++)
+                        {
+                            if (repoManagerType == RepoManagerType.Hg)
+                            {
+                                //  Push the changes
+                                cmdArgs = " push";
+                            }
+                            else
+                            {
+                                //  Push the changes to the master, both on origin and GitHub
+                                if (iteration == 1)
+                                {
+                                    cmdArgs = " push origin";
+                                }
+                                else
+                                {
+                                    cmdArgs = " push GitHub";
+                                }
+
+                            }
+
+                            maxRuntimeSeconds = 300;
+                            success = RunCommand(repoExe.FullName, cmdArgs, diTargetDirectory.FullName,
+                                                 out var pushConsoleOutput, out _, maxRuntimeSeconds);
+
+                            if (!success)
+                            {
+                                OnErrorEvent(string.Format("Push error:\n{0}", pushConsoleOutput));
+                                return;
+                            }
+
+                            if (repoManagerType == RepoManagerType.Hg)
+                            {
+                                break;
+                            }
+
+                        }
+
+                    }
+
+                    Console.WriteLine();
+                }
+
             }
             catch (Exception ex)
             {
                 OnErrorEvent("Error in UpdateRepoChanges for tool " + toolName, ex);
-                return false;
             }
 
         }
