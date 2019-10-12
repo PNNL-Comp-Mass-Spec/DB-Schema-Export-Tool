@@ -153,7 +153,7 @@ namespace DB_Schema_Export_Tool
 
         private static void Processor_ProgressUpdate(string progressMessage, float percentComplete)
         {
-            if (DateTime.UtcNow.Subtract(mLastProgressTime).TotalSeconds < 5)
+            if (DateTime.UtcNow.Subtract(mLastProgressTime).TotalSeconds < 3)
                 return;
 
             Console.WriteLine();
