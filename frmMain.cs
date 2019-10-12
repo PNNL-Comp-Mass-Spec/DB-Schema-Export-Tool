@@ -376,6 +376,7 @@ namespace DB_Schema_Export_Tool
 
                     var strServerNameSaved = txtServerName.Text;
                     txtServerName.Text = xmlFile.GetParam(XML_SECTION_DATABASE_SETTINGS, "ServerName", txtServerName.Text);
+                    chkPostgreSQL.Checked = xmlFile.GetParam(XML_SECTION_DATABASE_SETTINGS, "PostgreSQL", chkPostgreSQL.Checked);
 
                     chkUseIntegratedAuthentication.Checked = xmlFile.GetParam(XML_SECTION_DATABASE_SETTINGS, "UseIntegratedAuthentication", chkUseIntegratedAuthentication.Checked);
                     txtUsername.Text = xmlFile.GetParam(XML_SECTION_DATABASE_SETTINGS, "Username", txtUsername.Text);
@@ -494,6 +495,7 @@ namespace DB_Schema_Export_Tool
                     if (!saveWindowDimensionsOnly)
                     {
                         xmlFile.SetParam(XML_SECTION_DATABASE_SETTINGS, "ServerName", txtServerName.Text);
+                        xmlFile.SetParam(XML_SECTION_DATABASE_SETTINGS, "PostgreSQL", chkPostgreSQL.Checked);
 
                         xmlFile.SetParam(XML_SECTION_DATABASE_SETTINGS, "UseIntegratedAuthentication", chkUseIntegratedAuthentication.Checked);
                         xmlFile.SetParam(XML_SECTION_DATABASE_SETTINGS, "Username", txtUsername.Text);
@@ -1230,7 +1232,6 @@ namespace DB_Schema_Export_Tool
                         // Highlight this table name
                         lstDatabasesToProcess.SetSelected(itemIndex, true);
                     }
-
                 }
 
             }
