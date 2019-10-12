@@ -1640,6 +1640,9 @@ namespace DB_Schema_Export_Tool
 
                     databaseTables.Add(objTables[index].Name, tableRowCount);
 
+                    var percentComplete = ComputeSubtaskProgress(index, objTables.Count);
+                    OnProgressUpdate("Reading database tables", percentComplete);
+
                     if (mAbortProcessing)
                     {
                         OnWarningEvent("Aborted processing");
@@ -1647,6 +1650,9 @@ namespace DB_Schema_Export_Tool
                     }
 
                 }
+
+                OnProgressComplete();
+                OnStatusEvent(string.Format("Found {0} tables", databaseTables.Count));
 
                 return databaseTables;
             }
@@ -1822,6 +1828,7 @@ namespace DB_Schema_Export_Tool
 
                     if (success)
                     {
+                        Console.WriteLine();
                         OnStatusEvent("Processing completed for database " + currentDB);
                     }
                     else
