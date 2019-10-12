@@ -1647,24 +1647,24 @@ namespace DB_Schema_Export_Tool
             // Returns True if success, False otherwise
             try
             {
-                var objConnectionInfo = new SqlConnectionInfo(mOptions.ServerName)
+                var connectionInfo = new SqlConnectionInfo(mOptions.ServerName)
                 {
                     ConnectionTimeout = 10
                 };
 
                 if (string.IsNullOrWhiteSpace(mOptions.DBUser))
                 {
-                    objConnectionInfo.UseIntegratedSecurity = true;
+                    connectionInfo.UseIntegratedSecurity = true;
                 }
                 else
                 {
-                    objConnectionInfo.UseIntegratedSecurity = false;
-                    objConnectionInfo.UserName = mOptions.DBUser;
-                    objConnectionInfo.Password = mOptions.DBUserPassword;
+                    connectionInfo.UseIntegratedSecurity = false;
+                    connectionInfo.UserName = mOptions.DBUser;
+                    connectionInfo.Password = mOptions.DBUserPassword;
                 }
 
 
-                var sqlServerConnection = new ServerConnection(objConnectionInfo);
+                var sqlServerConnection = new ServerConnection(connectionInfo);
                 sqlServer = new Server(sqlServerConnection);
 
                 // If no error occurred, set .Connected = True and duplicate the connection info
