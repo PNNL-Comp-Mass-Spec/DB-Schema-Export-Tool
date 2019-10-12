@@ -184,8 +184,7 @@ namespace DB_Schema_Export_Tool
                 // Construct the path to the output directory
                 if (mOptions.CreateDirectoryForEachDB)
                 {
-                    workingParams.OutputDirectoryPathCurrentDB =
-                        Path.Combine(mOptions.OutputDirectoryPath, mOptions.DatabaseSubdirectoryPrefix + objDatabase.Name);
+                    workingParams.OutputDirectoryPathCurrentDB = Path.Combine(mOptions.OutputDirectoryPath, mOptions.DatabaseSubdirectoryPrefix + objDatabase.Name);
                 }
                 else
                 {
@@ -341,9 +340,7 @@ namespace DB_Schema_Export_Tool
                         {
                             workingParams.ProcessCount++;
                         }
-
                     }
-
                 }
 
                 for (var index = 0; index < objDatabase.Roles.Count; index++)
@@ -352,7 +349,6 @@ namespace DB_Schema_Export_Tool
                     {
                         workingParams.ProcessCount++;
                     }
-
                 }
 
                 return;
@@ -387,9 +383,7 @@ namespace DB_Schema_Export_Tool
                         OnWarningEvent("Aborted processing");
                         return;
                     }
-
                 }
-
             }
 
             for (var index = 0; index < objDatabase.Roles.Count; index++)
@@ -406,7 +400,6 @@ namespace DB_Schema_Export_Tool
                     OnWarningEvent("Aborted processing");
                     return;
                 }
-
             }
 
         }
@@ -448,9 +441,7 @@ namespace DB_Schema_Export_Tool
                             {
                                 includeTable = false;
                             }
-
                         }
-
                     }
 
                     if (includeTable)
@@ -475,7 +466,6 @@ namespace DB_Schema_Export_Tool
                         OnWarningEvent("Aborted processing");
                         return;
                     }
-
                 }
 
                 if (mOptions.ShowStats)
@@ -484,7 +474,6 @@ namespace DB_Schema_Export_Tool
                                      "Exported {0} tables in {1:0.0} seconds",
                                      objDatabase.Tables.Count, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
                 }
-
             }
 
         }
@@ -516,7 +505,6 @@ namespace DB_Schema_Export_Tool
                     var intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedTypes, scriptOptions, workingParams.OutputDirectory);
                     workingParams.ProcessCount += intItemCount;
                 }
-
             }
         }
 
@@ -612,7 +600,6 @@ namespace DB_Schema_Export_Tool
             //        End If
             //    End If
             // Next intObjectIterator
-
 
             // Option 4) Query the INFORMATION_SCHEMA views
             // Initialize the scripter and objSMOObject()
@@ -730,7 +717,9 @@ namespace DB_Schema_Export_Tool
 
                         if (smoObject != null)
                         {
-                            var smoObjectArray = new[] { smoObject };
+                            var smoObjectArray = new[] {
+                                smoObject
+                            };
 
                             var scriptInfo = CleanSqlScript(StringCollectionToList(objScripter.Script(smoObjectArray)));
                             WriteTextToFile(workingParams.OutputDirectory, objectName, scriptInfo);
@@ -752,9 +741,7 @@ namespace DB_Schema_Export_Tool
                                          "Exported {0} {1} in {2:0.0} seconds",
                                          dsObjects.Tables[0].Rows.Count, objectType, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
                     }
-
                 }
-
             }
         }
 

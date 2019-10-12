@@ -917,7 +917,6 @@ namespace DB_Schema_Export_Tool
             return success;
         }
 
-
         public void StoreTableNameAutoSelectRegEx(SortedSet<string> tableNameRegExSpecs)
         {
             mDBSchemaExporter.StoreTableNameAutoSelectRegEx(tableNameRegExSpecs);
