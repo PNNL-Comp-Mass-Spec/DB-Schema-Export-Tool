@@ -814,7 +814,7 @@ namespace DB_Schema_Export_Tool
 
                     var dsCurrentTable = objDatabase.ExecuteWithResults(sql);
                     var lstTableRows = new List<string>();
-                    var header = COMMENT_START_TEXT + "var:  Table [" + objTable.Name + "]";
+                    var header = COMMENT_START_TEXT + "Object:  Table [" + objTable.Name + "]";
 
                     if (mOptions.ScriptingOptions.IncludeTimestampInScriptFileHeader)
                     {
@@ -1199,7 +1199,7 @@ namespace DB_Schema_Export_Tool
                     {
                         // Find the first CrLf after the first non-blank line in currentLine
                         // However, if the script starts with several SET statements, we need to skip those lines
-                        var objectCommentStartIndex = currentLine.IndexOf(COMMENT_START_TEXT + "var:", StringComparison.Ordinal);
+                        var objectCommentStartIndex = currentLine.IndexOf(COMMENT_START_TEXT + "Object:", StringComparison.Ordinal);
                         if (currentLine.Trim().StartsWith("SET") && objectCommentStartIndex > 0)
                         {
                             indexStart = objectCommentStartIndex;
@@ -1702,7 +1702,6 @@ namespace DB_Schema_Export_Tool
                     connectionInfo.UserName = mOptions.DBUser;
                     connectionInfo.Password = mOptions.DBUserPassword;
                 }
-
 
                 var sqlServerConnection = new ServerConnection(connectionInfo);
                 sqlServer = new Server(sqlServerConnection);
