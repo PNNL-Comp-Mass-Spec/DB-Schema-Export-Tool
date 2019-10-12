@@ -139,7 +139,7 @@ namespace DB_Schema_Export_Tool
 
                 if (!Directory.Exists(outputDirectoryPath))
                 {
-                    //  Try to create the missing directory
+                    // Try to create the missing directory
                     OnStatusEvent("Creating " + outputDirectoryPath);
                     Directory.CreateDirectory(outputDirectoryPath);
                 }
@@ -187,14 +187,14 @@ namespace DB_Schema_Export_Tool
 
                 var success = ScriptServerAndDBObjectsWork(databaseList, tableNamesForDataExport);
 
-                //  Populate a dictionary with the database names (properly capitalized) and the output directory path used for each
+                // Populate a dictionary with the database names (properly capitalized) and the output directory path used for each
                 var databaseNameToDirectoryMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var exportedDatabase in mDBSchemaExporter.SchemaOutputDirectories)
                 {
                     databaseNameToDirectoryMap.Add(exportedDatabase.Key, exportedDatabase.Value);
                 }
 
-                //  Add any other databases in databaseList that are missing (as would be the case if it doesn't exist on the server)
+                // Add any other databases in databaseList that are missing (as would be the case if it doesn't exist on the server)
                 foreach (var databaseName in databaseList)
                 {
                     if (!databaseNameToDirectoryMap.ContainsKey(databaseName))
@@ -204,7 +204,7 @@ namespace DB_Schema_Export_Tool
 
                 }
 
-                //  Now update databaseNamesAndOutputPaths to match databaseNameToDirectoryMap (which has properly capitalized database names)
+                // Now update databaseNamesAndOutputPaths to match databaseNameToDirectoryMap (which has properly capitalized database names)
                 databaseNamesAndOutputPaths = databaseNameToDirectoryMap;
                 if (mOptions.ShowStats)
                 {
@@ -271,7 +271,7 @@ namespace DB_Schema_Export_Tool
                 }
                 else if (dateIgnoreFiles.Contains(baseFile.Name))
                 {
-                    //  Files where date values are being ignored; don't worry if file lengths differ
+                    // Files where date values are being ignored; don't worry if file lengths differ
                     OnStatusEvent("Ignoring date values in file " + baseFile.Name);
                     ignoreInsertIntoDates = true;
                 }
@@ -281,7 +281,7 @@ namespace DB_Schema_Export_Tool
                     return true;
                 }
 
-                //  Perform a line-by-line comparison
+                // Perform a line-by-line comparison
                 using (var baseFileReader = new StreamReader(new FileStream(baseFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
                 using (var comparisonFileReader = new StreamReader(new FileStream(comparisonFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
                 {
@@ -345,8 +345,8 @@ namespace DB_Schema_Export_Tool
 
                         if (ignoreInsertIntoDates && dataLine.StartsWith("INSERT INTO ") && comparisonLine.StartsWith("INSERT INTO "))
                         {
-                            //  Data file where we're ignoring dates
-                            //  Truncate each of the data lines at the first occurrence of a date
+                            // Data file where we're ignoring dates
+                            // Truncate each of the data lines at the first occurrence of a date
                             var matchBaseFile = mDateMatcher.Match(dataLine);
                             var matchComparisonFile = mDateMatcher.Match(comparisonLine);
                             if (matchBaseFile.Success && matchComparisonFile.Success)
@@ -360,7 +360,7 @@ namespace DB_Schema_Export_Tool
 
                         if (!linesMatch)
                         {
-                            //  Difference found
+                            // Difference found
                             differenceReason = DifferenceReasonType.Changed;
                             return true;
                         }
@@ -638,7 +638,7 @@ namespace DB_Schema_Export_Tool
 
                     if (fileIndexStatus == '?')
                     {
-                        //  New file; added by the calling function
+                        // New file; added by the calling function
                     }
                     else if (newOrModifiedStatusSymbols.Contains(fileIndexStatus) || newOrModifiedStatusSymbols.Contains(fileWorkTreeStatus))
                     {
@@ -722,7 +722,7 @@ namespace DB_Schema_Export_Tool
                     }
                     else if (fileModStatus == '?')
                     {
-                        //  New file; added by the calling function
+                        // New file; added by the calling function
                     }
 
                 }
@@ -763,8 +763,8 @@ namespace DB_Schema_Export_Tool
 
             try
             {
-                //  Keys in this dictionary are database names
-                //  Values are the output directory path used (values will be defined by ExportSchema then used by SyncSchemaFiles)
+                // Keys in this dictionary are database names
+                // Values are the output directory path used (values will be defined by ExportSchema then used by SyncSchemaFiles)
                 var databaseNamesAndOutputPaths = new Dictionary<string, string>();
                 foreach (var databaseName in databaseList)
                 {
@@ -851,13 +851,13 @@ namespace DB_Schema_Export_Tool
                 var executionAborted = false;
                 programRunner.StartAndMonitorProgram();
 
-                //  Wait for it to exit
+                // Wait for it to exit
                 if (maxRuntimeSeconds < 10)
                 {
                     maxRuntimeSeconds = 10;
                 }
 
-                //  Loop until program is complete, or until maxRuntimeSeconds seconds elapses
+                // Loop until program is complete, or until maxRuntimeSeconds seconds elapses
                 while (programRunner.State != ProgRunner.States.NotMonitoring)
                 {
                     System.Threading.Thread.Sleep(100);
@@ -988,7 +988,7 @@ namespace DB_Schema_Export_Tool
                     var fileProcessCount = 0;
                     var fileCopyCount = 0;
 
-                    //  This list holds the the files that are copied from diSourceDirectory to targetDirectory
+                    // This list holds the the files that are copied from diSourceDirectory to targetDirectory
                     var newFilePaths = new List<string>();
                     var filesToCopy = diSourceDirectory.GetFiles().ToList();
 
@@ -1140,7 +1140,7 @@ namespace DB_Schema_Export_Tool
                                                 CheckPlural(newFilePaths.Count, "file", "files"),
                                                 toolName));
 
-                    //  Add each of the new files
+                    // Add each of the new files
                     foreach (var newFilePath in newFilePaths)
                     {
                         var fileToAdd = new FileInfo(newFilePath);
@@ -1174,7 +1174,7 @@ namespace DB_Schema_Export_Tool
 
                 OnStatusEvent(string.Format("Looking for modified files tracked by {0} at {1}", toolName, diTargetDirectory.FullName));
 
-                //  Count the number of new or modified files
+                // Count the number of new or modified files
                 cmdArgs = string.Format(" status \"{0}\"", diTargetDirectory.FullName);
                 maxRuntimeSeconds = 300;
 
@@ -1203,7 +1203,7 @@ namespace DB_Schema_Export_Tool
                 }
                 else
                 {
-                    //  Git
+                    // Git
                     success = ParseGitStatus(diTargetDirectory, statusConsoleOutput, out modifiedFileCount);
                 }
 
@@ -1254,7 +1254,7 @@ namespace DB_Schema_Export_Tool
                 {
                     OnStatusEvent(string.Format("Commiting changes to {0}: {1}", toolName, commitMessage));
 
-                    //  Commit the changes
+                    // Commit the changes
                     cmdArgs = string.Format(" commit \"{0}\" --message \"{1}\"", diTargetDirectory.FullName, commitMessage);
                     maxRuntimeSeconds = 120;
 
@@ -1285,12 +1285,12 @@ namespace DB_Schema_Export_Tool
                         {
                             if (repoManagerType == RepoManagerType.Hg)
                             {
-                                //  Push the changes
+                                // Push the changes
                                 cmdArgs = " push";
                             }
                             else
                             {
-                                //  Push the changes to the master, both on origin and GitHub
+                                // Push the changes to the master, both on origin and GitHub
                                 if (iteration == 1)
                                 {
                                     cmdArgs = " push origin";

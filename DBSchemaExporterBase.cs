@@ -137,12 +137,12 @@ namespace DB_Schema_Export_Tool
             {
                 OnDebugEvent("Auto-selecting tables to export data from");
 
-                //  Tracks the table names and maximum number of data rows to export (0 means all rows)
+                // Tracks the table names and maximum number of data rows to export (0 means all rows)
                 var tablesToExport = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
 
-                //  Copy the table names from tableNamesForDataExport to dctTablesNames
-                //  Store 0 for the hash value since we want to export all of the data rows from the tables in tableNamesForDataExport
-                //  Simultaneously, populate intMaximumDataRowsToExport
+                // Copy the table names from tableNamesForDataExport to tablesToExport
+                // Store 0 for the hash value since we want to export all of the data rows from the tables in tableNamesForDataExport
+                // Simultaneously, populate intMaximumDataRowsToExport
                 if (tableNamesForDataExport != null)
                 {
                     foreach (var tableName in tableNamesForDataExport)
@@ -152,7 +152,7 @@ namespace DB_Schema_Export_Tool
 
                 }
 
-                //  Copy the table names from mTableNamesToAutoSelect to dctTablesNames (if not yet present)
+                // Copy the table names from mTableNamesToAutoSelect to tablesToExport (if not yet present)
                 if (TableNamesToAutoSelect != null)
                 {
                     foreach (var tableName in TableNamesToAutoSelect)
@@ -212,7 +212,7 @@ namespace DB_Schema_Export_Tool
 
         private string CleanNameForOS(string filename)
         {
-            //  Replace any invalid characters in strName with underscores
+            // Replace any invalid characters in strName with underscores
             return mNonStandardOSChars.Replace(filename, "_");
         }
 
@@ -369,7 +369,7 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception)
             {
-                //  Ignore errors here
+                // Ignore errors here
             }
 
         }
@@ -423,7 +423,7 @@ namespace DB_Schema_Export_Tool
             try
             {
 
-                //  Confirm that the output directory exists
+                // Confirm that the output directory exists
                 var outputDirectory = new DirectoryInfo(mOptions.OutputDirectoryPath);
 
                 if (outputDirectory.Exists || mOptions.PreviewExport)
@@ -454,7 +454,7 @@ namespace DB_Schema_Export_Tool
 
             try
             {
-                //  Make sure objectName doesn't contain any invalid characters
+                // Make sure objectName doesn't contain any invalid characters
                 var cleanName = CleanNameForOS(objectName);
                 outFilePath = Path.Combine(outputDirectory.FullName, cleanName + fileExtension);
 

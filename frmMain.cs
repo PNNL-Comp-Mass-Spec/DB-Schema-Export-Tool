@@ -1082,14 +1082,14 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception)
             {
-                //  Ignore errors here
+                // Ignore errors here
             }
 
         }
 
         private void SelectOutputDirectory()
         {
-            //  Prompts the user to select the output directory to create the scripted objects in
+            // Prompts the user to select the output directory to create the scripted objects in
             try
             {
                 var folderBrowser = new FolderBrowser();
@@ -1202,7 +1202,7 @@ namespace DB_Schema_Export_Tool
                 if (!VerifyOrUpdateServerConnection(true))
                     return;
 
-                //  Cache the currently selected names so that we can re-highlight them below
+                // Cache the currently selected names so that we can re-highlight them below
                 var selectedDatabaseNamesSaved = new SortedSet<string>();
                 foreach (var item in lstDatabasesToProcess.SelectedItems)
                 {
@@ -1224,7 +1224,7 @@ namespace DB_Schema_Export_Tool
 
                     if (selectedDatabaseNamesSaved.Contains(databaseName))
                     {
-                        //  Highlight this table name
+                        // Highlight this table name
                         lstDatabasesToProcess.SetSelected(itemIndex, true);
                     }
 
@@ -1268,7 +1268,7 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception)
             {
-                //  Ignore errors here
+                // Ignore errors here
             }
 
         }
@@ -1377,7 +1377,7 @@ namespace DB_Schema_Export_Tool
 
                 if (lstDatabasesToProcess.SelectedIndex < 0)
                 {
-                    //  Auto-select the first database
+                    // Auto-select the first database
                     lstDatabasesToProcess.SelectedIndex = 0;
                 }
 
@@ -1429,9 +1429,9 @@ namespace DB_Schema_Export_Tool
 
         private string ValueToTextEstimate(long value)
         {
-            //  Converts value to a text-based value
-            //  For data between 10000 and 1 million, rounds to the nearest thousand
-            //  For data over 1 million, displays as x.x million
+            // Converts value to a text-based value
+            // For data between 10000 and 1 million, rounds to the nearest thousand
+            // For data over 1 million, displays as x.x million
 
             var lngValueAbs = Math.Abs(value);
             if (lngValueAbs < 100)
@@ -1743,7 +1743,7 @@ namespace DB_Schema_Export_Tool
             {
                 if (message != null && ex != null && message.IndexOf(ex.Message, StringComparison.OrdinalIgnoreCase) < 0)
                 {
-                    AppendNewMessage(message +": " + ex.Message, MessageTypeConstants.Error);
+                    AppendNewMessage(message + ": " + ex.Message, MessageTypeConstants.Error);
                 }
                 else
                 {
