@@ -501,13 +501,10 @@ namespace DB_Schema_Export_Tool
 
             else
             {
-                var intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedDataTypes, scriptOptions,
-                                                             workingParams.ProcessCountExpected, workingParams.OutputDirectory);
+                var intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedDataTypes, scriptOptions, workingParams.OutputDirectory);
                 workingParams.ProcessCount += intItemCount;
             }
-
         }
-
 
         private void ExportDBUserDefinedTypes(Database objDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
@@ -519,12 +516,11 @@ namespace DB_Schema_Export_Tool
                 }
                 else
                 {
-                    var intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedTypes, scriptOptions, workingParams.ProcessCountExpected, workingParams.OutputDirectory);
+                    var intItemCount = ScriptCollectionOfObjects(objDatabase.UserDefinedTypes, scriptOptions, workingParams.OutputDirectory);
                     workingParams.ProcessCount += intItemCount;
                 }
 
             }
-
         }
 
         private void ExportDBViewsProceduresAndUDFs(Database objDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
@@ -1700,13 +1696,11 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="objSchemaCollection">IEnumerable of type SchemaCollectionBase</param>
         /// <param name="scriptOptions">Script options</param>
-        /// <param name="processCountExpected">Expected number of items</param>
         /// <param name="outputDirectory">Output directory</param>
         /// <returns></returns>
         private int ScriptCollectionOfObjects(
             IEnumerable objSchemaCollection,
             ScriptingOptions scriptOptions,
-            int processCountExpected,
             DirectoryInfo outputDirectory)
         {
             // Scripts the objects in objSchemaCollection

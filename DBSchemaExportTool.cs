@@ -59,7 +59,6 @@ namespace DB_Schema_Export_Tool
         public DBSchemaExportTool(SchemaExportOptions options)
         {
             mOptions = options;
-
             mDateMatcher = new Regex(@"'\d+/\d+/\d+ \d+:\d+:\d+ [AP]M'", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
             if (mOptions.PostgreSQL)
@@ -110,14 +109,13 @@ namespace DB_Schema_Export_Tool
         /// Export database schema to the specified directory
         /// </summary>
         /// <param name="outputDirectoryPath">Output directory path</param>
-        /// <param name="serverName">Server name</param>
         /// <param name="databaseNamesAndOutputPaths">Dictionary where keys are database names and values will be updated to have the output directory path used</param>
         /// <returns>True if success, false if a problem</returns>
         /// <remarks>
         /// If CreatedDirectoryForEachDB is true, or if databaseNamesAndOutputPaths contains more than one entry,
         /// then each database will be scripted to a subdirectory below the output directory
         /// </remarks>
-        public bool ExportSchema(string outputDirectoryPath, string serverName, ref Dictionary<string, string> databaseNamesAndOutputPaths)
+        public bool ExportSchema(string outputDirectoryPath, ref Dictionary<string, string> databaseNamesAndOutputPaths)
         {
 
             try
@@ -760,7 +758,8 @@ namespace DB_Schema_Export_Tool
             }
 
             try
-            {//  Keys in this dictionary are database names
+            {
+                //  Keys in this dictionary are database names
                 //  Values are the output directory path used (values will be defined by ExportSchema then used by SyncSchemaFiles)
                 var databaseNamesAndOutputPaths = new Dictionary<string, string>();
                 foreach (var databaseName in databaseList)
@@ -768,7 +767,7 @@ namespace DB_Schema_Export_Tool
                     databaseNamesAndOutputPaths.Add(databaseName, string.Empty);
                 }
 
-                var success = ExportSchema(outputDirectoryPath, serverName, ref databaseNamesAndOutputPaths);
+                var success = ExportSchema(outputDirectoryPath, ref databaseNamesAndOutputPaths);
                 if (success && mOptions.Sync)
                 {
                     success = SyncSchemaFiles(databaseNamesAndOutputPaths, mOptions.SyncDirectoryPath);
