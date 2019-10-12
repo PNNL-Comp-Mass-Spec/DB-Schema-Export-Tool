@@ -3,7 +3,7 @@ image: Visual Studio 2019
 before_build:
 - cmd: nuget.exe restore DB_Schema_Export_Tool.sln
 configuration: Release
-platform: x86
+platform: Any CPU
 build:
   project: DB_Schema_Export_Tool.sln
   verbosity: minimal
