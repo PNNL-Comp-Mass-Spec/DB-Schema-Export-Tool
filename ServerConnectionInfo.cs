@@ -1,7 +1,4 @@
-﻿
-using Microsoft.SqlServer.Management.Dmf;
-
-namespace DB_Schema_Export_Tool
+﻿namespace DB_Schema_Export_Tool
 {
     public class ServerConnectionInfo
     {
