@@ -822,87 +822,6 @@ namespace DB_Schema_Export_Tool
             mDBSchemaExporter?.RequestUnpause();
         }
 
-        private bool RunCommand(
-            string exePath,
-            string cmdArgs,
-            string workDirPath,
-            out string consoleOutput,
-            out string errorOutput,
-            int maxRuntimeSeconds)
-        {
-            consoleOutput = string.Empty;
-            errorOutput = string.Empty;
-            try
-            {
-                var programRunner = new ProgRunner
-                {
-                    Arguments = cmdArgs,
-                    CreateNoWindow = true,
-                    MonitoringInterval = 100,
-                    Name = Path.GetFileNameWithoutExtension(exePath),
-                    Program = exePath,
-                    Repeat = false,
-                    RepeatHoldOffTime = 0,
-                    WorkDir = workDirPath,
-                    CacheStandardOutput = true,
-                    EchoOutputToConsole = true,
-                    WriteConsoleOutputToFile = false,
-                    ConsoleOutputFilePath = string.Empty
-                };
-
-                RegisterEvents(programRunner);
-                var dtStartTime = DateTime.UtcNow;
-                var dtLastStatus = DateTime.UtcNow;
-                var executionAborted = false;
-                programRunner.StartAndMonitorProgram();
-
-                // Wait for it to exit
-                if (maxRuntimeSeconds < 10)
-                {
-                    maxRuntimeSeconds = 10;
-                }
-
-                // Loop until program is complete, or until maxRuntimeSeconds seconds elapses
-                while (programRunner.State != ProgRunner.States.NotMonitoring)
-                {
-                    System.Threading.Thread.Sleep(100);
-                    var elapsedSeconds = DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds;
-                    if (elapsedSeconds > maxRuntimeSeconds)
-                    {
-                        OnErrorEvent(string.Format("Program execution has surpassed {0} seconds; aborting {1}", maxRuntimeSeconds, exePath));
-
-                        programRunner.StopMonitoringProgram(true);
-                        executionAborted = true;
-                    }
-
-                    if (DateTime.UtcNow.Subtract(dtLastStatus).TotalSeconds > 15)
-                    {
-                        dtLastStatus = DateTime.UtcNow;
-                        OnDebugEvent(string.Format("Waiting for {0}, {1:0} seconds elapsed",
-                                                   Path.GetFileName(exePath), elapsedSeconds));
-                    }
-
-                }
-
-                if (executionAborted)
-                {
-                    OnWarningEvent("ProgramRunner was aborted for " + exePath);
-                    return true;
-                }
-
-                consoleOutput = programRunner.CachedConsoleOutput;
-                errorOutput = programRunner.CachedConsoleError;
-                return true;
-
-            }
-            catch (Exception ex)
-            {
-                OnErrorEvent("Error in RunCommand", ex);
-                return false;
-            }
-
-        }
-
         public bool ScriptServerAndDBObjects(List<string> databaseList, List<string> tableNamesForDataExport)
         {
             var isValid = ValidateSchemaExporter();
@@ -1133,6 +1052,9 @@ namespace DB_Schema_Export_Tool
                     return;
                 }
 
+                var programRunner = new ProgramRunner();
+                RegisterEvents(programRunner);
+
                 string cmdArgs;
                 int maxRuntimeSeconds;
 
@@ -1158,8 +1080,8 @@ namespace DB_Schema_Export_Tool
                         cmdArgs = string.Format(" add \"{0}\"", fileToAdd.FullName);
                         maxRuntimeSeconds = 30;
 
-                        success = RunCommand(repoExe.FullName, cmdArgs, fileToAdd.Directory.FullName,
-                                             out var addConsoleOutput, out var addErrorOutput, maxRuntimeSeconds);
+                        success = programRunner.RunCommand(repoExe.FullName, cmdArgs, fileToAdd.Directory.FullName,
+                                                           out var addConsoleOutput, out var addErrorOutput, maxRuntimeSeconds);
 
                         if (!success)
                         {
@@ -1188,8 +1110,8 @@ namespace DB_Schema_Export_Tool
                     cmdArgs = " status -s -u";
                 }
 
-                success = RunCommand(repoExe.FullName, cmdArgs, diTargetDirectory.FullName,
-                                     out var statusConsoleOutput, out var statusErrorOutput, maxRuntimeSeconds);
+                success = programRunner.RunCommand(repoExe.FullName, cmdArgs, diTargetDirectory.FullName,
+                                                   out var statusConsoleOutput, out var statusErrorOutput, maxRuntimeSeconds);
                 if (!success)
                 {
                     return;
@@ -1263,8 +1185,8 @@ namespace DB_Schema_Export_Tool
                     cmdArgs = string.Format(" commit \"{0}\" --message \"{1}\"", diTargetDirectory.FullName, commitMessage);
                     maxRuntimeSeconds = 120;
 
-                    success = RunCommand(repoExe.FullName, cmdArgs, diTargetDirectory.FullName,
-                                         out var commitConsoleOutput, out var commitErrorOutput, maxRuntimeSeconds);
+                    success = programRunner.RunCommand(repoExe.FullName, cmdArgs, diTargetDirectory.FullName,
+                                                       out var commitConsoleOutput, out var commitErrorOutput, maxRuntimeSeconds);
 
                     if (!success)
                     {
@@ -1308,8 +1230,8 @@ namespace DB_Schema_Export_Tool
                             }
 
                             maxRuntimeSeconds = 300;
-                            success = RunCommand(repoExe.FullName, cmdArgs, diTargetDirectory.FullName,
-                                                 out var pushConsoleOutput, out _, maxRuntimeSeconds);
+                            success = programRunner.RunCommand(repoExe.FullName, cmdArgs, diTargetDirectory.FullName,
+                                                               out var pushConsoleOutput, out _, maxRuntimeSeconds);
 
                             if (!success)
                             {

@@ -49,6 +49,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ProgramRunner.cs" />
     <Compile Include="DBSchemaExporterBase.cs" />
     <Compile Include="DBSchemaExporterPostgreSQL.cs" />
     <Compile Include="DBSchemaExportTool.cs" />
