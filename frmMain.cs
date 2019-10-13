@@ -1202,7 +1202,7 @@ namespace DB_Schema_Export_Tool
                 UpdatePauseUnpauseCaption(DBSchemaExporterBase.PauseStatusConstants.Unpaused);
                 Application.DoEvents();
 
-                var connectionDatabase = chkPostgreSQL.Checked ? "postgres" : string.Empty;
+                var connectionDatabase = chkPostgreSQL.Checked ? DBSchemaExporterPostgreSQL.POSTGRES_DATABASE : string.Empty;
 
                 if (!VerifyOrUpdateServerConnection(connectionDatabase, true))
                     return;

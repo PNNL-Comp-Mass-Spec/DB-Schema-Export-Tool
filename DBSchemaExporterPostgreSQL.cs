@@ -14,6 +14,8 @@ namespace DB_Schema_Export_Tool
 
         public const int DEFAULT_PORT = 5432;
 
+        public const string POSTGRES_DATABASE = "postgres";
+
         #endregion
 
         #region "Classwide Variables"
@@ -53,7 +55,7 @@ namespace DB_Schema_Export_Tool
             {
                 if (string.IsNullOrWhiteSpace(databaseName))
                 {
-                    databaseName = "postgres";
+                    databaseName = POSTGRES_DATABASE;
                 }
 
                 // Initialize the current connection options
