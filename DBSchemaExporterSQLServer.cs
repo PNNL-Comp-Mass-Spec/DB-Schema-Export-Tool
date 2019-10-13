@@ -678,7 +678,7 @@ namespace DB_Schema_Export_Tool
                     continue;
 
                 var dtStartTime = DateTime.UtcNow;
-                var queryResults= currentDatabase.ExecuteWithResults(sql);
+                var queryResults = currentDatabase.ExecuteWithResults(sql);
                 if (workingParams.CountObjectsOnly)
                 {
                     workingParams.ProcessCount += queryResults.Tables[0].Rows.Count;
@@ -1009,7 +1009,7 @@ namespace DB_Schema_Export_Tool
                                 case DataColumnTypeConstants.BinaryByte:
                                     try
                                     {
-                                        delimitedRowValues.Append(("0x" + Convert.ToByte(currentRow[columnIndex]).ToString("X2")));
+                                        delimitedRowValues.Append("0x" + Convert.ToByte(currentRow[columnIndex]).ToString("X2"));
                                     }
                                     catch (Exception)
                                     {
@@ -1137,7 +1137,7 @@ namespace DB_Schema_Export_Tool
         {
             if (propertyName != null && propertyValue != null)
             {
-                serverInfo.Add((propertyName + "=" + propertyValue));
+                serverInfo.Add(propertyName + "=" + propertyValue);
             }
 
         }
@@ -1436,7 +1436,7 @@ namespace DB_Schema_Export_Tool
                 OnDebugEvent("Exporting login " + currentLogin);
 
                 var scriptInfo = CleanSqlScript(StringCollectionToList(sqlServer.Logins[index].Script(scriptOptions)), true, true);
-                var success = WriteTextToFile(outputDirectoryPathCurrentServer, ("Login_" + currentLogin), scriptInfo);
+                var success = WriteTextToFile(outputDirectoryPathCurrentServer, "Login_" + currentLogin, scriptInfo);
 
                 CheckPauseStatus();
                 if (mAbortProcessing)
