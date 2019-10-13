@@ -1851,7 +1851,7 @@ namespace DB_Schema_Export_Tool
 
             if (databaseList != null && databaseList.Count > 0)
             {
-                var success = ScriptDBObjects(mSqlServer, databaseList, tableNamesForDataExport);
+                var success = ScriptDBObjects(databaseList, tableNamesForDataExport);
                 if (!success || mAbortProcessing)
                 {
                     return false;
