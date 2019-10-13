@@ -153,6 +153,21 @@ namespace DB_Schema_Export_Tool
 
         }
 
+        /// <summary>
+        /// Export the tables, views, procedures, etc. in the given database
+        /// </summary>
+        /// <param name="databaseName"></param>
+        /// <param name="tableNamesForDataExport"></param>
+        /// <param name="databaseNotFound"></param>
+        /// <returns>True if successful, false if an error</returns>
+        protected override bool ExportDBObjects(
+            string databaseName,
+            IReadOnlyCollection<string> tableNamesForDataExport,
+            out bool databaseNotFound)
+        {
+            return ExportDBObjectsUsingSMO(mSqlServer, databaseName, tableNamesForDataExport, out databaseNotFound);
+        }
+
         private bool ExportDBObjectsUsingSMO(
             Server sqlServer,
             string databaseName,
@@ -1551,7 +1566,7 @@ namespace DB_Schema_Export_Tool
                 // Obtain a list of all databases actually residing on the server (according to the Master database)
                 OnStatusEvent("Obtaining list of databases on " + mCurrentServerInfo.ServerName);
 
-                var databaseNames = GetSqlServerDatabasesWork();
+                var databaseNames = GetServerDatabasesCurrentConnection();
                 if (!mAbortProcessing)
                 {
                     OnProgressUpdate("Done", 100);
@@ -1566,6 +1581,12 @@ namespace DB_Schema_Export_Tool
                 return new List<string>();
             }
 
+        }
+
+        protected override IEnumerable<string> GetServerDatabasesCurrentConnection()
+        {
+            var databaseNames = GetSqlServerDatabasesWork();
+            return databaseNames;
         }
 
         private IEnumerable<string> GetSqlServerDatabasesWork()
@@ -1750,104 +1771,6 @@ namespace DB_Schema_Export_Tool
             }
 
             return processCount;
-        }
-
-        private bool ScriptDBObjects(Server sqlServer, IReadOnlyCollection<string> databaseListToProcess, IReadOnlyCollection<string> tableNamesForDataExport)
-        {
-            var processedDBList = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            try
-            {
-                // Process each database in databaseListToProcess
-                OnStatusEvent("Exporting DB objects to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
-                SchemaOutputDirectories.Clear();
-
-                // Lookup the database names with the proper capitalization
-                OnProgressUpdate("Obtaining list of databases on " + mCurrentServerInfo.ServerName, 0);
-
-                var databaseNames = GetSqlServerDatabasesWork();
-
-                // Populate a dictionary where keys are lower case database names and values are the properly capitalized database names
-                var databasesOnServer = new Dictionary<string, string>();
-
-                foreach (var item in databaseNames)
-                {
-                    databasesOnServer.Add(item.ToLower(), item);
-                }
-
-                foreach (var item in databaseListToProcess)
-                {
-                    var currentDB = string.Copy(item);
-
-                    bool databaseNotFound;
-                    if (string.IsNullOrWhiteSpace(currentDB))
-                    {
-                        // DB name is empty; this shouldn't happen
-                        continue;
-                    }
-
-                    if (processedDBList.Contains(currentDB))
-                    {
-                        // DB has already been processed
-                        continue;
-                    }
-
-                    mPercentCompleteStart = processedDBList.Count / (float)databaseListToProcess.Count * 100;
-                    mPercentCompleteEnd = (processedDBList.Count + 1) / (float)databaseListToProcess.Count * 100;
-
-                    OnProgressUpdate("Exporting objects from database " + currentDB, mPercentCompleteStart);
-
-                    processedDBList.Add(currentDB);
-                    bool success;
-                    if (databasesOnServer.TryGetValue(currentDB.ToLower(), out var currentDbName))
-                    {
-                        currentDB = string.Copy(currentDbName);
-                        OnDebugEvent("Exporting objects from database " + currentDbName);
-                        success = ExportDBObjectsUsingSMO(sqlServer, currentDbName, tableNamesForDataExport, out databaseNotFound);
-                        if (!databaseNotFound)
-                        {
-                            if (!success)
-                            {
-                                break;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Database not actually present on the server; skip it
-                        databaseNotFound = true;
-                        success = false;
-                    }
-
-                    CheckPauseStatus();
-                    if (mAbortProcessing)
-                    {
-                        OnWarningEvent("Aborted processing");
-                        break;
-                    }
-
-                    if (success)
-                    {
-                        Console.WriteLine();
-                        OnStatusEvent("Processing completed for database " + currentDB);
-                    }
-                    else
-                    {
-                        SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError,
-                                      string.Format("Database {0} not found on server {1}", currentDB, mOptions.ServerName));
-                    }
-
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                SetLocalError(DBSchemaExportErrorCodes.GeneralError,
-                              "Error exporting DB schema objects: " + mOptions.OutputDirectoryPath, ex);
-            }
-
-            return false;
         }
 
         private bool ScriptServerObjects(Server sqlServer)

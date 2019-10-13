@@ -315,6 +315,12 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        protected override IEnumerable<string> GetServerDatabasesCurrentConnection()
+        {
+            var databaseNames = GetServerDatabasesWork();
+            return databaseNames;
+        }
+
         private IEnumerable<string> GetServerDatabasesWork()
         {
             var databaseNames = new List<string>();
