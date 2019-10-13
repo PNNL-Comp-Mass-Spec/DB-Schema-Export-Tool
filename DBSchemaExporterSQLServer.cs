@@ -198,35 +198,14 @@ namespace DB_Schema_Export_Tool
                 return false;
             }
 
+            var isValid = ValidateOutputDirectoryForDatabaseExport(databaseName, workingParams);
+            if (!isValid)
+            {
+                return false;
+            }
+
             try
             {
-                // Construct the path to the output directory
-                if (mOptions.CreateDirectoryForEachDB)
-                {
-                    workingParams.OutputDirectoryPathCurrentDB = Path.Combine(mOptions.OutputDirectoryPath, mOptions.DatabaseSubdirectoryPrefix + currentDatabase.Name);
-                }
-                else
-                {
-                    workingParams.OutputDirectoryPathCurrentDB = string.Copy(mOptions.OutputDirectoryPath);
-                }
-
-                workingParams.OutputDirectory = new DirectoryInfo(workingParams.OutputDirectoryPathCurrentDB);
-
-                // Create the directory if it doesn't exist
-                if (!workingParams.OutputDirectory.Exists && !mOptions.PreviewExport)
-                {
-                    workingParams.OutputDirectory.Create();
-                }
-
-                if (SchemaOutputDirectories.ContainsKey(databaseName))
-                {
-                    SchemaOutputDirectories[databaseName] = workingParams.OutputDirectoryPathCurrentDB;
-                }
-                else
-                {
-                    SchemaOutputDirectories.Add(databaseName, workingParams.OutputDirectoryPathCurrentDB);
-                }
-
                 if (mOptions.ScriptingOptions.AutoSelectTableNamesForDataExport)
                 {
                     tablesToExport = AutoSelectTableNamesForDataExport(currentDatabase, tableNamesForDataExport);
@@ -1844,45 +1823,8 @@ namespace DB_Schema_Export_Tool
         /// <returns>True if success, false if a problem</returns>
         public override bool ScriptServerAndDBObjects(List<string> databaseList, List<string> tableNamesForDataExport)
         {
-            InitializeLocalVariables();
-
-            try
-            {
-                if (string.IsNullOrWhiteSpace(mOptions.ServerName))
-                {
-                    SetLocalError(DBSchemaExportErrorCodes.ConfigurationError, "Server name is not defined");
-                    return false;
-                }
-
-                if (databaseList == null || databaseList.Count == 0)
-                {
-                    if (mOptions.ScriptingOptions.ExportServerSettingsLoginsAndJobs)
-                    {
-                        // No databases are defined, but we are exporting server settings; this is OK
-                    }
-                    else
-                    {
-                        SetLocalError(DBSchemaExportErrorCodes.ConfigurationError, "Database list to process is empty");
-                        return false;
-                    }
-                }
-                else
-                {
-                    if (databaseList.Count > 1)
-                    {
-                        // Force CreateDirectoryForEachDB to true
-                        mOptions.CreateDirectoryForEachDB = true;
-                    }
-                }
-
-            }
-            catch (Exception ex)
-            {
-                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating the Schema Export Options", ex);
-                return false;
-            }
-
-            if (!ValidateOutputOptions())
+            var validated = ValidateOptionsToScriptServerAndDBObjects(databaseList);
+            if (!validated)
                 return false;
 
             OnStatusEvent("Exporting schema to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
