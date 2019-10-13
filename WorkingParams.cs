@@ -2,7 +2,7 @@
 
 namespace DB_Schema_Export_Tool
 {
-    internal class WorkingParams
+    public class WorkingParams
     {
         public int ProcessCount { get; set; }
         public int ProcessCountExpected { get; set; }

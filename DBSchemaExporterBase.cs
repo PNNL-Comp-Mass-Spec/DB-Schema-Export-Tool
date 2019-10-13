@@ -210,7 +210,7 @@ namespace DB_Schema_Export_Tool
             SetPauseStatus(PauseStatusConstants.Unpaused);
         }
 
-        private string CleanNameForOS(string filename)
+        protected string CleanNameForOS(string filename)
         {
             // Replace any invalid characters in strName with underscores
             return mNonStandardOSChars.Replace(filename, "_");
