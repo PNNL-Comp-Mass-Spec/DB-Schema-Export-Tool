@@ -269,8 +269,9 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError,
-                              string.Format("Error obtaining list of tables in database {0} on the current server", databaseName), ex);
+                SetLocalError(DBSchemaExportErrorCodes.GeneralError,
+                              string.Format("Error obtaining list of tables in database {0} on server {1}",
+                                            databaseName, mCurrentServerInfo.ServerName), ex);
 
                 return new Dictionary<string, long>();
             }

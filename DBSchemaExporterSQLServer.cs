@@ -217,14 +217,13 @@ namespace DB_Schema_Export_Tool
                     {
                         tablesToExport.Add(tableName, 0);
                     }
-
                 }
-
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError,
-                              "Error validating or creating directory " + workingParams.OutputDirectoryPathCurrentDB);
+                SetLocalError(DBSchemaExportErrorCodes.GeneralError,
+                              "Error auto selecting table names for data export from database" + databaseName, ex);
+                databaseNotFound = false;
                 return false;
             }
 
@@ -266,7 +265,7 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error scripting objects in database " + databaseName, ex);
+                SetLocalError(DBSchemaExportErrorCodes.GeneralError, "Error scripting objects in database " + databaseName, ex);
                 return false;
             }
 
@@ -1092,7 +1091,7 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error in ExportDBTableData", ex);
+                SetLocalError(DBSchemaExportErrorCodes.GeneralError, "Error in ExportDBTableData", ex);
                 return false;
             }
         }
