@@ -272,9 +272,17 @@ namespace DB_Schema_Export_Tool
 
         }
 
+        /// <summary>
+        /// Script the tables, views, function, etc. in the specified database
+        /// </summary>
+        /// <param name="currentDatabase">Database object</param>
+        /// <param name="scriptOptions">Scripting options</param>
+        /// <param name="workingParams">Working parameters</param>
+        /// <remarks>
+        /// Do not include a Try block in this Function; let the calling function handle errors
+        /// </remarks>
         private void ExportDBObjectsWork(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
-            // Do not include a Try block in this Function; let the calling function handle errors
             // Reset ProcessCount
             workingParams.ProcessCount = 0;
             if (mOptions.ScriptingOptions.ExportDBSchemasAndRoles)
@@ -744,6 +752,13 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        /// <summary>
+        /// Export data from the specified tables
+        /// </summary>
+        /// <param name="currentDatabase">Database object</param>
+        /// <param name="tablesToExport">Dictionary with names of tables to export; values are the maximum rows to export from each table</param>
+        /// <param name="workingParams">Working parameters</param>
+        /// <returns></returns>
         private bool ExportDBTableData(Database currentDatabase, Dictionary<string, long> tablesToExport, WorkingParams workingParams)
         {
             try
@@ -1754,7 +1769,7 @@ namespace DB_Schema_Export_Tool
 
         private bool ScriptServerObjects(Server sqlServer)
         {
-            // Export the Server Settings and Sql Server Agent jobs
+            // Export the Server Settings and SQL Server Agent jobs
 
             var outputDirectoryPath = "??";
 
