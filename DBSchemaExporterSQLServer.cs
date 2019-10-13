@@ -915,7 +915,7 @@ namespace DB_Schema_Export_Tool
                     }
 
                     var insertIntoLine = string.Empty;
-                    char chColSepChar;
+                    char colSepChar;
                     if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
                     {
                         // Future capability:
@@ -942,12 +942,12 @@ namespace DB_Schema_Export_Tool
                             tableRows.Add(COMMENT_START_TEXT + "Columns: " + delimitedRowValues + COMMENT_END_TEXT);
                         }
 
-                        chColSepChar = ',';
+                        colSepChar = ',';
                     }
                     else
                     {
                         tableRows.Add(delimitedRowValues.ToString());
-                        chColSepChar = '\t';
+                        colSepChar = '\t';
                     }
 
                     foreach (DataRow currentRow in queryResults.Tables[0].Rows)
@@ -1036,7 +1036,7 @@ namespace DB_Schema_Export_Tool
                             }
                             if (columnIndex < columnCount - 1)
                             {
-                                delimitedRowValues.Append(chColSepChar);
+                                delimitedRowValues.Append(colSepChar);
                             }
 
                         }
