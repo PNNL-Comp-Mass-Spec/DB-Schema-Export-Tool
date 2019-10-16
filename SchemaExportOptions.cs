@@ -15,7 +15,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "October 13, 2019";
+        public const string PROGRAM_DATE = "October 16, 2019";
 
         public const string DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX = "DBSchema__";
 
@@ -69,8 +69,10 @@ namespace DB_Schema_Export_Tool
         /// <remarks>Auto set to true if /PgUser is defined</remarks>
         public bool PostgreSQL { get; set; }
 
-        [Option("PgUser", HelpShowsDefault = false,
-            HelpText = "Database username when connecting to a PostgreSQL server")]
+        [Option("PgDumpData", HelpShowsDefault = false, HelpText = "Dump table data with pg_dump")]
+        public bool PgDumpTableData { get; set; }
+
+        [Option("PgUser", HelpShowsDefault = false, HelpText = "Database username when connecting to a PostgreSQL server")]
         public string PgUser
         {
             get => DBUser;
@@ -84,8 +86,7 @@ namespace DB_Schema_Export_Tool
             }
         }
 
-        [Option("PgPass", HelpShowsDefault = false,
-            HelpText = "PostgreSQL user password")]
+        [Option("PgPass", HelpShowsDefault = false, HelpText = "PostgreSQL user password")]
         public string PgPass
         {
             get => DBUserPassword;
@@ -244,8 +245,8 @@ namespace DB_Schema_Export_Tool
             DBUserPassword = string.Empty;
 
             PostgreSQL = false;
+            PgDumpTableData = true;
             PgPort = DBSchemaExporterPostgreSQL.DEFAULT_PORT;
-
 
             OutputDirectoryPath = string.Empty;
             DatabaseSubdirectoryPrefix = DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX;
@@ -328,6 +329,8 @@ namespace DB_Schema_Export_Tool
                 }
 
                 Console.WriteLine(" {0,-48} {1}", "Port:", PgPort);
+
+                Console.WriteLine(" {0,-48} {1}", "Export table data using pg_dump:", BoolToEnabledDisabled(PgDumpTableData));
             }
 
             if (DatabasesToProcess.Count == 0)
