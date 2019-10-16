@@ -321,11 +321,16 @@ namespace DB_Schema_Export_Tool
             {
 
                 // Parse the pgDump output file and create separate files for each object
-                ProcessPgDumpFile(databaseName, pgDumpOutputFile);
+                ProcessPgDumpSchemaFile(databaseName, pgDumpOutputFile, out var unhandledScriptingCommands);
 
-                // ToDo: Actually delete this file (since we no longer need it)
-                Console.WriteLine("ToDo: Delete file " + pgDumpOutputFile.FullName);
-                // pgDumpOutputFile.Delete();
+                if (!unhandledScriptingCommands)
+                {
+                    // Delete the _AllObjects_.sql file (since we no longer need it)
+
+                    // ToDo: Uncomment the delete command
+                    Console.WriteLine("ToDo: Delete file " + pgDumpOutputFile.FullName);
+                    // pgDumpOutputFile.Delete();
+                }
 
                 return true;
             }
@@ -1014,8 +1019,11 @@ namespace DB_Schema_Export_Tool
             string currentObjectType,
             string currentObjectSchema,
             string previousTargetScriptFile,
-            out string targetScriptFile)
+            out string targetScriptFile,
+            out bool unhandledScriptingCommands)
         {
+
+            unhandledScriptingCommands = false;
 
             if (string.IsNullOrEmpty(currentObjectName))
             {
@@ -1080,6 +1088,7 @@ namespace DB_Schema_Export_Tool
                             default:
                                 OnWarningEvent("Possibly add a custom object type handler for target object " + targetObjectType);
                                 nameToUse = targetObjectName;
+                                unhandledScriptingCommands = true;
                                 break;
                         }
 
@@ -1088,6 +1097,7 @@ namespace DB_Schema_Export_Tool
                     else
                     {
                         OnWarningEvent("Comment object type match failure for " + currentObjectName);
+                        unhandledScriptingCommands = true;
                     }
 
                     break;
@@ -1118,6 +1128,7 @@ namespace DB_Schema_Export_Tool
                     if (!alterTableMatched)
                     {
                         OnWarningEvent("Did not find a valid ALTER TABLE line in the cached lines for a constraint against: " + currentObjectName);
+                        unhandledScriptingCommands = true;
                     }
                     break;
 
@@ -1138,6 +1149,7 @@ namespace DB_Schema_Export_Tool
                     else
                     {
                         OnWarningEvent("Did not find a function name in : " + currentObjectName);
+                        unhandledScriptingCommands = true;
                     }
 
                     break;
@@ -1162,6 +1174,7 @@ namespace DB_Schema_Export_Tool
                     if (!createIndexMatched)
                     {
                         OnWarningEvent("Did not find a valid CREATE INDEX line in the cached lines for index: " + currentObjectName);
+                        unhandledScriptingCommands = true;
                     }
 
                     break;
@@ -1185,15 +1198,15 @@ namespace DB_Schema_Export_Tool
                     else
                     {
                         OnWarningEvent("Did not find a valid table name for trigger: " + currentObjectName);
+                        unhandledScriptingCommands = true;
                     }
                     break;
 
                 default:
                     OnWarningEvent("Unrecognized object type: " + currentObjectType);
+                    unhandledScriptingCommands = true;
                     break;
             }
-
-            // alterTableMatcher = new Regex("ALTER TABLE.+CurrentSchemaName\.(.+)"
 
             string namePrefix;
             if (string.IsNullOrWhiteSpace(schemaToUse) || schemaToUse.Equals("-") || schemaToUse.Equals("public"))
