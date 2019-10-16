@@ -56,7 +56,6 @@ namespace DB_Schema_Export_Tool
 
             mCachedExecutables = new Dictionary<string, FileInfo>();
 
-
             // Match text like:
             // FUNCTION get_stat_activity(
             mAclMatcherFunction = new Regex("FUNCTION (?<FunctionName>[^(]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -184,6 +183,7 @@ namespace DB_Schema_Export_Tool
 
         /// <summary>
         /// Export the tables, views, procedures, etc. in the given database
+        /// Also export data from tables in tableNamesForDataExport
         /// </summary>
         /// <param name="databaseName"></param>
         /// <param name="tableNamesForDataExport"></param>
@@ -194,7 +194,7 @@ namespace DB_Schema_Export_Tool
             IReadOnlyCollection<string> tableNamesForDataExport,
             out bool databaseNotFound)
         {
-            return ExportDBObjectsUsingPgDump(databaseName, tableNamesForDataExport, out databaseNotFound);
+            return ExportDBObjectsAndTableData(databaseName, tableNamesForDataExport, out databaseNotFound);
         }
 
         /// <summary>
@@ -203,8 +203,8 @@ namespace DB_Schema_Export_Tool
         /// <param name="databaseName">Database name</param>
         /// <param name="tableNamesForDataExport">Table names that should be auto-selected</param>
         /// <param name="databaseNotFound">Output: true if the database does not exist on the server (or is inaccessible)</param>
-        /// <returns></returns>
-        private bool ExportDBObjectsUsingPgDump(
+        /// <returns>True if successful, false if an error</returns>
+        private bool ExportDBObjectsAndTableData(
             string databaseName,
             IEnumerable<string> tableNamesForDataExport,
             out bool databaseNotFound)
@@ -250,7 +250,6 @@ namespace DB_Schema_Export_Tool
 
             try
             {
-
                 // Export the database schema
                 var success = ExportDBObjectsWork(databaseName, workingParams, out databaseNotFound);
 
@@ -342,39 +341,86 @@ namespace DB_Schema_Export_Tool
 
             return false;
         }
-
-        {
-            {
-            }
-            {
-
-
-
-
-
-
-
-
-
-
-            }
-
-
         /// <summary>
-        /// Export data from the specified tables
+        /// Export data from the specified table (if it exists)
         /// </summary>
         /// <param name="databaseName">Database name</param>
-        /// <param name="tablesToExport">Dictionary with names of tables to export; values are the maximum rows to export from each table</param>
+        /// <param name="tableName">Table name</param>
+        /// <param name="maxRowsToExport">Maximum rows to export</param>
         /// <param name="workingParams">Working parameters</param>
-        /// <returns></returns>
-        private bool ExportDBTableData(string databaseName, Dictionary<string, long> tablesToExport, WorkingParams workingParams)
+        /// <returns>True if success, false if an error</returns>
+        /// <remarks>If the table does not exist, will still return true</remarks>
+        protected override bool ExportDBTableData(string databaseName, string tableName, long maxRowsToExport, WorkingParams workingParams)
         {
-            // Dump data with pg_dump
-            // pg_dump -h host -p port -U user -W PasswordIfDefined -d database --data-only --table=TableName --format=p --file=OutFilePath
+            bool success;
+            if (mOptions.PgDumpTableData)
+            {
+                success = ExportDBTableDataUsingPgDump(databaseName, tableName, workingParams);
+            }
+            else
+            {
+                success = ExportDBTableDataUsingNpgsql(databaseName, tableName, maxRowsToExport, workingParams);
+            }
 
-            // Alternatively, use mPgConnection so that we can limit the number of rows
+            return success;
+        }
 
+        private bool ExportDBTableDataUsingNpgsql(string databaseName, string tableName, long maxRowsToExport, WorkingParams workingParams)
+        {
+            ConnectToServer(databaseName);
             throw new NotImplementedException();
+        }
+
+        private bool ExportDBTableDataUsingPgDump(string databaseName, string tableName, WorkingParams workingParams)
+        {
+            var pgDumpOutputFile = new FileInfo(Path.Combine(workingParams.OutputDirectory.FullName, tableName + "_data.sql"));
+
+            var existingData = pgDumpOutputFile.Exists ? pgDumpOutputFile.LastWriteTime : DateTime.MinValue;
+
+            var serverInfoArgs = GetPgDumpServerInfoArgs(string.Empty);
+
+            // pg_dump -h host -p port -U user -W PasswordIfDefined -d database --data-only --table=TableName --format=p --file=OutFilePath
+            var cmdArgs = string.Format("{0} -d {1} --data-only --table={2} --format=p --file={3}", serverInfoArgs, databaseName, tableName, pgDumpOutputFile.FullName);
+            var maxRuntimeSeconds = 60;
+
+            var pgDump = FindPgDumpExecutable();
+            if (pgDump == null)
+            {
+                return false;
+            }
+
+            if (mOptions.PreviewExport)
+            {
+                OnStatusEvent(string.Format("Preview running {0} {1}", pgDump.FullName, cmdArgs));
+                return true;
+            }
+
+            var success = mProgramRunner.RunCommand(pgDump.FullName, cmdArgs, workingParams.OutputDirectory.FullName,
+                                                    out var consoleOutput, out var errorOutput, maxRuntimeSeconds);
+
+            if (!success)
+            {
+                OnWarningEvent(string.Format("Error reported for {0}: {1}", pgDump.Name, consoleOutput));
+                return false;
+            }
+
+            // Assure that the file was created
+            pgDumpOutputFile.Refresh();
+
+            if (pgDumpOutputFile.LastWriteTime > existingData)
+            {
+
+                // Parse the pgDump output file to clean it up
+                ProcessPgDumpDataFile(pgDumpOutputFile);
+                return true;
+            }
+
+            if (pgDumpOutputFile.Exists)
+                OnWarningEvent(string.Format("{0} did not replace {1}", pgDump.Name, pgDumpOutputFile.FullName));
+            else
+                OnWarningEvent(string.Format("{0} did not create {1}", pgDump.Name, pgDumpOutputFile.FullName));
+
+            return false;
         }
 
         private FileInfo FindNewestExecutable(DirectoryInfo baseDirectory, string exeName)
@@ -1219,6 +1265,27 @@ namespace DB_Schema_Export_Tool
             targetScriptFile = namePrefix + nameToUse + ".sql";
         }
 
+        private void ProcessPgDumpDataFile(FileSystemInfo pgDumpOutputFile)
+        {
+            var linesProcessed = 0;
+
+            using (var reader = new StreamReader(new FileStream(pgDumpOutputFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+            {
+                while (!reader.EndOfStream)
+                {
+                    var dataLine = reader.ReadLine();
+                    if (dataLine == null)
+                        continue;
+
+                    if (linesProcessed < 10)
+                        Console.WriteLine(dataLine);
+
+                    // ToDo: is anything required?
+
+                    linesProcessed++;
+                }
+            }
+        }
 
         private void ProcessPgDumpSchemaFile(string databaseName, FileInfo pgDumpOutputFile, out bool unhandledScriptingCommands)
         {
