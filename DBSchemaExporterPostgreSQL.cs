@@ -281,7 +281,7 @@ namespace DB_Schema_Export_Tool
 
             var pgDumpOutputFile = new FileInfo(Path.Combine(workingParams.OutputDirectory.FullName, "_AllObjects_.sql"));
 
-            var existingDate = pgDumpOutputFile.Exists ? pgDumpOutputFile.LastWriteTime : DateTime.MinValue;
+            var existingData = pgDumpOutputFile.Exists ? pgDumpOutputFile.LastWriteTime : DateTime.MinValue;
 
             var serverInfoArgs = GetPgDumpServerInfoArgs(string.Empty);
 
@@ -317,7 +317,7 @@ namespace DB_Schema_Export_Tool
             // Assure that the file was created
             pgDumpOutputFile.Refresh();
 
-            if (pgDumpOutputFile.LastWriteTime > existingDate)
+            if (pgDumpOutputFile.LastWriteTime > existingData)
             {
 
                 // Parse the pgDump output file and create separate files for each object
@@ -1387,7 +1387,7 @@ namespace DB_Schema_Export_Tool
 
                 var outputFile = new FileInfo(Path.Combine(outputDirectoryPathCurrentServer.FullName, "ServerInfo.sql"));
 
-                var existingDate = outputFile.Exists ? outputFile.LastWriteTime : DateTime.MinValue;
+                var existingData = outputFile.Exists ? outputFile.LastWriteTime : DateTime.MinValue;
 
                 var serverInfoArgs = GetPgDumpServerInfoArgs(string.Empty);
 
@@ -1417,7 +1417,7 @@ namespace DB_Schema_Export_Tool
                 // Assure that the file was created
                 outputFile.Refresh();
 
-                if (outputFile.LastWriteTime > existingDate)
+                if (outputFile.LastWriteTime > existingData)
                     return true;
 
                 if (outputFile.Exists)
