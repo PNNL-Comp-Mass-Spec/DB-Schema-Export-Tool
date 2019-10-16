@@ -516,11 +516,10 @@ namespace DB_Schema_Export_Tool
             {
                 workingParams.ProcessCount += currentDatabase.UserDefinedDataTypes.Count;
             }
-
             else
             {
-                var intItemCount = ScriptCollectionOfObjects(currentDatabase.UserDefinedDataTypes, scriptOptions, workingParams.OutputDirectory);
-                workingParams.ProcessCount += intItemCount;
+                var itemCount = ScriptCollectionOfObjects(currentDatabase.UserDefinedDataTypes, scriptOptions, workingParams.OutputDirectory);
+                workingParams.ProcessCount += itemCount;
             }
 
             return true;
@@ -536,8 +535,8 @@ namespace DB_Schema_Export_Tool
                 }
                 else
                 {
-                    var intItemCount = ScriptCollectionOfObjects(currentDatabase.UserDefinedTypes, scriptOptions, workingParams.OutputDirectory);
-                    workingParams.ProcessCount += intItemCount;
+                    var itemCount = ScriptCollectionOfObjects(currentDatabase.UserDefinedTypes, scriptOptions, workingParams.OutputDirectory);
+                    workingParams.ProcessCount += itemCount;
                 }
             }
 

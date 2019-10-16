@@ -161,7 +161,7 @@ namespace DB_Schema_Export_Tool
 
             try
             {
-                var dtStartTime = DateTime.UtcNow;
+                var startTime = DateTime.UtcNow;
 
                 var isValid = ValidateSchemaExporter();
                 if (!isValid)
@@ -211,7 +211,7 @@ namespace DB_Schema_Export_Tool
                 {
                     OnStatusEvent(string.Format(
                                       "Exported database schema in {0:0.0} seconds",
-                                      DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
+                                      DateTime.UtcNow.Subtract(startTime).TotalSeconds));
                 }
 
                 return success;
@@ -864,10 +864,10 @@ namespace DB_Schema_Export_Tool
         {
             try
             {
-                var dtStartTime = DateTime.UtcNow;
+                var startTime = DateTime.UtcNow;
                 OnProgressUpdate("Synchronizing with " + directoryPathForSync, 0);
 
-                var intDBsProcessed = 0;
+                var dbsProcessed = 0;
                 var includeDbNameInCommitMessage = DatabaseNamesAndOutputPaths.Count > 1;
                 foreach (var dbEntry in DatabaseNamesAndOutputPaths)
                 {
@@ -879,7 +879,7 @@ namespace DB_Schema_Export_Tool
                         continue;
                     }
 
-                    var percentComplete = intDBsProcessed / ((float)DatabaseNamesAndOutputPaths.Count * 100);
+                    var percentComplete = dbsProcessed / ((float)DatabaseNamesAndOutputPaths.Count * 100);
                     OnProgressUpdate("Synchronizing database " + databaseName, percentComplete);
 
                     var diSourceDirectory = new DirectoryInfo(schemaOutputDirectory);
@@ -974,13 +974,13 @@ namespace DB_Schema_Export_Tool
                         UpdateRepoChanges(targetDirectory, fileCopyCount, newFilePaths, RepoManagerType.Git, commitMessageAppend);
                     }
 
-                    intDBsProcessed++;
+                    dbsProcessed++;
                 }
 
                 if (mOptions.ShowStats)
                 {
                     OnDebugEvent(string.Format(
-                                     "Synchronized schema files in {0:0.0} seconds", DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
+                                     "Synchronized schema files in {0:0.0} seconds", DateTime.UtcNow.Subtract(startTime).TotalSeconds));
                 }
 
                 return true;
@@ -1003,7 +1003,7 @@ namespace DB_Schema_Export_Tool
         }
 
         private void UpdateRepoChanges(
-            FileSystemInfo diTargetDirectory,
+            FileSystemInfo targetDirectory,
             int fileCopyCount, ICollection<string> newFilePaths,
             RepoManagerType repoManagerType,
             string commitMessageAppend)
@@ -1099,10 +1099,10 @@ namespace DB_Schema_Export_Tool
                     Console.WriteLine();
                 }
 
-                OnStatusEvent(string.Format("Looking for modified files tracked by {0} at {1}", toolName, diTargetDirectory.FullName));
+                OnStatusEvent(string.Format("Looking for modified files tracked by {0} at {1}", toolName, targetDirectory.FullName));
 
                 // Count the number of new or modified files
-                cmdArgs = string.Format(" status \"{0}\"", diTargetDirectory.FullName);
+                cmdArgs = string.Format(" status \"{0}\"", targetDirectory.FullName);
                 maxRuntimeSeconds = 300;
 
                 if (repoManagerType == RepoManagerType.Git)
@@ -1126,12 +1126,12 @@ namespace DB_Schema_Export_Tool
                 int modifiedFileCount;
                 if (repoManagerType == RepoManagerType.Svn || repoManagerType == RepoManagerType.Hg)
                 {
-                    success = ParseSvnHgStatus(diTargetDirectory, statusConsoleOutput, repoManagerType, out modifiedFileCount);
+                    success = ParseSvnHgStatus(targetDirectory, statusConsoleOutput, repoManagerType, out modifiedFileCount);
                 }
                 else
                 {
                     // Git
-                    success = ParseGitStatus(diTargetDirectory, statusConsoleOutput, out modifiedFileCount);
+                    success = ParseGitStatus(targetDirectory, statusConsoleOutput, out modifiedFileCount);
                 }
 
                 if (!success)
@@ -1182,10 +1182,10 @@ namespace DB_Schema_Export_Tool
                     OnStatusEvent(string.Format("Commiting changes to {0}: {1}", toolName, commitMessage));
 
                     // Commit the changes
-                    cmdArgs = string.Format(" commit \"{0}\" --message \"{1}\"", diTargetDirectory.FullName, commitMessage);
+                    cmdArgs = string.Format(" commit \"{0}\" --message \"{1}\"", targetDirectory.FullName, commitMessage);
                     maxRuntimeSeconds = 120;
 
-                    success = programRunner.RunCommand(repoExe.FullName, cmdArgs, diTargetDirectory.FullName,
+                    success = programRunner.RunCommand(repoExe.FullName, cmdArgs, targetDirectory.FullName,
                                                        out var commitConsoleOutput, out var commitErrorOutput, maxRuntimeSeconds);
 
                     if (!success)
@@ -1230,7 +1230,7 @@ namespace DB_Schema_Export_Tool
                             }
 
                             maxRuntimeSeconds = 300;
-                            success = programRunner.RunCommand(repoExe.FullName, cmdArgs, diTargetDirectory.FullName,
+                            success = programRunner.RunCommand(repoExe.FullName, cmdArgs, targetDirectory.FullName,
                                                                out var pushConsoleOutput, out _, maxRuntimeSeconds);
 
                             if (!success)
