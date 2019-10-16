@@ -233,7 +233,9 @@ namespace DB_Schema_Export_Tool
 
                 // Count the number of objects that will be exported
                 workingParams.CountObjectsOnly = true;
-                ExportDBObjectsWork(currentDatabase, scriptOptions, workingParams);
+                var successCounting = ExportDBObjectsWork(currentDatabase, scriptOptions, workingParams);
+                if (!successCounting)
+                    return false;
 
                 workingParams.ProcessCountExpected = workingParams.ProcessCount;
                 if (tableNamesForDataExport != null)
@@ -253,15 +255,22 @@ namespace DB_Schema_Export_Tool
                     return true;
                 }
 
+                OnDebugEvent(string.Format("Scripting {0} objects", workingParams.ProcessCountExpected));
+
+                bool success;
                 workingParams.CountObjectsOnly = false;
                 if (workingParams.ProcessCount > 0)
                 {
-                    ExportDBObjectsWork(currentDatabase, scriptOptions, workingParams);
+                    success = ExportDBObjectsWork(currentDatabase, scriptOptions, workingParams);
+                }
+                else
+                {
+                    success = true;
                 }
 
                 // Export data from tables specified by tablesToExport
-                var success = ExportDBTableData(currentDatabase, tablesToExport, workingParams);
-                return success;
+                var dataSuccess = ExportDBTableData(currentDatabase, tablesToExport, workingParams);
+                return success && dataSuccess;
             }
             catch (Exception ex)
             {
@@ -280,25 +289,31 @@ namespace DB_Schema_Export_Tool
         /// <remarks>
         /// Do not include a Try block in this Function; let the calling function handle errors
         /// </remarks>
-        private void ExportDBObjectsWork(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
+        private bool ExportDBObjectsWork(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
             // Reset ProcessCount
             workingParams.ProcessCount = 0;
             if (mOptions.ScriptingOptions.ExportDBSchemasAndRoles)
             {
-                ExportDBSchemasAndRoles(currentDatabase, scriptOptions, workingParams);
+                var success = ExportDBSchemasAndRoles(currentDatabase, scriptOptions, workingParams);
+                if (!success)
+                    return false;
+
                 if (mAbortProcessing)
                 {
-                    return;
+                    return true;
                 }
             }
 
             if (mOptions.ScriptingOptions.ExportTables)
             {
-                ExportDBTables(currentDatabase, scriptOptions, workingParams);
+                var success = ExportDBTables(currentDatabase, scriptOptions, workingParams);
+                if (!success)
+                    return false;
+
                 if (mAbortProcessing)
                 {
-                    return;
+                    return true;
                 }
             }
 
@@ -307,29 +322,39 @@ namespace DB_Schema_Export_Tool
                 mOptions.ScriptingOptions.ExportStoredProcedures ||
                 mOptions.ScriptingOptions.ExportSynonyms)
             {
-                ExportDBViewsProceduresAndUDFs(currentDatabase, scriptOptions, workingParams);
+                var success = ExportDBViewsProceduresAndUDFs(currentDatabase, scriptOptions, workingParams);
+                if (!success)
+                    return false;
+
                 if (mAbortProcessing)
                 {
-                    return;
+                    return true;
                 }
             }
 
             if (mOptions.ScriptingOptions.ExportUserDefinedDataTypes)
             {
-                ExportDBUserDefinedDataTypes(currentDatabase, scriptOptions, workingParams);
+                var success = ExportDBUserDefinedDataTypes(currentDatabase, scriptOptions, workingParams);
+                if (!success)
+                    return false;
+
                 if (mAbortProcessing)
                 {
-                    return;
+                    return true;
                 }
             }
 
             if (mOptions.ScriptingOptions.ExportUserDefinedTypes)
             {
-                ExportDBUserDefinedTypes(currentDatabase, scriptOptions, workingParams);
+                var success = ExportDBUserDefinedTypes(currentDatabase, scriptOptions, workingParams);
+                if (!success)
+                    return false;
             }
+
+            return true;
         }
 
-        private void ExportDBSchemasAndRoles(
+        private bool ExportDBSchemasAndRoles(
             Database currentDatabase,
             ScriptingOptions scriptOptions,
             WorkingParams workingParams)
@@ -356,7 +381,7 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
-                return;
+                return true;
             }
 
             try
@@ -368,6 +393,7 @@ namespace DB_Schema_Export_Tool
             {
                 // User likely doesn't have privilege to script the DB; ignore the error
                 OnErrorEvent("Unable to script DB " + currentDatabase.Name, ex);
+                return false;
             }
 
             workingParams.ProcessCount++;
@@ -386,7 +412,7 @@ namespace DB_Schema_Export_Tool
                     if (mAbortProcessing)
                     {
                         OnWarningEvent("Aborted processing");
-                        return;
+                        return true;
                     }
                 }
             }
@@ -403,13 +429,14 @@ namespace DB_Schema_Export_Tool
                 if (mAbortProcessing)
                 {
                     OnWarningEvent("Aborted processing");
-                    return;
+                    return true;
                 }
             }
 
+            return true;
         }
 
-        private void ExportDBTables(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
+        private bool ExportDBTables(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
             // ReSharper disable once StringLiteralTypo
             const string SYNC_OBJ_TABLE_PREFIX = "syncobj_0x";
@@ -483,7 +510,7 @@ namespace DB_Schema_Export_Tool
 
         }
 
-        private void ExportDBUserDefinedDataTypes(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
+        private bool ExportDBUserDefinedDataTypes(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
             if (workingParams.CountObjectsOnly)
             {
@@ -495,9 +522,11 @@ namespace DB_Schema_Export_Tool
                 var intItemCount = ScriptCollectionOfObjects(currentDatabase.UserDefinedDataTypes, scriptOptions, workingParams.OutputDirectory);
                 workingParams.ProcessCount += intItemCount;
             }
+
+            return true;
         }
 
-        private void ExportDBUserDefinedTypes(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
+        private bool ExportDBUserDefinedTypes(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
             if (SqlServer2005OrNewer(currentDatabase))
             {
@@ -511,9 +540,11 @@ namespace DB_Schema_Export_Tool
                     workingParams.ProcessCount += intItemCount;
                 }
             }
+
+            return true;
         }
 
-        private void ExportDBViewsProceduresAndUDFs(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
+        private bool ExportDBViewsProceduresAndUDFs(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
             // Option 1) obtain the list of views, stored procedures, and UDFs is to use currentDatabase.EnumObjects
             // However, this only returns the var name, type, and URN, not whether or not it is a system var
@@ -736,7 +767,7 @@ namespace DB_Schema_Export_Tool
                         if (mAbortProcessing)
                         {
                             OnWarningEvent("Aborted processing");
-                            return;
+                            return true;
                         }
 
                     }
@@ -749,6 +780,8 @@ namespace DB_Schema_Export_Tool
                     }
                 }
             }
+
+            return true;
         }
 
         /// <summary>
@@ -1082,7 +1115,7 @@ namespace DB_Schema_Export_Tool
                     if (mAbortProcessing)
                     {
                         OnWarningEvent("Aborted processing");
-                        return false;
+                        return true;
                     }
 
                 }
@@ -1802,21 +1835,21 @@ namespace DB_Schema_Export_Tool
                 ExportSQLServerConfiguration(sqlServer, scriptOptions, outputDirectoryPathCurrentServer);
                 if (mAbortProcessing)
                 {
-                    return false;
+                    return true;
                 }
 
                 ExportSQLServerLogins(sqlServer, scriptOptions, outputDirectoryPathCurrentServer);
 
                 if (mAbortProcessing)
                 {
-                    return false;
+                    return true;
                 }
 
                 ExportSQLServerAgentJobs(sqlServer, scriptOptions, outputDirectoryPathCurrentServer);
 
                 if (mAbortProcessing)
                 {
-                    return false;
+                    return true;
                 }
 
                 return true;
@@ -1857,18 +1890,28 @@ namespace DB_Schema_Export_Tool
             if (mOptions.ExportServerInfo)
             {
                 var success = ScriptServerObjects(mSqlServer);
-                if (!success || mAbortProcessing)
+                if (!success)
                 {
                     return false;
+                }
+
+                if (mAbortProcessing)
+                {
+                    return true;
                 }
             }
 
             if (databaseList != null && databaseList.Count > 0)
             {
                 var success = ScriptDBObjects(databaseList, tableNamesForDataExport);
-                if (!success || mAbortProcessing)
+                if (!success)
                 {
                     return false;
+                }
+
+                if (mAbortProcessing)
+                {
+                    return true;
                 }
             }
 
