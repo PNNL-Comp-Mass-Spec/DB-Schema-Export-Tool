@@ -338,102 +338,22 @@ namespace DB_Schema_Export_Tool
             return false;
         }
 
-        private void ProcessPgDumpFile(string databaseName, FileInfo pgDumpOutputFile)
         {
-
-            if (pgDumpOutputFile.Directory == null)
             {
-                OnErrorEvent("Could not determine the parent directory of " + pgDumpOutputFile.FullName);
-                return;
+            }
+            {
+
+
+
+
+
+
+
+
+
+
             }
 
-            var scriptInfoByObject = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
-
-            var filePathToLoad = pgDumpOutputFile.FullName;
-
-            using (var reader = new StreamReader(new FileStream(filePathToLoad, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
-            {
-                var cachedLines = new List<string>();
-                var currentObjectName = string.Empty;
-                var currentObjectType = string.Empty;
-                var currentObjectSchema = string.Empty;
-                var currentObjectOwner = string.Empty;
-                var previousTargetScriptFile = string.Empty;
-
-                while (!reader.EndOfStream)
-                {
-                    var dataLine = reader.ReadLine();
-                    if (dataLine == null)
-                        continue;
-
-                    var match = mNameTypeSchemaMatcher.Match(dataLine);
-                    try
-                    {
-
-                        if (!match.Success)
-                        {
-                            cachedLines.Add(dataLine);
-                            continue;
-                        }
-
-                        ProcessCachedLines(databaseName, cachedLines,
-                                           currentObjectName, currentObjectType, currentObjectSchema,
-                                           previousTargetScriptFile, out var targetScriptFile);
-
-                        StoreCachedLinesForObject(scriptInfoByObject, cachedLines, targetScriptFile);
-                        previousTargetScriptFile = string.Copy(targetScriptFile);
-
-                        UpdateCachedObjectInfo(match, out currentObjectName, out currentObjectType, out currentObjectSchema, out currentObjectOwner);
-                        cachedLines = new List<string> {
-                            "--",
-                            dataLine
-                        };
-
-                    }
-                    catch (Exception ex)
-                    {
-                        OnWarningEvent("Error in ProcessPgDumpFile: " + ex.Message);
-                    }
-
-                }
-
-                var outputDirectory = pgDumpOutputFile.Directory.FullName;
-                WriteCachedLines(outputDirectory, scriptInfoByObject);
-
-                if (mOptions.ScriptingOptions.ExportDBSchemasAndRoles)
-                {
-                    // Create files for schemas and roles
-                    if (mAbortProcessing)
-                    {
-                        return;
-                    }
-                }
-
-                if (mOptions.ScriptingOptions.ExportTables)
-                {
-                    // Create files for tables
-                    if (mAbortProcessing)
-                    {
-                        return;
-                    }
-                }
-
-                if (mOptions.ScriptingOptions.ExportViews ||
-                    mOptions.ScriptingOptions.ExportUserDefinedFunctions ||
-                    mOptions.ScriptingOptions.ExportStoredProcedures ||
-                    mOptions.ScriptingOptions.ExportSynonyms ||
-                    mOptions.ScriptingOptions.ExportUserDefinedDataTypes ||
-                    mOptions.ScriptingOptions.ExportUserDefinedTypes)
-                {
-                    // Create files for views, functions, etc.
-                    if (mAbortProcessing)
-                    {
-                        return;
-                    }
-                }
-            }
-
-        }
 
         /// <summary>
         /// Export data from the specified tables
@@ -1284,6 +1204,106 @@ namespace DB_Schema_Export_Tool
                 namePrefix = schemaToUse + ".";
 
             targetScriptFile = namePrefix + nameToUse + ".sql";
+        }
+
+
+        private void ProcessPgDumpSchemaFile(string databaseName, FileInfo pgDumpOutputFile, out bool unhandledScriptingCommands)
+        {
+
+            unhandledScriptingCommands = false;
+
+            if (pgDumpOutputFile.Directory == null)
+            {
+                OnErrorEvent("Could not determine the parent directory of " + pgDumpOutputFile.FullName);
+                return;
+            }
+
+            var scriptInfoByObject = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+            using (var reader = new StreamReader(new FileStream(pgDumpOutputFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+            {
+                var cachedLines = new List<string>();
+                var currentObjectName = string.Empty;
+                var currentObjectType = string.Empty;
+                var currentObjectSchema = string.Empty;
+                var currentObjectOwner = string.Empty;
+                var previousTargetScriptFile = string.Empty;
+
+                while (!reader.EndOfStream)
+                {
+                    var dataLine = reader.ReadLine();
+                    if (dataLine == null)
+                        continue;
+
+                    var match = mNameTypeSchemaMatcher.Match(dataLine);
+                    try
+                    {
+
+                        if (!match.Success)
+                        {
+                            cachedLines.Add(dataLine);
+                            continue;
+                        }
+
+                        ProcessCachedLines(databaseName, cachedLines,
+                                           currentObjectName, currentObjectType, currentObjectSchema,
+                                           previousTargetScriptFile,
+                                           out var targetScriptFile,
+                                           out unhandledScriptingCommands);
+
+                        StoreCachedLinesForObject(scriptInfoByObject, cachedLines, targetScriptFile);
+                        previousTargetScriptFile = string.Copy(targetScriptFile);
+
+                        UpdateCachedObjectInfo(match, out currentObjectName, out currentObjectType, out currentObjectSchema, out currentObjectOwner);
+                        cachedLines = new List<string> {
+                            "--",
+                            dataLine
+                        };
+
+                    }
+                    catch (Exception ex)
+                    {
+                        OnWarningEvent("Error in ProcessPgDumpFile: " + ex.Message);
+                    }
+
+                }
+
+                var outputDirectory = pgDumpOutputFile.Directory.FullName;
+                WriteCachedLines(outputDirectory, scriptInfoByObject);
+
+                if (mOptions.ScriptingOptions.ExportDBSchemasAndRoles)
+                {
+                    // Create files for schemas and roles
+                    if (mAbortProcessing)
+                    {
+                        return;
+                    }
+                }
+
+                if (mOptions.ScriptingOptions.ExportTables)
+                {
+                    // Create files for tables
+                    if (mAbortProcessing)
+                    {
+                        return;
+                    }
+                }
+
+                if (mOptions.ScriptingOptions.ExportViews ||
+                    mOptions.ScriptingOptions.ExportUserDefinedFunctions ||
+                    mOptions.ScriptingOptions.ExportStoredProcedures ||
+                    mOptions.ScriptingOptions.ExportSynonyms ||
+                    mOptions.ScriptingOptions.ExportUserDefinedDataTypes ||
+                    mOptions.ScriptingOptions.ExportUserDefinedTypes)
+                {
+                    // Create files for views, functions, etc.
+                    if (mAbortProcessing)
+                    {
+                        return;
+                    }
+                }
+            }
+
         }
 
         /// <summary>
