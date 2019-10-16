@@ -46,6 +46,8 @@ namespace DB_Schema_Export_Tool
 
         #region "Classwide Variables"
 
+        private Database mCurrentDatabase;
+
         private readonly SortedSet<string> mSchemaToIgnore;
 
         private Server mSqlServer;
@@ -148,6 +150,7 @@ namespace DB_Schema_Export_Tool
                 SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error logging into the server: " + mOptions.ServerName, ex);
                 mConnectedToServer = false;
                 mSqlServer = null;
+                mCurrentDatabase = null;
                 return false;
             }
 
@@ -155,6 +158,7 @@ namespace DB_Schema_Export_Tool
 
         /// <summary>
         /// Export the tables, views, procedures, etc. in the given database
+        /// Also export data from tables in tableNamesForDataExport
         /// </summary>
         /// <param name="databaseName"></param>
         /// <param name="tableNamesForDataExport"></param>
@@ -168,6 +172,15 @@ namespace DB_Schema_Export_Tool
             return ExportDBObjectsUsingSMO(mSqlServer, databaseName, tableNamesForDataExport, out databaseNotFound);
         }
 
+        /// <summary>
+        /// Script the tables, views, function, etc. in the specified database
+        /// Also export data from tables in tableNamesForDataExport
+        /// </summary>
+        /// <param name="sqlServer">SQL Server Accessor</param>
+        /// <param name="databaseName">Database name</param>
+        /// <param name="tableNamesForDataExport">Table names that should be auto-selected</param>
+        /// <param name="databaseNotFound">Output: true if the database does not exist on the server (or is inaccessible)</param>
+        /// <returns>True if successful, false if an error</returns>
         private bool ExportDBObjectsUsingSMO(
             Server sqlServer,
             string databaseName,
@@ -177,7 +190,6 @@ namespace DB_Schema_Export_Tool
             var workingParams = new WorkingParams();
 
             ScriptingOptions scriptOptions;
-            Database currentDatabase;
 
             // Keys are table names to export
             // Values are the maximum number of rows to export
@@ -188,7 +200,7 @@ namespace DB_Schema_Export_Tool
             try
             {
                 scriptOptions = GetDefaultScriptOptions();
-                currentDatabase = sqlServer.Databases[databaseName];
+                mCurrentDatabase = sqlServer.Databases[databaseName];
                 databaseNotFound = false;
             }
             catch (Exception ex)
@@ -208,7 +220,7 @@ namespace DB_Schema_Export_Tool
             {
                 if (mOptions.ScriptingOptions.AutoSelectTableNamesForDataExport)
                 {
-                    tablesToExport = AutoSelectTableNamesForDataExport(currentDatabase, tableNamesForDataExport);
+                    tablesToExport = AutoSelectTableNamesForDataExport(mCurrentDatabase, tableNamesForDataExport);
                 }
                 else
                 {
@@ -233,7 +245,7 @@ namespace DB_Schema_Export_Tool
 
                 // Count the number of objects that will be exported
                 workingParams.CountObjectsOnly = true;
-                var successCounting = ExportDBObjectsWork(currentDatabase, scriptOptions, workingParams);
+                var successCounting = ExportDBObjectsWork(mCurrentDatabase, scriptOptions, workingParams);
                 if (!successCounting)
                     return false;
 
@@ -261,7 +273,7 @@ namespace DB_Schema_Export_Tool
                 workingParams.CountObjectsOnly = false;
                 if (workingParams.ProcessCount > 0)
                 {
-                    success = ExportDBObjectsWork(currentDatabase, scriptOptions, workingParams);
+                    success = ExportDBObjectsWork(mCurrentDatabase, scriptOptions, workingParams);
                 }
                 else
                 {
