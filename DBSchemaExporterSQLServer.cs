@@ -446,68 +446,68 @@ namespace DB_Schema_Export_Tool
                 // Note: currentDatabase.Tables includes system tables, so workingParams.ProcessCount will be
                 //       an overestimate if mOptions.ScriptingOptions.IncludeSystemObjects = False
                 workingParams.ProcessCount += currentDatabase.Tables.Count;
+                return true;
             }
-            else
+
+            var dtStartTime = DateTime.UtcNow;
+
+            // Initialize the scripter and smoObjectArray
+            var scripter = new Scripter(mSqlServer)
             {
-                var dtStartTime = DateTime.UtcNow;
+                Options = scriptOptions
+            };
 
-                // Initialize the scripter and smoObjectArray
-                var scripter = new Scripter(mSqlServer)
+            foreach (Table databaseTable in currentDatabase.Tables)
+            {
+                var includeTable = true;
+                if (!mOptions.ScriptingOptions.IncludeSystemObjects)
                 {
-                    Options = scriptOptions
-                };
-
-                foreach (Table databaseTable in currentDatabase.Tables)
-                {
-                    var includeTable = true;
-                    if (!mOptions.ScriptingOptions.IncludeSystemObjects)
+                    if (databaseTable.IsSystemObject)
                     {
-                        if (databaseTable.IsSystemObject)
+                        includeTable = false;
+                    }
+                    else if (databaseTable.Name.Length >= SYNC_OBJ_TABLE_PREFIX.Length)
+                    {
+                        if (databaseTable.Name.Substring(0, SYNC_OBJ_TABLE_PREFIX.Length)
+                            .Equals(SYNC_OBJ_TABLE_PREFIX, StringComparison.OrdinalIgnoreCase))
                         {
                             includeTable = false;
                         }
-                        else if (databaseTable.Name.Length >= SYNC_OBJ_TABLE_PREFIX.Length)
-                        {
-                            if (databaseTable.Name.Substring(0, SYNC_OBJ_TABLE_PREFIX.Length)
-                                .Equals(SYNC_OBJ_TABLE_PREFIX, StringComparison.OrdinalIgnoreCase))
-                            {
-                                includeTable = false;
-                            }
-                        }
-                    }
-
-                    if (includeTable)
-                    {
-                        var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
-                        var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
-
-                        OnProgressUpdate(string.Format("Scripting {0}.{1}.{2}", currentDatabase.Name, databaseTable.Schema, databaseTable.Name), percentComplete);
-
-                        var smoObjectArray = new SqlSmoObject[] {
-                            databaseTable
-                        };
-
-                        var scriptInfo = CleanSqlScript(StringCollectionToList(scripter.Script(smoObjectArray)));
-                        WriteTextToFile(workingParams.OutputDirectory, databaseTable.Name, scriptInfo);
-                    }
-
-                    workingParams.ProcessCount++;
-                    CheckPauseStatus();
-                    if (mAbortProcessing)
-                    {
-                        OnWarningEvent("Aborted processing");
-                        return;
                     }
                 }
 
-                if (mOptions.ShowStats)
+                if (includeTable)
                 {
-                    OnDebugEvent(string.Format(
-                                     "Exported {0} tables in {1:0.0} seconds",
-                                     currentDatabase.Tables.Count, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
+                    var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
+                    var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
+
+                    OnProgressUpdate(string.Format("Scripting {0}.{1}.{2}", currentDatabase.Name, databaseTable.Schema, databaseTable.Name), percentComplete);
+
+                    var smoObjectArray = new SqlSmoObject[] {
+                        databaseTable
+                    };
+
+                    var scriptInfo = CleanSqlScript(StringCollectionToList(scripter.Script(smoObjectArray)));
+                    WriteTextToFile(workingParams.OutputDirectory, databaseTable.Name, scriptInfo);
+                }
+
+                workingParams.ProcessCount++;
+                CheckPauseStatus();
+                if (mAbortProcessing)
+                {
+                    OnWarningEvent("Aborted processing");
+                    return true;
                 }
             }
 
+            if (mOptions.ShowStats)
+            {
+                OnDebugEvent(string.Format(
+                                 "Exported {0} tables in {1:0.0} seconds",
+                                 currentDatabase.Tables.Count, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
+            }
+
+            return true;
         }
 
         private bool ExportDBUserDefinedDataTypes(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
