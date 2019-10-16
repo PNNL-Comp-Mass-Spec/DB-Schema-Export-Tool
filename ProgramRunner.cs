@@ -40,6 +40,9 @@ namespace DB_Schema_Export_Tool
                 var dtStartTime = DateTime.UtcNow;
                 var dtLastStatus = DateTime.UtcNow;
                 var executionAborted = false;
+
+                OnDebugEvent(string.Format("Running {0} {1}", exePath, cmdArgs));
+
                 programRunner.StartAndMonitorProgram();
 
                 // Wait for it to exit

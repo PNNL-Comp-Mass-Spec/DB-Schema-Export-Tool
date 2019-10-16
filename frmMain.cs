@@ -1733,6 +1733,8 @@ namespace DB_Schema_Export_Tool
             else
             {
                 AppendNewMessage(message, MessageTypeConstants.Debug);
+                ConsoleMsgUtils.ShowDebug(message);
+
             }
 
             Application.DoEvents();
@@ -1746,14 +1748,18 @@ namespace DB_Schema_Export_Tool
             }
             else
             {
+                string formattedMessage;
                 if (message != null && ex != null && message.IndexOf(ex.Message, StringComparison.OrdinalIgnoreCase) < 0)
                 {
-                    AppendNewMessage(message + ": " + ex.Message, MessageTypeConstants.Error);
+                    formattedMessage = message + ": " + ex.Message;
                 }
                 else
                 {
-                    AppendNewMessage(message, MessageTypeConstants.Error);
+                    formattedMessage = message;
                 }
+
+                AppendNewMessage(formattedMessage, MessageTypeConstants.Error);
+                ConsoleMsgUtils.ShowError(formattedMessage);
             }
 
             Application.DoEvents();
@@ -1768,6 +1774,7 @@ namespace DB_Schema_Export_Tool
             else
             {
                 AppendNewMessage(message, MessageTypeConstants.Normal);
+                Console.WriteLine(message);
             }
 
             Application.DoEvents();
@@ -1782,6 +1789,7 @@ namespace DB_Schema_Export_Tool
             else
             {
                 AppendNewMessage(message, MessageTypeConstants.Warning);
+                ConsoleMsgUtils.ShowWarning(message);
             }
 
             Application.DoEvents();

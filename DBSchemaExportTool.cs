@@ -1080,6 +1080,12 @@ namespace DB_Schema_Export_Tool
                         cmdArgs = string.Format(" add \"{0}\"", fileToAdd.FullName);
                         maxRuntimeSeconds = 30;
 
+                        if (mOptions.PreviewExport)
+                        {
+                            OnStatusEvent(string.Format("Preview running {0} {1}", repoExe.FullName, cmdArgs));
+                            continue;
+                        }
+
                         success = programRunner.RunCommand(repoExe.FullName, cmdArgs, fileToAdd.Directory.FullName,
                                                            out var addConsoleOutput, out var addErrorOutput, maxRuntimeSeconds);
 
@@ -1110,7 +1116,13 @@ namespace DB_Schema_Export_Tool
                     cmdArgs = " status -s -u";
                 }
 
-                success = programRunner.RunCommand(repoExe.FullName, cmdArgs, diTargetDirectory.FullName,
+                if (mOptions.PreviewExport)
+                {
+                    OnStatusEvent(string.Format("Preview running {0} {1}", repoExe.FullName, cmdArgs));
+                    return;
+                }
+
+                success = programRunner.RunCommand(repoExe.FullName, cmdArgs, targetDirectory.FullName,
                                                    out var statusConsoleOutput, out var statusErrorOutput, maxRuntimeSeconds);
                 if (!success)
                 {
