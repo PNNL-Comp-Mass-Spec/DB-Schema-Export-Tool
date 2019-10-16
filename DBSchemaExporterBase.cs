@@ -264,6 +264,64 @@ namespace DB_Schema_Export_Tool
         protected abstract bool ExportDBObjects(string databaseName, IReadOnlyCollection<string> tableNamesForDataExport, out bool databaseNotFound);
 
         /// <summary>
+        /// Export data from the specified tables
+        /// </summary>
+        /// <param name="databaseName">Database name</param>
+        /// <param name="tablesToExport">Dictionary with names of tables to export; values are the maximum rows to export from each table</param>
+        /// <param name="workingParams">Working parameters</param>
+        /// <returns></returns>
+        protected bool ExportDBTableData(string databaseName, Dictionary<string, long> tablesToExport, WorkingParams workingParams)
+        {
+            try
+            {
+                if (tablesToExport == null || tablesToExport.Count == 0)
+                {
+                    return true;
+                }
+
+                foreach (var tableItem in tablesToExport)
+                {
+                    var tableName = tableItem.Key;
+                    var maxRowsToExport = tableItem.Value;
+
+                    var success = ExportDBTableData(databaseName, tableName, maxRowsToExport, workingParams);
+                    if (!success)
+                    {
+                        return false;
+                    }
+
+                    workingParams.ProcessCount++;
+
+                    CheckPauseStatus();
+                    if (mAbortProcessing)
+                    {
+                        OnWarningEvent("Aborted processing");
+                        return true;
+                    }
+
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                SetLocalError(DBSchemaExportErrorCodes.GeneralError, "Error in ExportDBTableData", ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Export data from the specified table (if it exists)
+        /// </summary>
+        /// <param name="databaseName">Database name</param>
+        /// <param name="tableName">Table name</param>
+        /// <param name="maxRowsToExport">Maximum rows to export</param>
+        /// <param name="workingParams">Working parameters</param>
+        /// <returns>True if success, false if an error</returns>
+        /// <remarks>If the table does not exist, will still return true</remarks>
+        protected abstract bool ExportDBTableData(string databaseName, string tableName, long maxRowsToExport, WorkingParams workingParams);
+
+        /// <summary>
         /// Retrieve a list of tables in the given database
         /// </summary>
         /// <param name="databaseName">Database to query</param>

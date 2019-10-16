@@ -269,7 +269,8 @@ namespace DB_Schema_Export_Tool
                 }
 
                 // Export data from tables specified by tablesToExport
-                var dataSuccess = ExportDBTableData(currentDatabase, tablesToExport, workingParams);
+                var dataSuccess = ExportDBTableData(mCurrentDatabase.Name, tablesToExport, workingParams);
+
                 return success && dataSuccess;
             }
             catch (Exception ex)
@@ -784,339 +785,230 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
-        /// Export data from the specified tables
+        /// Export data from the specified table (if it exists)
         /// </summary>
-        /// <param name="currentDatabase">Database object</param>
-        /// <param name="tablesToExport">Dictionary with names of tables to export; values are the maximum rows to export from each table</param>
+        /// <param name="databaseName">Database name</param>
+        /// <param name="tableName">Table name</param>
+        /// <param name="maxRowsToExport">Maximum rows to export</param>
         /// <param name="workingParams">Working parameters</param>
-        /// <returns></returns>
-        private bool ExportDBTableData(Database currentDatabase, Dictionary<string, long> tablesToExport, WorkingParams workingParams)
+        /// <returns>True if success, false if an error</returns>
+        /// <remarks>If the table does not exist, will still return true</remarks>
+        protected override bool ExportDBTableData(string databaseName, string tableName, long maxRowsToExport, WorkingParams workingParams)
         {
+
             try
             {
-                if (tablesToExport == null || tablesToExport.Count == 0)
+                if (mCurrentDatabase == null || !mCurrentDatabase.Name.Equals(databaseName))
                 {
+                    try
+                    {
+                        mCurrentDatabase = mSqlServer.Databases[databaseName];
+                    }
+                    catch (Exception ex)
+                    {
+                        SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error connecting to database " + databaseName, ex);
+                        return false;
+                    }
+                }
+
+                Table databaseTable;
+                if (mCurrentDatabase.Tables.Contains(tableName))
+                {
+                    databaseTable = mCurrentDatabase.Tables[tableName];
+                }
+                else if (mCurrentDatabase.Tables.Contains(tableName, "dbo"))
+                {
+                    databaseTable = mCurrentDatabase.Tables[tableName, "dbo"];
+                }
+                else
+                {
+                    // Table not found in this database
+                    // This is not a critical error, so we return true
                     return true;
                 }
 
-                var delimitedRowValues = new StringBuilder();
-                foreach (var tableItem in tablesToExport)
+                var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
+                var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
+
+                OnProgressUpdate("Exporting data from " + tableName, percentComplete);
+
+                // See if any of the columns in the table is an identity column
+                var identityColumnFound = false;
+                foreach (Column currentColumn in databaseTable.Columns)
                 {
-                    var maximumDataRowsToExport = tableItem.Value;
-
-                    var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
-                    var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
-
-                    OnProgressUpdate("Exporting data from " + tableItem.Key, percentComplete);
-
-                    Table databaseTable;
-                    if (currentDatabase.Tables.Contains(tableItem.Key))
+                    if (currentColumn.Identity)
                     {
-                        databaseTable = currentDatabase.Tables[tableItem.Key];
-                    }
-                    else if (currentDatabase.Tables.Contains(tableItem.Key, "dbo"))
-                    {
-                        databaseTable = currentDatabase.Tables[tableItem.Key, "dbo"];
-                    }
-                    else
-                    {
-                        continue;
+                        identityColumnFound = true;
+                        break;
                     }
 
-                    // See if any of the columns in the table is an identity column
-                    var identityColumnFound = false;
-                    foreach (Column currentColumn in databaseTable.Columns)
-                    {
-                        if (currentColumn.Identity)
-                        {
-                            identityColumnFound = true;
-                            break;
-                        }
+                }
 
+                // Export the data from databaseTable, possibly limiting the number of rows to export
+                var sql = "SELECT ";
+                if (maxRowsToExport > 0)
+                {
+                    sql += "TOP " + maxRowsToExport;
+                }
+
+                sql += " * FROM [" + databaseTable.Name + "]";
+
+                var queryResults = mCurrentDatabase.ExecuteWithResults(sql);
+                var headerRows = new List<string>();
+                var header = COMMENT_START_TEXT + "Object:  Table [" + databaseTable.Name + "]";
+
+                if (mOptions.ScriptingOptions.IncludeTimestampInScriptFileHeader)
+                {
+                    header += "    " + COMMENT_SCRIPT_DATE_TEXT + GetTimeStamp();
+                }
+
+                header += COMMENT_END_TEXT;
+                headerRows.Add(header);
+                headerRows.Add(COMMENT_START_TEXT + "RowCount: " + databaseTable.RowCount + COMMENT_END_TEXT);
+
+                var columnCount = queryResults.Tables[0].Columns.Count;
+                var columnTypes = new List<DataColumnTypeConstants>();
+
+                var headerRowValues = new StringBuilder();
+
+                for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
+                {
+                    var currentColumn = queryResults.Tables[0].Columns[columnIndex];
+
+                    // Initially assume the column's data type is numeric
+                    var dataColumnType = DataColumnTypeConstants.Numeric;
+
+                    // Now check for other data types
+                    if (currentColumn.DataType == Type.GetType("System.String"))
+                    {
+                        dataColumnType = DataColumnTypeConstants.Text;
+                    }
+                    else if (currentColumn.DataType == Type.GetType("System.DateTime"))
+                    {
+                        // Date column
+                        dataColumnType = DataColumnTypeConstants.DateTime;
+                    }
+                    else if (currentColumn.DataType == Type.GetType("System.Byte[]"))
+                    {
+                        switch (currentColumn.DataType?.Name)
+                        {
+                            case "image":
+                                dataColumnType = DataColumnTypeConstants.ImageObject;
+                                break;
+                            case "timestamp":
+                                dataColumnType = DataColumnTypeConstants.BinaryArray;
+                                break;
+                            default:
+                                dataColumnType = DataColumnTypeConstants.BinaryArray;
+                                break;
+                        }
+                    }
+                    else if (currentColumn.DataType == Type.GetType("System.Guid"))
+                    {
+                        dataColumnType = DataColumnTypeConstants.GUID;
+                    }
+                    else if (currentColumn.DataType == Type.GetType("System.Boolean"))
+                    {
+                        // This may be a binary column
+                        switch (currentColumn.DataType?.Name)
+                        {
+                            case "binary":
+                            case "bit":
+                                dataColumnType = DataColumnTypeConstants.BinaryByte;
+                                break;
+                            default:
+                                dataColumnType = DataColumnTypeConstants.Text;
+                                break;
+                        }
+                    }
+                    else if (currentColumn.DataType == Type.GetType("System.var"))
+                    {
+                        switch (currentColumn.DataType?.Name)
+                        {
+                            case "sql_variant":
+                                dataColumnType = DataColumnTypeConstants.SqlVariant;
+                                break;
+                            default:
+                                dataColumnType = DataColumnTypeConstants.GeneralObject;
+                                break;
+                        }
                     }
 
-                    // Export the data from databaseTable, possibly limiting the number of rows to export
-                    var sql = "SELECT ";
-                    if (maximumDataRowsToExport > 0)
-                    {
-                        sql += "TOP " + maximumDataRowsToExport;
-                    }
-
-                    sql += " * FROM [" + databaseTable.Name + "]";
-
-                    var queryResults = currentDatabase.ExecuteWithResults(sql);
-                    var tableRows = new List<string>();
-                    var header = COMMENT_START_TEXT + "Object:  Table [" + databaseTable.Name + "]";
-
-                    if (mOptions.ScriptingOptions.IncludeTimestampInScriptFileHeader)
-                    {
-                        header += "    " + COMMENT_SCRIPT_DATE_TEXT + GetTimeStamp();
-                    }
-
-                    header += COMMENT_END_TEXT;
-                    tableRows.Add(header);
-                    tableRows.Add(COMMENT_START_TEXT + "RowCount: " + databaseTable.RowCount + COMMENT_END_TEXT);
-
-                    var columnCount = queryResults.Tables[0].Columns.Count;
-                    var columnTypes = new List<DataColumnTypeConstants>();
-                    delimitedRowValues.Clear();
-
-                    for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
-                    {
-                        var currentColumn = queryResults.Tables[0].Columns[columnIndex];
-
-                        // Initially assume the column's data type is numeric
-                        var dataColumnType = DataColumnTypeConstants.Numeric;
-
-                        // Now check for other data types
-                        if (currentColumn.DataType == Type.GetType("System.String"))
-                        {
-                            dataColumnType = DataColumnTypeConstants.Text;
-                        }
-                        else if (currentColumn.DataType == Type.GetType("System.DateTime"))
-                        {
-                            // Date column
-                            dataColumnType = DataColumnTypeConstants.DateTime;
-                        }
-                        else if (currentColumn.DataType == Type.GetType("System.Byte[]"))
-                        {
-                            switch (currentColumn.DataType?.Name)
-                            {
-                                case "image":
-                                    dataColumnType = DataColumnTypeConstants.ImageObject;
-                                    break;
-                                case "timestamp":
-                                    dataColumnType = DataColumnTypeConstants.BinaryArray;
-                                    break;
-                                default:
-                                    dataColumnType = DataColumnTypeConstants.BinaryArray;
-                                    break;
-                            }
-                        }
-                        else if (currentColumn.DataType == Type.GetType("System.Guid"))
-                        {
-                            dataColumnType = DataColumnTypeConstants.GUID;
-                        }
-                        else if (currentColumn.DataType == Type.GetType("System.Boolean"))
-                        {
-                            // This may be a binary column
-                            switch (currentColumn.DataType?.Name)
-                            {
-                                case "binary":
-                                case "bit":
-                                    dataColumnType = DataColumnTypeConstants.BinaryByte;
-                                    break;
-                                default:
-                                    dataColumnType = DataColumnTypeConstants.Text;
-                                    break;
-                            }
-                        }
-                        else if (currentColumn.DataType == Type.GetType("System.var"))
-                        {
-                            switch (currentColumn.DataType?.Name)
-                            {
-                                case "sql_variant":
-                                    dataColumnType = DataColumnTypeConstants.SqlVariant;
-                                    break;
-                                default:
-                                    dataColumnType = DataColumnTypeConstants.GeneralObject;
-                                    break;
-                            }
-                        }
-
-                        columnTypes.Add(dataColumnType);
-                        if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
-                        {
-                            delimitedRowValues.Append(PossiblyQuoteColumnName(currentColumn.ColumnName, true));
-                            if (columnIndex < columnCount - 1)
-                            {
-                                delimitedRowValues.Append(", ");
-                            }
-
-                        }
-                        else
-                        {
-                            delimitedRowValues.Append(currentColumn.ColumnName);
-                            if (columnIndex < columnCount - 1)
-                            {
-                                delimitedRowValues.Append("\t");
-                            }
-
-                        }
-
-                    }
-
-                    var insertIntoLine = string.Empty;
-                    char colSepChar;
+                    columnTypes.Add(dataColumnType);
                     if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
                     {
-                        // Future capability:
-                        //switch (mOptions.ScriptingOptions.DatabaseTypeForInsertInto)
-                        //{
-                        //    case DatabaseScriptingOptions.TargetDatabaseTypeConstants.SqlServer:
-                        //        break;
-                        //    default:
-                        //        // Unsupported mode
-                        //        break;
-                        //}
-
-                        if (identityColumnFound)
+                        headerRowValues.Append(PossiblyQuoteColumnName(currentColumn.ColumnName, true));
+                        if (columnIndex < columnCount - 1)
                         {
-                            insertIntoLine = string.Format("INSERT INTO [{0}] ({1}) VALUES (", databaseTable.Name, delimitedRowValues);
-
-                            tableRows.Add("SET IDENTITY_INSERT [" + databaseTable.Name + "] ON");
-                        }
-                        else
-                        {
-                            // Identity column not present; no need to explicitly list the column names
-                            insertIntoLine = string.Format("INSERT INTO [{0}] VALUES (", databaseTable.Name);
-
-                            tableRows.Add(COMMENT_START_TEXT + "Columns: " + delimitedRowValues + COMMENT_END_TEXT);
+                            headerRowValues.Append(", ");
                         }
 
-                        colSepChar = ',';
                     }
                     else
                     {
-                        tableRows.Add(delimitedRowValues.ToString());
-                        colSepChar = '\t';
+                        headerRowValues.Append(currentColumn.ColumnName);
+                        if (columnIndex < columnCount - 1)
+                        {
+                            headerRowValues.Append("\t");
+                        }
+
                     }
 
-                    foreach (DataRow currentRow in queryResults.Tables[0].Rows)
+                }
+
+                var insertIntoLine = string.Empty;
+                char colSepChar;
+                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+                {
+                    // Future capability:
+                    //switch (mOptions.ScriptingOptions.DatabaseTypeForInsertInto)
+                    //{
+                    //    case DatabaseScriptingOptions.TargetDatabaseTypeConstants.SqlServer:
+                    //        break;
+                    //    default:
+                    //        // Unsupported mode
+                    //        break;
+                    //}
+
+                    if (identityColumnFound)
                     {
-                        delimitedRowValues.Clear();
-                        if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
-                        {
-                            delimitedRowValues.Append(insertIntoLine);
-                        }
+                        insertIntoLine = string.Format("INSERT INTO [{0}] ({1}) VALUES (", databaseTable.Name, headerRowValues);
 
-                        for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
-                        {
-                            switch (columnTypes[columnIndex])
-                            {
-                                case DataColumnTypeConstants.Numeric:
-                                    delimitedRowValues.Append(currentRow[columnIndex]);
-                                    break;
-
-                                case DataColumnTypeConstants.Text:
-                                case DataColumnTypeConstants.DateTime:
-                                case DataColumnTypeConstants.GUID:
-                                    if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
-                                    {
-                                        delimitedRowValues.Append(PossiblyQuoteText(currentRow[columnIndex].ToString()));
-                                    }
-                                    else
-                                    {
-                                        delimitedRowValues.Append(currentRow[columnIndex]);
-                                    }
-                                    break;
-
-                                case DataColumnTypeConstants.BinaryArray:
-                                    try
-                                    {
-                                        var bytData = (byte[])(Array)currentRow[columnIndex];
-                                        delimitedRowValues.Append("0x");
-                                        var dataFound = false;
-                                        foreach (var value in bytData)
-                                        {
-                                            if (dataFound || value != 0)
-                                            {
-                                                dataFound = true;
-                                                delimitedRowValues.Append(value.ToString("X2"));
-                                            }
-                                        }
-
-                                        if (!dataFound)
-                                        {
-                                            delimitedRowValues.Append("00");
-                                        }
-
-                                    }
-                                    catch (Exception)
-                                    {
-                                        delimitedRowValues.Append("[Byte]");
-                                    }
-                                    break;
-
-                                case DataColumnTypeConstants.BinaryByte:
-                                    try
-                                    {
-                                        delimitedRowValues.Append("0x" + Convert.ToByte(currentRow[columnIndex]).ToString("X2"));
-                                    }
-                                    catch (Exception)
-                                    {
-                                        delimitedRowValues.Append("[Byte]");
-                                    }
-
-                                    break;
-
-                                case DataColumnTypeConstants.ImageObject:
-                                    delimitedRowValues.Append("[Image]");
-                                    break;
-
-                                case DataColumnTypeConstants.GeneralObject:
-                                    delimitedRowValues.Append("[var]");
-                                    break;
-
-                                case DataColumnTypeConstants.SqlVariant:
-                                    delimitedRowValues.Append("[Sql_Variant]");
-                                    break;
-
-                                default:
-                                    delimitedRowValues.Append(currentRow[columnIndex]);
-                                    break;
-                            }
-                            if (columnIndex < columnCount - 1)
-                            {
-                                delimitedRowValues.Append(colSepChar);
-                            }
-
-                        }
-
-                        if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
-                        {
-                            delimitedRowValues.Append(")");
-                        }
-
-                        tableRows.Add(delimitedRowValues.ToString());
+                        headerRows.Add("SET IDENTITY_INSERT [" + databaseTable.Name + "] ON");
                     }
+                    else
+                    {
+                        // Identity column not present; no need to explicitly list the column names
+                        insertIntoLine = string.Format("INSERT INTO [{0}] VALUES (", databaseTable.Name);
+
+                        headerRows.Add(COMMENT_START_TEXT + "Columns: " + headerRowValues + COMMENT_END_TEXT);
+                    }
+
+                    colSepChar = ',';
+                }
+                else
+                {
+                    headerRows.Add(headerRowValues.ToString());
+                    colSepChar = '\t';
+                }
+
+                // Make sure output file name doesn't contain any invalid characters
+                var cleanName = CleanNameForOS(databaseTable.Name + "_Data");
+                var outFilePath = Path.Combine(workingParams.OutputDirectory.FullName, cleanName + ".sql");
+
+                using (var writer = new StreamWriter(new FileStream(outFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
+                {
+                    foreach (var headerRow in headerRows)
+                    {
+                        writer.WriteLine(headerRow);
+                    }
+
+                    ExportDBTableDataWork(writer, queryResults, columnTypes, insertIntoLine, colSepChar);
 
                     if (identityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
                     {
-                        tableRows.Add("SET IDENTITY_INSERT [" + databaseTable.Name + "] OFF");
+                        writer.WriteLine("SET IDENTITY_INSERT [" + databaseTable.Name + "] OFF");
                     }
-
-                    // // Read method #2: Use a SqlDataReader to read row-by-row
-                    //using (var reader = mSqlServer.ConnectionContext.ExecuteReader(sql))
-                    //{
-                    //    if (reader.HasRows)
-                    //    {
-                    //        while (reader.Read())
-                    //        {
-                    //            if (reader.FieldCount > 0)
-                    //            {
-                    //                delimitedRowValues.Append(reader.GetValue(0)));
-                    //            }
-
-                    //            for (var columnIndex = 1; columnIndex < reader.FieldCount; columnIndex++)
-                    //            {
-                    //                delimitedRowValues.Append("\t" + reader.GetValue(columnIndex));
-                    //            }
-                    //        }
-                    //    }
-                    //}
-
-                    WriteTextToFile(workingParams.OutputDirectory, databaseTable.Name + "_Data", tableRows, false);
-
-                    workingParams.ProcessCount++;
-
-                    CheckPauseStatus();
-                    if (mAbortProcessing)
-                    {
-                        OnWarningEvent("Aborted processing");
-                        return true;
-                    }
-
                 }
 
                 return true;
@@ -1128,6 +1020,137 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        private void ExportDBTableDataWork(
+            TextWriter writer,
+            DataSet queryResults,
+            IReadOnlyList<DataColumnTypeConstants> columnTypes,
+            string insertIntoLine,
+            char colSepChar)
+        {
+            var columnCount = queryResults.Tables[0].Columns.Count;
+
+            var delimitedRowValues = new StringBuilder();
+
+            foreach (DataRow currentRow in queryResults.Tables[0].Rows)
+            {
+                delimitedRowValues.Clear();
+                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+                {
+                    delimitedRowValues.Append(insertIntoLine);
+                }
+
+                for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
+                {
+                    switch (columnTypes[columnIndex])
+                    {
+                        case DataColumnTypeConstants.Numeric:
+                            delimitedRowValues.Append(currentRow[columnIndex]);
+                            break;
+
+                        case DataColumnTypeConstants.Text:
+                        case DataColumnTypeConstants.DateTime:
+                        case DataColumnTypeConstants.GUID:
+                            if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+                            {
+                                delimitedRowValues.Append(PossiblyQuoteText(currentRow[columnIndex].ToString()));
+                            }
+                            else
+                            {
+                                delimitedRowValues.Append(currentRow[columnIndex]);
+                            }
+                            break;
+
+                        case DataColumnTypeConstants.BinaryArray:
+                            try
+                            {
+                                var bytData = (byte[])(Array)currentRow[columnIndex];
+                                delimitedRowValues.Append("0x");
+                                var dataFound = false;
+                                foreach (var value in bytData)
+                                {
+                                    if (dataFound || value != 0)
+                                    {
+                                        dataFound = true;
+                                        delimitedRowValues.Append(value.ToString("X2"));
+                                    }
+                                }
+
+                                if (!dataFound)
+                                {
+                                    delimitedRowValues.Append("00");
+                                }
+
+                            }
+                            catch (Exception)
+                            {
+                                delimitedRowValues.Append("[Byte]");
+                            }
+                            break;
+
+                        case DataColumnTypeConstants.BinaryByte:
+                            try
+                            {
+                                delimitedRowValues.Append("0x" + Convert.ToByte(currentRow[columnIndex]).ToString("X2"));
+                            }
+                            catch (Exception)
+                            {
+                                delimitedRowValues.Append("[Byte]");
+                            }
+
+                            break;
+
+                        case DataColumnTypeConstants.ImageObject:
+                            delimitedRowValues.Append("[Image]");
+                            break;
+
+                        case DataColumnTypeConstants.GeneralObject:
+                            delimitedRowValues.Append("[var]");
+                            break;
+
+                        case DataColumnTypeConstants.SqlVariant:
+                            delimitedRowValues.Append("[Sql_Variant]");
+                            break;
+
+                        default:
+                            delimitedRowValues.Append(currentRow[columnIndex]);
+                            break;
+                    }
+                    if (columnIndex < columnCount - 1)
+                    {
+                        delimitedRowValues.Append(colSepChar);
+                    }
+
+                }
+
+                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+                {
+                    delimitedRowValues.Append(")");
+                }
+
+                writer.WriteLine(delimitedRowValues.ToString());
+            }
+
+            // // Read method #2: Use a SqlDataReader to read row-by-row
+            //using (var reader = mSqlServer.ConnectionContext.ExecuteReader(sql))
+            //{
+            //    if (reader.HasRows)
+            //    {
+            //        while (reader.Read())
+            //        {
+            //            if (reader.FieldCount > 0)
+            //            {
+            //                delimitedRowValues.Append(reader.GetValue(0)));
+            //            }
+
+            //            for (var columnIndex = 1; columnIndex < reader.FieldCount; columnIndex++)
+            //            {
+            //                delimitedRowValues.Append("\t" + reader.GetValue(columnIndex));
+            //            }
+            //        }
+            //    }
+            //}
+
+        }
 
         private bool ExportRole(DatabaseRole databaseRole)
         {
