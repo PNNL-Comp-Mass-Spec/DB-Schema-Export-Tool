@@ -49,6 +49,7 @@
     <Compile Include="DBSchemaExporterSQLServer.cs" />
     <Compile Include="DBSchemaExportTool.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="ProgramRunner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SchemaExportOptions.cs" />
     <Compile Include="ServerConnectionInfo.cs" />
