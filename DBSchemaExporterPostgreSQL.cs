@@ -27,7 +27,17 @@ namespace DB_Schema_Export_Tool
         /// <remarks>Keys are the executable name; values are the file info object</remarks>
         private readonly Dictionary<string, FileInfo> mCachedExecutables;
 
+        private readonly Regex mAclMatcherFunction;
+        private readonly Regex mAclMatcherSchema;
+        private readonly Regex mAclMatcherTable;
+
+        private readonly Regex mFunctionNameMatcher;
+
         private readonly Regex mNameTypeSchemaMatcher;
+
+        private readonly Regex mNameTypeTargetMatcher;
+
+        private readonly Regex mTriggerTargetTableMatcher;
 
         private readonly ProgramRunner mProgramRunner;
 
@@ -45,7 +55,37 @@ namespace DB_Schema_Export_Tool
             RegisterEvents(mProgramRunner);
 
             mCachedExecutables = new Dictionary<string, FileInfo>();
+
+
+            // Match text like:
+            // FUNCTION get_stat_activity(
+            mAclMatcherFunction = new Regex("FUNCTION (?<FunctionName>[^(]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+            // Match text like:
+            // SCHEMA mc
+            mAclMatcherSchema = new Regex("SCHEMA (?<SchemaName>.+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+            // Match text like:
+            // TABLE t_event_log
+            mAclMatcherTable = new Regex("TABLE (?<TableName>.+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+            // Match text like:
+            // get_stat_activity()
+            mFunctionNameMatcher = new Regex("^[^(]+", RegexOptions.Compiled);
+
+            // Match lines like:
+            // -- Name: t_param_value; Type: TABLE; Schema: mc; Owner: d3l243
+            // -- Name: v_manager_type_report; Type: VIEW; Schema: mc; Owner: d3l243
             mNameTypeSchemaMatcher = new Regex("^-- Name: (?<Name>.+); Type: (?<Type>.+); Schema: (?<Schema>.+); Owner: ?(?<Owner>.*)", RegexOptions.Compiled);
+
+            // Match text like:
+            // FUNCTION get_stat_activity()
+            mNameTypeTargetMatcher = new Regex("(?<ObjectType>[a-z]+) (?<ObjectName>[^(]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+            // Match text like:
+            // t_users t_users_trigger_update_persisted
+            mTriggerTargetTableMatcher = new Regex("[^ ]+", RegexOptions.Compiled);
+
         }
 
         /// <summary>
@@ -212,11 +252,12 @@ namespace DB_Schema_Export_Tool
             {
 
                 // Export the database schema
-                ExportDBObjectsWork(databaseName, workingParams, out databaseNotFound);
+                var success = ExportDBObjectsWork(databaseName, workingParams, out databaseNotFound);
 
                 // Export data from tables specified by tablesToExport
-                var success = ExportDBTableData(databaseName, tablesToExport, workingParams);
-                return success;
+                var dataSuccess = ExportDBTableData(databaseName, tablesToExport, workingParams);
+
+                return success && dataSuccess;
             }
             catch (Exception ex)
             {
@@ -234,7 +275,7 @@ namespace DB_Schema_Export_Tool
         /// <remarks>
         /// Do not include a Try block in this Function; let the calling function handle errors
         /// </remarks>
-        private void ExportDBObjectsWork(string databaseName, WorkingParams workingParams, out bool databaseNotFound)
+        private bool ExportDBObjectsWork(string databaseName, WorkingParams workingParams, out bool databaseNotFound)
         {
             databaseNotFound = false;
 
@@ -251,7 +292,13 @@ namespace DB_Schema_Export_Tool
             var pgDump = FindPgDumpExecutable();
             if (pgDump == null)
             {
-                return;
+                return false;
+            }
+
+            if (mOptions.PreviewExport)
+            {
+                OnStatusEvent(string.Format("Preview running {0} {1}", pgDump.FullName, cmdArgs));
+                return true;
             }
 
             var success = mProgramRunner.RunCommand(pgDump.FullName, cmdArgs, workingParams.OutputDirectory.FullName,
@@ -264,7 +311,7 @@ namespace DB_Schema_Export_Tool
                 var matcher = new Regex("database [^ ]+ does not exist", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
                 databaseNotFound = matcher.IsMatch(consoleOutput) || matcher.IsMatch(errorOutput);
-                return;
+                return false;
             }
 
             // Assure that the file was created
@@ -274,10 +321,13 @@ namespace DB_Schema_Export_Tool
             {
 
                 // Parse the pgDump output file and create separate files for each object
-                ProcessPgDumpFile(pgDumpOutputFile);
+                ProcessPgDumpFile(databaseName, pgDumpOutputFile);
 
-                pgDumpOutputFile.Delete();
-                return;
+                // ToDo: Actually delete this file (since we no longer need it)
+                Console.WriteLine("ToDo: Delete file " + pgDumpOutputFile.FullName);
+                // pgDumpOutputFile.Delete();
+
+                return true;
             }
 
             if (pgDumpOutputFile.Exists)
@@ -285,9 +335,10 @@ namespace DB_Schema_Export_Tool
             else
                 OnWarningEvent(string.Format("{0} did not create {1}", pgDump.Name, pgDumpOutputFile.FullName));
 
+            return false;
         }
 
-        private void ProcessPgDumpFile(FileInfo pgDumpOutputFile)
+        private void ProcessPgDumpFile(string databaseName, FileInfo pgDumpOutputFile)
         {
 
             if (pgDumpOutputFile.Directory == null)
@@ -296,15 +347,18 @@ namespace DB_Schema_Export_Tool
                 return;
             }
 
-            var outputDirectory = pgDumpOutputFile.Directory.FullName;
+            var scriptInfoByObject = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
-            using (var reader = new StreamReader(new FileStream(pgDumpOutputFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+            var filePathToLoad = pgDumpOutputFile.FullName;
+
+            using (var reader = new StreamReader(new FileStream(filePathToLoad, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
             {
                 var cachedLines = new List<string>();
                 var currentObjectName = string.Empty;
                 var currentObjectType = string.Empty;
                 var currentObjectSchema = string.Empty;
                 var currentObjectOwner = string.Empty;
+                var previousTargetScriptFile = string.Empty;
 
                 while (!reader.EndOfStream)
                 {
@@ -322,41 +376,19 @@ namespace DB_Schema_Export_Tool
                             continue;
                         }
 
-                        if (currentObjectName.Equals(string.Empty))
-                        {
-                            UpdateCachedObjectInfo(match, out currentObjectName, out currentObjectType, out currentObjectSchema, out currentObjectOwner);
-                            continue;
-                        }
+                        ProcessCachedLines(databaseName, cachedLines,
+                                           currentObjectName, currentObjectType, currentObjectSchema,
+                                           previousTargetScriptFile, out var targetScriptFile);
 
-                        // ToDo: implement logic for tables, views, functions, etc.
-
-                        // alterTableMatcher = new Regex("ALTER TABLE.+CurrentSchemaName\.(.+)"
-
-                        string namePrefix;
-                        if (string.IsNullOrWhiteSpace(currentObjectSchema) || currentObjectSchema.Equals("-"))
-                            namePrefix = string.Empty;
-                        else
-                            namePrefix = currentObjectSchema + ".";
-
-                        string nameToUse;
-                        if (currentObjectName.EndsWith("()"))
-                            nameToUse = currentObjectName.Substring(0, currentObjectName.Length - 2);
-                        else
-                            nameToUse = currentObjectName;
-
-                        var outputFileName = CleanNameForOS(namePrefix + nameToUse + ".sql");
-                        var outputFilePath = Path.Combine(outputDirectory, outputFileName);
-                        using (var writer = new StreamWriter(new FileStream(outputFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
-                        {
-                            foreach (var cachedLine in cachedLines)
-                            {
-                                writer.WriteLine(cachedLine);
-                            }
-                        }
+                        StoreCachedLinesForObject(scriptInfoByObject, cachedLines, targetScriptFile);
+                        previousTargetScriptFile = string.Copy(targetScriptFile);
 
                         UpdateCachedObjectInfo(match, out currentObjectName, out currentObjectType, out currentObjectSchema, out currentObjectOwner);
-                        cachedLines.Clear();
-                        cachedLines.Add(dataLine);
+                        cachedLines = new List<string> {
+                            "--",
+                            dataLine
+                        };
+
                     }
                     catch (Exception ex)
                     {
@@ -364,6 +396,9 @@ namespace DB_Schema_Export_Tool
                     }
 
                 }
+
+                var outputDirectory = pgDumpOutputFile.Directory.FullName;
+                WriteCachedLines(outputDirectory, scriptInfoByObject);
 
                 if (mOptions.ScriptingOptions.ExportDBSchemasAndRoles)
                 {
@@ -1052,6 +1087,205 @@ namespace DB_Schema_Export_Tool
             return string.Empty;
         }
 
+        private void ProcessCachedLines(
+            string databaseName,
+            IEnumerable<string> cachedLines,
+            string currentObjectName,
+            string currentObjectType,
+            string currentObjectSchema,
+            string previousTargetScriptFile,
+            out string targetScriptFile)
+        {
+
+            if (string.IsNullOrEmpty(currentObjectName))
+            {
+                targetScriptFile = string.Format("DatabaseInfo_{0}.sql", databaseName);
+                return;
+            }
+
+            var schemaToUse = currentObjectSchema;
+            var nameToUse = currentObjectName;
+
+            switch (currentObjectType)
+            {
+                case "TABLE":
+                case "VIEW":
+                    break;
+
+                case "ACL":
+                    var aclFunctionMatch = mAclMatcherFunction.Match(currentObjectName);
+                    var aclSchemaMatch = mAclMatcherSchema.Match(currentObjectName);
+                    var aclTableMatch = mAclMatcherTable.Match(currentObjectName);
+
+                    if (aclTableMatch.Success)
+                    {
+                        nameToUse = aclTableMatch.Groups["TableName"].Value;
+                    }
+                    else if (aclFunctionMatch.Success) {
+                        nameToUse = aclFunctionMatch.Groups["FunctionName"].Value;
+                    }
+                    else if (aclSchemaMatch.Success) {
+                        nameToUse = "_Schema_" + aclSchemaMatch.Groups["SchemaName"].Value;
+                        schemaToUse = string.Empty;
+                    }
+                    else
+                    {
+                        // Unmatched ACL
+                        schemaToUse = string.Empty;
+                        nameToUse = "_Permissions";
+                    }
+
+                    break;
+
+                case "DEFAULT ACL":
+                    schemaToUse = string.Empty;
+                    nameToUse = "_Permissions";
+                    break;
+
+                case "COMMENT":
+                    var typeMatch = mNameTypeTargetMatcher.Match(currentObjectName);
+                    if (typeMatch.Success)
+                    {
+                        var targetObjectType = typeMatch.Groups["ObjectType"].Value;
+                        var targetObjectName = typeMatch.Groups["ObjectName"].Value;
+
+                        switch (targetObjectType)
+                        {
+                            case "EXTENSION":
+                                nameToUse = "_Extension_" + targetObjectName;
+                                break;
+                            case "FUNCTION":
+                                nameToUse = targetObjectName;
+                                break;
+                            default:
+                                OnWarningEvent("Possibly add a custom object type handler for target object " + targetObjectType);
+                                nameToUse = targetObjectName;
+                                break;
+                        }
+
+
+                    }
+                    else
+                    {
+                        OnWarningEvent("Comment object type match failure for " + currentObjectName);
+                    }
+
+                    break;
+
+                case "CONSTRAINT":
+                case "FK CONSTRAINT":
+                    // Parse out the target table name from the Alter Table DDL
+
+                    // The regex will match lines like this:
+                    // ALTER TABLE mc.t_event_log
+                    // ALTER TABLE ONLY mc.t_event_log
+
+                    var alterTableMatcher = new Regex(string.Format(@"ALTER TABLE.+ {0}\.(?<TargetTable>.+)", schemaToUse),
+                                                      RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+                    var alterTableMatched = false;
+                    foreach (var cachedLine in cachedLines)
+                    {
+                        var match = alterTableMatcher.Match(cachedLine);
+                        if (!match.Success)
+                            continue;
+
+                        nameToUse = match.Groups["TargetTable"].Value;
+                        alterTableMatched = true;
+                        break;
+                    }
+
+                    if (!alterTableMatched)
+                    {
+                        OnWarningEvent("Did not find a valid ALTER TABLE line in the cached lines for a constraint against: " + currentObjectName);
+                    }
+                    break;
+
+                case "EVENT TRIGGER":
+                    nameToUse = "_EventTrigger_" + currentObjectName;
+                    break;
+
+                case "EXTENSION":
+                    nameToUse = "_Extension_" + currentObjectName;
+                    break;
+
+                case "FUNCTION":
+                    var functionNameMatch = mFunctionNameMatcher.Match(currentObjectName);
+                    if (functionNameMatch.Success)
+                    {
+                        nameToUse = functionNameMatch.Value;
+                    }
+                    else
+                    {
+                        OnWarningEvent("Did not find a function name in : " + currentObjectName);
+                    }
+
+                    break;
+
+                case "INDEX":
+                    var indexName = currentObjectName;
+                    var createIndexMatcher = new Regex(string.Format(@"CREATE.+INDEX {0} ON (?<TargetTable>.+) USING", indexName),
+                                                       RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+                    var createIndexMatched = false;
+                    foreach (var cachedLine in cachedLines)
+                    {
+                        var match = createIndexMatcher.Match(cachedLine);
+                        if (!match.Success)
+                            continue;
+
+                        nameToUse = match.Groups["TargetTable"].Value;
+                        createIndexMatched = true;
+                        break;
+                    }
+
+                    if (!createIndexMatched)
+                    {
+                        OnWarningEvent("Did not find a valid CREATE INDEX line in the cached lines for index: " + currentObjectName);
+                    }
+
+                    break;
+
+                case "SCHEMA":
+                    nameToUse = "_Schema_" + currentObjectName;
+                    schemaToUse = string.Empty;
+                    break;
+
+                case "SEQUENCE":
+                    targetScriptFile = previousTargetScriptFile;
+                    return;
+
+                case "TRIGGER":
+                    var triggerTableMatch = mTriggerTargetTableMatcher.Match(currentObjectName);
+
+                    if (triggerTableMatch.Success)
+                    {
+                        nameToUse = triggerTableMatch.Value;
+                    }
+                    else
+                    {
+                        OnWarningEvent("Did not find a valid table name for trigger: " + currentObjectName);
+                    }
+                    break;
+
+                default:
+                    OnWarningEvent("Unrecognized object type: " + currentObjectType);
+                    break;
+            }
+
+            // alterTableMatcher = new Regex("ALTER TABLE.+CurrentSchemaName\.(.+)"
+
+            string namePrefix;
+            if (string.IsNullOrWhiteSpace(schemaToUse) || schemaToUse.Equals("-") || schemaToUse.Equals("public"))
+                namePrefix = string.Empty;
+            else if (nameToUse.StartsWith(schemaToUse + "."))
+                namePrefix = string.Empty;
+            else
+                namePrefix = schemaToUse + ".";
+
+            targetScriptFile = namePrefix + nameToUse + ".sql";
+        }
+
         /// <summary>
         /// Scripts out the objects on the current server
         /// </summary>
@@ -1145,6 +1379,12 @@ namespace DB_Schema_Export_Tool
                 if (pgDumpAll == null)
                     return false;
 
+                if (mOptions.PreviewExport)
+                {
+                    OnStatusEvent(string.Format("Preview running {0} {1}", pgDumpAll.FullName, cmdArgs));
+                    return true;
+                }
+
                 var success = mProgramRunner.RunCommand(pgDumpAll.FullName, cmdArgs, outputDirectoryPathCurrentServer.FullName,
                                                        out var consoleOutput, out var errorOutput, maxRuntimeSeconds);
 
@@ -1176,6 +1416,34 @@ namespace DB_Schema_Export_Tool
 
         }
 
+        private void StoreCachedLinesForObject(
+            IDictionary<string, List<string>> scriptInfoByObject,
+            List<string> cachedLines,
+            string targetScriptFile)
+        {
+            if (cachedLines.Count == 0)
+                return;
+
+            var outputFileName = CleanNameForOS(targetScriptFile);
+
+            // Remove the final "--" from cachedLines, plus any blank lines
+            while (cachedLines.Count > 0 && string.IsNullOrWhiteSpace(cachedLines.Last()) || cachedLines.Last().Equals("--"))
+            {
+                cachedLines.RemoveAt(cachedLines.Count - 1);
+            }
+
+            if (scriptInfoByObject.TryGetValue(outputFileName, out var scriptInfo))
+            {
+                scriptInfo.Add(string.Empty);
+                scriptInfo.AddRange(cachedLines);
+            }
+            else
+            {
+                scriptInfoByObject.Add(outputFileName, cachedLines);
+            }
+
+        }
+
         private void UpdateCachedObjectInfo(
             Match match,
             out string currentObjectName,
@@ -1195,6 +1463,30 @@ namespace DB_Schema_Export_Tool
                    mPgConnection.State != ConnectionState.Broken &&
                    mPgConnection.State != ConnectionState.Closed;
         }
+
+        private void WriteCachedLines(string outputDirectory, Dictionary<string, List<string>> scriptInfoByObject)
+        {
+            foreach (var item in scriptInfoByObject)
+            {
+                var outputFileName = item.Key;
+                var cachedLines = item.Value;
+
+                var outputFilePath = Path.Combine(outputDirectory, outputFileName);
+
+                OnDebugEvent("Writing " + outputFilePath);
+
+                using (var writer = new StreamWriter(new FileStream(outputFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
+                {
+                    foreach (var cachedLine in cachedLines)
+                    {
+                        writer.WriteLine(cachedLine);
+                    }
+                }
+
+            }
+
+        }
+
 
     }
 }
