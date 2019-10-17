@@ -354,7 +354,7 @@ namespace DB_Schema_Export_Tool
 
             if (!string.IsNullOrWhiteSpace(TableDataToExportFile))
             {
-                Console.WriteLine(" {0,-48} {1}", "Table name text file:", DatabaseList);
+                Console.WriteLine(" {0,-48} {1}", "Table name text file:", TableDataToExportFile);
             }
 
             Console.WriteLine(" {0,-48} {1}", "Data export from standard tables:", BoolToEnabledDisabled(!DisableAutoDataExport));
