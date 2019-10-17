@@ -697,7 +697,7 @@ namespace DB_Schema_Export_Tool
 
             try
             {
-                // Process each database in databaseListToProcess
+                Console.WriteLine();
                 OnStatusEvent("Exporting DB objects to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
                 SchemaOutputDirectories.Clear();
 

@@ -1820,6 +1820,5 @@ namespace DB_Schema_Export_Tool
         {
             return mConnectedToServer && mSqlServer != null && mSqlServer.State == SqlSmoState.Existing;
         }
-
     }
 }
