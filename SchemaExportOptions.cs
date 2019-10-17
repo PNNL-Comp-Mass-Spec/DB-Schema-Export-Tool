@@ -142,12 +142,9 @@ namespace DB_Schema_Export_Tool
             HelpText = "Prefix name for output directories; default name is " + DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX + "DatabaseName")]
         public string DatabaseSubdirectoryPrefix { get; set; }
 
-        [Option("NoSubdirectory", HelpShowsDefault = false, HelpText = "Disable creating a subdirectory for each database")]
-        public bool NoSubdirectory
-        {
-            get => !CreateDirectoryForEachDB;
-            set => CreateDirectoryForEachDB = !value;
-        }
+        [Option("NoSubdirectory", HelpShowsDefault = false,
+            HelpText = "Disable creating a subdirectory for each database when copying data to the Sync directory")]
+        public bool NoSubdirectoryOnSync { get; set; }
 
         /// <summary>
         /// When true (default), create a directory for each database
@@ -239,13 +236,15 @@ namespace DB_Schema_Export_Tool
             OutputDirectoryPath = ".";
             DatabasesToProcess = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
             DatabaseSubdirectoryPrefix = DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX;
-            CreateDirectoryForEachDB = true;
+
+            NoSubdirectoryOnSync = false;
+            SyncDirectoryPath = string.Empty;
 
             DBUser = string.Empty;
             DBUserPassword = string.Empty;
 
             PostgreSQL = false;
-            PgDumpTableData = true;
+            PgDumpTableData = false;
             PgPort = DBSchemaExporterPostgreSQL.DEFAULT_PORT;
 
             OutputDirectoryPath = string.Empty;
@@ -348,7 +347,7 @@ namespace DB_Schema_Export_Tool
 
             Console.WriteLine(" {0,-48} {1}", "Database Subdirectory Prefix:", DatabaseSubdirectoryPrefix);
 
-            if (NoSubdirectory)
+            if (!CreateDirectoryForEachDB)
             {
                 Console.WriteLine(" Will not create a subdirectory for each database");
             }
@@ -365,6 +364,11 @@ namespace DB_Schema_Export_Tool
             if (Sync)
             {
                 Console.WriteLine(" {0,-48} {1}", "Synchronizing schema files to:", SyncDirectoryPath);
+
+                if (NoSubdirectoryOnSync)
+                {
+                    Console.WriteLine(" When syncing, will not create a subdirectory for each database");
+                }
             }
 
             if (GitUpdate || SvnUpdate || HgUpdate)
