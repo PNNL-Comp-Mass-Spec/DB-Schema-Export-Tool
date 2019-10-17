@@ -747,8 +747,8 @@ namespace DB_Schema_Export_Tool
                             if (!includeSystemObjects && isSystemObject)
                                 continue;
 
-                            var tableNameWithSchema = PossiblyQuoteColumnName(schemaName, false) + "." +
-                                                      PossiblyQuoteColumnName(tableName, false);
+                            var tableNameWithSchema = PossiblyQuoteName(schemaName) + "." +
+                                                      PossiblyQuoteName(tableName);
 
                             databaseTableInfo.Add(tableNameWithSchema, 0);
 
