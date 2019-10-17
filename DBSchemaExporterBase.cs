@@ -403,6 +403,13 @@ namespace DB_Schema_Export_Tool
                     return true;
                 }
 
+                if (tablesToExport.Keys.Count == 1)
+                    OnDebugEvent(string.Format("Exporting data from database {0}, table {1}", databaseName, tablesToExport.First().Key));
+                else if (tablesToExport.Keys.Count > 1 && tablesToExport.Keys.Count < 5)
+                    OnDebugEvent(string.Format("Exporting data from database {0}, tables {1} and {2}", databaseName, tablesToExport.First().Key, tablesToExport.Last().Key));
+                else
+                    OnDebugEvent(string.Format("Exporting data from database {0}, tables {1} ...", databaseName, string.Join(", ", tablesToExport.Keys.Take(5))));
+
                 foreach (var tableItem in tablesToExport)
                 {
                     var tableName = tableItem.Key;
@@ -734,15 +741,15 @@ namespace DB_Schema_Export_Tool
                     mPercentCompleteStart = processedDBList.Count / (float)databaseListToProcess.Count * 100;
                     mPercentCompleteEnd = (processedDBList.Count + 1) / (float)databaseListToProcess.Count * 100;
 
-                    OnProgressUpdate("Exporting objects from database " + currentDB, mPercentCompleteStart);
+                    OnProgressUpdate("Exporting objects and data from database " + currentDB, mPercentCompleteStart);
 
                     processedDBList.Add(currentDB);
                     bool success;
                     if (databasesOnServer.TryGetValue(currentDB.ToLower(), out var currentDbName))
                     {
                         currentDB = string.Copy(currentDbName);
-                        OnDebugEvent("Exporting objects from database " + currentDbName);
-                        success = ExportDBObjects(currentDbName, tableNamesForDataExport, out databaseNotFound);
+                        OnDebugEvent("Exporting objects and data from database " + currentDbName);
+                        success = ExportDBObjectsAndTableData(currentDbName, tableNamesForDataExport, out databaseNotFound);
                         if (!databaseNotFound)
                         {
                             if (!success)

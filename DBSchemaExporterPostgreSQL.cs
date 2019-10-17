@@ -552,18 +552,16 @@ namespace DB_Schema_Export_Tool
 
                     if (identityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
                     {
-                        writer.WriteLine("SET IDENTITY_INSERT [" + tableNameWithSchema + "] OFF");
+                        writer.WriteLine("-- If a table has an identity value, after inserting data with explicit identities,");
+                        writer.WriteLine("-- the sequence will need to be sync'd up with the table");
+                        writer.WriteLine();
+                        writer.WriteLine("-- Option 1, for columns that use a serial for the identity field");
+                        writer.WriteLine("-- select setval(pg_get_serial_sequence('{0}', 'my_serial_column'),", tableNameWithSchema);
+                        writer.WriteLine("--               (select max(my_serial_column) from {0}) );", tableNameWithSchema);
+                        writer.WriteLine();
+                        writer.WriteLine("-- Option 2, for columns that get their default value from a sequence");
+                        writer.WriteLine("-- select setval('my_sequence_name', (select max(my_serial_column) from {0});", tableNameWithSchema);
                     }
-
-                    // If a table has an identity value, after inserting data with explicit identities,
-                    // the sequence will need to be sync'd up with the table
-
-                    // Option 1, for columns that use a serial for the identity field
-                    // select setval(pg_get_serial_sequence('my_table', 'my_serial_column'),
-                    //              (select max(my_serial_column) from my_table) );
-
-                    // Option 2, for columns that get their default value from a sequence
-                    // select setval('my_sequence_name', (select max(my_serial_column) from my_table));
                 }
 
             }
