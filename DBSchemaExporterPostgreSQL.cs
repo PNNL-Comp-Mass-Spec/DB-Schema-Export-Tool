@@ -369,7 +369,11 @@ namespace DB_Schema_Export_Tool
                 // Parse the pgDump output file and create separate files for each object
                 ProcessPgDumpSchemaFile(databaseName, pgDumpOutputFile, out var unhandledScriptingCommands);
 
-                if (!unhandledScriptingCommands)
+                if (unhandledScriptingCommands)
+                {
+                    OnWarningEvent("One or more unsupported scripting commands were encountered.  Inspect file " + pgDumpOutputFile.FullName);
+                }
+                else
                 {
                     // Delete the _AllObjects_.sql file (since we no longer need it)
 
@@ -1155,7 +1159,7 @@ namespace DB_Schema_Export_Tool
 
         private void ProcessCachedLines(
             string databaseName,
-            IEnumerable<string> cachedLines,
+            IList<string> cachedLines,
             string currentObjectName,
             string currentObjectType,
             string currentObjectSchema,
@@ -1190,10 +1194,12 @@ namespace DB_Schema_Export_Tool
                     {
                         nameToUse = aclTableMatch.Groups["TableName"].Value;
                     }
-                    else if (aclFunctionMatch.Success) {
+                    else if (aclFunctionMatch.Success)
+                    {
                         nameToUse = aclFunctionMatch.Groups["FunctionName"].Value;
                     }
-                    else if (aclSchemaMatch.Success) {
+                    else if (aclSchemaMatch.Success)
+                    {
                         nameToUse = "_Schema_" + aclSchemaMatch.Groups["SchemaName"].Value;
                         schemaToUse = string.Empty;
                     }
@@ -1245,6 +1251,7 @@ namespace DB_Schema_Export_Tool
 
                 case "CONSTRAINT":
                 case "FK CONSTRAINT":
+                case "DEFAULT":
                     // Parse out the target table name from the Alter Table DDL
 
                     // The regex will match lines like this:
@@ -1254,16 +1261,33 @@ namespace DB_Schema_Export_Tool
                     var alterTableMatcher = new Regex(string.Format(@"ALTER TABLE.+ {0}\.(?<TargetTable>.+)", schemaToUse),
                                                       RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
+                    var alterTableAlterColumnMatcher = new Regex(string.Format(@"ALTER TABLE.+ {0}\.(?<TargetTable>.+) ALTER COLUMN", schemaToUse),
+                                                                 RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
                     var alterTableMatched = false;
                     foreach (var cachedLine in cachedLines)
                     {
-                        var match = alterTableMatcher.Match(cachedLine);
+                        var match = alterTableAlterColumnMatcher.Match(cachedLine);
                         if (!match.Success)
                             continue;
 
                         nameToUse = match.Groups["TargetTable"].Value;
                         alterTableMatched = true;
                         break;
+                    }
+
+                    if (!alterTableMatched)
+                    {
+                        foreach (var cachedLine in cachedLines)
+                        {
+                            var match = alterTableMatcher.Match(cachedLine);
+                            if (!match.Success)
+                                continue;
+
+                            nameToUse = match.Groups["TargetTable"].Value;
+                            alterTableMatched = true;
+                            break;
+                        }
                     }
 
                     if (!alterTableMatched)
@@ -1326,6 +1350,10 @@ namespace DB_Schema_Export_Tool
                     break;
 
                 case "SEQUENCE":
+                    targetScriptFile = previousTargetScriptFile;
+                    return;
+
+                case "SEQUENCE OWNED BY":
                     targetScriptFile = previousTargetScriptFile;
                     return;
 
@@ -1416,6 +1444,20 @@ namespace DB_Schema_Export_Tool
 
                         if (!match.Success)
                         {
+                            if (dataLine.Equals("SET default_tablespace = '';") ||
+                                dataLine.Equals("SET default_table_access_method = heap;"))
+                            {
+                                // Store these lines in the DatabaseInfo file
+                                var databaseInfoScriptFile = string.Format("DatabaseInfo_{0}.sql", databaseName);
+
+                                var setDefaultLine = new List<string> {
+                                    dataLine
+                                };
+
+                                StoreCachedLinesForObject(scriptInfoByObject, setDefaultLine, databaseInfoScriptFile);
+                                continue;
+                            }
+
                             cachedLines.Add(dataLine);
                             continue;
                         }
