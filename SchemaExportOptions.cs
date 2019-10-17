@@ -329,7 +329,15 @@ namespace DB_Schema_Export_Tool
 
                 Console.WriteLine(" {0,-48} {1}", "Port:", PgPort);
 
-                Console.WriteLine(" {0,-48} {1}", "Export table data using pg_dump:", BoolToEnabledDisabled(PgDumpTableData));
+                if (PgDumpTableData)
+                {
+                    Console.WriteLine(" {0,-48} {1}", "Table data export tool:", "pg_dump");
+                }
+                else
+                {
+                    Console.WriteLine(" {0,-48} {1}", "Table data export tool:", "Npgsql");
+                }
+
             }
 
             if (DatabasesToProcess.Count == 0)
