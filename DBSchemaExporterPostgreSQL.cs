@@ -22,6 +22,13 @@ namespace DB_Schema_Export_Tool
         #region "Classwide Variables"
 
         /// <summary>
+        /// Dictionary tracking tables by database
+        /// Keys are database name, values are a dictionary where keys are table names and values are row counts
+        /// </summary>
+        /// <remarks>Row counts will only be loaded if conditional compilation constant ENABLE_GUI is defined</remarks>
+        private readonly Dictionary<string, Dictionary<string, long>> mCachedDatabaseTableNames;
+
+        /// <summary>
         /// Dictionary of executables that have been found by FindPgDumpExecutable
         /// </summary>
         /// <remarks>Keys are the executable name; values are the file info object</remarks>
@@ -53,6 +60,8 @@ namespace DB_Schema_Export_Tool
         {
             mProgramRunner = new ProgramRunner();
             RegisterEvents(mProgramRunner);
+
+            mCachedDatabaseTableNames = new Dictionary<string, Dictionary<string, long>>();
 
             mCachedExecutables = new Dictionary<string, FileInfo>();
 
@@ -99,10 +108,48 @@ namespace DB_Schema_Export_Tool
             IEnumerable<string> tableNamesForDataExport,
             out bool databaseNotFound)
         {
-            var tableNamesInDatabase = GetPgServerDatabaseTableNames(databaseName, false, false, out databaseNotFound);
+            if (!mCachedDatabaseTableNames.ContainsKey(databaseName))
+            {
+                CacheDatabaseTableNames(databaseName, out databaseNotFound);
+                if (databaseNotFound)
+                {
+                    SetLocalError(DBSchemaExportErrorCodes.GeneralError,
+                                  string.Format("Error in AutoSelectTableNamesForDataExport; database not found: " + databaseName));
+                    return new Dictionary<string, long>();
+                }
+            }
 
-            var tablesToExport = AutoSelectTableNamesForDataExport(tableNamesInDatabase.Keys, tableNamesForDataExport);
+            var tablesInDatabase = mCachedDatabaseTableNames[databaseName];
+            databaseNotFound = false;
+
+            var tablesToExport = AutoSelectTableNamesForDataExport(tablesInDatabase.Keys.ToList(), tableNamesForDataExport);
             return tablesToExport;
+        }
+
+        private void CacheDatabaseTableNames(string databaseName, out bool databaseNotFound)
+        {
+#if ENABLE_GUI
+            const bool INCLUDE_TABLE_ROW_COUNTS = true;
+#else
+            const bool INCLUDE_TABLE_ROW_COUNTS = false;
+#endif
+            const bool INCLUDE_SYSTEM_OBJECTS = false;
+            const bool CLEAR_SCHEMA_OUTPUT_DIRS = false;
+
+            var tablesInDatabase = GetPgServerDatabaseTableNames(databaseName, INCLUDE_TABLE_ROW_COUNTS,
+                                                                 INCLUDE_SYSTEM_OBJECTS,
+                                                                 CLEAR_SCHEMA_OUTPUT_DIRS,
+                                                                 out databaseNotFound);
+
+            if (mCachedDatabaseTableNames.ContainsKey(databaseName))
+            {
+                mCachedDatabaseTableNames[databaseName] = tablesInDatabase;
+            }
+            else
+            {
+                mCachedDatabaseTableNames.Add(databaseName, tablesInDatabase);
+            }
+
         }
 
         /// <summary>
