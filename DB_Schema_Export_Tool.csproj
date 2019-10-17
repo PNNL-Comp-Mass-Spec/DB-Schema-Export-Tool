@@ -7,7 +7,7 @@
     <ProjectGuid>{FE4782E7-5515-4189-852F-12A1AA50B15D}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>DB_Schema_Export_Tool</RootNamespace>
-    <AssemblyName>DB_Schema_Export_Tool</AssemblyName>
+    <AssemblyName>DB_Schema_Export_Tool_GUI</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
