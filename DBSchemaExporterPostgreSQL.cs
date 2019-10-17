@@ -490,20 +490,20 @@ namespace DB_Schema_Export_Tool
             }
 
             // Assure that the file was created
-            pgDumpOutputFile.Refresh();
+            tableDataOutputFile.Refresh();
 
-            if (pgDumpOutputFile.LastWriteTime > existingData)
+            if (tableDataOutputFile.LastWriteTime > existingData)
             {
 
                 // Parse the pgDump output file to clean it up
-                ProcessPgDumpDataFile(pgDumpOutputFile);
+                ProcessPgDumpDataFile(tableDataOutputFile);
                 return true;
             }
 
-            if (pgDumpOutputFile.Exists)
-                OnWarningEvent(string.Format("{0} did not replace {1}", pgDump.Name, pgDumpOutputFile.FullName));
+            if (tableDataOutputFile.Exists)
+                OnWarningEvent(string.Format("{0} did not replace {1}", pgDump.Name, tableDataOutputFile.FullName));
             else
-                OnWarningEvent(string.Format("{0} did not create {1}", pgDump.Name, pgDumpOutputFile.FullName));
+                OnWarningEvent(string.Format("{0} did not create {1}", pgDump.Name, tableDataOutputFile.FullName));
 
             return false;
         }

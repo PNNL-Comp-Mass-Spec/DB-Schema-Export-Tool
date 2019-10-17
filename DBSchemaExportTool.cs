@@ -202,7 +202,6 @@ namespace DB_Schema_Export_Tool
                     {
                         databaseNameToDirectoryMap.Add(databaseName, string.Empty);
                     }
-
                 }
 
                 // Now update databaseNamesAndOutputPaths to match databaseNameToDirectoryMap (which has properly capitalized database names)
@@ -860,7 +859,7 @@ namespace DB_Schema_Export_Tool
             return text1.Equals(text2, StringComparison.Ordinal);
         }
 
-        private bool SyncSchemaFiles(ICollection<KeyValuePair<string, string>> DatabaseNamesAndOutputPaths, string directoryPathForSync)
+        private bool SyncSchemaFiles(ICollection<KeyValuePair<string, string>> databaseNamesAndOutputPaths, string directoryPathForSync)
         {
             try
             {
@@ -868,8 +867,8 @@ namespace DB_Schema_Export_Tool
                 OnProgressUpdate("Synchronizing with " + directoryPathForSync, 0);
 
                 var dbsProcessed = 0;
-                var includeDbNameInCommitMessage = DatabaseNamesAndOutputPaths.Count > 1;
-                foreach (var dbEntry in DatabaseNamesAndOutputPaths)
+                var includeDbNameInCommitMessage = databaseNamesAndOutputPaths.Count > 1;
+                foreach (var dbEntry in databaseNamesAndOutputPaths)
                 {
                     var databaseName = dbEntry.Key;
                     var schemaOutputDirectory = dbEntry.Value;
@@ -879,20 +878,26 @@ namespace DB_Schema_Export_Tool
                         continue;
                     }
 
-                    var percentComplete = dbsProcessed / ((float)DatabaseNamesAndOutputPaths.Count * 100);
+                    var percentComplete = dbsProcessed / ((float)databaseNamesAndOutputPaths.Count * 100);
                     OnProgressUpdate("Synchronizing database " + databaseName, percentComplete);
 
-                    var diSourceDirectory = new DirectoryInfo(schemaOutputDirectory);
-                    var targetDirectoryPath = string.Copy(directoryPathForSync);
-                    if (DatabaseNamesAndOutputPaths.Count > 1 || mOptions.CreateDirectoryForEachDB)
+                    var sourceDirectory = new DirectoryInfo(schemaOutputDirectory);
+                    var createSubdirectoryOnSync = !mOptions.NoSubdirectoryOnSync;
+
+                    string targetDirectoryPath;
+                    if (databaseNamesAndOutputPaths.Count > 1 || createSubdirectoryOnSync)
                     {
-                        targetDirectoryPath = Path.Combine(targetDirectoryPath, databaseName);
+                        targetDirectoryPath = Path.Combine(directoryPathForSync, databaseName);
+                    }
+                    else
+                    {
+                        targetDirectoryPath = string.Copy(directoryPathForSync);
                     }
 
                     var targetDirectory = new DirectoryInfo(targetDirectoryPath);
-                    if (!diSourceDirectory.Exists)
+                    if (!sourceDirectory.Exists)
                     {
-                        OnErrorEvent("Source directory not found; cannot synchronize: " + diSourceDirectory.FullName);
+                        OnErrorEvent("Source directory not found; cannot synchronize: " + sourceDirectory.FullName);
                         return false;
                     }
 
@@ -902,7 +907,7 @@ namespace DB_Schema_Export_Tool
                         targetDirectory.Create();
                     }
 
-                    if (diSourceDirectory.FullName == targetDirectory.FullName)
+                    if (sourceDirectory.FullName == targetDirectory.FullName)
                     {
                         OnErrorEvent("Sync directory is identical to the output SchemaFileDirectory; cannot synchronize");
                         return false;
@@ -912,9 +917,9 @@ namespace DB_Schema_Export_Tool
                     var fileProcessCount = 0;
                     var fileCopyCount = 0;
 
-                    // This list holds the the files that are copied from diSourceDirectory to targetDirectory
+                    // This list holds the the files that are copied from sourceDirectory to targetDirectory
                     var newFilePaths = new List<string>();
-                    var filesToCopy = diSourceDirectory.GetFiles().ToList();
+                    var filesToCopy = sourceDirectory.GetFiles().ToList();
 
                     foreach (var sourceFile in filesToCopy)
                     {
