@@ -1103,6 +1103,10 @@ namespace DB_Schema_Export_Tool
                         if (repoManagerType == RepoManagerType.Git && addErrorOutput.StartsWith("fatal", StringComparison.OrdinalIgnoreCase))
                         {
                             OnWarningEvent(string.Format("Error reported for {0}: {1}", toolName, addErrorOutput));
+                            if (addErrorOutput.Contains("not a git repository"))
+                            {
+                                return;
+                            }
                         }
 
                     }
