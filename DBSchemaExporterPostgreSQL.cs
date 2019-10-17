@@ -233,28 +233,13 @@ namespace DB_Schema_Export_Tool
         /// Export the tables, views, procedures, etc. in the given database
         /// Also export data from tables in tableNamesForDataExport
         /// </summary>
-        /// <param name="databaseName"></param>
-        /// <param name="tableNamesForDataExport"></param>
-        /// <param name="databaseNotFound"></param>
-        /// <returns>True if successful, false if an error</returns>
-        protected override bool ExportDBObjects(
-            string databaseName,
-            IReadOnlyCollection<string> tableNamesForDataExport,
-            out bool databaseNotFound)
-        {
-            return ExportDBObjectsAndTableData(databaseName, tableNamesForDataExport, out databaseNotFound);
-        }
-
-        /// <summary>
-        /// Script the tables, views, function, etc. in the specified database
-        /// </summary>
         /// <param name="databaseName">Database name</param>
         /// <param name="tableNamesForDataExport">Table names that should be auto-selected</param>
         /// <param name="databaseNotFound">Output: true if the database does not exist on the server (or is inaccessible)</param>
         /// <returns>True if successful, false if an error</returns>
-        private bool ExportDBObjectsAndTableData(
+        protected override bool ExportDBObjectsAndTableData(
             string databaseName,
-            IEnumerable<string> tableNamesForDataExport,
+            IReadOnlyCollection<string> tableNamesForDataExport,
             out bool databaseNotFound)
         {
             var workingParams = new WorkingParams();
@@ -1731,7 +1716,7 @@ namespace DB_Schema_Export_Tool
 
             if (databaseList != null && databaseList.Count > 0)
             {
-                var success = ScriptDBObjects(databaseList, tableNamesForDataExport);
+                var success = ScriptDBObjectsAndData(databaseList, tableNamesForDataExport);
                 if (!success || mAbortProcessing)
                 {
                     return false;

@@ -385,7 +385,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="tableNamesForDataExport"></param>
         /// <param name="databaseNotFound"></param>
         /// <returns>True if successful, false if an error</returns>
-        protected abstract bool ExportDBObjects(string databaseName, IReadOnlyCollection<string> tableNamesForDataExport, out bool databaseNotFound);
+        protected abstract bool ExportDBObjectsAndTableData(string databaseName, IReadOnlyCollection<string> tableNamesForDataExport, out bool databaseNotFound);
 
         /// <summary>
         /// Export data from the specified tables
@@ -689,7 +689,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="databaseListToProcess"></param>
         /// <param name="tableNamesForDataExport"></param>
         /// <returns></returns>
-        protected bool ScriptDBObjects(
+        protected bool ScriptDBObjectsAndData(
             IReadOnlyCollection<string> databaseListToProcess,
             IReadOnlyCollection<string> tableNamesForDataExport)
         {

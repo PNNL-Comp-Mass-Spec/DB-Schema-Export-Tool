@@ -299,7 +299,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="tableNamesForDataExport"></param>
         /// <param name="databaseNotFound"></param>
         /// <returns>True if successful, false if an error</returns>
-        protected override bool ExportDBObjects(
+        protected override bool ExportDBObjectsAndTableData(
             string databaseName,
             IReadOnlyCollection<string> tableNamesForDataExport,
             out bool databaseNotFound)
@@ -1777,7 +1777,7 @@ namespace DB_Schema_Export_Tool
 
             if (databaseList != null && databaseList.Count > 0)
             {
-                var success = ScriptDBObjects(databaseList, tableNamesForDataExport);
+                var success = ScriptDBObjectsAndData(databaseList, tableNamesForDataExport);
                 if (!success)
                 {
                     return false;
