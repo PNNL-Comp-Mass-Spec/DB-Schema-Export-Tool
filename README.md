@@ -44,9 +44,9 @@ DB_Schema_Export_Tool.exe
  SchemaFileDirectory /Server:ServerName
  /DB:Database /DBList:CommaSeparatedDatabaseName
  [/DBUser:username] [/DBPass:username]
- [/PgUser:username] [/PgPass:password] [/PgPort:5432] 
+ [/PgUser:username] [/PgPass:password] [/PgPort:5432]
  [/DirectoryPrefix:PrefixText] [/NoSubdirectory]
- [/Data:TableDataToExport.txt] [/NoAutoData]
+ [/Data:TableDataToExport.txt] [/NoAutoData] [/PgDD]
  [/ServerInfo]
  [/Sync:TargetDirectoryPath] [/Git] [/Svn] [/Hg] [/Commit]
  [/L[:LogFilePath]] [/LogDir:LogDirectoryPath] [/Preview] [/Stats]
@@ -81,6 +81,9 @@ Use `/NoSubdirectory` to disable auto creating a subdirectory for the database b
 Use `/Data` to define a text file with table names (one name per line) for which the data 
 should be exported. In addition to table names defined in `/Data`, there are default tables 
 which will have their data exported; disable the defaults using `/NoAutoData`
+
+Use `/PgDD` to specify that pg_dump should be used to export table data from PostgreSQL databases
+* By default, uses Npgsql.dll
 
 Use `/ServerInfo` to export server settings, logins, and SQL Server Agent jobs
 

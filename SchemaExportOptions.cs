@@ -69,7 +69,7 @@ namespace DB_Schema_Export_Tool
         /// <remarks>Auto set to true if /PgUser is defined</remarks>
         public bool PostgreSQL { get; set; }
 
-        [Option("PgDumpData", HelpShowsDefault = false, HelpText = "Dump table data with pg_dump")]
+        [Option("PgDD", "PgDumpData", HelpShowsDefault = false, HelpText = "Dump table data with pg_dump")]
         public bool PgDumpTableData { get; set; }
 
         [Option("PgUser", HelpShowsDefault = false, HelpText = "Database username when connecting to a PostgreSQL server")]
