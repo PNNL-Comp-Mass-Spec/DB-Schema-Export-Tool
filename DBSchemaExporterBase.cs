@@ -149,7 +149,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="tableNamesForDataExport">Table names that should be auto-selected</param>
         /// <returns>Dictionary where keys are table names and values are the maximum number of rows to export</returns>
         protected Dictionary<string, long> AutoSelectTableNamesForDataExport(
-            IEnumerable<string> tableNamesInDatabase,
+            List<string> tableNamesInDatabase,
             IEnumerable<string> tableNamesForDataExport)
         {
             try
@@ -176,7 +176,7 @@ namespace DB_Schema_Export_Tool
                 {
                     foreach (var tableName in TableNamesToAutoSelect)
                     {
-                        if (!tablesToExport.ContainsKey(tableName))
+                        if (tableNamesInDatabase.Contains(tableName) && !tablesToExport.ContainsKey(tableName))
                         {
                             tablesToExport.Add(tableName, DATA_ROW_COUNT_WARNING_THRESHOLD);
                         }

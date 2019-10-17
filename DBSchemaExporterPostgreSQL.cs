@@ -352,6 +352,44 @@ namespace DB_Schema_Export_Tool
         /// <remarks>If the table does not exist, will still return true</remarks>
         protected override bool ExportDBTableData(string databaseName, string tableName, long maxRowsToExport, WorkingParams workingParams)
         {
+
+            if (!mCachedDatabaseTableNames.ContainsKey(databaseName))
+            {
+                CacheDatabaseTableNames(databaseName, out var databaseNotFound);
+                if (databaseNotFound)
+                {
+                    SetLocalError(DBSchemaExportErrorCodes.GeneralError,
+                                  string.Format("Error in ExportDBTableData; database not found: " + databaseName));
+                    return false;
+                }
+            }
+
+            var tablesInDatabase = mCachedDatabaseTableNames[databaseName];
+            var tableNameWithSchema = string.Empty;
+
+            var quotedTableName = PossiblyQuoteName(tableName);
+
+            var tableNamesToFind = new List<string> {
+                tableName,
+                quotedTableName,
+                "public." + tableName,
+                "public." + PossiblyQuoteName(tableName)};
+
+            foreach (var nameToFind in tableNamesToFind)
+            {
+                if (tablesInDatabase.ContainsKey(nameToFind))
+                {
+                    tableNameWithSchema = nameToFind;
+                    break;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(tableNameWithSchema))
+            {
+                OnDebugEvent(string.Format("Database {0} does not have table {1}; skipping data export", databaseName, tableName));
+                return true;
+            }
+
             bool success;
             if (mOptions.PgDumpTableData)
             {
