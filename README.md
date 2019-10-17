@@ -82,7 +82,7 @@ Use `/Data` to define a text file with table names (one name per line) for which
 should be exported. In addition to table names defined in `/Data`, there are default tables 
 which will have their data exported; disable the defaults using `/NoAutoData`
 
-Use `/PgDD` to specify that pg_dump should be used to export table data from PostgreSQL databases
+Use `/PgDD` or `/PgDumpData` to specify that pg_dump should be used to export table data from PostgreSQL databases
 * By default, uses Npgsql.dll
 
 Use `/ServerInfo` to export server settings, logins, and SQL Server Agent jobs
