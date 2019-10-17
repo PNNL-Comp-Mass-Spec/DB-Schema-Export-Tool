@@ -1630,6 +1630,16 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
+        /// If objectName contains characters other than A-Z, a-z, 0-9, or an underscore, surround the name with square brackets
+        /// </summary>
+        /// <param name="objectName"></param>
+        /// <returns></returns>
+        protected override string PossiblyQuoteName(string objectName)
+        {
+            return PossiblyQuoteName(objectName, true);
+        }
+
+        /// <summary>
         /// Script a list of objects
         /// </summary>
         /// <param name="schemaCollection">IEnumerable of type SchemaCollectionBase</param>

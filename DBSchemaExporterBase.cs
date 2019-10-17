@@ -605,19 +605,27 @@ namespace DB_Schema_Export_Tool
             ProgressComplete?.Invoke();
         }
 
-        protected string PossiblyQuoteColumnName(string strColumnName, bool quoteWithSquareBrackets)
+        protected abstract string PossiblyQuoteName(string objectName);
+
+        /// <summary>
+        /// If objectName contains characters other than A-Z, a-z, 0-9, or an underscore, surround the name with square brackets or double quotes
+        /// </summary>
+        /// <param name="objectName"></param>
+        /// <param name="quoteWithSquareBrackets"></param>
+        /// <returns></returns>
+        protected string PossiblyQuoteName(string objectName, bool quoteWithSquareBrackets)
         {
-            if (!mColumnCharNonStandardRegEx.Match(strColumnName).Success)
-                return strColumnName;
+            if (!mColumnCharNonStandardRegEx.Match(objectName).Success)
+                return objectName;
 
             if (quoteWithSquareBrackets)
             {
                 // SQL Server quotes names with square brackets
-                return "[" + strColumnName + "]";
+                return '[' + objectName + ']';
             }
 
             // PostgreSQL quotes names with double quotes
-            return "\"" + strColumnName + "\"";
+            return '"' + objectName + '"';
 
         }
 

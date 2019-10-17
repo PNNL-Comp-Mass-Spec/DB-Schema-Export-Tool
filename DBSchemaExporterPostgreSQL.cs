@@ -1058,6 +1058,16 @@ namespace DB_Schema_Export_Tool
             return string.Empty;
         }
 
+        /// <summary>
+        /// If objectName contains characters other than A-Z, a-z, 0-9, or an underscore, surround the name with double quotes
+        /// </summary>
+        /// <param name="objectName"></param>
+        /// <returns></returns>
+        protected override string PossiblyQuoteName(string objectName)
+        {
+            return PossiblyQuoteName(objectName, false);
+        }
+
         private void ProcessCachedLines(
             string databaseName,
             IEnumerable<string> cachedLines,
