@@ -1446,7 +1446,7 @@ namespace DB_Schema_Export_Tool
         {
             try
             {
-                InitializeLocalVariables();
+                InitializeLocalVariables(true);
 
                 if (!ConnectToServer())
                 {
@@ -1516,7 +1516,7 @@ namespace DB_Schema_Export_Tool
 
             try
             {
-                InitializeLocalVariables();
+                InitializeLocalVariables(true);
 
                 if (!ConnectToServer())
                 {

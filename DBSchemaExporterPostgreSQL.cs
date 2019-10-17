@@ -605,7 +605,7 @@ namespace DB_Schema_Export_Tool
 
             try
             {
-                InitializeLocalVariables();
+                InitializeLocalVariables(clearSchemaOutputDirectories);
 
                 if (!ConnectToServer(databaseName))
                 {
@@ -766,7 +766,7 @@ namespace DB_Schema_Export_Tool
         {
             try
             {
-                InitializeLocalVariables();
+                InitializeLocalVariables(true);
 
                 if (!ConnectToServer())
                 {

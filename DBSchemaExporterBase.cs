@@ -580,6 +580,8 @@ namespace DB_Schema_Export_Tool
         {
             return DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
         }
+
+        protected void InitializeLocalVariables(bool clearSchemaOutputDirectories)
         {
             SetPauseStatus(PauseStatusConstants.Unpaused);
 
@@ -587,7 +589,10 @@ namespace DB_Schema_Export_Tool
 
             ErrorCode = DBSchemaExportErrorCodes.NoError;
 
-            SchemaOutputDirectories.Clear();
+            if (clearSchemaOutputDirectories)
+            {
+                SchemaOutputDirectories.Clear();
+            }
         }
 
         protected void OnDBExportStarting(string databaseName)
@@ -843,7 +848,7 @@ namespace DB_Schema_Export_Tool
 
         protected bool ValidateOptionsToScriptServerAndDBObjects(List<string> databaseList)
         {
-            InitializeLocalVariables();
+            InitializeLocalVariables(true);
 
             try
             {
@@ -989,6 +994,5 @@ namespace DB_Schema_Export_Tool
 
             return true;
         }
-
     }
 }
