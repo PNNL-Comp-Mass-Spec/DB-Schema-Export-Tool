@@ -627,7 +627,7 @@ namespace DB_Schema_Export_Tool
             }
 
             var success = mProgramRunner.RunCommand(pgDump.FullName, cmdArgs, workingParams.OutputDirectory.FullName,
-                                                    out var consoleOutput, out var errorOutput, maxRuntimeSeconds);
+                                                    out var consoleOutput, out _, maxRuntimeSeconds);
 
             if (!success)
             {
