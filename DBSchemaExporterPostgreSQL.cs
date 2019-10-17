@@ -377,10 +377,7 @@ namespace DB_Schema_Export_Tool
                 else
                 {
                     // Delete the _AllObjects_.sql file (since we no longer need it)
-
-                    // ToDo: Uncomment the delete command
-                    Console.WriteLine("ToDo: Delete file " + pgDumpOutputFile.FullName);
-                    // pgDumpOutputFile.Delete();
+                    pgDumpOutputFile.Delete();
                 }
 
                 return true;
