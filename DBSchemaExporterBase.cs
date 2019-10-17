@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 
@@ -16,6 +17,24 @@ namespace DB_Schema_Export_Tool
         // Note: this value defines the maximum number of data rows that will be exported
         // from tables that are auto-added to the table list for data export
         public const int DATA_ROW_COUNT_WARNING_THRESHOLD = 1000;
+
+        public const string COMMENT_START_TEXT = "/****** ";
+        public const string COMMENT_END_TEXT = " ******/";
+        public const string COMMENT_END_TEXT_SHORT = "*/";
+        public const string COMMENT_SCRIPT_DATE_TEXT = "Script Date: ";
+
+        public enum DataColumnTypeConstants
+        {
+            Numeric = 0,
+            Text = 1,
+            DateTime = 2,
+            BinaryArray = 3,
+            BinaryByte = 4,
+            GUID = 5,
+            SqlVariant = 6,
+            ImageObject = 7,
+            GeneralObject = 8,
+        }
 
         public enum DBSchemaExportErrorCodes
         {
@@ -255,6 +274,111 @@ namespace DB_Schema_Export_Tool
         public abstract bool ConnectToServer(string databaseName = "");
 
         /// <summary>
+        /// Examine column types to populate a list of enum DataColumnTypeConstants
+        /// </summary>
+        /// <param name="columnInfoByType"></param>
+        /// <param name="headerRowValues"></param>
+        /// <returns></returns>
+        protected List<DataColumnTypeConstants> ConvertDataTableColumnInfo(
+            IReadOnlyCollection<KeyValuePair<string, Type>> columnInfoByType,
+            out StringBuilder headerRowValues)
+        {
+
+            var columnTypes = new List<DataColumnTypeConstants>();
+            headerRowValues = new StringBuilder();
+            var columnIndex = 0;
+
+            foreach (var item in columnInfoByType)
+            {
+                var currentColumnName = item.Key;
+                var currentColumnType = item.Value;
+
+                // Initially assume the column's data type is numeric
+                var dataColumnType = DataColumnTypeConstants.Numeric;
+
+                // Now check for other data types
+                if (currentColumnType == Type.GetType("System.String"))
+                {
+                    dataColumnType = DataColumnTypeConstants.Text;
+                }
+                else if (currentColumnType == Type.GetType("System.DateTime"))
+                {
+                    // Date column
+                    dataColumnType = DataColumnTypeConstants.DateTime;
+                }
+                else if (currentColumnType == Type.GetType("System.Byte[]"))
+                {
+                    switch (currentColumnType?.Name)
+                    {
+                        case "image":
+                            dataColumnType = DataColumnTypeConstants.ImageObject;
+                            break;
+                        case "timestamp":
+                            dataColumnType = DataColumnTypeConstants.BinaryArray;
+                            break;
+                        default:
+                            dataColumnType = DataColumnTypeConstants.BinaryArray;
+                            break;
+                    }
+                }
+                else if (currentColumnType == Type.GetType("System.Guid"))
+                {
+                    dataColumnType = DataColumnTypeConstants.GUID;
+                }
+                else if (currentColumnType == Type.GetType("System.Boolean"))
+                {
+                    // This may be a binary column
+                    switch (currentColumnType?.Name)
+                    {
+                        case "binary":
+                        case "bit":
+                            dataColumnType = DataColumnTypeConstants.BinaryByte;
+                            break;
+                        default:
+                            dataColumnType = DataColumnTypeConstants.Text;
+                            break;
+                    }
+                }
+                else if (currentColumnType == Type.GetType("System.var"))
+                {
+                    switch (currentColumnType?.Name)
+                    {
+                        case "sql_variant":
+                            dataColumnType = DataColumnTypeConstants.SqlVariant;
+                            break;
+                        default:
+                            dataColumnType = DataColumnTypeConstants.GeneralObject;
+                            break;
+                    }
+                }
+
+                columnTypes.Add(dataColumnType);
+                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+                {
+                    headerRowValues.Append(PossiblyQuoteName(currentColumnName));
+                    if (columnIndex < columnInfoByType.Count - 1)
+                    {
+                        headerRowValues.Append(", ");
+                    }
+
+                }
+                else
+                {
+                    headerRowValues.Append(currentColumnName);
+                    if (columnIndex < columnInfoByType.Count - 1)
+                    {
+                        headerRowValues.Append("\t");
+                    }
+
+                }
+
+                columnIndex++;
+            }
+
+            return columnTypes;
+        }
+
+        /// <summary>
         /// Export the tables, views, procedures, etc. in the given database
         /// </summary>
         /// <param name="databaseName"></param>
@@ -322,6 +446,116 @@ namespace DB_Schema_Export_Tool
         protected abstract bool ExportDBTableData(string databaseName, string tableName, long maxRowsToExport, WorkingParams workingParams);
 
         /// <summary>
+        /// Append a single row of results to the output file
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="colSepChar"></param>
+        /// <param name="delimitedRowValues"></param>
+        /// <param name="columnTypes"></param>
+        /// <param name="columnCount"></param>
+        /// <param name="columnValues"></param>
+        protected void ExportDBTableDataRow(
+            TextWriter writer,
+            char colSepChar,
+            StringBuilder delimitedRowValues,
+            IReadOnlyList<DataColumnTypeConstants> columnTypes,
+            int columnCount,
+            IReadOnlyList<object> columnValues)
+        {
+            for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
+            {
+
+                switch (columnTypes[columnIndex])
+                {
+                    case DataColumnTypeConstants.Numeric:
+                        delimitedRowValues.Append(columnValues[columnIndex]);
+                        break;
+
+                    case DataColumnTypeConstants.Text:
+                    case DataColumnTypeConstants.DateTime:
+                    case DataColumnTypeConstants.GUID:
+                        if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+                        {
+                            delimitedRowValues.Append(PossiblyQuoteText(columnValues[columnIndex].ToString()));
+                        }
+                        else
+                        {
+                            delimitedRowValues.Append(columnValues[columnIndex]);
+                        }
+                        break;
+
+                    case DataColumnTypeConstants.BinaryArray:
+                        try
+                        {
+                            var bytData = (byte[])(Array)columnValues[columnIndex];
+                            delimitedRowValues.Append("0x");
+                            var dataFound = false;
+                            foreach (var value in bytData)
+                            {
+                                if (dataFound || value != 0)
+                                {
+                                    dataFound = true;
+                                    delimitedRowValues.Append(value.ToString("X2"));
+                                }
+                            }
+
+                            if (!dataFound)
+                            {
+                                delimitedRowValues.Append("00");
+                            }
+
+                        }
+                        catch (Exception)
+                        {
+                            delimitedRowValues.Append("[Byte]");
+                        }
+                        break;
+
+                    case DataColumnTypeConstants.BinaryByte:
+                        try
+                        {
+                            delimitedRowValues.Append("0x" + Convert.ToByte(columnValues[columnIndex]).ToString("X2"));
+                        }
+                        catch (Exception)
+                        {
+                            delimitedRowValues.Append("[Byte]");
+                        }
+
+                        break;
+
+                    case DataColumnTypeConstants.ImageObject:
+                        delimitedRowValues.Append("[Image]");
+                        break;
+
+                    case DataColumnTypeConstants.GeneralObject:
+                        delimitedRowValues.Append("[var]");
+                        break;
+
+                    case DataColumnTypeConstants.SqlVariant:
+                        delimitedRowValues.Append("[Sql_Variant]");
+                        break;
+
+                    default:
+                        delimitedRowValues.Append(columnValues[columnIndex]);
+                        break;
+                }
+
+                if (columnIndex < columnCount - 1)
+                {
+                    delimitedRowValues.Append(colSepChar);
+                }
+
+            }
+
+            if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+            {
+                delimitedRowValues.Append(")");
+            }
+
+            writer.WriteLine(delimitedRowValues.ToString());
+        }
+
+        /// <summary>
         /// Retrieve a list of tables in the given database
         /// </summary>
         /// <param name="databaseName">Database to query</param>
@@ -338,7 +572,14 @@ namespace DB_Schema_Export_Tool
 
         protected abstract IEnumerable<string> GetServerDatabasesCurrentConnection();
 
-        protected void InitializeLocalVariables()
+        /// <summary>
+        /// Obtain a timestamp in the form: 08/12/2006 23:01:20
+        /// </summary>
+        /// <returns></returns>
+        protected string GetTimeStamp()
+        {
+            return DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
+        }
         {
             SetPauseStatus(PauseStatusConstants.Unpaused);
 

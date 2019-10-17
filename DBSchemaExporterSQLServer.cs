@@ -24,24 +24,6 @@ namespace DB_Schema_Export_Tool
 
         public const string DB_DEFINITION_FILE_PREFIX = "DBDefinition_";
 
-        public const string COMMENT_START_TEXT = "/****** ";
-        public const string COMMENT_END_TEXT = " ******/";
-        public const string COMMENT_END_TEXT_SHORT = "*/";
-        public const string COMMENT_SCRIPT_DATE_TEXT = "Script Date: ";
-
-        public enum DataColumnTypeConstants
-        {
-            Numeric = 0,
-            Text = 1,
-            DateTime = 2,
-            BinaryArray = 3,
-            BinaryByte = 4,
-            GUID = 5,
-            SqlVariant = 6,
-            ImageObject = 7,
-            GeneralObject = 8,
-        }
-
         #endregion
 
         #region "Classwide Variables"
@@ -93,6 +75,42 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        private void AppendToList(ICollection<string> serverInfo, string propertyName, string propertyValue)
+        {
+            if (propertyName != null && propertyValue != null)
+            {
+                serverInfo.Add(propertyName + "=" + propertyValue);
+            }
+
+        }
+
+        private void AppendToList(ICollection<string> serverInfo, string propertyName, int propertyValue)
+        {
+            if (propertyName != null)
+            {
+                serverInfo.Add(propertyName + "=" + propertyValue);
+            }
+
+        }
+
+        private void AppendToList(ICollection<string> serverInfo, string propertyName, bool propertyValue)
+        {
+            if (propertyName != null)
+            {
+                serverInfo.Add(propertyName + "=" + propertyValue);
+            }
+
+        }
+
+        private void AppendToList(ICollection<string> serverInfo, ConfigProperty configProperty)
+        {
+            if (configProperty?.DisplayName != null)
+            {
+                serverInfo.Add(configProperty.DisplayName + "=" + configProperty.ConfigValue);
+            }
+
+        }
+
         /// <summary>
         /// Determines the table names for which data will be exported
         /// </summary>
@@ -108,6 +126,123 @@ namespace DB_Schema_Export_Tool
 
             var tablesToExport = AutoSelectTableNamesForDataExport(tableNamesInDatabase, tableNamesForDataExport);
             return tablesToExport;
+        }
+
+        private IEnumerable<string> CleanSqlScript(IEnumerable<string> scriptInfo)
+        {
+            return CleanSqlScript(scriptInfo, false, false);
+        }
+
+        private List<string> CleanSqlScript(IEnumerable<string> scriptInfo, bool removeAllScriptDateOccurrences, bool removeDuplicateHeaderLine)
+        {
+            var whitespaceChars = new[] {
+                ' ',
+                '\t'
+            };
+
+            var cleanScriptInfo = new List<string>();
+
+            try
+            {
+                if (mOptions.ScriptingOptions.IncludeTimestampInScriptFileHeader)
+                {
+                    return cleanScriptInfo;
+                }
+
+                // Look for and remove the timestamp from the first line of the Sql script
+                // For example: "Script Date: 08/14/2006 20:14:31" prior to each "******/"
+                //
+                // If removeAllScriptDateOccurrences = True, searches for all occurrences
+                // If removeAllScriptDateOccurrences = False, does not look past the first carriage return of each entry in scriptInfo
+                foreach (var item in scriptInfo)
+                {
+                    var currentLine = string.Copy(item);
+
+                    var indexStart = 0;
+                    int finalSearchIndex;
+                    if (removeAllScriptDateOccurrences)
+                    {
+                        finalSearchIndex = currentLine.Length - 1;
+                    }
+                    else
+                    {
+                        // Find the first CrLf after the first non-blank line in currentLine
+                        // However, if the script starts with several SET statements, we need to skip those lines
+                        var objectCommentStartIndex = currentLine.IndexOf(COMMENT_START_TEXT + "Object:", StringComparison.Ordinal);
+                        if (currentLine.Trim().StartsWith("SET") && objectCommentStartIndex > 0)
+                        {
+                            indexStart = objectCommentStartIndex;
+                        }
+
+                        while (true)
+                        {
+                            finalSearchIndex = currentLine.IndexOf("\r\n", indexStart, StringComparison.Ordinal);
+
+                            if (finalSearchIndex == indexStart)
+                            {
+                                indexStart += 2;
+                            }
+
+                            if (!(finalSearchIndex >= 0 && finalSearchIndex < indexStart && indexStart < currentLine.Length))
+                                break;
+                        }
+
+                        if (finalSearchIndex < 0)
+                        {
+                            finalSearchIndex = currentLine.Length - 1;
+                        }
+
+                    }
+
+                    while (true)
+                    {
+                        var indexStartCurrent = currentLine.IndexOf(COMMENT_SCRIPT_DATE_TEXT, indexStart, StringComparison.Ordinal);
+
+                        if (indexStartCurrent > 0 && indexStartCurrent <= finalSearchIndex)
+                        {
+                            var indexEndCurrent = currentLine.IndexOf(COMMENT_END_TEXT_SHORT, indexStartCurrent, StringComparison.Ordinal);
+                            if (indexEndCurrent > indexStartCurrent && indexEndCurrent <= finalSearchIndex)
+                            {
+                                currentLine = currentLine.Substring(0, indexStartCurrent).TrimEnd(whitespaceChars) + COMMENT_END_TEXT +
+                                              currentLine.Substring(indexEndCurrent + COMMENT_END_TEXT_SHORT.Length);
+                            }
+
+                        }
+
+                        if (!(removeAllScriptDateOccurrences && indexStartCurrent > 0))
+                            break;
+                    }
+
+                    if (removeDuplicateHeaderLine)
+                    {
+                        var firstCrLf = currentLine.IndexOf("\r\n", 0, StringComparison.Ordinal);
+                        if (firstCrLf > 0 && firstCrLf < currentLine.Length)
+                        {
+                            var nextCrLf = currentLine.IndexOf("\r\n", firstCrLf + 1, StringComparison.Ordinal);
+                            if (nextCrLf > firstCrLf)
+                            {
+                                if (currentLine.Substring(0, firstCrLf) ==
+                                    currentLine.Substring(firstCrLf + 2, nextCrLf - (firstCrLf - 2)))
+                                {
+                                    currentLine = currentLine.Substring(firstCrLf + 2);
+                                }
+                            }
+                        }
+                    }
+
+                    cleanScriptInfo.Add(currentLine);
+
+                }
+
+                return cleanScriptInfo;
+
+            }
+            catch (Exception ex)
+            {
+                OnWarningEvent("Error in CleanSqlScript: " + ex.Message);
+                return cleanScriptInfo;
+            }
+
         }
 
         /// <summary>
@@ -866,6 +1001,7 @@ namespace DB_Schema_Export_Tool
                 sql += " * FROM [" + databaseTable.Name + "]";
 
                 var queryResults = mCurrentDatabase.ExecuteWithResults(sql);
+
                 var headerRows = new List<string>();
                 var header = COMMENT_START_TEXT + "Object:  Table [" + databaseTable.Name + "]";
 
@@ -879,94 +1015,20 @@ namespace DB_Schema_Export_Tool
                 headerRows.Add(COMMENT_START_TEXT + "RowCount: " + databaseTable.RowCount + COMMENT_END_TEXT);
 
                 var columnCount = queryResults.Tables[0].Columns.Count;
-                var columnTypes = new List<DataColumnTypeConstants>();
 
-                var headerRowValues = new StringBuilder();
+                var columnInfoByType = new List<KeyValuePair<string, Type>>();
 
                 for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
                 {
                     var currentColumn = queryResults.Tables[0].Columns[columnIndex];
 
-                    // Initially assume the column's data type is numeric
-                    var dataColumnType = DataColumnTypeConstants.Numeric;
+                    var currentColumnName = currentColumn.ColumnName;
+                    var currentColumnType = currentColumn.DataType;
 
-                    // Now check for other data types
-                    if (currentColumn.DataType == Type.GetType("System.String"))
-                    {
-                        dataColumnType = DataColumnTypeConstants.Text;
-                    }
-                    else if (currentColumn.DataType == Type.GetType("System.DateTime"))
-                    {
-                        // Date column
-                        dataColumnType = DataColumnTypeConstants.DateTime;
-                    }
-                    else if (currentColumn.DataType == Type.GetType("System.Byte[]"))
-                    {
-                        switch (currentColumn.DataType?.Name)
-                        {
-                            case "image":
-                                dataColumnType = DataColumnTypeConstants.ImageObject;
-                                break;
-                            case "timestamp":
-                                dataColumnType = DataColumnTypeConstants.BinaryArray;
-                                break;
-                            default:
-                                dataColumnType = DataColumnTypeConstants.BinaryArray;
-                                break;
-                        }
-                    }
-                    else if (currentColumn.DataType == Type.GetType("System.Guid"))
-                    {
-                        dataColumnType = DataColumnTypeConstants.GUID;
-                    }
-                    else if (currentColumn.DataType == Type.GetType("System.Boolean"))
-                    {
-                        // This may be a binary column
-                        switch (currentColumn.DataType?.Name)
-                        {
-                            case "binary":
-                            case "bit":
-                                dataColumnType = DataColumnTypeConstants.BinaryByte;
-                                break;
-                            default:
-                                dataColumnType = DataColumnTypeConstants.Text;
-                                break;
-                        }
-                    }
-                    else if (currentColumn.DataType == Type.GetType("System.var"))
-                    {
-                        switch (currentColumn.DataType?.Name)
-                        {
-                            case "sql_variant":
-                                dataColumnType = DataColumnTypeConstants.SqlVariant;
-                                break;
-                            default:
-                                dataColumnType = DataColumnTypeConstants.GeneralObject;
-                                break;
-                        }
-                    }
-
-                    columnTypes.Add(dataColumnType);
-                    if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
-                    {
-                        headerRowValues.Append(PossiblyQuoteColumnName(currentColumn.ColumnName, true));
-                        if (columnIndex < columnCount - 1)
-                        {
-                            headerRowValues.Append(", ");
-                        }
-
-                    }
-                    else
-                    {
-                        headerRowValues.Append(currentColumn.ColumnName);
-                        if (columnIndex < columnCount - 1)
-                        {
-                            headerRowValues.Append("\t");
-                        }
-
-                    }
-
+                    columnInfoByType.Add(new KeyValuePair<string, Type>(currentColumnName, currentColumnType));
                 }
+
+                var columnTypes = ConvertDataTableColumnInfo(columnInfoByType, out var headerRowValues);
 
                 var insertIntoLine = string.Empty;
                 char colSepChar;
@@ -1032,6 +1094,15 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        /// <summary>
+        /// Step through the results in queryResults
+        /// Append lines to the output file
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="queryResults"></param>
+        /// <param name="columnTypes"></param>
+        /// <param name="insertIntoLine"></param>
+        /// <param name="colSepChar"></param>
         private void ExportDBTableDataWork(
             TextWriter writer,
             DataSet queryResults,
@@ -1043,6 +1114,8 @@ namespace DB_Schema_Export_Tool
 
             var delimitedRowValues = new StringBuilder();
 
+            var columnValues = new object[columnCount];
+
             foreach (DataRow currentRow in queryResults.Tables[0].Rows)
             {
                 delimitedRowValues.Clear();
@@ -1053,93 +1126,10 @@ namespace DB_Schema_Export_Tool
 
                 for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
                 {
-                    switch (columnTypes[columnIndex])
-                    {
-                        case DataColumnTypeConstants.Numeric:
-                            delimitedRowValues.Append(currentRow[columnIndex]);
-                            break;
-
-                        case DataColumnTypeConstants.Text:
-                        case DataColumnTypeConstants.DateTime:
-                        case DataColumnTypeConstants.GUID:
-                            if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
-                            {
-                                delimitedRowValues.Append(PossiblyQuoteText(currentRow[columnIndex].ToString()));
-                            }
-                            else
-                            {
-                                delimitedRowValues.Append(currentRow[columnIndex]);
-                            }
-                            break;
-
-                        case DataColumnTypeConstants.BinaryArray:
-                            try
-                            {
-                                var bytData = (byte[])(Array)currentRow[columnIndex];
-                                delimitedRowValues.Append("0x");
-                                var dataFound = false;
-                                foreach (var value in bytData)
-                                {
-                                    if (dataFound || value != 0)
-                                    {
-                                        dataFound = true;
-                                        delimitedRowValues.Append(value.ToString("X2"));
-                                    }
-                                }
-
-                                if (!dataFound)
-                                {
-                                    delimitedRowValues.Append("00");
-                                }
-
-                            }
-                            catch (Exception)
-                            {
-                                delimitedRowValues.Append("[Byte]");
-                            }
-                            break;
-
-                        case DataColumnTypeConstants.BinaryByte:
-                            try
-                            {
-                                delimitedRowValues.Append("0x" + Convert.ToByte(currentRow[columnIndex]).ToString("X2"));
-                            }
-                            catch (Exception)
-                            {
-                                delimitedRowValues.Append("[Byte]");
-                            }
-
-                            break;
-
-                        case DataColumnTypeConstants.ImageObject:
-                            delimitedRowValues.Append("[Image]");
-                            break;
-
-                        case DataColumnTypeConstants.GeneralObject:
-                            delimitedRowValues.Append("[var]");
-                            break;
-
-                        case DataColumnTypeConstants.SqlVariant:
-                            delimitedRowValues.Append("[Sql_Variant]");
-                            break;
-
-                        default:
-                            delimitedRowValues.Append(currentRow[columnIndex]);
-                            break;
-                    }
-                    if (columnIndex < columnCount - 1)
-                    {
-                        delimitedRowValues.Append(colSepChar);
-                    }
-
+                    columnValues[columnIndex] = currentRow[columnIndex];
                 }
 
-                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
-                {
-                    delimitedRowValues.Append(")");
-                }
-
-                writer.WriteLine(delimitedRowValues.ToString());
+                ExportDBTableDataRow(writer, colSepChar, delimitedRowValues, columnTypes, columnCount, columnValues);
             }
 
             // // Read method #2: Use a SqlDataReader to read row-by-row
@@ -1196,160 +1186,6 @@ namespace DB_Schema_Export_Tool
             catch
             {
                 return false;
-            }
-
-        }
-
-        private void AppendToList(ICollection<string> serverInfo, string propertyName, string propertyValue)
-        {
-            if (propertyName != null && propertyValue != null)
-            {
-                serverInfo.Add(propertyName + "=" + propertyValue);
-            }
-
-        }
-
-        private void AppendToList(ICollection<string> serverInfo, string propertyName, int propertyValue)
-        {
-            if (propertyName != null)
-            {
-                serverInfo.Add(propertyName + "=" + propertyValue);
-            }
-
-        }
-
-        private void AppendToList(ICollection<string> serverInfo, string propertyName, bool propertyValue)
-        {
-            if (propertyName != null)
-            {
-                serverInfo.Add(propertyName + "=" + propertyValue);
-            }
-
-        }
-
-        private void AppendToList(ICollection<string> serverInfo, ConfigProperty configProperty)
-        {
-            if (configProperty?.DisplayName != null)
-            {
-                serverInfo.Add(configProperty.DisplayName + "=" + configProperty.ConfigValue);
-            }
-
-        }
-
-        private IEnumerable<string> CleanSqlScript(IEnumerable<string> scriptInfo)
-        {
-            return CleanSqlScript(scriptInfo, false, false);
-        }
-
-        private List<string> CleanSqlScript(IEnumerable<string> scriptInfo, bool removeAllScriptDateOccurrences, bool removeDuplicateHeaderLine)
-        {
-            var whitespaceChars = new[] {
-                ' ',
-                '\t'
-            };
-
-            var cleanScriptInfo = new List<string>();
-
-            try
-            {
-                if (mOptions.ScriptingOptions.IncludeTimestampInScriptFileHeader)
-                {
-                    return cleanScriptInfo;
-                }
-
-                // Look for and remove the timestamp from the first line of the Sql script
-                // For example: "Script Date: 08/14/2006 20:14:31" prior to each "******/"
-                //
-                // If removeAllScriptDateOccurrences = True, searches for all occurrences
-                // If removeAllScriptDateOccurrences = False, does not look past the first carriage return of each entry in scriptInfo
-                foreach (var item in scriptInfo)
-                {
-                    var currentLine = string.Copy(item);
-
-                    var indexStart = 0;
-                    int finalSearchIndex;
-                    if (removeAllScriptDateOccurrences)
-                    {
-                        finalSearchIndex = currentLine.Length - 1;
-                    }
-                    else
-                    {
-                        // Find the first CrLf after the first non-blank line in currentLine
-                        // However, if the script starts with several SET statements, we need to skip those lines
-                        var objectCommentStartIndex = currentLine.IndexOf(COMMENT_START_TEXT + "Object:", StringComparison.Ordinal);
-                        if (currentLine.Trim().StartsWith("SET") && objectCommentStartIndex > 0)
-                        {
-                            indexStart = objectCommentStartIndex;
-                        }
-
-                        while (true)
-                        {
-                            finalSearchIndex = currentLine.IndexOf("\r\n", indexStart, StringComparison.Ordinal);
-
-                            if (finalSearchIndex == indexStart)
-                            {
-                                indexStart += 2;
-                            }
-
-                            if (!(finalSearchIndex >= 0 && finalSearchIndex < indexStart && indexStart < currentLine.Length))
-                                break;
-                        }
-
-                        if (finalSearchIndex < 0)
-                        {
-                            finalSearchIndex = currentLine.Length - 1;
-                        }
-
-                    }
-
-                    while (true)
-                    {
-                        var indexStartCurrent = currentLine.IndexOf(COMMENT_SCRIPT_DATE_TEXT, indexStart, StringComparison.Ordinal);
-
-                        if (indexStartCurrent > 0 && indexStartCurrent <= finalSearchIndex)
-                        {
-                            var indexEndCurrent = currentLine.IndexOf(COMMENT_END_TEXT_SHORT, indexStartCurrent, StringComparison.Ordinal);
-                            if (indexEndCurrent > indexStartCurrent && indexEndCurrent <= finalSearchIndex)
-                            {
-                                currentLine = currentLine.Substring(0, indexStartCurrent).TrimEnd(whitespaceChars) +
-                                              COMMENT_END_TEXT +
-                                              currentLine.Substring(indexEndCurrent + COMMENT_END_TEXT_SHORT.Length);
-                            }
-
-                        }
-
-                        if (!(removeAllScriptDateOccurrences && indexStartCurrent > 0))
-                            break;
-                    }
-
-                    if (removeDuplicateHeaderLine)
-                    {
-                        var firstCrLf = currentLine.IndexOf("\r\n", 0, StringComparison.Ordinal);
-                        if (firstCrLf > 0 && firstCrLf < currentLine.Length)
-                        {
-                            var nextCrLf = currentLine.IndexOf("\r\n", firstCrLf + 1, StringComparison.Ordinal);
-                            if (nextCrLf > firstCrLf)
-                            {
-                                if (currentLine.Substring(0, firstCrLf) ==
-                                    currentLine.Substring(firstCrLf + 2, nextCrLf - (firstCrLf - 2)))
-                                {
-                                    currentLine = currentLine.Substring(firstCrLf + 2);
-                                }
-                            }
-                        }
-                    }
-
-                    cleanScriptInfo.Add(currentLine);
-
-                }
-
-                return cleanScriptInfo;
-
-            }
-            catch (Exception ex)
-            {
-                OnWarningEvent("Error in CleanSqlScript: " + ex.Message);
-                return cleanScriptInfo;
             }
 
         }
@@ -1749,12 +1585,6 @@ namespace DB_Schema_Export_Tool
 
                 return new Dictionary<string, long>();
             }
-        }
-
-        private string GetTimeStamp()
-        {
-            // Return a timestamp in the form: 08/12/2006 23:01:20
-            return DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
         }
 
         /// <summary>
