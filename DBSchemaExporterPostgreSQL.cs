@@ -444,7 +444,14 @@ namespace DB_Schema_Export_Tool
 
             OnProgressUpdate("Exporting data from " + tableName, percentComplete);
 
-            var cleanName = CleanNameForOS(tableName + "_Data");
+            // Make sure output file name doesn't contain any invalid characters
+
+            string cleanName;
+            if (tableNameWithSchema.StartsWith("public."))
+                cleanName = CleanNameForOS(tableName + "_Data");
+            else
+                cleanName = CleanNameForOS(tableNameWithSchema + "_Data");
+
             var outputFile = new FileInfo(Path.Combine(workingParams.OutputDirectory.FullName, cleanName + ".sql"));
 
             bool success;
@@ -454,7 +461,7 @@ namespace DB_Schema_Export_Tool
             }
             else
             {
-                success = ExportDBTableDataUsingNpgsql(databaseName, tableNameWithSchema, maxRowsToExport, workingParams, outputFile);
+                success = ExportDBTableDataUsingNpgsql(databaseName, tableNameWithSchema, maxRowsToExport, outputFile);
             }
 
             return success;
@@ -464,7 +471,6 @@ namespace DB_Schema_Export_Tool
             string databaseName,
             string tableNameWithSchema,
             long maxRowsToExport,
-            WorkingParams workingParams,
             FileSystemInfo tableDataOutputFile)
         {
             if (!ConnectToServer(databaseName))
@@ -550,11 +556,7 @@ namespace DB_Schema_Export_Tool
                     colSepChar = '\t';
                 }
 
-                // Make sure output file name doesn't contain any invalid characters
-                var cleanName = CleanNameForOS(tableNameWithSchema + "_Data");
-                var outFilePath = Path.Combine(workingParams.OutputDirectory.FullName, cleanName + ".sql");
-
-                using (var writer = new StreamWriter(new FileStream(outFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
+                using (var writer = new StreamWriter(new FileStream(tableDataOutputFile.FullName, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
                 {
                     foreach (var headerRow in headerRows)
                     {
