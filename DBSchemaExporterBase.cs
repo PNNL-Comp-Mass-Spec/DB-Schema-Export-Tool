@@ -549,7 +549,12 @@ namespace DB_Schema_Export_Tool
 
             if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
             {
-                delimitedRowValues.Append(")");
+                // Include a semi-colon if creating INSERT INTO statements for databases other than SQL Server
+                if (mOptions.PostgreSQL ||
+                    mOptions.ScriptingOptions.DatabaseTypeForInsertInto != DatabaseScriptingOptions.TargetDatabaseTypeConstants.SqlServer)
+                    delimitedRowValues.Append(");");
+                else
+                    delimitedRowValues.Append(")");
             }
 
             writer.WriteLine(delimitedRowValues.ToString());
