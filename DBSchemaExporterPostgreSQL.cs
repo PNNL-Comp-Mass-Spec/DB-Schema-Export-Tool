@@ -156,9 +156,19 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Connect to the server specified in mOptions
         /// </summary>
+        /// <returns>True if successfully connected, false if a problem</returns>
+        public override bool ConnectToServer()
+        {
+            var success = ConnectToServer(POSTGRES_DATABASE);
+            return success;
+        }
+
+        /// <summary>
+        /// Connect to the server specified in mOptions
+        /// </summary>
         /// <param name="databaseName">PostgreSQL database to connect to</param>
         /// <returns>True if successfully connected, false if a problem</returns>
-        public override bool ConnectToServer(string databaseName = "")
+        public bool ConnectToServer(string databaseName)
         {
             var success = ConnectToPgServer(databaseName);
             return success;
@@ -1676,86 +1686,20 @@ namespace DB_Schema_Export_Tool
 
         }
 
-        /// <summary>
-        /// Scripts out the objects on the current server
-        /// </summary>
-        /// <param name="databaseList">Database names to export></param>
-        /// <param name="tableNamesForDataExport">Table names for which data should be exported</param>
-        /// <returns>True if success, false if a problem</returns>
-        public override bool ScriptServerAndDBObjects(List<string> databaseList, List<string> tableNamesForDataExport)
+        protected override bool ScriptServerObjects()
         {
-            var validated = ValidateOptionsToScriptServerAndDBObjects(databaseList);
-            if (!validated)
-                return false;
-
-            OnStatusEvent("Exporting schema to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
-            OnDebugEvent("Connecting to " + mOptions.ServerName);
-
-            // Assure that we're connected to the postgres database
-            // ScriptDBObjects calls GetServerDatabasesWork to get a list of databases on the server
-            if (!ConnectToServer(POSTGRES_DATABASE))
-            {
-                return false;
-            }
-
-            if (!ValidServerConnection())
-            {
-                return false;
-            }
-
-            if (mOptions.ExportServerInfo)
-            {
-                var success = ScriptServerObjects();
-                if (!success || mAbortProcessing)
-                {
-                    return false;
-                }
-            }
-
-            if (databaseList != null && databaseList.Count > 0)
-            {
-                var success = ScriptDBObjectsAndData(databaseList, tableNamesForDataExport);
-                if (!success || mAbortProcessing)
-                {
-                    return false;
-                }
-            }
-
-            OnProgressComplete();
-
-            return true;
-        }
-
-        private bool ScriptServerObjects()
-        {
-            var outputDirectoryPath = "??";
-
-            DirectoryInfo outputDirectoryPathCurrentServer;
 
             try
             {
-                // Construct the path to the output directory
-                outputDirectoryPath = Path.Combine(mOptions.OutputDirectoryPath, mOptions.ServerOutputDirectoryNamePrefix + mOptions.ServerName);
-                outputDirectoryPathCurrentServer = new DirectoryInfo(outputDirectoryPath);
-
-                // Create the directory if it doesn't exist
-                if (!outputDirectoryPathCurrentServer.Exists && !mOptions.PreviewExport)
+                var serverInfoOutputDirectory = GetServerInfoOutputDirectory(mOptions.ServerName);
+                if (serverInfoOutputDirectory == null)
                 {
-                    outputDirectoryPathCurrentServer.Create();
+                    return false;
                 }
 
-            }
-            catch (Exception ex)
-            {
-                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating or creating directory " + outputDirectoryPath, ex);
-                return false;
-            }
+                OnStatusEvent("Exporting Server objects to: " + PathUtils.CompactPathString(serverInfoOutputDirectory.FullName));
 
-            try
-            {
-                OnStatusEvent("Exporting Server objects to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
-
-                var outputFile = new FileInfo(Path.Combine(outputDirectoryPathCurrentServer.FullName, "ServerInfo.sql"));
+                var outputFile = new FileInfo(Path.Combine(serverInfoOutputDirectory.FullName, "ServerInfo.sql"));
 
                 var existingData = outputFile.Exists ? outputFile.LastWriteTime : DateTime.MinValue;
 
@@ -1775,8 +1719,8 @@ namespace DB_Schema_Export_Tool
                     return true;
                 }
 
-                var success = mProgramRunner.RunCommand(pgDumpAll.FullName, cmdArgs, outputDirectoryPathCurrentServer.FullName,
-                                                       out var consoleOutput, out var errorOutput, maxRuntimeSeconds);
+                var success = mProgramRunner.RunCommand(pgDumpAll.FullName, cmdArgs, serverInfoOutputDirectory.FullName,
+                                                       out var consoleOutput, out _, maxRuntimeSeconds);
 
                 if (!success)
                 {
@@ -1800,7 +1744,7 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error scripting objects for server " + mOptions.ServerName, ex);
+                SetLocalError(DBSchemaExportErrorCodes.GeneralError, "Error scripting objects for server " + mOptions.ServerName, ex);
                 return false;
             }
 
@@ -1847,7 +1791,7 @@ namespace DB_Schema_Export_Tool
             currentObjectOwner = match.Groups["Owner"].Value;
         }
 
-        private bool ValidServerConnection()
+        protected override bool ValidServerConnection()
         {
             return mConnectedToServer && mPgConnection != null &&
                    mPgConnection.State != ConnectionState.Broken &&
@@ -1876,7 +1820,6 @@ namespace DB_Schema_Export_Tool
             }
 
         }
-
 
     }
 }

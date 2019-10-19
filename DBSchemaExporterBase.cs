@@ -269,9 +269,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Connect to the server specified in mOptions
         /// </summary>
-        /// <param name="databaseName">PostgreSQL database to connect to; ignored for SQL Server</param>
         /// <returns>True if successfully connected, false if a problem</returns>
-        public abstract bool ConnectToServer(string databaseName = "");
+        public abstract bool ConnectToServer();
 
         /// <summary>
         /// Examine column types to populate a list of enum DataColumnTypeConstants
@@ -584,6 +583,31 @@ namespace DB_Schema_Export_Tool
 
         protected abstract IEnumerable<string> GetServerDatabasesCurrentConnection();
 
+        protected DirectoryInfo GetServerInfoOutputDirectory(string serverName)
+        {
+            var outputDirectoryPath = "??";
+
+            try
+            {
+                // Construct the path to the output directory
+                outputDirectoryPath = Path.Combine(mOptions.OutputDirectoryPath, mOptions.ServerOutputDirectoryNamePrefix + serverName);
+                var serverInfoOutputDirectory = new DirectoryInfo(outputDirectoryPath);
+
+                // Create the directory if it doesn't exist
+                if (!serverInfoOutputDirectory.Exists && !mOptions.PreviewExport)
+                {
+                    serverInfoOutputDirectory.Create();
+                }
+
+                return serverInfoOutputDirectory;
+            }
+            catch (Exception ex)
+            {
+                SetLocalError(DBSchemaExportErrorCodes.GeneralError, "Error validating or creating directory " + outputDirectoryPath, ex);
+                return null;
+            }
+        }
+
         /// <summary>
         /// Obtain a timestamp in the form: 08/12/2006 23:01:20
         /// </summary>
@@ -796,7 +820,67 @@ namespace DB_Schema_Export_Tool
             return false;
         }
 
-        public abstract bool ScriptServerAndDBObjects(List<string> databaseList, List<string> tableNamesForDataExport);
+        /// <summary>
+        /// Scripts out the objects on the current server, including server info, database schema, and table data
+        /// </summary>
+        /// <param name="databaseList">Database names to export></param>
+        /// <param name="tableNamesForDataExport">Table names for which data should be exported</param>
+        /// <returns>True if success, false if a problem</returns>
+        public bool ScriptServerAndDBObjects(List<string> databaseList, List<string> tableNamesForDataExport)
+        {
+            var validated = ValidateOptionsToScriptServerAndDBObjects(databaseList);
+            if (!validated)
+                return false;
+
+            OnStatusEvent("Exporting schema to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
+            OnDebugEvent("Connecting to " + mOptions.ServerName);
+
+            // Connect to the server
+            // ScriptDBObjects calls GetServerDatabasesWork to get a list of databases on the server
+            if (!ConnectToServer())
+            {
+                return false;
+            }
+
+            if (!ValidServerConnection())
+            {
+                return false;
+            }
+
+            if (mOptions.ExportServerInfo && !mOptions.NoSchema)
+            {
+                var success = ScriptServerObjects();
+                if (!success)
+                {
+                    return false;
+                }
+
+                if (mAbortProcessing)
+                {
+                    return true;
+                }
+            }
+
+            if (databaseList != null && databaseList.Count > 0)
+            {
+                var success = ScriptDBObjectsAndData(databaseList, tableNamesForDataExport);
+                if (!success)
+                {
+                    return false;
+                }
+
+                if (mAbortProcessing)
+                {
+                    return true;
+                }
+            }
+
+            OnProgressComplete();
+
+            return true;
+        }
+
+        protected abstract bool ScriptServerObjects();
 
         protected void SetLocalError(DBSchemaExportErrorCodes eErrorCode, string message)
         {
@@ -970,6 +1054,8 @@ namespace DB_Schema_Export_Tool
             }
 
         }
+
+        protected abstract bool ValidServerConnection();
 
         protected bool WriteTextToFile(
             DirectoryInfo outputDirectory,

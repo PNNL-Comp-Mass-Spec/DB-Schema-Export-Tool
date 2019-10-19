@@ -107,15 +107,14 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Connect to the server specified in mOptions
         /// </summary>
-        /// <param name="databaseName">PostgreSQL database to connect to; ignored for SQL Server</param>
         /// <returns>True if successfully connected, false if a problem</returns>
-        public bool ConnectToServer(string databaseName = "")
+        public bool ConnectToServer()
         {
             var isValid = ValidateSchemaExporter();
             if (!isValid)
                 return false;
 
-            return mDBSchemaExporter.ConnectToServer(databaseName);
+            return mDBSchemaExporter.ConnectToServer();
         }
 
         /// <summary>

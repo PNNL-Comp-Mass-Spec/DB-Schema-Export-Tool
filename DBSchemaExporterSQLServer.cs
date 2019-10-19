@@ -248,9 +248,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Connect to the server specified in mOptions
         /// </summary>
-        /// <param name="databaseName">PostgreSQL database to connect to; ignored for SQL Server</param>
         /// <returns>True if successfully connected, false if a problem</returns>
-        public override bool ConnectToServer(string databaseName = "")
+        public override bool ConnectToServer()
         {
             try
             {
@@ -1673,53 +1672,46 @@ namespace DB_Schema_Export_Tool
             return processCount;
         }
 
+        protected override bool ScriptServerObjects()
+        {
+            return ScriptServerObjects(mSqlServer);
+        }
+
+        /// <summary>
+        /// Export SQL Server settings and SQL Server Agent jobs
+        /// </summary>
+        /// <param name="sqlServer"></param>
+        /// <returns></returns>
         private bool ScriptServerObjects(Server sqlServer)
         {
-            // Export the Server Settings and SQL Server Agent jobs
-
-            var outputDirectoryPath = "??";
-
-            DirectoryInfo outputDirectoryPathCurrentServer;
-            var scriptOptions = GetDefaultScriptOptions();
 
             try
             {
-                // Construct the path to the output directory
-                outputDirectoryPath = Path.Combine(mOptions.OutputDirectoryPath, mOptions.ServerOutputDirectoryNamePrefix + sqlServer.Name);
-                outputDirectoryPathCurrentServer = new DirectoryInfo(outputDirectoryPath);
-
-                // Create the directory if it doesn't exist
-                if (!outputDirectoryPathCurrentServer.Exists && !mOptions.PreviewExport)
+                var serverInfoOutputDirectory = GetServerInfoOutputDirectory(sqlServer.Name);
+                if (serverInfoOutputDirectory == null)
                 {
-                    outputDirectoryPathCurrentServer.Create();
+                    return false;
                 }
 
-            }
-            catch (Exception ex)
-            {
-                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating or creating directory " + outputDirectoryPath, ex);
-                return false;
-            }
+                OnStatusEvent("Exporting Server objects to: " + PathUtils.CompactPathString(serverInfoOutputDirectory.FullName));
 
-            try
-            {
-                OnStatusEvent("Exporting Server objects to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
+                var scriptOptions = GetDefaultScriptOptions();
 
                 // Export the overall server configuration and options (this is quite fast, so we won't increment mProgressStep after this)
-                ExportSQLServerConfiguration(sqlServer, scriptOptions, outputDirectoryPathCurrentServer);
+                ExportSQLServerConfiguration(sqlServer, scriptOptions, serverInfoOutputDirectory);
                 if (mAbortProcessing)
                 {
                     return true;
                 }
 
-                ExportSQLServerLogins(sqlServer, scriptOptions, outputDirectoryPathCurrentServer);
+                ExportSQLServerLogins(sqlServer, scriptOptions, serverInfoOutputDirectory);
 
                 if (mAbortProcessing)
                 {
                     return true;
                 }
 
-                ExportSQLServerAgentJobs(sqlServer, scriptOptions, outputDirectoryPathCurrentServer);
+                ExportSQLServerAgentJobs(sqlServer, scriptOptions, serverInfoOutputDirectory);
 
                 if (mAbortProcessing)
                 {
@@ -1730,68 +1722,9 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error scripting objects for server " + sqlServer.Name, ex);
+                SetLocalError(DBSchemaExportErrorCodes.GeneralError, "Error scripting objects for server " + sqlServer.Name, ex);
                 return false;
             }
-
-        }
-
-        /// <summary>
-        /// Scripts out the objects on the current server
-        /// </summary>
-        /// <param name="databaseList">Database names to export></param>
-        /// <param name="tableNamesForDataExport">Table names for which data should be exported</param>
-        /// <returns>True if success, false if a problem</returns>
-        public override bool ScriptServerAndDBObjects(List<string> databaseList, List<string> tableNamesForDataExport)
-        {
-            var validated = ValidateOptionsToScriptServerAndDBObjects(databaseList);
-            if (!validated)
-                return false;
-
-            OnStatusEvent("Exporting schema to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
-            OnDebugEvent("Connecting to " + mOptions.ServerName);
-
-            if (!ConnectToServer())
-            {
-                return false;
-            }
-
-            if (!ValidServerConnection())
-            {
-                return false;
-            }
-
-            if (mOptions.ExportServerInfo)
-            {
-                var success = ScriptServerObjects(mSqlServer);
-                if (!success)
-                {
-                    return false;
-                }
-
-                if (mAbortProcessing)
-                {
-                    return true;
-                }
-            }
-
-            if (databaseList != null && databaseList.Count > 0)
-            {
-                var success = ScriptDBObjectsAndData(databaseList, tableNamesForDataExport);
-                if (!success)
-                {
-                    return false;
-                }
-
-                if (mAbortProcessing)
-                {
-                    return true;
-                }
-            }
-
-            OnProgressComplete();
-
-            return true;
 
         }
 
@@ -1816,7 +1749,7 @@ namespace DB_Schema_Export_Tool
             return scriptInfo;
         }
 
-        private bool ValidServerConnection()
+        protected override bool ValidServerConnection()
         {
             return mConnectedToServer && mSqlServer != null && mSqlServer.State == SqlSmoState.Existing;
         }

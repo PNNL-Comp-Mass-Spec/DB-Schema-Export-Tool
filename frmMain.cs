@@ -1202,9 +1202,7 @@ namespace DB_Schema_Export_Tool
                 UpdatePauseUnpauseCaption(DBSchemaExporterBase.PauseStatusConstants.Unpaused);
                 Application.DoEvents();
 
-                var connectionDatabase = chkPostgreSQL.Checked ? DBSchemaExporterPostgreSQL.POSTGRES_DATABASE : string.Empty;
-
-                if (!VerifyOrUpdateServerConnection(connectionDatabase, true))
+                if (!VerifyOrUpdateServerConnection(true))
                     return;
 
                 // Cache the currently selected names so that we can re-highlight them below
@@ -1406,7 +1404,7 @@ namespace DB_Schema_Export_Tool
                 UpdatePauseUnpauseCaption(DBSchemaExporterBase.PauseStatusConstants.Unpaused);
                 Application.DoEvents();
 
-                if (!VerifyOrUpdateServerConnection(databaseName, true))
+                if (!VerifyOrUpdateServerConnection(true))
                     return;
 
                 var includeTableRowCounts = mnuEditIncludeTableRowCounts.Checked;
@@ -1454,7 +1452,7 @@ namespace DB_Schema_Export_Tool
             return string.Format("{0:#,###,##0}", Math.Round(value / divisor, 0) * divisor);
         }
 
-        private bool VerifyOrUpdateServerConnection(string databaseName, bool informUserOnFailure)
+        private bool VerifyOrUpdateServerConnection(bool informUserOnFailure)
         {
             try
             {
@@ -1477,7 +1475,7 @@ namespace DB_Schema_Export_Tool
                     InitializeDBSchemaExporter();
                 }
 
-                var connected = mDBSchemaExporter.ConnectToServer(databaseName);
+                var connected = mDBSchemaExporter.ConnectToServer();
 
                 if (!connected && informUserOnFailure)
                 {
