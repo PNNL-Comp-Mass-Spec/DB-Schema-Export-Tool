@@ -396,70 +396,79 @@ namespace DB_Schema_Export_Tool
         /// <remarks>If the table does not exist, will still return true</remarks>
         protected override bool ExportDBTableData(string databaseName, string tableName, long maxRowsToExport, WorkingParams workingParams)
         {
-
-            if (!mCachedDatabaseTableNames.ContainsKey(databaseName))
+            try
             {
-                CacheDatabaseTableNames(databaseName, out var databaseNotFound);
-                if (databaseNotFound)
+                if (!mCachedDatabaseTableNames.ContainsKey(databaseName))
                 {
-                    SetLocalError(DBSchemaExportErrorCodes.GeneralError,
-                                  string.Format("Error in ExportDBTableData; database not found: " + databaseName));
-                    return false;
+                    CacheDatabaseTableNames(databaseName, out var databaseNotFound);
+                    if (databaseNotFound)
+                    {
+                        SetLocalError(DBSchemaExportErrorCodes.GeneralError,
+                                      string.Format("Error in ExportDBTableData; database not found: " + databaseName));
+                        return false;
+                    }
                 }
-            }
 
-            var tablesInDatabase = mCachedDatabaseTableNames[databaseName];
-            var tableNameWithSchema = string.Empty;
+                var tablesInDatabase = mCachedDatabaseTableNames[databaseName];
+                var tableNameWithSchema = string.Empty;
 
-            var quotedTableName = PossiblyQuoteName(tableName);
+                var quotedTableName = PossiblyQuoteName(tableName);
 
-            var tableNamesToFind = new List<string> {
-                tableName,
-                quotedTableName,
-                "public." + tableName,
-                "public." + PossiblyQuoteName(tableName)};
-
-            foreach (var nameToFind in tableNamesToFind)
-            {
-                if (tablesInDatabase.ContainsKey(nameToFind))
+                var tableNamesToFind = new List<string>
                 {
-                    tableNameWithSchema = nameToFind;
-                    break;
+                    tableName,
+                    quotedTableName,
+                    "public." + tableName,
+                    "public." + PossiblyQuoteName(tableName)
+                };
+
+                foreach (var nameToFind in tableNamesToFind)
+                {
+                    if (tablesInDatabase.ContainsKey(nameToFind))
+                    {
+                        tableNameWithSchema = nameToFind;
+                        break;
+                    }
                 }
-            }
 
-            if (string.IsNullOrWhiteSpace(tableNameWithSchema))
+                if (string.IsNullOrWhiteSpace(tableNameWithSchema))
+                {
+                    OnDebugEvent(string.Format("Database {0} does not have table {1}; skipping data export", databaseName, tableName));
+                    return true;
+                }
+
+                var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
+                var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
+
+                OnProgressUpdate("Exporting data from " + tableName, percentComplete);
+
+                // Make sure output file name doesn't contain any invalid characters
+
+                string cleanName;
+                if (tableNameWithSchema.StartsWith("public."))
+                    cleanName = CleanNameForOS(tableName + "_Data");
+                else
+                    cleanName = CleanNameForOS(tableNameWithSchema + "_Data");
+
+                var outputFile = new FileInfo(Path.Combine(workingParams.OutputDirectory.FullName, cleanName + ".sql"));
+
+                bool success;
+                if (mOptions.PgDumpTableData)
+                {
+                    success = ExportDBTableDataUsingPgDump(databaseName, tableNameWithSchema, workingParams, outputFile);
+                }
+                else
+                {
+                    success = ExportDBTableDataUsingNpgsql(databaseName, tableNameWithSchema, maxRowsToExport, outputFile);
+                }
+
+                return success;
+            }
+            catch (Exception ex)
             {
-                OnDebugEvent(string.Format("Database {0} does not have table {1}; skipping data export", databaseName, tableName));
-                return true;
+                SetLocalError(DBSchemaExportErrorCodes.GeneralError, "Error in ExportDBTableData", ex);
+                return false;
             }
-
-            var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
-            var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
-
-            OnProgressUpdate("Exporting data from " + tableName, percentComplete);
-
-            // Make sure output file name doesn't contain any invalid characters
-
-            string cleanName;
-            if (tableNameWithSchema.StartsWith("public."))
-                cleanName = CleanNameForOS(tableName + "_Data");
-            else
-                cleanName = CleanNameForOS(tableNameWithSchema + "_Data");
-
-            var outputFile = new FileInfo(Path.Combine(workingParams.OutputDirectory.FullName, cleanName + ".sql"));
-
-            bool success;
-            if (mOptions.PgDumpTableData)
-            {
-                success = ExportDBTableDataUsingPgDump(databaseName, tableNameWithSchema, workingParams, outputFile);
-            }
-            else
-            {
-                success = ExportDBTableDataUsingNpgsql(databaseName, tableNameWithSchema, maxRowsToExport, outputFile);
-            }
-
-            return success;
         }
 
         private bool ExportDBTableDataUsingNpgsql(
@@ -1592,7 +1601,6 @@ namespace DB_Schema_Export_Tool
                 var currentObjectName = string.Empty;
                 var currentObjectType = string.Empty;
                 var currentObjectSchema = string.Empty;
-                var currentObjectOwner = string.Empty;
                 var previousTargetScriptFile = string.Empty;
 
                 while (!reader.EndOfStream)
@@ -1634,7 +1642,7 @@ namespace DB_Schema_Export_Tool
                         StoreCachedLinesForObject(scriptInfoByObject, cachedLines, targetScriptFile);
                         previousTargetScriptFile = string.Copy(targetScriptFile);
 
-                        UpdateCachedObjectInfo(match, out currentObjectName, out currentObjectType, out currentObjectSchema, out currentObjectOwner);
+                        UpdateCachedObjectInfo(match, out currentObjectName, out currentObjectType, out currentObjectSchema, out _);
                         cachedLines = new List<string> {
                             "--",
                             dataLine
