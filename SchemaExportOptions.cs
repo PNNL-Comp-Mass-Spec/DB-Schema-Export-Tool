@@ -15,7 +15,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "October 16, 2019";
+        public const string PROGRAM_DATE = "October 17, 2019";
 
         public const string DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX = "DBSchema__";
 
@@ -69,7 +69,9 @@ namespace DB_Schema_Export_Tool
         /// <remarks>Auto set to true if /PgUser is defined</remarks>
         public bool PostgreSQL { get; set; }
 
-        [Option("PgDD", "PgDumpData", HelpShowsDefault = false, HelpText = "Dump table data with pg_dump")]
+        [Option("PgDump", "PgDumpData", HelpShowsDefault = false,
+            HelpText = "With SQL Server databases, dump table data using COPY commands instead of INSERT INTO statements.  " +
+                       "With PostgreSQL data, dump table data using pg_dump and COPY commands.")]
         public bool PgDumpTableData { get; set; }
 
         [Option("PgUser", HelpShowsDefault = false, HelpText = "Database username when connecting to a PostgreSQL server")]
@@ -131,7 +133,6 @@ namespace DB_Schema_Export_Tool
                         DatabasesToProcess.Add(dbName);
                     }
                 }
-
             }
         }
 
@@ -154,13 +155,29 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         public bool CreateDirectoryForEachDB { get; set; }
 
-        [Option("Data", HelpShowsDefault = false, HelpText = "Text file with table names (one name per line) for which the table data should be exported")]
+        [Option("Data", "DataTables", HelpShowsDefault = false,
+            HelpText = "Text file with table names (one name per line) for which table data should be exported. " +
+                       @"Also supports a multi-column, tab-delimited format:\nSourceTableName TargetSchemaName TargetTableName UseMergeStatement")]
         public string TableDataToExportFile { get; set; }
+
+        [Option("Map", "ColumnMap", HelpShowsDefault = false,
+            HelpText = "Text file mapping source column names to target column names. " +
+                       @"Tab-delimited columns are:\nSourceTableName  SourceColumnName  TargetColumnName\n" +
+                       "The TargetColumn supports <Skip> for not including the given column in the output file")]
+        public string TableDataColumnMapFile { get; set; }
 
         [Option("NoAutoData", HelpShowsDefault = false,
             HelpText = "In addition to table names defined in /Data, there are default tables which will have their data exported. " +
                        "Disable the defaults using /NoAutoData")]
         public bool DisableAutoDataExport { get; set; }
+
+        [Option("ExportAllData", "ExportAllTables", HelpShowsDefault = false,
+            HelpText = "Export data from every table in the database")]
+        public bool ExportAllData { get; set; }
+
+        [Option("SnakeCase", HelpShowsDefault = false,
+            HelpText = "Auto changes column names from Upper_Case and UpperCase to lower_case")]
+        public bool TableDataSnakeCase { get; set; }
 
         [Option("ServerInfo", HelpShowsDefault = false, HelpText = "Export server settings, logins, and jobs")]
         public bool ExportServerInfo
@@ -365,7 +382,7 @@ namespace DB_Schema_Export_Tool
 
             if (!string.IsNullOrWhiteSpace(TableDataToExportFile))
             {
-                Console.WriteLine(" {0,-48} {1}", "Table name text file:", TableDataToExportFile);
+                Console.WriteLine(" {0,-48} {1}", "File with table names for exporting data:", TableDataToExportFile);
             }
 
             if (!string.IsNullOrWhiteSpace(TableDataColumnMapFile))

@@ -46,7 +46,8 @@ DB_Schema_Export_Tool.exe
  [/DBUser:username] [/DBPass:username]
  [/PgUser:username] [/PgPass:password] [/PgPort:5432]
  [/DirectoryPrefix:PrefixText] [/NoSubdirectory]
- [/Data:TableDataToExport.txt] [/NoAutoData] [/PgDD]
+ [/Data:TableDataToExport.txt] [/Map:ColumnMapping.txt] 
+ [/NoAutoData] [/ExportAllData] [/SnakeCase] [/PgDump]
  [/ServerInfo] [/NoSchema]
  [/Sync:TargetDirectoryPath] [/Git] [/Svn] [/Hg] [/Commit]
  [/L[:LogFilePath]] [/LogDir:LogDirectoryPath] [/Preview] [/Stats]
@@ -78,12 +79,34 @@ By default, a subdirectory named DBSchema__DatabaseName will be created below `S
 Use `/NoSubdirectory` to disable auto creating a subdirectory for the database being exported. 
 * Note: subsirectories will always be created if you use `/DBList` and specify more than one database
 
-Use `/Data` to define a text file with table names (one name per line) for which the data 
+Use `/Data` or `/DataTables` to define a text file with table names (one name per line) for which the data 
 should be exported. In addition to table names defined in `/Data`, there are default tables 
 which will have their data exported; disable the defaults using `/NoAutoData`
+* Also supports a multi-column, tab-delimited format
+| SourceTableName  | TargetSchemaName | TargetTableName  | UseMergeStatement |
+|------------------|------------------|------------------|-------------------|
+| T_Log_Entries    | public           | t_log_entries    | false             |
+| T_Job_Events     | cap              | t_job_Events     | false             |
+| T_Job_State_Name \ cap              | t_job_state_name | true              |
 
-Use `/PgDD` or `/PgDumpData` to specify that pg_dump should be used to export table data from PostgreSQL databases
-* By default, uses Npgsql.dll
+Use `/Map` or `/ColumnMap` to define a tab-delimited text file mapping source column names to target column names, by table; 
+supports a `<Skip>` flag to indicate that a source column should not be included in the output file
+* If /SnakeCase is used to auto-change column names, mappings in this file will override the snake case auto-conversion
+* File format:
+| SourceTableName  | SourceColumnName | TargetColumnName |
+|------------------|------------------|------------------|
+| T_Analysis_Job    | AJ_jobID        | job              |
+| T_Analysis_Job    | AJ_start        | start            |
+| T_Analysis_Job    | AJ_finish       | finish           |
+
+Use `/ExportAllData` or `ExportAllTables` to export data from every table in the database
+
+Use `/SnakeCase`/ to auto change column names from Upper_Case and UpperCase to lower_case
+
+Use `/PgDump` or `/PgDumpData` to specify that exported data should use `COPY` commands instead of `INSERT INTO` statements
+* With SQL Server databases, table data will be exported using pg_dump compatible COPY commands when `/PgDump` is used
+* With PostgreSQL data, table data will be exported using pg_dump
+* With SQL Server data and PostgreSQL data, if `/PgDump` is not proivded, data is exported with `INSERT INTO` statements
 
 Use `/ServerInfo` to export server settings, logins, and SQL Server Agent jobs
 
