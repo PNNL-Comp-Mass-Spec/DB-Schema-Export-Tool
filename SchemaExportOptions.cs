@@ -142,6 +142,9 @@ namespace DB_Schema_Export_Tool
             HelpText = "Prefix name for output directories; default name is " + DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX + "DatabaseName")]
         public string DatabaseSubdirectoryPrefix { get; set; }
 
+        [Option("NoSchema", HelpShowsDefault = false, HelpText = "Skip exporting schema")]
+        public bool NoSchema { get; set; }
+
         [Option("NoSubdirectory", HelpShowsDefault = false,
             HelpText = "Disable creating a subdirectory for each database when copying data to the Sync directory")]
         public bool NoSubdirectoryOnSync { get; set; }
@@ -365,38 +368,56 @@ namespace DB_Schema_Export_Tool
                 Console.WriteLine(" {0,-48} {1}", "Table name text file:", TableDataToExportFile);
             }
 
-            Console.WriteLine(" {0,-48} {1}", "Data export from standard tables:", BoolToEnabledDisabled(!DisableAutoDataExport));
-
-            Console.WriteLine(" {0,-48} {1}", "Export server settings, logins, and jobs:", BoolToEnabledDisabled(ScriptingOptions.ExportServerSettingsLoginsAndJobs));
-
-            if (Sync)
+            if (!string.IsNullOrWhiteSpace(TableDataColumnMapFile))
             {
-                Console.WriteLine(" {0,-48} {1}", "Synchronizing schema files to:", SyncDirectoryPath);
-
-                if (NoSubdirectoryOnSync)
-                {
-                    Console.WriteLine(" When syncing, will not create a subdirectory for each database");
-                }
+                Console.WriteLine(" {0,-48} {1}", "File with source/target column names:", TableDataToExportFile);
             }
 
-            if (GitUpdate || SvnUpdate || HgUpdate)
+            if (!DisableAutoDataExport && !string.IsNullOrWhiteSpace(TableDataToExportFile))
             {
-                if (GitUpdate)
+                Console.WriteLine(" {0,-48} {1}", "Convert column names to snake_case:", BoolToEnabledDisabled(TableDataSnakeCase));
+            }
+
+            Console.WriteLine(" {0,-48} {1}", "Data export from standard tables:", BoolToEnabledDisabled(!DisableAutoDataExport));
+
+            if (NoSchema)
+            {
+                Console.WriteLine(" {0,-48} {1}", "Export table data only; no schema:", "Enabled");
+            }
+            else
+            {
+
+                Console.WriteLine(" {0,-48} {1}", "Export server settings, logins, and jobs:", BoolToEnabledDisabled(ScriptingOptions.ExportServerSettingsLoginsAndJobs));
+
+                if (Sync)
                 {
-                    Console.WriteLine(" {0,-48} {1}", "Auto-updating any new or changed files using:", "Git");
+                    Console.WriteLine(" {0,-48} {1}", "Synchronizing schema files to:", SyncDirectoryPath);
+
+                    if (NoSubdirectoryOnSync)
+                    {
+                        Console.WriteLine(" When syncing, will not create a subdirectory for each database");
+                    }
                 }
 
-                if (SvnUpdate)
+                if (GitUpdate || SvnUpdate || HgUpdate)
                 {
-                    Console.WriteLine(" {0,-48} {1}", "Auto-updating any new or changed files using:", "Subversion");
-                }
+                    if (GitUpdate)
+                    {
+                        Console.WriteLine(" {0,-48} {1}", "Auto-updating any new or changed files using:", "Git");
+                    }
 
-                if (HgUpdate)
-                {
-                    Console.WriteLine(" {0,-48} {1}", "Auto-updating any new or changed files using:", "Mercurial");
-                }
+                    if (SvnUpdate)
+                    {
+                        Console.WriteLine(" {0,-48} {1}", "Auto-updating any new or changed files using:", "Subversion");
+                    }
 
-                Console.WriteLine(" {0,-48} {1}", "Commit updates:", BoolToEnabledDisabled(CommitUpdates));
+                    if (HgUpdate)
+                    {
+                        Console.WriteLine(" {0,-48} {1}", "Auto-updating any new or changed files using:", "Mercurial");
+                    }
+
+                    Console.WriteLine(" {0,-48} {1}", "Commit updates:", BoolToEnabledDisabled(CommitUpdates));
+                }
             }
 
 

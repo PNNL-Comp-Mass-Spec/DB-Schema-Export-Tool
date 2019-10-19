@@ -440,6 +440,10 @@ namespace DB_Schema_Export_Tool
         {
             // Reset ProcessCount
             workingParams.ProcessCount = 0;
+
+            if (mOptions.NoSchema)
+                return true;
+
             if (mOptions.ScriptingOptions.ExportDBSchemasAndRoles)
             {
                 var success = ExportDBSchemasAndRoles(currentDatabase, scriptOptions, workingParams);

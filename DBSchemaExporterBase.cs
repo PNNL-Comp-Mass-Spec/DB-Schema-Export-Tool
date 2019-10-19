@@ -765,7 +765,15 @@ namespace DB_Schema_Export_Tool
                     mPercentCompleteStart = processedDBList.Count / (float)databaseListToProcess.Count * 100;
                     mPercentCompleteEnd = (processedDBList.Count + 1) / (float)databaseListToProcess.Count * 100;
 
-                    OnProgressUpdate("Exporting objects and data from database " + currentDB, mPercentCompleteStart);
+                    if (mOptions.NoSchema)
+                    {
+                        OnProgressUpdate("Exporting data from database " + currentDB, mPercentCompleteStart);
+                    }
+                    else
+                    {
+                        OnProgressUpdate("Exporting objects and data from database " + currentDB, mPercentCompleteStart);
+
+                    }
 
                     processedDBList.Add(currentDB);
                     bool success;
@@ -956,7 +964,7 @@ namespace DB_Schema_Export_Tool
 
                 if (databaseList == null || databaseList.Count == 0)
                 {
-                    if (mOptions.ScriptingOptions.ExportServerSettingsLoginsAndJobs)
+                    if (mOptions.ScriptingOptions.ExportServerSettingsLoginsAndJobs && !mOptions.NoSchema)
                     {
                         // No databases are defined, but we are exporting server settings; this is OK
                     }

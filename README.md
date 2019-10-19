@@ -47,7 +47,7 @@ DB_Schema_Export_Tool.exe
  [/PgUser:username] [/PgPass:password] [/PgPort:5432]
  [/DirectoryPrefix:PrefixText] [/NoSubdirectory]
  [/Data:TableDataToExport.txt] [/NoAutoData] [/PgDD]
- [/ServerInfo]
+ [/ServerInfo] [/NoSchema]
  [/Sync:TargetDirectoryPath] [/Git] [/Svn] [/Hg] [/Commit]
  [/L[:LogFilePath]] [/LogDir:LogDirectoryPath] [/Preview] [/Stats]
 ```
@@ -86,6 +86,8 @@ Use `/PgDD` or `/PgDumpData` to specify that pg_dump should be used to export ta
 * By default, uses Npgsql.dll
 
 Use `/ServerInfo` to export server settings, logins, and SQL Server Agent jobs
+
+Use `/NoSchema` to skip exporting schema (tables, views, functions, etc.)
 
 Use `/Sync` to copy new/changed files from the output directory to an alternative directory. 
 * This is advantageous to prevent file timestamps from getting updated every time the schema is exported
