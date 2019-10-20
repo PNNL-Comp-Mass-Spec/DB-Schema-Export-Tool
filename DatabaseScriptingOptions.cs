@@ -3,25 +3,11 @@
 
     public class DatabaseScriptingOptions
     {
-
-        /// <summary>
-        /// Target database type
-        /// </summary>
-        /// <remarks>Currently only SqlServer is supported</remarks>
-        public enum TargetDatabaseTypeConstants
-        {
-            SqlServer = 0,
-            MySql = 1,
-            PostgreSQL = 2,
-            SqlLite = 3,
-        }
-
         public bool IncludeSystemObjects { get; set; }
         public bool IncludeTimestampInScriptFileHeader { get; set; }
         public bool ExportServerSettingsLoginsAndJobs { get; set; }
         public bool SaveDataAsInsertIntoStatements { get; set; }
-        public TargetDatabaseTypeConstants DatabaseTypeForInsertInto { get; set; }
-        public bool AutoSelectTableNamesForDataExport { get; set; }
+        public bool AutoSelectTablesForDataExport { get; set; }
         public bool ExportDBSchemasAndRoles { get; set; }
         public bool ExportTables { get; set; }
         public bool ExportViews { get; set; }
@@ -40,8 +26,7 @@
             IncludeTimestampInScriptFileHeader = false;
             ExportServerSettingsLoginsAndJobs = false;
             SaveDataAsInsertIntoStatements = true;
-            DatabaseTypeForInsertInto = TargetDatabaseTypeConstants.SqlServer;
-            AutoSelectTableNamesForDataExport = true;
+            AutoSelectTablesForDataExport = true;
             ExportDBSchemasAndRoles = true;
             ExportTables = true;
             ExportViews = true;
