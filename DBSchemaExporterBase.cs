@@ -642,6 +642,51 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        protected string GetTargetTableName(
+            string sourceTableNameAndSchema,
+            TableDataExportInfo tableInfo,
+            bool quoteWithSquareBrackets,
+            out string targetTableName)
+        {
+            string targetTableSchema;
+
+            if (string.IsNullOrWhiteSpace(tableInfo.TargetTableName))
+            {
+                var periodIndex = sourceTableNameAndSchema.IndexOf('.');
+
+                if (periodIndex == 0 && periodIndex < sourceTableNameAndSchema.Length - 1)
+                {
+                    targetTableSchema = string.Empty;
+                    targetTableName = sourceTableNameAndSchema.Substring(2);
+                }
+                else if (periodIndex > 0 && periodIndex < sourceTableNameAndSchema.Length - 1)
+                {
+                    targetTableSchema = sourceTableNameAndSchema.Substring(0, periodIndex);
+                    targetTableName = sourceTableNameAndSchema.Substring(periodIndex + 1);
+                }
+                else
+                {
+                    targetTableSchema = string.Empty;
+                    targetTableName = sourceTableNameAndSchema;
+                }
+            }
+            else
+            {
+                targetTableSchema = tableInfo.TargetSchemaName;
+                targetTableName = tableInfo.TargetTableName;
+            }
+
+            if (string.IsNullOrWhiteSpace(targetTableSchema))
+            {
+                return PossiblyQuoteName(targetTableName, quoteWithSquareBrackets);
+            }
+
+            return string.Format("{0}.{1}",
+                                 PossiblyQuoteName(targetTableSchema, quoteWithSquareBrackets),
+                                 PossiblyQuoteName(targetTableName, quoteWithSquareBrackets));
+
+        }
+
         /// <summary>
         /// Obtain a timestamp in the form: 08/12/2006 23:01:20
         /// </summary>
