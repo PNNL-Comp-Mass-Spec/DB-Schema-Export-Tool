@@ -26,6 +26,12 @@ namespace DB_Schema_Export_Tool
         #region "Classwide Variables"
 
         /// <summary>
+        /// Column name mapping
+        /// </summary>
+        /// <remarks>Keys are source table name, values are a class tracking the source and target column names for the table</remarks>
+        public Dictionary<string, ColumnMapInfo> ColumnMapForDataExport { get; }
+
+        /// <summary>
         /// List of databases to process (all on the same server)
         /// </summary>
         public SortedSet<string> DatabasesToProcess { get; }
@@ -257,6 +263,8 @@ namespace DB_Schema_Export_Tool
             DatabasesToProcess = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
             DatabaseSubdirectoryPrefix = DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX;
 
+            ColumnMapForDataExport = new Dictionary<string, ColumnMapInfo>(StringComparer.OrdinalIgnoreCase);
+
             NoSubdirectoryOnSync = false;
             SyncDirectoryPath = string.Empty;
 
@@ -348,16 +356,6 @@ namespace DB_Schema_Export_Tool
                 }
 
                 Console.WriteLine(" {0,-48} {1}", "Port:", PgPort);
-
-                if (PgDumpTableData)
-                {
-                    Console.WriteLine(" {0,-48} {1}", "Table data export tool:", "pg_dump");
-                }
-                else
-                {
-                    Console.WriteLine(" {0,-48} {1}", "Table data export tool:", "Npgsql");
-                }
-
             }
 
             if (DatabasesToProcess.Count == 0)
@@ -380,6 +378,23 @@ namespace DB_Schema_Export_Tool
                 Console.WriteLine(" Will not create a subdirectory for each database");
             }
 
+            if (PgDumpTableData)
+            {
+                if (PostgreSQL)
+                {
+                    Console.WriteLine(" {0,-48} {1}", "Table data export tool:", "pg_dump");
+                }
+                Console.WriteLine(" {0,-48} {1}", "Dump table data as:", "PostgreSQL COPY commands");
+            }
+            else
+            {
+                if (PostgreSQL)
+                {
+                    Console.WriteLine(" {0,-48} {1}", "Table data export tool:", "Npgsql");
+                }
+                Console.WriteLine(" {0,-48} {1}", "Table data export tool:", "INSERT INTO statements");
+            }
+
             if (!string.IsNullOrWhiteSpace(TableDataToExportFile))
             {
                 Console.WriteLine(" {0,-48} {1}", "File with table names for exporting data:", TableDataToExportFile);
@@ -387,7 +402,7 @@ namespace DB_Schema_Export_Tool
 
             if (!string.IsNullOrWhiteSpace(TableDataColumnMapFile))
             {
-                Console.WriteLine(" {0,-48} {1}", "File with source/target column names:", TableDataToExportFile);
+                Console.WriteLine(" {0,-48} {1}", "File with source/target column names:", TableDataColumnMapFile);
             }
 
             if (!DisableAutoDataExport && !string.IsNullOrWhiteSpace(TableDataToExportFile))

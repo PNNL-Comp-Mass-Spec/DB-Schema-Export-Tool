@@ -52,6 +52,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ColumnMapInfo.cs" />
     <Compile Include="ProgramRunner.cs" />
     <Compile Include="DBSchemaExporterBase.cs" />
     <Compile Include="DBSchemaExporterPostgreSQL.cs" />
