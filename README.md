@@ -95,9 +95,9 @@ supports a `<Skip>` flag to indicate that a source column should not be included
 * File format:
 | SourceTableName  | SourceColumnName | TargetColumnName |
 |------------------|------------------|------------------|
-| T_Analysis_Job    | AJ_jobID        | job              |
-| T_Analysis_Job    | AJ_start        | start            |
-| T_Analysis_Job    | AJ_finish       | finish           |
+| T_Analysis_Job   | AJ_jobID         | job              |
+| T_Analysis_Job   | AJ_start         | start            |
+| T_Analysis_Job   | AJ_finish        | finish           |
 
 Use `/ExportAllData` or `ExportAllTables` to export data from every table in the database
 
