@@ -118,7 +118,7 @@ namespace DB_Schema_Export_Tool
             mOptions = options;
 
             SchemaOutputDirectories = new Dictionary<string, string>();
-            TableNamesToAutoSelect = new SortedSet<string>();
+            TableNamesToAutoSelect = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
             TableNameAutoSelectRegEx = new SortedSet<string>();
 
             var regExOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline;
