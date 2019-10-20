@@ -145,28 +145,34 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Determines the table names for which data will be exported
         /// </summary>
-        /// <param name="tableNamesInDatabase">Tables in the database</param>
-        /// <param name="tableNamesForDataExport">Table names that should be auto-selected</param>
+        /// <param name="tablesInDatabase">Tables in the database</param>
+        /// <param name="tablesForDataExport">Table that should be auto-selected</param>
         /// <returns>Dictionary where keys are table names and values are the maximum number of rows to export</returns>
-        protected Dictionary<string, long> AutoSelectTableNamesForDataExport(
-            List<string> tableNamesInDatabase,
-            IEnumerable<string> tableNamesForDataExport)
+        protected Dictionary<TableDataExportInfo, long> AutoSelectTablesForDataExport(
+            List<TableDataExportInfo> tablesInDatabase,
+            IEnumerable<TableDataExportInfo> tablesForDataExport)
         {
             try
             {
                 OnDebugEvent("Auto-selecting tables to export data from");
 
                 // Tracks the table names and maximum number of data rows to export (0 means all rows)
-                var tablesToExport = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+                var tablesToExport = new Dictionary<TableDataExportInfo, long>();
+                var userDefinedTableNames = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                // Copy the table names from tableNamesForDataExport to tablesToExport
-                // Store 0 for the hash value since we want to export all of the data rows from the tables in tableNamesForDataExport
+                // Copy the table names from tablesForDataExport to tablesToExport
+                // Store 0 for the hash value since we want to export all of the data rows from the tables in tablesForDataExport
                 // Simultaneously, populate intMaximumDataRowsToExport
-                if (tableNamesForDataExport != null)
+                if (tablesForDataExport != null)
                 {
-                    foreach (var tableName in tableNamesForDataExport)
+                    foreach (var item in tablesForDataExport)
                     {
-                        tablesToExport.Add(tableName, 0);
+                        tablesToExport.Add(item, 0);
+
+                        if (!userDefinedTableNames.Contains(item.SourceTableName))
+                        {
+                            userDefinedTableNames.Add(item.SourceTableName);
+                        }
                     }
 
                 }
@@ -176,10 +182,16 @@ namespace DB_Schema_Export_Tool
                 {
                     foreach (var tableName in TableNamesToAutoSelect)
                     {
-                        if (tableNamesInDatabase.Contains(tableName) && !tablesToExport.ContainsKey(tableName))
+                        foreach (var candidateTable in tablesInDatabase)
                         {
-                            tablesToExport.Add(tableName, DATA_ROW_COUNT_WARNING_THRESHOLD);
+                            if (candidateTable.SourceTableName.Equals(tableName, StringComparison.OrdinalIgnoreCase) && !userDefinedTableNames.Contains(tableName))
+                            {
+                                tablesToExport.Add(new TableDataExportInfo(tableName), DATA_ROW_COUNT_WARNING_THRESHOLD);
+                                userDefinedTableNames.Add(tableName);
+                            }
                         }
+
+
                     }
                 }
 
@@ -194,14 +206,15 @@ namespace DB_Schema_Export_Tool
                     regExMatchers.Add(new Regex(regexItem, regExOptions));
                 }
 
-                foreach (var tableName in tableNamesInDatabase)
+                foreach (var candidateTable in tablesInDatabase)
                 {
-                    if (!regExMatchers.Any(matcher => matcher.Match(tableName).Success))
+                    if (!regExMatchers.Any(matcher => matcher.Match(candidateTable.SourceTableName).Success))
                         continue;
 
-                    if (!tablesToExport.ContainsKey(tableName))
+                    if (!userDefinedTableNames.Contains(candidateTable.SourceTableName))
                     {
-                        tablesToExport.Add(tableName, DATA_ROW_COUNT_WARNING_THRESHOLD);
+                        tablesToExport.Add(candidateTable, DATA_ROW_COUNT_WARNING_THRESHOLD);
+                        userDefinedTableNames.Add(candidateTable.SourceTableName);
                     }
                 }
 
@@ -209,8 +222,8 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.ConfigurationError, "Error in AutoSelectTableNamesForDataExport", ex);
-                return new Dictionary<string, long>();
+                SetLocalError(DBSchemaExportErrorCodes.ConfigurationError, "Error in AutoSelectTablesForDataExport", ex);
+                return new Dictionary<TableDataExportInfo, long>();
             }
         }
 
@@ -381,10 +394,13 @@ namespace DB_Schema_Export_Tool
         /// Export the tables, views, procedures, etc. in the given database
         /// </summary>
         /// <param name="databaseName"></param>
-        /// <param name="tableNamesForDataExport"></param>
+        /// <param name="tablesForDataExport"></param>
         /// <param name="databaseNotFound"></param>
         /// <returns>True if successful, false if an error</returns>
-        protected abstract bool ExportDBObjectsAndTableData(string databaseName, IReadOnlyCollection<string> tableNamesForDataExport, out bool databaseNotFound);
+        protected abstract bool ExportDBObjectsAndTableData(
+            string databaseName,
+            List<TableDataExportInfo> tablesForDataExport,
+            out bool databaseNotFound);
 
         /// <summary>
         /// Export data from the specified tables
@@ -393,7 +409,10 @@ namespace DB_Schema_Export_Tool
         /// <param name="tablesToExport">Dictionary with names of tables to export; values are the maximum rows to export from each table</param>
         /// <param name="workingParams">Working parameters</param>
         /// <returns></returns>
-        protected bool ExportDBTableData(string databaseName, Dictionary<string, long> tablesToExport, WorkingParams workingParams)
+        protected bool ExportDBTableData(
+            string databaseName,
+            Dictionary<TableDataExportInfo, long> tablesToExport,
+            WorkingParams workingParams)
         {
             try
             {
@@ -444,12 +463,12 @@ namespace DB_Schema_Export_Tool
         /// Export data from the specified table (if it exists)
         /// </summary>
         /// <param name="databaseName">Database name</param>
-        /// <param name="tableName">Table name</param>
+        /// <param name="tableInfo">Table info</param>
         /// <param name="maxRowsToExport">Maximum rows to export</param>
         /// <param name="workingParams">Working parameters</param>
         /// <returns>True if success, false if an error</returns>
         /// <remarks>If the table does not exist, will still return true</remarks>
-        protected abstract bool ExportDBTableData(string databaseName, string tableName, long maxRowsToExport, WorkingParams workingParams);
+        protected abstract bool ExportDBTableData(string databaseName, TableDataExportInfo tableInfo, long maxRowsToExport, WorkingParams workingParams);
 
         /// <summary>
         /// Append a single row of results to the output file
@@ -573,7 +592,22 @@ namespace DB_Schema_Export_Tool
         /// <param name="includeTableRowCounts">When true, then determines the row count in each table</param>
         /// <param name="includeSystemObjects">When true, then also returns system var tables</param>
         /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
-        public abstract Dictionary<string, long> GetDatabaseTableNames(string databaseName, bool includeTableRowCounts, bool includeSystemObjects);
+        public abstract Dictionary<TableDataExportInfo, long> GetDatabaseTables(string databaseName, bool includeTableRowCounts, bool includeSystemObjects);
+
+        protected string GetFileNameForTableDataExport(string targetTableName, string targetTableNameWithSchema, WorkingParams workingParams)
+        {
+            // Make sure output file name doesn't contain any invalid characters
+            string cleanName;
+            if (targetTableNameWithSchema.StartsWith("dbo.") ||
+                targetTableNameWithSchema.StartsWith("public."))
+                cleanName = CleanNameForOS(targetTableName + "_Data");
+            else
+                cleanName = CleanNameForOS(targetTableNameWithSchema + "_Data");
+
+            var outFilePath = Path.Combine(workingParams.OutputDirectory.FullName, cleanName + ".sql");
+
+            return outFilePath;
+        }
 
         /// <summary>
         /// Retrieve a list of database names for the current server
@@ -718,18 +752,18 @@ namespace DB_Schema_Export_Tool
         /// Also script data from the specified tables from any database that has the given table names
         /// </summary>
         /// <param name="databaseListToProcess"></param>
-        /// <param name="tableNamesForDataExport"></param>
+        /// <param name="tablesForDataExport"></param>
         /// <returns></returns>
         protected bool ScriptDBObjectsAndData(
             IReadOnlyCollection<string> databaseListToProcess,
-            IReadOnlyCollection<string> tableNamesForDataExport)
+            List<TableDataExportInfo> tablesForDataExport)
         {
             var processedDBList = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
             try
             {
                 Console.WriteLine();
-                OnStatusEvent("Exporting DB objects to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
+                OnStatusEvent("Exporting DB objects/data to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
                 SchemaOutputDirectories.Clear();
 
                 // Lookup the database names with the proper capitalization
@@ -765,23 +799,17 @@ namespace DB_Schema_Export_Tool
                     mPercentCompleteStart = processedDBList.Count / (float)databaseListToProcess.Count * 100;
                     mPercentCompleteEnd = (processedDBList.Count + 1) / (float)databaseListToProcess.Count * 100;
 
-                    if (mOptions.NoSchema)
-                    {
-                        OnProgressUpdate("Exporting data from database " + currentDB, mPercentCompleteStart);
-                    }
-                    else
-                    {
-                        OnProgressUpdate("Exporting objects and data from database " + currentDB, mPercentCompleteStart);
+                    var tasksToPerform = mOptions.NoSchema ? "Exporting data" : "Exporting objects and data";
 
-                    }
+                    OnProgressUpdate(tasksToPerform + " from database " + currentDB, mPercentCompleteStart);
 
                     processedDBList.Add(currentDB);
                     bool success;
                     if (databasesOnServer.TryGetValue(currentDB.ToLower(), out var currentDbName))
                     {
                         currentDB = string.Copy(currentDbName);
-                        OnDebugEvent("Exporting objects and data from database " + currentDbName);
-                        success = ExportDBObjectsAndTableData(currentDbName, tableNamesForDataExport, out databaseNotFound);
+                        OnDebugEvent(tasksToPerform + " from database " + currentDbName);
+                        success = ExportDBObjectsAndTableData(currentDbName, tablesForDataExport, out databaseNotFound);
                         if (!databaseNotFound)
                         {
                             if (!success)
@@ -832,15 +860,17 @@ namespace DB_Schema_Export_Tool
         /// Scripts out the objects on the current server, including server info, database schema, and table data
         /// </summary>
         /// <param name="databaseList">Database names to export></param>
-        /// <param name="tableNamesForDataExport">Table names for which data should be exported</param>
+        /// <param name="tablesForDataExport">Table names for which data should be exported</param>
         /// <returns>True if success, false if a problem</returns>
-        public bool ScriptServerAndDBObjects(List<string> databaseList, List<string> tableNamesForDataExport)
+        public bool ScriptServerAndDBObjects(
+            List<string> databaseList,
+            List<TableDataExportInfo> tablesForDataExport)
         {
             var validated = ValidateOptionsToScriptServerAndDBObjects(databaseList);
             if (!validated)
                 return false;
 
-            OnStatusEvent("Exporting schema to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
+            OnStatusEvent("Exporting schema/data to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
             OnDebugEvent("Connecting to " + mOptions.ServerName);
 
             // Connect to the server
@@ -871,7 +901,7 @@ namespace DB_Schema_Export_Tool
 
             if (databaseList != null && databaseList.Count > 0)
             {
-                var success = ScriptDBObjectsAndData(databaseList, tableNamesForDataExport);
+                var success = ScriptDBObjectsAndData(databaseList, tablesForDataExport);
                 if (!success)
                 {
                     return false;
@@ -929,7 +959,10 @@ namespace DB_Schema_Export_Tool
             TableNamesToAutoSelect.Clear();
             foreach (var item in tableNames)
             {
-                TableNamesToAutoSelect.Add(item);
+                if (!TableNamesToAutoSelect.Contains(item))
+                {
+                    TableNamesToAutoSelect.Add(item);
+                }
             }
         }
 

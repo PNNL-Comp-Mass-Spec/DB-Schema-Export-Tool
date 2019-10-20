@@ -63,10 +63,10 @@ namespace DB_Schema_Export_Tool
 
         SchemaExportOptions mSchemaExportOptions;
         List<string> mDatabaseListToProcess;
-        List<string> mTableNamesForDataExport;
+        List<TableDataExportInfo> mTablesForDataExport;
 
         // Keys are table names; values are row counts, though row counts will be 0 if mCachedTableListIncludesRowCounts = False
-        Dictionary<string, long> mCachedTableList;
+        Dictionary<TableDataExportInfo, long> mCachedTableList;
 
         bool mCachedTableListIncludesRowCounts;
 
@@ -201,58 +201,75 @@ namespace DB_Schema_Export_Tool
             return GetSelectedListboxItems(lstDatabasesToProcess);
         }
 
-        private List<string> GetSelectedTableNamesForDataExport(bool warnIfRowCountOverThreshold)
+        private List<TableDataExportInfo> GetSelectedTableNamesForDataExport(bool warnIfRowCountOverThreshold)
         {
             var lstTableNames = GetSelectedListboxItems(lstTableNamesToExportData);
+
+            var lstTableInfo = new List<TableDataExportInfo>();
+            foreach (var item in lstTableNames)
+            {
+                lstTableInfo.Add(new TableDataExportInfo(item));
+            }
 
             StripRowCountsFromTableNames(lstTableNames);
 
             if (lstTableNames.Count == 0 || !mCachedTableListIncludesRowCounts || !warnIfRowCountOverThreshold)
             {
-                return lstTableNames;
+                return lstTableInfo;
             }
 
-            var lstValidTableNames = new List<string>(lstTableNames.Count);
+            var lstValidTables = new List<TableDataExportInfo>(lstTableNames.Count);
 
             // See if any of the tables in lstTableNames has more than DBSchemaExporterBase.DATA_ROW_COUNT_WARNING_THRESHOLD rows
             foreach (var tableName in lstTableNames)
             {
                 var keepTable = true;
+                var tableFound = false;
+                TableDataExportInfo matchedTableItem = null;
 
-                if (mCachedTableList.TryGetValue(tableName, out var tableRowCount))
+                foreach (var item in mCachedTableList)
                 {
-                    if (tableRowCount >= DBSchemaExporterBase.DATA_ROW_COUNT_WARNING_THRESHOLD)
+                    if (item.Key.SourceTableName.Equals(tableName))
                     {
-                        var msg = string.Format("Warning, table {0} has {1} rows. Are you sure you want to export data from it?",
-                                                tableName, tableRowCount);
-                        var caption = "Row Count Over " + DBSchemaExporterBase.DATA_ROW_COUNT_WARNING_THRESHOLD;
+                        tableFound = true;
+                        matchedTableItem = item.Key;
 
-                        var eResponse = MessageBox.Show(msg, caption, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question,
-                                                        MessageBoxDefaultButton.Button2);
+                        var tableRowCount = item.Value;
+                        if (tableRowCount >= DBSchemaExporterBase.DATA_ROW_COUNT_WARNING_THRESHOLD)
+                        {
+                            var msg = string.Format("Warning, table {0} has {1} rows. Are you sure you want to export data from it?",
+                                                    tableName, tableRowCount);
+                            var caption = "Row Count Over " + DBSchemaExporterBase.DATA_ROW_COUNT_WARNING_THRESHOLD;
 
-                        if (eResponse == DialogResult.No)
-                        {
-                            keepTable = false;
+                            var eResponse = MessageBox.Show(msg, caption, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question,
+                                                            MessageBoxDefaultButton.Button2);
+
+                            if (eResponse == DialogResult.No)
+                            {
+                                keepTable = false;
+                            }
+                            else if (eResponse == DialogResult.Cancel)
+                            {
+                                break;
+                            }
                         }
-                        else if (eResponse == DialogResult.Cancel)
-                        {
-                            break;
-                        }
+
+                        break;
                     }
                 }
-                // ReSharper disable once RedundantIfElseBlock
-                else
+
+                if (!tableFound)
                 {
                     // Table not found; keep it anyway
                 }
 
                 if (keepTable)
                 {
-                    lstValidTableNames.Add(tableName);
+                    lstValidTables.Add(matchedTableItem ?? new TableDataExportInfo(tableName));
                 }
             }
 
-            return lstValidTableNames;
+            return lstValidTables;
         }
 
         private List<string> GetSelectedListboxItems(ListBox listBox)
@@ -554,7 +571,7 @@ namespace DB_Schema_Export_Tool
                     sortOrder = TableNameSortModeConstants.Name;
                 }
 
-                List<KeyValuePair<string, long>> lstSortedTables;
+                List<KeyValuePair<TableDataExportInfo, long>> lstSortedTables;
                 if (sortOrder == TableNameSortModeConstants.RowCount)
                 {
                     // Sort on RowCount
@@ -612,7 +629,7 @@ namespace DB_Schema_Export_Tool
                     // tableItem.Key is Table Name
                     // tableItem.Value is the number of rows in the table (if mCachedTableListIncludesRowCounts = True)
 
-                    var tableName = tableItem.Key;
+                    var tableName = tableItem.Key.SourceTableName;
 
                     string textForRow;
                     if (mCachedTableListIncludesRowCounts)
@@ -684,7 +701,7 @@ namespace DB_Schema_Export_Tool
 
         private void InitializeControls()
         {
-            mCachedTableList = new Dictionary<string, long>();
+            mCachedTableList = new Dictionary<TableDataExportInfo, long>();
 
             mDefaultDMSDatabaseList = new List<string>();
             mDefaultMTSDatabaseList = new List<string>();
@@ -819,9 +836,9 @@ namespace DB_Schema_Export_Tool
 
             try
             {
-                // Populate mDatabaseListToProcess and mTableNamesForDataExport
+                // Populate mDatabaseListToProcess and mTablesForDataExport
                 mDatabaseListToProcess = GetSelectedDatabases();
-                mTableNamesForDataExport = GetSelectedTableNamesForDataExport(mnuEditWarnOnHighTableRowCount.Checked);
+                mTablesForDataExport = GetSelectedTableNamesForDataExport(mnuEditWarnOnHighTableRowCount.Checked);
 
                 if (mDatabaseListToProcess.Count == 0 && !mSchemaExportOptions.ExportServerSettingsLoginsAndJobs)
                 {
@@ -955,10 +972,10 @@ namespace DB_Schema_Export_Tool
 
         private void ScriptDBSchemaObjectsThread()
         {
-            // Note: Populate mDatabaseListToProcess and mTableNamesForDataExport prior to calling this sub
+            // Note: Populate mDatabaseListToProcess and mTablesForDataExport prior to calling this sub
             try
             {
-                mSchemaExportSuccess = mDBSchemaExporter.ScriptServerAndDBObjects(mDatabaseListToProcess, mTableNamesForDataExport);
+                mSchemaExportSuccess = mDBSchemaExporter.ScriptServerAndDBObjects(mDatabaseListToProcess, mTablesForDataExport);
             }
             catch (Exception ex)
             {
@@ -1309,8 +1326,7 @@ namespace DB_Schema_Export_Tool
             mSchemaExportOptions.ScriptingOptions.IncludeTimestampInScriptFileHeader = mnuEditIncludeTimestampInScriptFileHeader.Checked;
             mSchemaExportOptions.ScriptingOptions.ExportServerSettingsLoginsAndJobs = chkExportServerSettingsLoginsAndJobs.Checked;
             mSchemaExportOptions.ScriptingOptions.SaveDataAsInsertIntoStatements = mnuEditSaveDataAsInsertIntoStatements.Checked;
-            mSchemaExportOptions.ScriptingOptions.DatabaseTypeForInsertInto = DatabaseScriptingOptions.TargetDatabaseTypeConstants.SqlServer;
-            mSchemaExportOptions.ScriptingOptions.AutoSelectTableNamesForDataExport = mnuEditAutoSelectDefaultTableNames.Checked;
+            mSchemaExportOptions.ScriptingOptions.AutoSelectTablesForDataExport = mnuEditAutoSelectDefaultTableNames.Checked;
 
             // Note: mDBSchemaExporter & mTableNameAutoSelectRegEx will be passed to mDBSchemaExporter below
             for (var index = 0; index < lstObjectTypesToScript.Items.Count; index++)
@@ -1409,7 +1425,7 @@ namespace DB_Schema_Export_Tool
 
                 var includeTableRowCounts = mnuEditIncludeTableRowCounts.Checked;
 
-                mCachedTableList = mDBSchemaExporter.GetDatabaseTableNames(databaseName, includeTableRowCounts, mnuEditIncludeSystemObjects.Checked);
+                mCachedTableList = mDBSchemaExporter.GetDatabaseTables(databaseName, includeTableRowCounts, mnuEditIncludeSystemObjects.Checked);
 
                 if (mCachedTableList.Count > 0)
                 {

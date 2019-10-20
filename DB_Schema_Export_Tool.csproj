@@ -68,6 +68,7 @@
     <Compile Include="SchemaExportOptions.cs" />
     <Compile Include="DatabaseScriptingOptions.cs" />
     <Compile Include="ServerConnectionInfo.cs" />
+    <Compile Include="TableDataExportInfo.cs" />
     <Compile Include="WorkingParams.cs" />
     <EmbeddedResource Include="frmMain.resx">
       <DependentUpon>frmMain.cs</DependentUpon>

@@ -115,16 +115,16 @@ namespace DB_Schema_Export_Tool
         /// Determines the table names for which data will be exported
         /// </summary>
         /// <param name="currentDatabase">SQL Server database</param>
-        /// <param name="tableNamesForDataExport">Table names that should be auto-selected</param>
+        /// <param name="tablesForDataExport">Table names that should be auto-selected</param>
         /// <returns>Dictionary where keys are table names and values are the maximum number of rows to export</returns>
-        private Dictionary<string, long> AutoSelectTableNamesForDataExport(
+        private Dictionary<TableDataExportInfo, long> AutoSelectTablesForDataExport(
             Database currentDatabase,
-            IEnumerable<string> tableNamesForDataExport)
+            IEnumerable<TableDataExportInfo> tablesForDataExport)
         {
             var dtTables = currentDatabase.EnumObjects(DatabaseObjectTypes.Table, SortOrder.Name);
-            var tableNamesInDatabase = (from DataRow item in dtTables.Rows select item["Name"].ToString()).ToList();
+            var tablesInDatabase = (from DataRow item in dtTables.Rows select new TableDataExportInfo(item["Name"].ToString())).ToList();
 
-            var tablesToExport = AutoSelectTableNamesForDataExport(tableNamesInDatabase, tableNamesForDataExport);
+            var tablesToExport = AutoSelectTablesForDataExport(tablesInDatabase, tablesForDataExport);
             return tablesToExport;
         }
 
@@ -292,33 +292,33 @@ namespace DB_Schema_Export_Tool
 
         /// <summary>
         /// Export the tables, views, procedures, etc. in the given database
-        /// Also export data from tables in tableNamesForDataExport
+        /// Also export data from tables in tablesForDataExport
         /// </summary>
         /// <param name="databaseName"></param>
-        /// <param name="tableNamesForDataExport"></param>
+        /// <param name="tablesForDataExport"></param>
         /// <param name="databaseNotFound"></param>
         /// <returns>True if successful, false if an error</returns>
         protected override bool ExportDBObjectsAndTableData(
             string databaseName,
-            IReadOnlyCollection<string> tableNamesForDataExport,
+            List<TableDataExportInfo> tablesForDataExport,
             out bool databaseNotFound)
         {
-            return ExportDBObjectsUsingSMO(mSqlServer, databaseName, tableNamesForDataExport, out databaseNotFound);
+            return ExportDBObjectsUsingSMO(mSqlServer, databaseName, tablesForDataExport, out databaseNotFound);
         }
 
         /// <summary>
         /// Script the tables, views, function, etc. in the specified database
-        /// Also export data from tables in tableNamesForDataExport
+        /// Also export data from tables in tablesForDataExport
         /// </summary>
         /// <param name="sqlServer">SQL Server Accessor</param>
         /// <param name="databaseName">Database name</param>
-        /// <param name="tableNamesForDataExport">Table names that should be auto-selected</param>
+        /// <param name="tablesForDataExport">Table names that should be auto-selected</param>
         /// <param name="databaseNotFound">Output: true if the database does not exist on the server (or is inaccessible)</param>
         /// <returns>True if successful, false if an error</returns>
         private bool ExportDBObjectsUsingSMO(
             Server sqlServer,
             string databaseName,
-            IReadOnlyCollection<string> tableNamesForDataExport,
+            IReadOnlyCollection<TableDataExportInfo> tablesForDataExport,
             out bool databaseNotFound)
         {
             var workingParams = new WorkingParams();
@@ -327,7 +327,7 @@ namespace DB_Schema_Export_Tool
 
             // Keys are table names to export
             // Values are the maximum number of rows to export
-            Dictionary<string, long> tablesToExport;
+            Dictionary<TableDataExportInfo, long> tablesToExport;
 
             OnDBExportStarting(databaseName);
 
@@ -352,16 +352,16 @@ namespace DB_Schema_Export_Tool
 
             try
             {
-                if (mOptions.ScriptingOptions.AutoSelectTableNamesForDataExport)
+                if (mOptions.ScriptingOptions.AutoSelectTablesForDataExport)
                 {
-                    tablesToExport = AutoSelectTableNamesForDataExport(mCurrentDatabase, tableNamesForDataExport);
+                    tablesToExport = AutoSelectTablesForDataExport(mCurrentDatabase, tablesForDataExport);
                 }
                 else
                 {
-                    tablesToExport = new Dictionary<string, long>();
-                    foreach (var tableName in tableNamesForDataExport)
+                    tablesToExport = new Dictionary<TableDataExportInfo, long>();
+                    foreach (var item in tablesForDataExport)
                     {
-                        tablesToExport.Add(tableName, 0);
+                        tablesToExport.Add(item, 0);
                     }
                 }
             }
@@ -384,9 +384,9 @@ namespace DB_Schema_Export_Tool
                     return false;
 
                 workingParams.ProcessCountExpected = workingParams.ProcessCount;
-                if (tableNamesForDataExport != null)
+                if (tablesForDataExport != null)
                 {
-                    workingParams.ProcessCountExpected += tableNamesForDataExport.Count;
+                    workingParams.ProcessCountExpected += tablesForDataExport.Count;
                 }
 
                 if (mOptions.PreviewExport)
@@ -938,12 +938,16 @@ namespace DB_Schema_Export_Tool
         /// Export data from the specified table (if it exists)
         /// </summary>
         /// <param name="databaseName">Database name</param>
-        /// <param name="tableName">Table name</param>
+        /// <param name="tableInfo">Table info</param>
         /// <param name="maxRowsToExport">Maximum rows to export</param>
         /// <param name="workingParams">Working parameters</param>
         /// <returns>True if success, false if an error</returns>
         /// <remarks>If the table does not exist, will still return true</remarks>
-        protected override bool ExportDBTableData(string databaseName, string tableName, long maxRowsToExport, WorkingParams workingParams)
+        protected override bool ExportDBTableData(
+            string databaseName,
+            TableDataExportInfo tableInfo,
+            long maxRowsToExport,
+            WorkingParams workingParams)
         {
 
             try
@@ -962,13 +966,13 @@ namespace DB_Schema_Export_Tool
                 }
 
                 Table databaseTable;
-                if (mCurrentDatabase.Tables.Contains(tableName))
+                if (mCurrentDatabase.Tables.Contains(tableInfo.SourceTableName))
                 {
-                    databaseTable = mCurrentDatabase.Tables[tableName];
+                    databaseTable = mCurrentDatabase.Tables[tableInfo.SourceTableName];
                 }
-                else if (mCurrentDatabase.Tables.Contains(tableName, "dbo"))
+                else if (mCurrentDatabase.Tables.Contains(tableInfo.SourceTableName, "dbo"))
                 {
-                    databaseTable = mCurrentDatabase.Tables[tableName, "dbo"];
+                    databaseTable = mCurrentDatabase.Tables[tableInfo.SourceTableName, "dbo"];
                 }
                 else
                 {
@@ -980,7 +984,7 @@ namespace DB_Schema_Export_Tool
                 var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
                 var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
 
-                OnProgressUpdate("Exporting data from " + tableName, percentComplete);
+                OnProgressUpdate("Exporting data from " + tableInfo.SourceTableName, percentComplete);
 
                 // See if any of the columns in the table is an identity column
                 var identityColumnFound = false;
@@ -1001,12 +1005,20 @@ namespace DB_Schema_Export_Tool
                     sql += "TOP " + maxRowsToExport;
                 }
 
-                sql += " * FROM [" + databaseTable.Name + "]";
+                var sourceTableNameWithSchema = string.Format("{0}.{1}",
+                                                             PossiblyQuoteName(databaseTable.Schema),
+                                                             PossiblyQuoteName(databaseTable.Name));
+
+                sql += " * FROM " + sourceTableNameWithSchema;
 
                 var queryResults = mCurrentDatabase.ExecuteWithResults(sql);
 
+                var quoteWithSquareBrackets = mOptions.PgDumpTableData;
+
+                var targetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo, quoteWithSquareBrackets, out var targetTableName);
+
                 var headerRows = new List<string>();
-                var header = COMMENT_START_TEXT + "Object:  Table [" + databaseTable.Name + "]";
+                var header = COMMENT_START_TEXT + "Object:  Table " + targetTableNameWithSchema;
 
                 if (mOptions.ScriptingOptions.IncludeTimestampInScriptFileHeader)
                 {
@@ -1031,32 +1043,23 @@ namespace DB_Schema_Export_Tool
                     columnInfoByType.Add(new KeyValuePair<string, Type>(currentColumnName, currentColumnType));
                 }
 
-                var columnTypes = ConvertDataTableColumnInfo(columnInfoByType, out var headerRowValues);
+                var columnTypes = ConvertDataTableColumnInfo(columnInfoByType, quoteWithSquareBrackets, out var headerRowValues);
 
                 var insertIntoLine = string.Empty;
+
                 char colSepChar;
                 if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
                 {
-                    // Future capability:
-                    //switch (mOptions.ScriptingOptions.DatabaseTypeForInsertInto)
-                    //{
-                    //    case DatabaseScriptingOptions.TargetDatabaseTypeConstants.SqlServer:
-                    //        break;
-                    //    default:
-                    //        // Unsupported mode
-                    //        break;
-                    //}
-
                     if (identityColumnFound)
                     {
-                        insertIntoLine = string.Format("INSERT INTO [{0}] ({1}) VALUES (", databaseTable.Name, headerRowValues);
+                        insertIntoLine = string.Format("INSERT INTO {0} ({1}) VALUES (", targetTableNameWithSchema, headerRowValues);
 
-                        headerRows.Add("SET IDENTITY_INSERT [" + databaseTable.Name + "] ON");
+                        headerRows.Add("SET IDENTITY_INSERT " + targetTableNameWithSchema + " ON");
                     }
                     else
                     {
                         // Identity column not present; no need to explicitly list the column names
-                        insertIntoLine = string.Format("INSERT INTO [{0}] VALUES (", databaseTable.Name);
+                        insertIntoLine = string.Format("INSERT INTO {0} VALUES (", targetTableNameWithSchema);
 
                         headerRows.Add(COMMENT_START_TEXT + "Columns: " + headerRowValues + COMMENT_END_TEXT);
                     }
@@ -1069,9 +1072,7 @@ namespace DB_Schema_Export_Tool
                     colSepChar = '\t';
                 }
 
-                // Make sure output file name doesn't contain any invalid characters
-                var cleanName = CleanNameForOS(databaseTable.Name + "_Data");
-                var outFilePath = Path.Combine(workingParams.OutputDirectory.FullName, cleanName + ".sql");
+                var outFilePath = GetFileNameForTableDataExport(targetTableName, targetTableNameWithSchema, workingParams);
 
                 using (var writer = new StreamWriter(new FileStream(outFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
                 {
@@ -1084,7 +1085,7 @@ namespace DB_Schema_Export_Tool
 
                     if (identityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
                     {
-                        writer.WriteLine("SET IDENTITY_INSERT [" + databaseTable.Name + "] OFF");
+                        writer.WriteLine("SET IDENTITY_INSERT " + targetTableNameWithSchema + " OFF");
                     }
                 }
 
@@ -1436,9 +1437,9 @@ namespace DB_Schema_Export_Tool
         /// <param name="includeTableRowCounts">When true, then determines the row count in each table</param>
         /// <param name="includeSystemObjects">When true, then also returns system var tables</param>
         /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
-        public override Dictionary<string, long> GetDatabaseTableNames(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
+        public override Dictionary<TableDataExportInfo, long> GetDatabaseTables(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
         {
-            return GetSqlServerDatabaseTableNames(databaseName, includeTableRowCounts, includeSystemObjects);
+            return GetSqlServerDatabaseTables(databaseName, includeTableRowCounts, includeSystemObjects);
         }
 
         /// <summary>
@@ -1512,10 +1513,10 @@ namespace DB_Schema_Export_Tool
         /// <param name="includeTableRowCounts">When true, then determines the row count in each table</param>
         /// <param name="includeSystemObjects">When true, then also returns system var tables</param>
         /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
-        public Dictionary<string, long> GetSqlServerDatabaseTableNames(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
+        public Dictionary<TableDataExportInfo, long> GetSqlServerDatabaseTables(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
         {
             // Keys are table names; values are row counts
-            var databaseTableInfo = new Dictionary<string, long>();
+            var databaseTableInfo = new Dictionary<TableDataExportInfo, long>();
 
             try
             {
@@ -1534,7 +1535,7 @@ namespace DB_Schema_Export_Tool
 
                 if (string.IsNullOrWhiteSpace(databaseName))
                 {
-                    OnWarningEvent("Empty database name sent to GetSqlServerDatabaseTableNames");
+                    OnWarningEvent("Empty database name sent to GetSqlServerDatabaseTables");
                     return databaseTableInfo;
                 }
 
@@ -1563,7 +1564,7 @@ namespace DB_Schema_Export_Tool
 
                     var tableRowCount = includeTableRowCounts ? databaseTables[index].RowCount : 0;
 
-                    databaseTableInfo.Add(databaseTables[index].Name, tableRowCount);
+                    databaseTableInfo.Add(new TableDataExportInfo(databaseTables[index].Name), tableRowCount);
 
                     var percentComplete = ComputeSubtaskProgress(index, databaseTables.Count);
                     OnProgressUpdate("Reading database tables", percentComplete);
@@ -1586,7 +1587,7 @@ namespace DB_Schema_Export_Tool
                 SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError,
                               string.Format("Error obtaining list of tables in database {0} on the current server", databaseName), ex);
 
-                return new Dictionary<string, long>();
+                return new Dictionary<TableDataExportInfo, long>();
             }
         }
 

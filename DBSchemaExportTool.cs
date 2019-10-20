@@ -178,14 +178,18 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var databaseList = databaseNamesAndOutputPaths.Keys.ToList();
-                var tableNamesForDataExport = new List<string>();
+                List<TableDataExportInfo> tablesForDataExport;
 
-                if (!string.IsNullOrWhiteSpace(mOptions.TableDataToExportFile))
+                if (string.IsNullOrWhiteSpace(mOptions.TableDataToExportFile))
                 {
-                    tableNamesForDataExport = LoadTableNamesForDataExport(mOptions.TableDataToExportFile);
+                    tablesForDataExport = new List<TableDataExportInfo>();
+                }
+                else
+                {
+                    tablesForDataExport = LoadTablesForDataExport(mOptions.TableDataToExportFile);
                 }
 
-                var success = ScriptServerAndDBObjectsWork(databaseList, tableNamesForDataExport);
+                var success = ScriptServerAndDBObjectsWork(databaseList, tablesForDataExport);
 
                 // Populate a dictionary with the database names (properly capitalized) and the output directory path used for each
                 var databaseNameToDirectoryMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -390,9 +394,9 @@ namespace DB_Schema_Export_Tool
         /// <param name="includeTableRowCounts">When true, then determines the row count in each table</param>
         /// <param name="includeSystemObjects">When true, then also returns system var tables</param>
         /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
-        public Dictionary<string, long> GetDatabaseTableNames(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
+        public Dictionary<TableDataExportInfo, long> GetDatabaseTables(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
         {
-            return mDBSchemaExporter.GetDatabaseTableNames(databaseName, includeTableRowCounts, includeSystemObjects);
+            return mDBSchemaExporter.GetDatabaseTables(databaseName, includeTableRowCounts, includeSystemObjects);
         }
 
         /// <summary>
@@ -494,7 +498,7 @@ namespace DB_Schema_Export_Tool
                 // ReSharper restore StringLiteralTypo
             };
 
-            var filteredNames = new SortedSet<string>();
+            var filteredNames = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var item in tableNames)
             {
@@ -517,14 +521,16 @@ namespace DB_Schema_Export_Tool
             return regExSpecs;
         }
 
-        private List<string> LoadTableNamesForDataExport(string tableDataFilePath)
+        private List<TableDataExportInfo> LoadTablesForDataExport(string tableDataFilePath)
         {
-            var tableNames = new SortedSet<string>();
+            var tableNames = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+            var tableInfo = new List<TableDataExportInfo>();
+
             try
             {
                 if (string.IsNullOrWhiteSpace(tableDataFilePath))
                 {
-                    return tableNames.ToList();
+                    return tableInfo;
                 }
 
                 var dataFile = new FileInfo(tableDataFilePath);
@@ -533,7 +539,7 @@ namespace DB_Schema_Export_Tool
                     Console.WriteLine();
                     OnStatusEvent("Table Data File not found; default tables will be used");
                     OnWarningEvent("File not found: " + dataFile.FullName);
-                    return tableNames.ToList();
+                    return tableInfo;
                 }
 
                 using (var dataReader = new StreamReader(new FileStream(dataFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
@@ -547,6 +553,7 @@ namespace DB_Schema_Export_Tool
                         if (!tableNames.Contains(trimmedName))
                         {
                             tableNames.Add(trimmedName);
+                            tableInfo.Add(new TableDataExportInfo(trimmedName));
                         }
 
                     }
@@ -554,10 +561,10 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                OnErrorEvent("Error in LoadTableNamesForDataExport", ex);
+                OnErrorEvent("Error in LoadTablesForDataExport", ex);
             }
 
-            return tableNames.ToList();
+            return tableInfo;
         }
 
         protected new void OnErrorEvent(string message)
@@ -820,19 +827,23 @@ namespace DB_Schema_Export_Tool
             mDBSchemaExporter?.RequestUnpause();
         }
 
-        public bool ScriptServerAndDBObjects(List<string> databaseList, List<string> tableNamesForDataExport)
+        public bool ScriptServerAndDBObjects(
+            List<string> databaseList,
+            List<TableDataExportInfo> tablesForDataExport)
         {
             var isValid = ValidateSchemaExporter();
             if (!isValid)
                 return false;
 
-            var success = ScriptServerAndDBObjectsWork(databaseList, tableNamesForDataExport);
+            var success = ScriptServerAndDBObjectsWork(databaseList, tablesForDataExport);
             return success;
         }
 
-        private bool ScriptServerAndDBObjectsWork(List<string> databaseList, List<string> tableNamesForDataExport)
+        private bool ScriptServerAndDBObjectsWork(
+            List<string> databaseList,
+            List<TableDataExportInfo> tablesForDataExport)
         {
-            var success = mDBSchemaExporter.ScriptServerAndDBObjects(databaseList, tableNamesForDataExport);
+            var success = mDBSchemaExporter.ScriptServerAndDBObjects(databaseList, tablesForDataExport);
             return success;
         }
 
