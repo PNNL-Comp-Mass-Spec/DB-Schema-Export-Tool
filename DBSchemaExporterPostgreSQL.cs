@@ -10,7 +10,7 @@ using PRISM;
 
 namespace DB_Schema_Export_Tool
 {
-    public class DBSchemaExporterPostgreSQL : DBSchemaExporterBase
+    public sealed class DBSchemaExporterPostgreSQL : DBSchemaExporterBase
     {
         #region "Constants and Enums"
 
@@ -1336,7 +1336,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="objectName"></param>
         /// <returns></returns>
-        protected override string PossiblyQuoteName(string objectName)
+        private string PossiblyQuoteName(string objectName)
         {
             return PossiblyQuoteName(objectName, false);
         }
