@@ -289,10 +289,12 @@ namespace DB_Schema_Export_Tool
         /// Examine column types to populate a list of enum DataColumnTypeConstants
         /// </summary>
         /// <param name="columnInfoByType"></param>
+        /// <param name="quoteWithSquareBrackets">When true, quote names using double quotes instead of square brackets</param>
         /// <param name="headerRowValues"></param>
         /// <returns></returns>
         protected List<DataColumnTypeConstants> ConvertDataTableColumnInfo(
             IReadOnlyCollection<KeyValuePair<string, Type>> columnInfoByType,
+            bool quoteWithSquareBrackets,
             out StringBuilder headerRowValues)
         {
 
@@ -364,13 +366,15 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
+                var delimiter = mOptions.PgDumpTableData ? "\t" : ", ";
+
                 columnTypes.Add(dataColumnType);
-                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || mOptions.PgDumpTableData)
                 {
-                    headerRowValues.Append(PossiblyQuoteName(currentColumnName));
+                    headerRowValues.Append(PossiblyQuoteName(currentColumnName, quoteWithSquareBrackets));
                     if (columnIndex < columnInfoByType.Count - 1)
                     {
-                        headerRowValues.Append(", ");
+                        headerRowValues.Append(delimiter);
                     }
 
                 }
@@ -379,7 +383,7 @@ namespace DB_Schema_Export_Tool
                     headerRowValues.Append(currentColumnName);
                     if (columnIndex < columnInfoByType.Count - 1)
                     {
-                        headerRowValues.Append("\t");
+                        headerRowValues.Append(delimiter);
                     }
 
                 }
@@ -575,8 +579,7 @@ namespace DB_Schema_Export_Tool
             if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
             {
                 // Include a semi-colon if creating INSERT INTO statements for databases other than SQL Server
-                if (mOptions.PostgreSQL ||
-                    mOptions.ScriptingOptions.DatabaseTypeForInsertInto != DatabaseScriptingOptions.TargetDatabaseTypeConstants.SqlServer)
+                if (mOptions.PostgreSQL)
                     delimitedRowValues.Append(");");
                 else
                     delimitedRowValues.Append(")");
@@ -724,8 +727,6 @@ namespace DB_Schema_Export_Tool
         {
             ProgressComplete?.Invoke();
         }
-
-        protected abstract string PossiblyQuoteName(string objectName);
 
         /// <summary>
         /// If objectName contains characters other than A-Z, a-z, 0-9, or an underscore, surround the name with square brackets or double quotes
