@@ -1066,6 +1066,13 @@ namespace DB_Schema_Export_Tool
 
                     colSepChar = ',';
                 }
+                else if (mOptions.PgDumpTableData)
+                {
+                    // ReSharper disable once StringLiteralTypo
+                    var copyCommand = string.Format("COPY {0} ({1}) from stdin;", targetTableNameWithSchema, headerRowValues);
+                    headerRows.Add(copyCommand);
+                    colSepChar = '\t';
+                }
                 else
                 {
                     headerRows.Add(headerRowValues.ToString());
@@ -1638,7 +1645,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="objectName"></param>
         /// <returns></returns>
-        protected override string PossiblyQuoteName(string objectName)
+        private string PossiblyQuoteName(string objectName)
         {
             return PossiblyQuoteName(objectName, true);
         }
