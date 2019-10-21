@@ -443,7 +443,8 @@ namespace DB_Schema_Export_Tool
 
                 if (string.IsNullOrWhiteSpace(sourceTableNameWithSchema))
                 {
-                    OnDebugEvent(string.Format("Database {0} does not have table {1}; skipping data export", databaseName, tableInfo.SourceTableName));
+                    // Table not found in this database
+                    // Do not treat this as an error, so return true
                     return true;
                 }
 
@@ -570,6 +571,9 @@ namespace DB_Schema_Export_Tool
                     colSepChar = '\t';
                 }
 
+                var outFilePath = GetFileNameForTableDataExport(targetTableName, targetTableNameWithSchema, workingParams);
+                OnDebugEvent("Writing table data to " + outFilePath);
+
                 using (var writer = new StreamWriter(new FileStream(outFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
                 {
                     foreach (var headerRow in headerRows)
@@ -626,6 +630,7 @@ namespace DB_Schema_Export_Tool
 
                 ExportDBTableDataRow(writer, colSepChar, delimitedRowValues, columnTypes, columnCount, columnValues);
             }
+
         }
 
         private bool ExportDBTableDataUsingPgDump(
