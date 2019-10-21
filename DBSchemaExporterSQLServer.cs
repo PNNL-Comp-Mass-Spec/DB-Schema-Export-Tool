@@ -384,13 +384,12 @@ namespace DB_Schema_Export_Tool
                     return false;
 
                 workingParams.ProcessCountExpected = workingParams.ProcessCount;
-                if (tablesForDataExport != null)
-                {
-                    workingParams.ProcessCountExpected += tablesForDataExport.Count;
-                }
 
+                bool success;
                 if (mOptions.PreviewExport)
                 {
+                    Console.WriteLine();
+
                     OnStatusEvent(string.Format("  Found {0} database objects to export", workingParams.ProcessCountExpected));
 
                     if (tablesToExport.Count > 0)
@@ -398,23 +397,29 @@ namespace DB_Schema_Export_Tool
                         OnStatusEvent(string.Format("  Would export table data for {0} tables", tablesToExport.Count));
                     }
 
-                    return true;
-                }
-
-                OnDebugEvent(string.Format("Scripting {0} objects", workingParams.ProcessCountExpected));
-
-                bool success;
-                workingParams.CountObjectsOnly = false;
-                if (workingParams.ProcessCount > 0)
-                {
-                    success = ExportDBObjectsWork(mCurrentDatabase, scriptOptions, workingParams);
+                    success = true;
                 }
                 else
                 {
-                    success = true;
+                    if (tablesForDataExport != null)
+                    {
+                        workingParams.ProcessCountExpected += Math.Max(tablesForDataExport.Count, tablesToExport.Count);
+                    }
+
+                    OnDebugEvent(string.Format("Scripting {0} objects", workingParams.ProcessCountExpected));
+
+                    workingParams.CountObjectsOnly = false;
+                    if (workingParams.ProcessCount > 0)
+                    {
+                        success = ExportDBObjectsWork(mCurrentDatabase, scriptOptions, workingParams);
+                    }
+                    else
+                    {
+                        success = true;
+                    }
                 }
 
-                // Export data from tables specified by tablesToExport
+                // Export data from tables specified by tablesToExport (will preview the SQL to be used if mOptions.Preview is true)
                 var dataSuccess = ExportDBTableData(mCurrentDatabase.Name, tablesToExport, workingParams);
 
                 return success && dataSuccess;
