@@ -248,6 +248,25 @@ namespace DB_Schema_Export_Tool
             SetPauseStatus(PauseStatusConstants.Unpaused);
         }
 
+        private string CleanForCopyCommand(object columnValue)
+        {
+            if (columnValue == null)
+                return string.Empty;
+
+            var columnText = columnValue.ToString();
+
+            // Quote the following characters
+            // backslash itself, newline, carriage return, and tab
+
+            var cleanedText = columnText.
+                Replace("\\", "\\\\").
+                Replace("\r", "\\r").
+                Replace("\n", "\\n").
+                Replace("\t", "\\t");
+
+            return cleanedText;
+        }
+
         protected string CleanNameForOS(string filename)
         {
             // Replace any invalid characters in strName with underscores
@@ -294,11 +313,13 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Examine column types to populate a list of enum DataColumnTypeConstants
         /// </summary>
+        /// <param name="sourceTableName"></param>
         /// <param name="columnInfoByType"></param>
         /// <param name="quoteWithSquareBrackets">When true, quote names using double quotes instead of square brackets</param>
         /// <param name="headerRowValues"></param>
         /// <returns></returns>
         protected List<DataColumnTypeConstants> ConvertDataTableColumnInfo(
+            string sourceTableName,
             IReadOnlyCollection<KeyValuePair<string, Type>> columnInfoByType,
             bool quoteWithSquareBrackets,
             out StringBuilder headerRowValues)

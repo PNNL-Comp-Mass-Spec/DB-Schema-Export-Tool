@@ -1085,10 +1085,21 @@ namespace DB_Schema_Export_Tool
                 }
                 else if (mOptions.PgDumpTableData)
                 {
-                    // ReSharper disable once StringLiteralTypo
-                    var copyCommand = string.Format("COPY {0} ({1}) from stdin;", targetTableNameWithSchema, headerRowValues);
-                    headerRows.Add(copyCommand);
-                    colSepChar = '\t';
+                    if (tableInfo.UseMergeStatement)
+                    {
+                        // ToDo: Code this
+                        var mergeCommand = string.Format("MERGE ...");
+                        headerRows.Add(mergeCommand);
+                        colSepChar = ',';
+                    }
+                    else
+                    {
+                        // ReSharper disable once StringLiteralTypo
+                        var copyCommand = string.Format("COPY {0} ({1}) from stdin;", targetTableNameWithSchema, headerRowValues);
+                        headerRows.Add(copyCommand);
+                        colSepChar = '\t';
+                    }
+
                 }
                 else
                 {
@@ -1171,6 +1182,12 @@ namespace DB_Schema_Export_Tool
                 }
 
                 ExportDBTableDataRow(writer, colSepChar, delimitedRowValues, columnTypes, columnCount, columnValues);
+            }
+
+            if (mOptions.PgDumpTableData)
+            {
+                writer.WriteLine(@"\.");
+                writer.WriteLine(@";");
             }
 
             // // Read method #2: Use a SqlDataReader to read row-by-row
