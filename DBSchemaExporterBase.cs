@@ -34,6 +34,7 @@ namespace DB_Schema_Export_Tool
             SqlVariant = 6,
             ImageObject = 7,
             GeneralObject = 8,
+            SkipColumn = 9
         }
 
         public enum DBSchemaExportErrorCodes
@@ -307,6 +308,8 @@ namespace DB_Schema_Export_Tool
             headerRowValues = new StringBuilder();
             var columnIndex = 0;
 
+            mOptions.ColumnMapForDataExport.TryGetValue(sourceTableName, out var columnMapInfo);
+
             foreach (var item in columnInfoByType)
             {
                 var currentColumnName = item.Key;
@@ -371,17 +374,27 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
-                var delimiter = mOptions.PgDumpTableData ? "\t" : ", ";
+                string delimiter;
+
+                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || mOptions.PgDumpTableData)
+                    delimiter = ", ";
+                else
+                    delimiter = "\t";
 
                 columnTypes.Add(dataColumnType);
-                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || mOptions.PgDumpTableData)
-                {
-                    headerRowValues.Append(PossiblyQuoteName(currentColumnName, quoteWithSquareBrackets));
-                    if (columnIndex < columnInfoByType.Count - 1)
-                    {
-                        headerRowValues.Append(delimiter);
-                    }
 
+                string targetColumnName;
+
+                // Rename the column if defined in mOptions.ColumnMapForDataExport or if mOptions.TableDataSnakeCase is true
+                if (columnMapInfo != null && columnMapInfo.IsColumnDefined(currentColumnName))
+                {
+                    targetColumnName = columnMapInfo.GetTargetColumnName(currentColumnName);
+                    if (targetColumnName.Equals("<skip>", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Do not include this column in the output file
+                        dataColumnType = DataColumnTypeConstants.SkipColumn;
+                        columnTypes[columnTypes.Count - 1] = dataColumnType;
+                    }
                 }
                 else if (mOptions.TableDataSnakeCase)
                 {
@@ -389,12 +402,24 @@ namespace DB_Schema_Export_Tool
                 }
                 else
                 {
-                    headerRowValues.Append(currentColumnName);
-                    if (columnIndex < columnInfoByType.Count - 1)
+                    targetColumnName = currentColumnName;
+                }
+
+                if (dataColumnType != DataColumnTypeConstants.SkipColumn)
+                {
+                    if (columnIndex > 0 && headerRowValues.Length > 0)
                     {
                         headerRowValues.Append(delimiter);
                     }
 
+                    if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || mOptions.PgDumpTableData)
+                    {
+                        headerRowValues.Append(PossiblyQuoteName(targetColumnName, quoteWithSquareBrackets));
+                    }
+                    else
+                    {
+                        headerRowValues.Append(targetColumnName);
+                    }
                 }
 
                 columnIndex++;
@@ -465,7 +490,7 @@ namespace DB_Schema_Export_Tool
                 else if (tablesToExport.Keys.Count > 1 && tablesToExport.Keys.Count < 5)
                     OnDebugEvent(string.Format("Exporting data from database {0}, tables {1} and {2}", databaseName, tablesToExport.First().Key, tablesToExport.Last().Key));
                 else
-                    OnDebugEvent(string.Format("Exporting data from database {0}, tables {1} ...", databaseName, string.Join(", ", tablesToExport.Keys.Take(5))));
+                    OnDebugEvent(string.Format("Exporting data from database {0}, tables {1}, ...", databaseName, string.Join(", ", tablesToExport.Keys.Take(5))));
 
                 foreach (var tableItem in tablesToExport)
                 {
@@ -526,8 +551,30 @@ namespace DB_Schema_Export_Tool
             int columnCount,
             IReadOnlyList<object> columnValues)
         {
+
             for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
             {
+                if (columnTypes[columnIndex] == DataColumnTypeConstants.SkipColumn)
+                {
+                    // Skip this column
+                    continue;
+                }
+
+                if (columnIndex > 0 && delimitedRowValues.Length > 0)
+                {
+                    delimitedRowValues.Append(colSepChar);
+                }
+
+                if (columnValues[columnIndex] == null)
+                {
+                    delimitedRowValues.Append(mOptions.PgDumpTableData ? @"\N" : string.Empty);
+
+                    if (columnIndex < columnCount - 1)
+                    {
+                        delimitedRowValues.Append(colSepChar);
+                    }
+                    continue;
+                }
 
                 switch (columnTypes[columnIndex])
                 {
@@ -538,7 +585,11 @@ namespace DB_Schema_Export_Tool
                     case DataColumnTypeConstants.Text:
                     case DataColumnTypeConstants.DateTime:
                     case DataColumnTypeConstants.GUID:
-                        if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+                        if (mOptions.PgDumpTableData)
+                        {
+                            delimitedRowValues.Append(CleanForCopyCommand(columnValues[columnIndex]));
+                        }
+                        else if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
                         {
                             delimitedRowValues.Append(PossiblyQuoteText(columnValues[columnIndex].ToString()));
                         }
@@ -600,27 +651,28 @@ namespace DB_Schema_Export_Tool
                         break;
 
                     default:
-                        delimitedRowValues.Append(columnValues[columnIndex]);
                         break;
                 }
 
-                if (columnIndex < columnCount - 1)
+            }
+
+            if (mOptions.PgDumpTableData)
+            {
+                writer.WriteLine(delimitedRowValues.ToString());
+            }
+            else
+            {
+                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
                 {
-                    delimitedRowValues.Append(colSepChar);
+                    // Include a semi-colon if creating INSERT INTO statements for databases other than SQL Server
+                    if (mOptions.PostgreSQL)
+                        delimitedRowValues.Append(");");
+                    else
+                        delimitedRowValues.Append(")");
                 }
 
+                writer.WriteLine(delimitedRowValues.ToString());
             }
-
-            if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
-            {
-                // Include a semi-colon if creating INSERT INTO statements for databases other than SQL Server
-                if (mOptions.PostgreSQL)
-                    delimitedRowValues.Append(");");
-                else
-                    delimitedRowValues.Append(")");
-            }
-
-            writer.WriteLine(delimitedRowValues.ToString());
         }
 
         /// <summary>

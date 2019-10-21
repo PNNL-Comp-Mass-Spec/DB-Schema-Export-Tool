@@ -189,6 +189,11 @@ namespace DB_Schema_Export_Tool
                     tablesForDataExport = LoadTablesForDataExport(mOptions.TableDataToExportFile);
                 }
 
+                if (!string.IsNullOrWhiteSpace(mOptions.TableDataColumnMapFile))
+                {
+                    LoadColumnMapInfo(mOptions.TableDataColumnMapFile);
+                }
+
                 var success = ScriptServerAndDBObjectsWork(databaseList, tablesForDataExport);
 
                 // Populate a dictionary with the database names (properly capitalized) and the output directory path used for each
@@ -519,6 +524,83 @@ namespace DB_Schema_Export_Tool
             };
 
             return regExSpecs;
+        }
+
+        private void LoadColumnMapInfo(string columnMapFilePath)
+        {
+            mOptions.ColumnMapForDataExport.Clear();
+
+            var currentTable = string.Empty;
+            var currentTableColumns = new ColumnMapInfo(string.Empty);
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(columnMapFilePath))
+                {
+                    return;
+                }
+
+                var dataFile = new FileInfo(columnMapFilePath);
+                if (!dataFile.Exists)
+                {
+                    Console.WriteLine();
+                    OnStatusEvent("Column Map File not found");
+                    OnWarningEvent("File not found: " + dataFile.FullName);
+                    return;
+                }
+
+                var headerLineChecked = false;
+
+                using (var dataReader = new StreamReader(new FileStream(dataFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+                {
+                    while (!dataReader.EndOfStream)
+                    {
+                        var dataLine = dataReader.ReadLine();
+                        if (string.IsNullOrWhiteSpace(dataLine))
+                            continue;
+
+                        var lineParts = dataLine.Split('\t');
+
+                        if (!headerLineChecked)
+                        {
+                            if (lineParts[0].Equals("SourceTableName"))
+                                continue;
+
+                            headerLineChecked = true;
+                            continue;
+                        }
+
+                        if (lineParts.Length < 3)
+                        {
+                            OnDebugEvent("Skipping line with fewer than three columns: " + dataLine);
+                            continue;
+                        }
+
+                        var sourceTableName = lineParts[0].Trim();
+                        var sourceColumnName = lineParts[1].Trim();
+                        var targetColumnName = lineParts[2].Trim();
+
+                        if (!currentTable.Equals(sourceTableName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (!mOptions.ColumnMapForDataExport.TryGetValue(sourceTableName, out currentTableColumns))
+                            {
+                                currentTableColumns = new ColumnMapInfo(sourceTableName);
+                                mOptions.ColumnMapForDataExport.Add(sourceTableName, currentTableColumns);
+                            }
+
+                            currentTable = string.Copy(sourceTableName);
+                        }
+
+                        currentTableColumns.AddColumn(sourceColumnName, targetColumnName);
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+                OnErrorEvent("Error in LoadColumnMapInfo", ex);
+            }
+
         }
 
         private List<TableDataExportInfo> LoadTablesForDataExport(string tableDataFilePath)
