@@ -490,6 +490,12 @@ namespace DB_Schema_Export_Tool
                 sql += " limit " + maxRowsToExport;
             }
 
+            if (mOptions.PreviewExport)
+            {
+                OnStatusEvent(string.Format("Preview querying database {0} with {1}", databaseName, sql));
+                return true;
+            }
+
             var tableListCommand = new NpgsqlCommand(sql, mPgConnection);
             using (var reader = tableListCommand.ExecuteReader())
             {
