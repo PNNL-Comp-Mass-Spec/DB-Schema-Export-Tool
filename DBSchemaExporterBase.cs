@@ -59,6 +59,9 @@ namespace DB_Schema_Export_Tool
 
         protected bool mAbortProcessing;
 
+        private readonly Regex mAnyLowerRegex;
+        private readonly Regex mCamelCaseRegex;
+
         protected readonly Regex mColumnCharNonStandardRegEx;
 
         protected readonly Regex mNonStandardOSChars;
@@ -122,6 +125,10 @@ namespace DB_Schema_Export_Tool
             TableNameAutoSelectRegEx = new SortedSet<string>();
 
             var regExOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline;
+
+            mAnyLowerRegex = new Regex("[a-z]", RegexOptions.Compiled | RegexOptions.Singleline);
+
+            mCamelCaseRegex = new Regex("(?<Part1>.+?)(?<Part2Start>[A-Z]+)(?<Part3>.*)", RegexOptions.Compiled | RegexOptions.Singleline);
 
             mColumnCharNonStandardRegEx = new Regex("[^a-z0-9_]", regExOptions);
 
@@ -378,6 +385,10 @@ namespace DB_Schema_Export_Tool
                     }
 
                 }
+                else if (mOptions.TableDataSnakeCase)
+                {
+                    targetColumnName = ConvertNameToSnakeCase(currentColumnName);
+                }
                 else
                 {
                     headerRowValues.Append(currentColumnName);
@@ -392,6 +403,32 @@ namespace DB_Schema_Export_Tool
             }
 
             return columnTypes;
+        }
+
+        private string ConvertNameToSnakeCase(string objectName)
+        {
+            if (!mAnyLowerRegex.IsMatch(objectName))
+            {
+                // objectName contains no lowercase letters; simply change to lowercase and return
+                return objectName.ToLower();
+            }
+
+            var updatedName = string.Copy(objectName);
+
+            while (true)
+            {
+                var match = mCamelCaseRegex.Match(updatedName);
+                if (!match.Success)
+                    break;
+
+                var part1 = match.Groups["Part1"].Value.TrimEnd('_');
+                var part2 = match.Groups["Part2Start"].Value.TrimStart('_');
+                var part3 = match.Groups["Part3"].Value;
+
+                updatedName = part1.ToLower() + "_" + part2.ToLower() + part3;
+            }
+
+            return updatedName.ToLower();
         }
 
         /// <summary>

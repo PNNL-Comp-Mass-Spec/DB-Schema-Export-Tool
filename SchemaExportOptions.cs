@@ -405,7 +405,7 @@ namespace DB_Schema_Export_Tool
                 Console.WriteLine(" {0,-48} {1}", "File with source/target column names:", TableDataColumnMapFile);
             }
 
-            if (!DisableAutoDataExport && !string.IsNullOrWhiteSpace(TableDataToExportFile))
+            if (!DisableAutoDataExport || !string.IsNullOrWhiteSpace(TableDataToExportFile))
             {
                 Console.WriteLine(" {0,-48} {1}", "Convert column names to snake_case:", BoolToEnabledDisabled(TableDataSnakeCase));
             }
