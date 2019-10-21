@@ -1097,9 +1097,15 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var outFilePath = GetFileNameForTableDataExport(targetTableName, targetTableNameWithSchema, workingParams);
+                OnDebugEvent("Writing table data to " + outFilePath);
 
                 using (var writer = new StreamWriter(new FileStream(outFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
                 {
+                    if (mOptions.PgDumpTableData)
+                    {
+                        writer.NewLine = "\n";
+                    }
+
                     foreach (var headerRow in headerRows)
                     {
                         writer.WriteLine(headerRow);
@@ -1154,7 +1160,14 @@ namespace DB_Schema_Export_Tool
 
                 for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
                 {
-                    columnValues[columnIndex] = currentRow[columnIndex];
+                    if (currentRow.IsNull(columnIndex))
+                    {
+                        columnValues[columnIndex] = null;
+                    }
+                    else
+                    {
+                        columnValues[columnIndex] = currentRow[columnIndex];
+                    }
                 }
 
                 ExportDBTableDataRow(writer, colSepChar, delimitedRowValues, columnTypes, columnCount, columnValues);
