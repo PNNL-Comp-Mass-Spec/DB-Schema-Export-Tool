@@ -392,7 +392,7 @@ namespace DB_Schema_Export_Tool
                 {
                     Console.WriteLine(" {0,-48} {1}", "Table data export tool:", "Npgsql");
                 }
-                Console.WriteLine(" {0,-48} {1}", "Table data export tool:", "INSERT INTO statements");
+                Console.WriteLine(" {0,-48} {1}", "Dump table data as:", "INSERT INTO statements");
             }
 
             if (!string.IsNullOrWhiteSpace(TableDataToExportFile))

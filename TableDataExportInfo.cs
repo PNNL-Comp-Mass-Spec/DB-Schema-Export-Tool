@@ -19,7 +19,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="sourceTableName"></param>
+        /// <param name="sourceTableName">Can either be just the table name or SchemaName.TableName</param>
         public TableDataExportInfo(string sourceTableName)
         {
             SourceTableName = sourceTableName;
