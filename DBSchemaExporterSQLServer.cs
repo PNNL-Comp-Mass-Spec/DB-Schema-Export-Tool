@@ -982,7 +982,7 @@ namespace DB_Schema_Export_Tool
                 else
                 {
                     // Table not found in this database
-                    // This is not a critical error, so we return true
+                    // Do not treat this as an error, so return true
                     return true;
                 }
 
@@ -1004,10 +1004,10 @@ namespace DB_Schema_Export_Tool
                 }
 
                 // Export the data from databaseTable, possibly limiting the number of rows to export
-                var sql = "SELECT ";
+                var sql = "SELECT";
                 if (maxRowsToExport > 0)
                 {
-                    sql += "TOP " + maxRowsToExport;
+                    sql += " TOP " + maxRowsToExport;
                 }
 
                 var sourceTableNameWithSchema = string.Format("{0}.{1}",
@@ -1016,14 +1016,26 @@ namespace DB_Schema_Export_Tool
 
                 sql += " * FROM " + sourceTableNameWithSchema;
 
+                if (mOptions.PreviewExport)
+                {
+                    OnStatusEvent(string.Format("Preview querying database {0} with {1}", databaseName, sql));
+                    return true;
+                }
+
                 var queryResults = mCurrentDatabase.ExecuteWithResults(sql);
 
-                var quoteWithSquareBrackets = mOptions.PgDumpTableData;
+                var quoteWithSquareBrackets = !mOptions.PgDumpTableData;
 
-                var targetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo, quoteWithSquareBrackets, out var targetTableName);
+                var targetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo,
+                                                                   quoteWithSquareBrackets, false,
+                                                                   out var targetTableName);
+
+                var quotedTargetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo,
+                                                                   quoteWithSquareBrackets, true,
+                                                                   out var quotedTargetTableName);
 
                 var headerRows = new List<string>();
-                var header = COMMENT_START_TEXT + "Object:  Table " + targetTableNameWithSchema;
+                var header = COMMENT_START_TEXT + "Object:  Table " + quotedTargetTableNameWithSchema;
 
                 if (mOptions.ScriptingOptions.IncludeTimestampInScriptFileHeader)
                 {
@@ -1048,23 +1060,23 @@ namespace DB_Schema_Export_Tool
                     columnInfoByType.Add(new KeyValuePair<string, Type>(currentColumnName, currentColumnType));
                 }
 
-                var columnTypes = ConvertDataTableColumnInfo(columnInfoByType, quoteWithSquareBrackets, out var headerRowValues);
+                var columnTypes = ConvertDataTableColumnInfo(databaseTable.Name, columnInfoByType, quoteWithSquareBrackets, out var headerRowValues);
 
                 var insertIntoLine = string.Empty;
 
                 char colSepChar;
-                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData)
                 {
                     if (identityColumnFound)
                     {
-                        insertIntoLine = string.Format("INSERT INTO {0} ({1}) VALUES (", targetTableNameWithSchema, headerRowValues);
+                        insertIntoLine = string.Format("INSERT INTO {0} ({1}) VALUES (", quotedTargetTableNameWithSchema, headerRowValues);
 
-                        headerRows.Add("SET IDENTITY_INSERT " + targetTableNameWithSchema + " ON");
+                        headerRows.Add("SET IDENTITY_INSERT " + quotedTargetTableNameWithSchema + " ON");
                     }
                     else
                     {
                         // Identity column not present; no need to explicitly list the column names
-                        insertIntoLine = string.Format("INSERT INTO {0} VALUES (", targetTableNameWithSchema);
+                        insertIntoLine = string.Format("INSERT INTO {0} VALUES (", quotedTargetTableNameWithSchema);
 
                         headerRows.Add(COMMENT_START_TEXT + "Columns: " + headerRowValues + COMMENT_END_TEXT);
                     }
@@ -1095,9 +1107,9 @@ namespace DB_Schema_Export_Tool
 
                     ExportDBTableDataWork(writer, queryResults, columnTypes, insertIntoLine, colSepChar);
 
-                    if (identityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+                    if (identityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData)
                     {
-                        writer.WriteLine("SET IDENTITY_INSERT " + targetTableNameWithSchema + " OFF");
+                        writer.WriteLine("SET IDENTITY_INSERT " + quotedTargetTableNameWithSchema + " OFF");
                     }
                 }
 
@@ -1135,7 +1147,7 @@ namespace DB_Schema_Export_Tool
             foreach (DataRow currentRow in queryResults.Tables[0].Rows)
             {
                 delimitedRowValues.Clear();
-                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData)
                 {
                     delimitedRowValues.Append(insertIntoLine);
                 }

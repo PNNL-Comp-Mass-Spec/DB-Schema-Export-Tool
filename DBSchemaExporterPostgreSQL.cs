@@ -497,10 +497,7 @@ namespace DB_Schema_Export_Tool
                 if (!reader.HasRows)
                     return true;
 
-                const bool quoteWithSquareBrackets = false;
-                var targetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo, quoteWithSquareBrackets, out var targetTableName);
-
-                var outFilePath = GetFileNameForTableDataExport(targetTableName, targetTableNameWithSchema, workingParams);
+                var targetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo, out var targetTableName);
 
                 var headerRows = new List<string>();
                 var header = COMMENT_START_TEXT + "Object:  Table " + targetTableNameWithSchema;
@@ -540,7 +537,8 @@ namespace DB_Schema_Export_Tool
                     columnInfoByType.Add(new KeyValuePair<string, Type>(currentColumnName, currentColumnType));
                 }
 
-                var columnTypes = ConvertDataTableColumnInfo(columnInfoByType, quoteWithSquareBrackets, out var headerRowValues);
+                const bool quoteWithSquareBrackets = false;
+                var columnTypes = ConvertDataTableColumnInfo(sourceTableNameWithSchema, columnInfoByType, quoteWithSquareBrackets, out var headerRowValues);
 
                 var insertIntoLine = string.Empty;
                 char colSepChar;
@@ -630,8 +628,7 @@ namespace DB_Schema_Export_Tool
             TableDataExportInfo tableInfo,
             string sourceTableNameWithSchema)
         {
-            const bool quoteWithSquareBrackets = false;
-            var targetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo, quoteWithSquareBrackets, out var targetTableName);
+            var targetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo, out var targetTableName);
 
             var outFilePath = GetFileNameForTableDataExport(targetTableName, targetTableNameWithSchema, workingParams);
             var tableDataOutputFile = new FileInfo(outFilePath);
