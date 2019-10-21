@@ -193,12 +193,10 @@ namespace DB_Schema_Export_Tool
                         {
                             if (candidateTable.SourceTableName.Equals(tableName, StringComparison.OrdinalIgnoreCase) && !userDefinedTableNames.Contains(tableName))
                             {
-                                tablesToExport.Add(new TableDataExportInfo(tableName), DATA_ROW_COUNT_WARNING_THRESHOLD);
+                                tablesToExport.Add(candidateTable, DATA_ROW_COUNT_WARNING_THRESHOLD);
                                 userDefinedTableNames.Add(tableName);
                             }
                         }
-
-
                     }
                 }
 

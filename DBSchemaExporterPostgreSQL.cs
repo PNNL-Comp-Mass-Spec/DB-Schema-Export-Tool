@@ -278,7 +278,7 @@ namespace DB_Schema_Export_Tool
                     tablesToExport = new Dictionary<TableDataExportInfo, long>();
                     foreach (var item in tablesForDataExport)
                     {
-                        tablesToExport.Add(new TableDataExportInfo(item.SourceTableName), 0);
+                        tablesToExport.Add(item, 0);
                     }
 
                 }
