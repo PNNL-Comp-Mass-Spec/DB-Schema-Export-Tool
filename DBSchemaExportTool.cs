@@ -606,13 +606,13 @@ namespace DB_Schema_Export_Tool
         private List<TableDataExportInfo> LoadTablesForDataExport(string tableDataFilePath)
         {
             var tableNames = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
-            var tableInfo = new List<TableDataExportInfo>();
+            var tablesForDataExport = new List<TableDataExportInfo>();
 
             try
             {
                 if (string.IsNullOrWhiteSpace(tableDataFilePath))
                 {
-                    return tableInfo;
+                    return tablesForDataExport;
                 }
 
                 var dataFile = new FileInfo(tableDataFilePath);
@@ -621,21 +621,58 @@ namespace DB_Schema_Export_Tool
                     Console.WriteLine();
                     OnStatusEvent("Table Data File not found; default tables will be used");
                     OnWarningEvent("File not found: " + dataFile.FullName);
-                    return tableInfo;
+                    return tablesForDataExport;
                 }
+
+                var headerLineChecked = false;
 
                 using (var dataReader = new StreamReader(new FileStream(dataFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
                 {
                     while (!dataReader.EndOfStream)
                     {
                         var dataLine = dataReader.ReadLine();
-                        if (string.IsNullOrWhiteSpace(dataLine)) continue;
+                        if (string.IsNullOrWhiteSpace(dataLine))
+                            continue;
 
-                        var trimmedName = dataLine.Trim();
-                        if (!tableNames.Contains(trimmedName))
+                        var lineParts = dataLine.Split('\t');
+
+                        if (!headerLineChecked)
                         {
-                            tableNames.Add(trimmedName);
-                            tableInfo.Add(new TableDataExportInfo(trimmedName));
+                            if (lineParts[0].Equals("SourceTableName"))
+                                continue;
+
+                            headerLineChecked = true;
+                            continue;
+                        }
+
+                        var sourceTableName = lineParts[0].Trim();
+
+                        var tableInfo = new TableDataExportInfo(sourceTableName);
+
+                        if (lineParts.Length == 2)
+                        {
+                            tableInfo.TargetTableName = lineParts[1].Trim();
+                        }
+                        else if (lineParts.Length >= 3)
+                        {
+                            tableInfo.TargetSchemaName = lineParts[1].Trim();
+                            tableInfo.TargetTableName = lineParts[2].Trim();
+                        }
+
+                        if (lineParts.Length >= 4)
+                        {
+                            if (bool.TryParse(lineParts[3].Trim(), out var parsedValue))
+                                tableInfo.UseMergeStatement = parsedValue;
+                            else if (int.TryParse(lineParts[3].Trim(), out var parsedNumber))
+                            {
+                                tableInfo.UseMergeStatement = parsedNumber > 0;
+                            }
+                        }
+
+                        if (!tableNames.Contains(sourceTableName))
+                        {
+                            tableNames.Add(sourceTableName);
+                            tablesForDataExport.Add(tableInfo);
                         }
 
                     }
@@ -646,7 +683,7 @@ namespace DB_Schema_Export_Tool
                 OnErrorEvent("Error in LoadTablesForDataExport", ex);
             }
 
-            return tableInfo;
+            return tablesForDataExport;
         }
 
         protected new void OnErrorEvent(string message)
