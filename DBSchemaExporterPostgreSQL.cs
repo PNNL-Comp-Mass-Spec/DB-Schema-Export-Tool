@@ -1100,6 +1100,17 @@ namespace DB_Schema_Export_Tool
             return databaseNames;
         }
 
+        private string GetTargetTableName(string sourceTableNameWithSchema, TableDataExportInfo tableInfo, out string targetTableName)
+        {
+            const bool quoteWithSquareBrackets = false;
+            const bool alwaysQuoteNames = false;
+
+            var targetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo,
+                                                               quoteWithSquareBrackets, alwaysQuoteNames,
+                                                               out targetTableName);
+            return targetTableNameWithSchema;
+        }
+
         /// <summary>
         /// Login to the server
         /// </summary>

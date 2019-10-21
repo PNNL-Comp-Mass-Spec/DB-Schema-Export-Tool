@@ -684,6 +684,7 @@ namespace DB_Schema_Export_Tool
             string sourceTableNameAndSchema,
             TableDataExportInfo tableInfo,
             bool quoteWithSquareBrackets,
+            bool alwaysQuoteNames,
             out string targetTableName)
         {
             string targetTableSchema;
@@ -714,14 +715,16 @@ namespace DB_Schema_Export_Tool
                 targetTableName = tableInfo.TargetTableName;
             }
 
-            if (string.IsNullOrWhiteSpace(targetTableSchema))
+            if (string.IsNullOrWhiteSpace(targetTableSchema) ||
+                targetTableSchema.Equals("dbo", StringComparison.OrdinalIgnoreCase) ||
+                targetTableSchema.Equals("public", StringComparison.OrdinalIgnoreCase))
             {
-                return PossiblyQuoteName(targetTableName, quoteWithSquareBrackets);
+                return PossiblyQuoteName(targetTableName, quoteWithSquareBrackets, alwaysQuoteNames);
             }
 
             return string.Format("{0}.{1}",
-                                 PossiblyQuoteName(targetTableSchema, quoteWithSquareBrackets),
-                                 PossiblyQuoteName(targetTableName, quoteWithSquareBrackets));
+                                 PossiblyQuoteName(targetTableSchema, quoteWithSquareBrackets, alwaysQuoteNames),
+                                 PossiblyQuoteName(targetTableName, quoteWithSquareBrackets, alwaysQuoteNames));
 
         }
 
@@ -768,10 +771,11 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="objectName"></param>
         /// <param name="quoteWithSquareBrackets"></param>
+        /// <param name="alwaysQuoteNames"></param>
         /// <returns></returns>
-        protected string PossiblyQuoteName(string objectName, bool quoteWithSquareBrackets)
+        protected string PossiblyQuoteName(string objectName, bool quoteWithSquareBrackets, bool alwaysQuoteNames = false)
         {
-            if (!mColumnCharNonStandardRegEx.Match(objectName).Success)
+            if (!alwaysQuoteNames && !mColumnCharNonStandardRegEx.Match(objectName).Success)
                 return objectName;
 
             if (quoteWithSquareBrackets)
