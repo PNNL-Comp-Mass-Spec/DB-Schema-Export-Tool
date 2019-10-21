@@ -40,11 +40,12 @@ namespace DB_Schema_Export_Tool
 
         public string GetTargetColumnName(string sourceColumnName)
         {
-            if (!mColumnNameMap.TryGetValue(sourceColumnName, out var targetColumnName))
-                return sourceColumnName;
+            return mColumnNameMap.TryGetValue(sourceColumnName, out var targetColumnName) ? targetColumnName : sourceColumnName;
+        }
 
-            return targetColumnName;
-
+        public bool IsColumnDefined(string sourceColumnName)
+        {
+            return mColumnNameMap.ContainsKey(sourceColumnName);
         }
     }
 }
