@@ -79,7 +79,7 @@ By default, a subdirectory named DBSchema__DatabaseName will be created below `S
 * Customize this prefix text using `/DirectoryPrefix`
 
 Use `/NoSubdirectory` to disable auto creating a subdirectory for the database being exported. 
-* Note: subsirectories will always be created if you use `/DBList` and specify more than one database
+* Note: subdirectories will always be created if you use `/DBList` and specify more than one database
 
 Use `/Data` or `/DataTables` to define a text file with table names (one name per line) for which the data 
 should be exported. In addition to table names defined in `/Data`, there are default tables 
@@ -118,8 +118,8 @@ Use `/SnakeCase`/ to auto change column names from Upper_Case and UpperCase to l
 
 Use `/PgDump` or `/PgDumpData` to specify that exported data should use `COPY` commands instead of `INSERT INTO` statements
 * With SQL Server databases, table data will be exported using pg_dump compatible COPY commands when `/PgDump` is used
-* With PostgreSQL data, table data will be exported using pg_dump
-* With SQL Server data and PostgreSQL data, if `/PgDump` is not proivded, data is exported with `INSERT INTO` statements
+* With PostgreSQL data, table data will be exported using the pg_dump application
+* With SQL Server data and PostgreSQL data, if `/PgDump` is not provided, data is exported with `INSERT INTO` statements
 
 Use `/ServerInfo` to export server settings, logins, and SQL Server Agent jobs
 
