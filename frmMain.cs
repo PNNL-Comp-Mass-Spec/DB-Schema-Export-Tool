@@ -235,11 +235,11 @@ namespace DB_Schema_Export_Tool
                         matchedTableItem = item.Key;
 
                         var tableRowCount = item.Value;
-                        if (tableRowCount >= DBSchemaExporterBase.DATA_ROW_COUNT_WARNING_THRESHOLD)
+                        if (tableRowCount >= DBSchemaExporterBase.MAX_ROWS_DATA_TO_EXPORT)
                         {
                             var msg = string.Format("Warning, table {0} has {1} rows. Are you sure you want to export data from it?",
                                                     tableName, tableRowCount);
-                            var caption = "Row Count Over " + DBSchemaExporterBase.DATA_ROW_COUNT_WARNING_THRESHOLD;
+                            var caption = "Row Count Over " + DBSchemaExporterBase.MAX_ROWS_DATA_TO_EXPORT;
 
                             var eResponse = MessageBox.Show(msg, caption, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question,
                                                             MessageBoxDefaultButton.Button2);
