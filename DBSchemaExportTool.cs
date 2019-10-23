@@ -959,8 +959,8 @@ namespace DB_Schema_Export_Tool
         }
 
         private bool ScriptServerAndDBObjectsWork(
-            List<string> databaseList,
-            List<TableDataExportInfo> tablesForDataExport)
+            IReadOnlyList<string> databaseList,
+            IReadOnlyList<TableDataExportInfo> tablesForDataExport)
         {
             var success = mDBSchemaExporter.ScriptServerAndDBObjects(databaseList, tablesForDataExport);
             return success;

@@ -106,7 +106,7 @@ namespace DB_Schema_Export_Tool
         /// <returns>Dictionary where keys are table names and values are the maximum number of rows to export</returns>
         private Dictionary<TableDataExportInfo, long> AutoSelectTablesForDataExport(
             string databaseName,
-            IEnumerable<TableDataExportInfo> tablesForDataExport,
+            IReadOnlyList<TableDataExportInfo> tablesForDataExport,
             out bool databaseNotFound)
         {
             if (!mCachedDatabaseTableInfo.ContainsKey(databaseName))
@@ -249,7 +249,7 @@ namespace DB_Schema_Export_Tool
         /// <returns>True if successful, false if an error</returns>
         protected override bool ExportDBObjectsAndTableData(
             string databaseName,
-            List<TableDataExportInfo> tablesForDataExport,
+            IReadOnlyList<TableDataExportInfo> tablesForDataExport,
             out bool databaseNotFound)
         {
             var workingParams = new WorkingParams();

@@ -119,7 +119,7 @@ namespace DB_Schema_Export_Tool
         /// <returns>Dictionary where keys are table names and values are the maximum number of rows to export</returns>
         private Dictionary<TableDataExportInfo, long> AutoSelectTablesForDataExport(
             Database currentDatabase,
-            IEnumerable<TableDataExportInfo> tablesForDataExport)
+            IReadOnlyList<TableDataExportInfo> tablesForDataExport)
         {
             var dtTables = currentDatabase.EnumObjects(DatabaseObjectTypes.Table, SortOrder.Name);
             var tablesInDatabase = (from DataRow item in dtTables.Rows select new TableDataExportInfo(item["Name"].ToString())).ToList();
@@ -300,7 +300,7 @@ namespace DB_Schema_Export_Tool
         /// <returns>True if successful, false if an error</returns>
         protected override bool ExportDBObjectsAndTableData(
             string databaseName,
-            List<TableDataExportInfo> tablesForDataExport,
+            IReadOnlyList<TableDataExportInfo> tablesForDataExport,
             out bool databaseNotFound)
         {
             return ExportDBObjectsUsingSMO(mSqlServer, databaseName, tablesForDataExport, out databaseNotFound);
@@ -318,7 +318,7 @@ namespace DB_Schema_Export_Tool
         private bool ExportDBObjectsUsingSMO(
             Server sqlServer,
             string databaseName,
-            IReadOnlyCollection<TableDataExportInfo> tablesForDataExport,
+            IReadOnlyList<TableDataExportInfo> tablesForDataExport,
             out bool databaseNotFound)
         {
             var workingParams = new WorkingParams();

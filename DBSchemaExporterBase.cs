@@ -157,8 +157,8 @@ namespace DB_Schema_Export_Tool
         /// <param name="tablesForDataExport">Tables that should be auto-selected; also used to track tables that should be skipped if the TargetTableName is &lt;skip&gt;</param>
         /// <returns>Dictionary where keys are table names and values are the maximum number of rows to export</returns>
         protected Dictionary<TableDataExportInfo, long> AutoSelectTablesForDataExport(
-            List<TableDataExportInfo> tablesInDatabase,
-            IEnumerable<TableDataExportInfo> tablesForDataExport)
+            IReadOnlyList<TableDataExportInfo> tablesInDatabase,
+            IReadOnlyList<TableDataExportInfo> tablesForDataExport)
         {
             try
             {
@@ -506,7 +506,7 @@ namespace DB_Schema_Export_Tool
         /// <returns>True if successful, false if an error</returns>
         protected abstract bool ExportDBObjectsAndTableData(
             string databaseName,
-            List<TableDataExportInfo> tablesForDataExport,
+            IReadOnlyList<TableDataExportInfo> tablesForDataExport,
             out bool databaseNotFound);
 
         /// <summary>
@@ -948,7 +948,7 @@ namespace DB_Schema_Export_Tool
         /// <returns></returns>
         protected bool ScriptDBObjectsAndData(
             IReadOnlyCollection<string> databaseListToProcess,
-            List<TableDataExportInfo> tablesForDataExport)
+            IReadOnlyList<TableDataExportInfo> tablesForDataExport)
         {
             var processedDBList = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -1055,8 +1055,8 @@ namespace DB_Schema_Export_Tool
         /// <param name="tablesForDataExport">Table names for which data should be exported</param>
         /// <returns>True if success, false if a problem</returns>
         public bool ScriptServerAndDBObjects(
-            List<string> databaseList,
-            List<TableDataExportInfo> tablesForDataExport)
+            IReadOnlyList<string> databaseList,
+            IReadOnlyList<TableDataExportInfo> tablesForDataExport)
         {
             var validated = ValidateOptionsToScriptServerAndDBObjects(databaseList);
             if (!validated)
@@ -1192,7 +1192,7 @@ namespace DB_Schema_Export_Tool
 
         }
 
-        protected bool ValidateOptionsToScriptServerAndDBObjects(List<string> databaseList)
+        protected bool ValidateOptionsToScriptServerAndDBObjects(IReadOnlyList<string> databaseList)
         {
             InitializeLocalVariables(true);
 
