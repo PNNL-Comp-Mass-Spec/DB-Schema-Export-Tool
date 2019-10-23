@@ -137,7 +137,6 @@ namespace DB_Schema_Export_Tool
 
         }
 
-
         private static void Processor_DebugEvent(string message)
         {
             ConsoleMsgUtils.ShowDebug(message);

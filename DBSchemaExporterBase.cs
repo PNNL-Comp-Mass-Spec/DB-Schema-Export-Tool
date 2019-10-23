@@ -154,7 +154,7 @@ namespace DB_Schema_Export_Tool
         /// Determines the table names for which data will be exported
         /// </summary>
         /// <param name="tablesInDatabase">Tables in the database</param>
-        /// <param name="tablesForDataExport">Table that should be auto-selected</param>
+        /// <param name="tablesForDataExport">Tables that should be auto-selected; also used to track tables that should be skipped if the TargetTableName is &lt;skip&gt;</param>
         /// <returns>Dictionary where keys are table names and values are the maximum number of rows to export</returns>
         protected Dictionary<TableDataExportInfo, long> AutoSelectTablesForDataExport(
             List<TableDataExportInfo> tablesInDatabase,
@@ -1135,6 +1135,23 @@ namespace DB_Schema_Export_Tool
         {
             PauseStatus = newPauseStatus;
             OnPauseStatusChange();
+        }
+
+        private bool SkipTableForDataExport(IReadOnlyCollection<TableDataExportInfo> tablesForDataExport, string candidateTableSourceTableName)
+        {
+            if (tablesForDataExport == null)
+                return false;
+
+            foreach (var item in tablesForDataExport)
+            {
+                if (!item.SourceTableName.Equals(candidateTableSourceTableName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (item.TargetTableName.Equals("<skip>", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
         }
 
         public void StoreTableNameAutoSelectRegEx(SortedSet<string> tableNameRegExSpecs)

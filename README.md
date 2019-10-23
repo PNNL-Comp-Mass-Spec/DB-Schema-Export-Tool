@@ -85,11 +85,14 @@ Use `/Data` or `/DataTables` to define a text file with table names (one name pe
 should be exported. In addition to table names defined in `/Data`, there are default tables 
 which will have their data exported; disable the defaults using `/NoAutoData`
 * Also supports a multi-column, tab-delimited format
+** Put `<Skip>` in the TargetTableName column to indicate that the table should not be included when using `/ExportAllData`
+* File format
 | SourceTableName  | TargetSchemaName | TargetTableName  | UseMergeStatement |
 |------------------|------------------|------------------|-------------------|
 | T_Log_Entries    | public           | t_log_entries    | false             |
 | T_Job_Events     | cap              | t_job_Events     | false             |
 | T_Job_State_Name \ cap              | t_job_state_name | true              |
+| x_T_MgrState     | public           |<skip>            |                   |
 
 Use `/Map` or `/ColumnMap` to define a tab-delimited text file mapping source column names to target column names, by table; 
 supports a `<Skip>` flag to indicate that a source column should not be included in the output file
