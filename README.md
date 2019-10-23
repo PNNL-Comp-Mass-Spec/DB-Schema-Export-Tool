@@ -101,7 +101,10 @@ supports a `<Skip>` flag to indicate that a source column should not be included
 | T_Analysis_Job   | AJ_start         | start            |
 | T_Analysis_Job   | AJ_finish        | finish           |
 
-Use `/ExportAllData` or `ExportAllTables` to export data from every table in the database
+Use `/DefaultSchema` to define the default schema name for exported tables and data
+* Entries in the `/DataTables` file will override this default schema
+
+Use `/ExportAllData` or `/ExportAllTables` to export data from every table in the database
 
 Use `/MaxRows` to define the maximum number of data rows to export
 * Defaults to 1000

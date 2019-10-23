@@ -269,7 +269,7 @@ namespace DB_Schema_Export_Tool
 
             try
             {
-                if (mOptions.ScriptingOptions.AutoSelectTablesForDataExport)
+                if (mOptions.ScriptingOptions.AutoSelectTablesForDataExport || mOptions.ExportAllData)
                 {
                     tablesToExport = AutoSelectTablesForDataExport(databaseName, tablesForDataExport, out databaseNotFound);
                 }

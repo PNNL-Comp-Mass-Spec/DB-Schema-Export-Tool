@@ -169,10 +169,30 @@ namespace DB_Schema_Export_Tool
 
                 var maxRowsToExportPerTable = mOptions.MaxRows;
 
+                if (mOptions.ExportAllData)
+                {
+                    // Export data from every table in the database
+                    // Skip any tables in tablesForDataExport where the TargetTableName is <skip>
+                    foreach (var candidateTable in tablesInDatabase)
+                    {
+                        if (candidateTable.SourceTableName.Equals("sysdiagrams") ||
+                            candidateTable.SourceTableName.Equals("dtproperties"))
+                        {
+                            continue;
+                        }
+
+                        if (SkipTableForDataExport(tablesForDataExport, candidateTable.SourceTableName))
+                            continue;
+
+                        tablesToExport.Add(candidateTable, maxRowsToExportPerTable);
+                    }
+
+                    return tablesToExport;
+                }
+
                 var userDefinedTableNames = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 // Copy the table names from tablesForDataExport to tablesToExport
-                // Store 0 for the hash value since we want to export all of the data rows from the tables in tablesForDataExport
                 // Simultaneously, populate intMaximumDataRowsToExport
                 if (tablesForDataExport != null)
                 {

@@ -15,7 +15,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "October 17, 2019";
+        public const string PROGRAM_DATE = "October 21, 2019";
 
         public const string DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX = "DBSchema__";
 
@@ -23,7 +23,7 @@ namespace DB_Schema_Export_Tool
 
         #endregion
 
-        #region "Classwide Variables"
+        #region "Properties"
 
         /// <summary>
         /// Column name mapping
@@ -49,7 +49,7 @@ namespace DB_Schema_Export_Tool
 
         #endregion
 
-        #region "Properties"
+        #region "Command Line Argument Properties "
 
         [Option("O", ArgPosition = 1, Required = true, HelpShowsDefault = false, HelpText = "Directory to save the schema files")]
         public string OutputDirectoryPath { get; set; }
@@ -187,7 +187,7 @@ namespace DB_Schema_Export_Tool
                        "Disable the defaults using /NoAutoData")]
         public bool DisableAutoDataExport { get; set; }
 
-        [Option("ExportAllData", "ExportAllTables", HelpShowsDefault = false,
+        [Option("ExportAllData", "ExportAllTables", "AllData", HelpShowsDefault = false,
             HelpText = "Export data from every table in the database")]
         public bool ExportAllData { get; set; }
 
@@ -431,16 +431,25 @@ namespace DB_Schema_Export_Tool
                 Console.WriteLine(" {0,-48} {1}", "File with source/target column names:", TableDataColumnMapFile);
             }
 
-            if (!DisableAutoDataExport || !string.IsNullOrWhiteSpace(TableDataToExportFile))
             if (!string.IsNullOrWhiteSpace(DefaultSchemaName))
             {
                 Console.WriteLine(" {0,-48} {1}", "Default schema for exported tables and data:", DefaultSchemaName);
             }
+
+            if (!DisableAutoDataExport || !string.IsNullOrWhiteSpace(TableDataToExportFile) || ExportAllData)
             {
-                Console.WriteLine(" {0,-48} {1}", "Convert column names to snake_case:", BoolToEnabledDisabled(TableDataSnakeCase));
+                Console.WriteLine(" {0,-48} {1}", "Convert table and column names to snake_case:", BoolToEnabledDisabled(TableDataSnakeCase));
             }
 
-            Console.WriteLine(" {0,-48} {1}", "Data export from standard tables:", BoolToEnabledDisabled(!DisableAutoDataExport));
+            if (ExportAllData)
+            {
+                Console.WriteLine(" {0,-48} {1}", "Data export from all tables:", BoolToEnabledDisabled(ExportAllData));
+            }
+            else
+            {
+                Console.WriteLine(" {0,-48} {1}", "Data export from standard tables:", BoolToEnabledDisabled(!DisableAutoDataExport));
+            }
+
             if (MaxRowsToExport == null)
             {
                 if (ExportAllData)
