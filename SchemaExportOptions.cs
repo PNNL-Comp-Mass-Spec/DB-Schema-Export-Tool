@@ -178,6 +178,10 @@ namespace DB_Schema_Export_Tool
                        "The TargetColumn supports <Skip> for not including the given column in the output file")]
         public string TableDataColumnMapFile { get; set; }
 
+        [Option("DefaultSchema", "Schema", HelpShowsDefault = false,
+            HelpText = "Default schema for exported tables and data. If undefined, use the original table's schema")]
+        public string DefaultSchemaName { get; set; }
+
         [Option("NoAutoData", HelpShowsDefault = false,
             HelpText = "In addition to table names defined in /Data, there are default tables which will have their data exported. " +
                        "Disable the defaults using /NoAutoData")]
@@ -428,6 +432,10 @@ namespace DB_Schema_Export_Tool
             }
 
             if (!DisableAutoDataExport || !string.IsNullOrWhiteSpace(TableDataToExportFile))
+            if (!string.IsNullOrWhiteSpace(DefaultSchemaName))
+            {
+                Console.WriteLine(" {0,-48} {1}", "Default schema for exported tables and data:", DefaultSchemaName);
+            }
             {
                 Console.WriteLine(" {0,-48} {1}", "Convert column names to snake_case:", BoolToEnabledDisabled(TableDataSnakeCase));
             }

@@ -768,21 +768,33 @@ namespace DB_Schema_Export_Tool
             {
                 var periodIndex = sourceTableNameAndSchema.IndexOf('.');
 
+                var defaultSchemaName = mOptions.DefaultSchemaName ?? string.Empty;
+
                 if (periodIndex == 0 && periodIndex < sourceTableNameAndSchema.Length - 1)
                 {
-                    targetTableSchema = string.Empty;
+                    targetTableSchema = defaultSchemaName;
                     targetTableName = sourceTableNameAndSchema.Substring(2);
                 }
                 else if (periodIndex > 0 && periodIndex < sourceTableNameAndSchema.Length - 1)
                 {
-                    targetTableSchema = sourceTableNameAndSchema.Substring(0, periodIndex);
+                    if (string.IsNullOrWhiteSpace(defaultSchemaName))
+                        targetTableSchema = sourceTableNameAndSchema.Substring(0, periodIndex);
+                    else
+                        targetTableSchema = defaultSchemaName;
+
                     targetTableName = sourceTableNameAndSchema.Substring(periodIndex + 1);
                 }
                 else
                 {
-                    targetTableSchema = string.Empty;
+                    targetTableSchema = defaultSchemaName;
                     targetTableName = sourceTableNameAndSchema;
                 }
+
+                if (mOptions.TableDataSnakeCase)
+                {
+                    targetTableName = ConvertNameToSnakeCase(targetTableName);
+                }
+
             }
             else
             {
