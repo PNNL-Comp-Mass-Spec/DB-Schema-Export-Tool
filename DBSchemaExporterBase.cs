@@ -16,7 +16,7 @@ namespace DB_Schema_Export_Tool
 
         // Note: this value defines the maximum number of data rows that will be exported
         // from tables that are auto-added to the table list for data export
-        public const int DATA_ROW_COUNT_WARNING_THRESHOLD = 1000;
+        public const int MAX_ROWS_DATA_TO_EXPORT = 1000;
 
         public const string COMMENT_START_TEXT = "/****** ";
         public const string COMMENT_END_TEXT = " ******/";
@@ -166,6 +166,9 @@ namespace DB_Schema_Export_Tool
 
                 // Tracks the table names and maximum number of data rows to export (0 means all rows)
                 var tablesToExport = new Dictionary<TableDataExportInfo, long>();
+
+                var maxRowsToExportPerTable = mOptions.MaxRows;
+
                 var userDefinedTableNames = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 // Copy the table names from tablesForDataExport to tablesToExport
@@ -175,14 +178,13 @@ namespace DB_Schema_Export_Tool
                 {
                     foreach (var item in tablesForDataExport)
                     {
-                        tablesToExport.Add(item, 0);
+                        tablesToExport.Add(item, maxRowsToExportPerTable);
 
                         if (!userDefinedTableNames.Contains(item.SourceTableName))
                         {
                             userDefinedTableNames.Add(item.SourceTableName);
                         }
                     }
-
                 }
 
                 // Copy the table names from mTableNamesToAutoSelect to tablesToExport (if not yet present)
@@ -194,7 +196,7 @@ namespace DB_Schema_Export_Tool
                         {
                             if (candidateTable.SourceTableName.Equals(tableName, StringComparison.OrdinalIgnoreCase) && !userDefinedTableNames.Contains(tableName))
                             {
-                                tablesToExport.Add(candidateTable, DATA_ROW_COUNT_WARNING_THRESHOLD);
+                                tablesToExport.Add(candidateTable, maxRowsToExportPerTable);
                                 userDefinedTableNames.Add(tableName);
                             }
                         }
@@ -219,7 +221,7 @@ namespace DB_Schema_Export_Tool
 
                     if (!userDefinedTableNames.Contains(candidateTable.SourceTableName))
                     {
-                        tablesToExport.Add(candidateTable, DATA_ROW_COUNT_WARNING_THRESHOLD);
+                        tablesToExport.Add(candidateTable, maxRowsToExportPerTable);
                         userDefinedTableNames.Add(candidateTable.SourceTableName);
                     }
                 }

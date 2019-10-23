@@ -37,6 +37,12 @@ namespace DB_Schema_Export_Tool
         public SortedSet<string> DatabasesToProcess { get; }
 
         /// <summary>
+        /// Maximum rows of data to export
+        /// </summary>
+        /// <remarks>When null, default to 1000 rows, unless ExportAllData is true, then default to 0</remarks>
+        public int? MaxRowsToExport { get; private set; }
+
+        /// <summary>
         /// Options defining what to script
         /// </summary>
         public DatabaseScriptingOptions ScriptingOptions { get; }
@@ -180,6 +186,22 @@ namespace DB_Schema_Export_Tool
         [Option("ExportAllData", "ExportAllTables", HelpShowsDefault = false,
             HelpText = "Export data from every table in the database")]
         public bool ExportAllData { get; set; }
+
+        [Option("MaxRows", HelpShowsDefault = false,
+            HelpText = "Maximum number of rows of data to export; defaults to 1000")]
+        public int MaxRows
+        {
+            get
+            {
+                if (ExportAllData)
+                {
+                    return MaxRowsToExport ?? 0;
+                }
+
+                return MaxRowsToExport ?? DBSchemaExporterBase.MAX_ROWS_DATA_TO_EXPORT;
+            }
+            set => MaxRowsToExport = value;
+        }
 
         [Option("SnakeCase", HelpShowsDefault = false,
             HelpText = "Auto changes column names from Upper_Case and UpperCase to lower_case")]
@@ -411,6 +433,21 @@ namespace DB_Schema_Export_Tool
             }
 
             Console.WriteLine(" {0,-48} {1}", "Data export from standard tables:", BoolToEnabledDisabled(!DisableAutoDataExport));
+            if (MaxRowsToExport == null)
+            {
+                if (ExportAllData)
+                {
+                    Console.WriteLine(" {0,-48} {1}", "Maximum rows to export, per table:", "Export all rows");
+                }
+                else
+                {
+                    Console.WriteLine(" {0,-48} {1}", "Maximum rows to export, per table:", MaxRows);
+                }
+            }
+            else
+            {
+                Console.WriteLine(" {0,-48} {1}", "Maximum rows to export, per table:", MaxRows);
+            }
 
             if (NoSchema)
             {

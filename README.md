@@ -46,8 +46,10 @@ DB_Schema_Export_Tool.exe
  [/DBUser:username] [/DBPass:username]
  [/PgUser:username] [/PgPass:password] [/PgPort:5432]
  [/DirectoryPrefix:PrefixText] [/NoSubdirectory]
- [/Data:TableDataToExport.txt] [/Map:ColumnMapping.txt] 
- [/NoAutoData] [/ExportAllData] [/SnakeCase] [/PgDump]
+ [/Data:TableDataToExport.txt] [/Map:ColumnMapping.txt]
+ [/DefaultSchema:SchemaName]
+ [/NoAutoData] [/ExportAllData] [/MaxRows:1000]
+ [/SnakeCase] [/PgDump]
  [/ServerInfo] [/NoSchema]
  [/Sync:TargetDirectoryPath] [/Git] [/Svn] [/Hg] [/Commit]
  [/L[:LogFilePath]] [/LogDir:LogDirectoryPath] [/Preview] [/Stats]
@@ -100,6 +102,11 @@ supports a `<Skip>` flag to indicate that a source column should not be included
 | T_Analysis_Job   | AJ_finish        | finish           |
 
 Use `/ExportAllData` or `ExportAllTables` to export data from every table in the database
+
+Use `/MaxRows` to define the maximum number of data rows to export
+* Defaults to 1000
+* Use 0 to export all rows
+* If you use `/ExportAllData` but do not specify `/MaxRows`, the program will auto set `/MaxRows` to 0
 
 Use `/SnakeCase`/ to auto change column names from Upper_Case and UpperCase to lower_case
 
