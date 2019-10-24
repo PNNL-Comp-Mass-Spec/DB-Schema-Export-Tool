@@ -55,7 +55,7 @@ DB_Schema_Export_Tool.exe
  [/L[:LogFilePath]] [/LogDir:LogDirectoryPath] [/Preview] [/Stats]
 ```
 
-SchemaFileDirectory is the path to the directory where the schema files will be saved
+1SchemaFileDirectory1 is the path to the directory where the schema files will be saved
 
 To process a single database, use `/Server` and `/DB`
 
@@ -85,26 +85,60 @@ Use `/Data` or `/DataTables` to define a text file with table names (one name pe
 should be exported. In addition to table names defined in `/Data`, there are default tables 
 which will have their data exported; disable the defaults using `/NoAutoData`
 * Also supports a multi-column, tab-delimited format
-** Put `<Skip>` in the TargetTableName column to indicate that the table should not be included when using `/ExportAllData`
+  * Put `<Skip>` in the TargetTableName column to indicate that the table should not be included when using `/ExportAllData`
 * File format
-| SourceTableName  | TargetSchemaName | TargetTableName  | UseMergeStatement |
-|------------------|------------------|------------------|-------------------|
-| T_Log_Entries    | public           | t_log_entries    | false             |
-| T_Job_Events     | cap              | t_job_Events     | false             |
-| T_Job_State_Name \ cap              | t_job_state_name | true              |
-| x_T_MgrState     | public           |<skip>            |                   |
 
-Use `/Map` or `/ColumnMap` to define a tab-delimited text file mapping source column names to target column names, by table; 
-supports a `<Skip>` flag to indicate that a source column should not be included in the output file
-* If /SnakeCase is used to auto-change column names, mappings in this file will override the snake case auto-conversion
+| SourceTableName  | TargetSchemaName | TargetTableName  | PgInsert  | KeyColumn(s)  |
+|------------------|------------------|------------------|-----------|---------------|
+| T_Log_Entries    | public           | t_log_entries    | false     |               |
+| T_Job_Events     | cap              | t_job_Events     | false     |               |
+| T_Job_State_Name | cap              | t_job_state_name | true      | job           |
+| T_Users          | public           | t_users          | true      | user_id       |
+| x_T_MgrState     | public           | `<skip>`         |           |               |
+
+Tables with `PgInsert` set to true will have data insert commands formatted as PostgreSQL compatible 
+`INSERT INTO` statements using the `ON CONFLICT (key_column) DO UPDATE SET` syntax
+* This is only applicable when exporting data from SQL Server
+* Use the `KeyColumn(s)` column to specify the primary key (or pair of unique keys) used for determining a conflict
+  * Any columns that are not key columns will be updated when a conflict is found
+  * If `PgInsert` is true, but the `KeyColumn(s)` column is empty, the program will look for an identity column on the source table
+* Example generated SQL:
+
+```PLpgSQL
+INSERT INTO mc.t_mgr_types (mt_type_id, mt_type_name, mt_active)
+OVERRIDING SYSTEM VALUE
+VALUES 
+  (1, 'Analysis', 1),
+  (2, 'Archive', 0),
+  (3, 'Archive Verify', 0),
+  (4, 'Capture', 1),
+  (5, 'Space', 1),
+  (6, 'Data Import', 1)
+ON CONFLICT (mt_type_id) 
+DO UPDATE SET 
+  mt_type_name = EXCLUDED.mt_type_name,
+  mt_active = EXCLUDED.mt_active;
+    
+-- Set the sequence's current value to the maximum current ID
+SELECT setval('mc.t_mgr_types_mt_type_id_seq', (SELECT MAX(mt_type_id) FROM mc.t_mgr_types));
+
+-- View the current ID for the sequence
+SELECT currval('mc.t_mgr_types_mt_type_id_seq');
+```
+
+Use `/Map` or `/ColumnMap` to define a tab-delimited text file mapping source column names to target column names, by table
+* Use keyword `<Skip>` in the `TargetColumnName` column to indicate that a source column should not be included in the output file
+* If `/SnakeCase` is used to auto-change column names, mappings in this file will override the snake case auto-conversion
 * File format:
+
 | SourceTableName  | SourceColumnName | TargetColumnName |
 |------------------|------------------|------------------|
 | T_Analysis_Job   | AJ_jobID         | job              |
 | T_Analysis_Job   | AJ_start         | start            |
 | T_Analysis_Job   | AJ_finish        | finish           |
+| t_users	       | name_with_prn	  | `<skip>`         |
 
-Use `/DefaultSchema` to define the default schema name for exported tables and data
+Use `/DefaultSchema` to define the default schema name to use when exporting data from tables
 * Entries in the `/DataTables` file will override this default schema
 
 Use `/ExportAllData` or `/ExportAllTables` to export data from every table in the database
@@ -114,12 +148,15 @@ Use `/MaxRows` to define the maximum number of data rows to export
 * Use 0 to export all rows
 * If you use `/ExportAllData` but do not specify `/MaxRows`, the program will auto set `/MaxRows` to 0
 
-Use `/SnakeCase`/ to auto change column names from Upper_Case and UpperCase to lower_case
+Use `/SnakeCase` to auto change column names from Upper_Case and UpperCase to lower_case when exporting data from tables
+* Also used for table names when exporting data from tables
+* Entries in the `/DataTables` and `/ColumnMap` files will override auto-generated snake_case names
 
 Use `/PgDump` or `/PgDumpData` to specify that exported data should use `COPY` commands instead of `INSERT INTO` statements
 * With SQL Server databases, table data will be exported using pg_dump compatible COPY commands when `/PgDump` is used
 * With PostgreSQL data, table data will be exported using the pg_dump application
 * With SQL Server data and PostgreSQL data, if `/PgDump` is not provided, data is exported with `INSERT INTO` statements
+* With SQL Server data, if `/PgDump` is provided, but the table data file has `true` in the `PgInsert` column, `INSERT INTO` statements will be used
 
 Use `/ServerInfo` to export server settings, logins, and SQL Server Agent jobs
 
@@ -184,10 +221,10 @@ echo prismweb3:5432:dms:dmsreader:dmspasswordhere > %APPDATA%\postgresql\pgpass.
 
 Example call to pg_dump:
 ```
-pg_dump.exe -Fp -h prismweb3 -p 5432 -d dms -U dmsreader --schema-only > DMS_Schema_Dump.sql
+pg_dump.exe -h prismweb3 -p 5432 -U dmsreader -d dms --schema-only --format=p --file=_AllObjects_.sql
 ```
 
-Note that the .sql file created by pg_dump.exe includes extra carriage returns, resulting in `CR CR LF` instead of `CR LF`
+Note that on Windows the .sql file created by pg_dump.exe includes extra carriage returns, resulting in `CR CR LF` instead of `CR LF`
 * DB_Schema_Export_Tool.exe removes the extra carriage returns while parsing the SQL dump file
 
 ## Contacts
