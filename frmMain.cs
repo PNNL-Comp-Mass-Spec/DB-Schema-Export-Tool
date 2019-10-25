@@ -201,27 +201,32 @@ namespace DB_Schema_Export_Tool
             return GetSelectedListboxItems(lstDatabasesToProcess);
         }
 
-        private List<TableDataExportInfo> GetSelectedTableNamesForDataExport(bool warnIfRowCountOverThreshold)
+        private List<TableDataExportInfo> GetSelectedTableNamesForDataExport(bool warnIfRowCountOverThreshold, out bool cancelExport)
         {
-            var lstTableNames = GetSelectedListboxItems(lstTableNamesToExportData);
+            var selectedTableNames = GetSelectedListboxItems(lstTableNamesToExportData);
 
-            var lstTableInfo = new List<TableDataExportInfo>();
-            foreach (var item in lstTableNames)
+            var tablesForDataExport = new List<TableDataExportInfo>();
+            foreach (var item in selectedTableNames)
             {
-                lstTableInfo.Add(new TableDataExportInfo(item));
+                var tableInfo = new TableDataExportInfo(item) {
+                    UsePgInsert = chkUsePgInsert.Checked
+                };
+
+                tablesForDataExport.Add(tableInfo);
             }
 
-            StripRowCountsFromTableNames(lstTableNames);
+            StripRowCountsFromTableNames(selectedTableNames);
 
-            if (lstTableNames.Count == 0 || !mCachedTableListIncludesRowCounts || !warnIfRowCountOverThreshold)
+            if (selectedTableNames.Count == 0 || !mCachedTableListIncludesRowCounts || !warnIfRowCountOverThreshold)
             {
-                return lstTableInfo;
+                cancelExport = false;
+                return tablesForDataExport;
             }
 
-            var lstValidTables = new List<TableDataExportInfo>(lstTableNames.Count);
+            var validTables = new List<TableDataExportInfo>();
 
-            // See if any of the tables in lstTableNames has more than DBSchemaExporterBase.DATA_ROW_COUNT_WARNING_THRESHOLD rows
-            foreach (var tableName in lstTableNames)
+            // See if any of the tables in selectedTableNames has more than DBSchemaExporterBase.DATA_ROW_COUNT_WARNING_THRESHOLD rows
+            foreach (var tableName in selectedTableNames)
             {
                 var keepTable = true;
                 var tableFound = false;
@@ -229,33 +234,34 @@ namespace DB_Schema_Export_Tool
 
                 foreach (var item in mCachedTableList)
                 {
-                    if (item.Key.SourceTableName.Equals(tableName))
+                    if (!item.Key.SourceTableName.Equals(tableName))
+                        continue;
+
+                    tableFound = true;
+                    matchedTableItem = item.Key;
+
+                    var tableRowCount = item.Value;
+                    if (tableRowCount >= DBSchemaExporterBase.MAX_ROWS_DATA_TO_EXPORT)
                     {
-                        tableFound = true;
-                        matchedTableItem = item.Key;
+                        var msg = string.Format("Warning, table {0} has {1} rows. Are you sure you want to export data from it?",
+                                                tableName, tableRowCount);
+                        var caption = "Row Count Over " + DBSchemaExporterBase.MAX_ROWS_DATA_TO_EXPORT;
 
-                        var tableRowCount = item.Value;
-                        if (tableRowCount >= DBSchemaExporterBase.MAX_ROWS_DATA_TO_EXPORT)
+                        var eResponse = MessageBox.Show(msg, caption, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question,
+                                                        MessageBoxDefaultButton.Button2);
+
+                        if (eResponse == DialogResult.No)
                         {
-                            var msg = string.Format("Warning, table {0} has {1} rows. Are you sure you want to export data from it?",
-                                                    tableName, tableRowCount);
-                            var caption = "Row Count Over " + DBSchemaExporterBase.MAX_ROWS_DATA_TO_EXPORT;
-
-                            var eResponse = MessageBox.Show(msg, caption, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question,
-                                                            MessageBoxDefaultButton.Button2);
-
-                            if (eResponse == DialogResult.No)
-                            {
-                                keepTable = false;
-                            }
-                            else if (eResponse == DialogResult.Cancel)
-                            {
-                                break;
-                            }
+                            keepTable = false;
                         }
-
-                        break;
+                        else if (eResponse == DialogResult.Cancel)
+                        {
+                            cancelExport = true;
+                            return new List<TableDataExportInfo>();
+                        }
                     }
+
+                    break;
                 }
 
                 if (!tableFound)
@@ -265,11 +271,23 @@ namespace DB_Schema_Export_Tool
 
                 if (keepTable)
                 {
-                    lstValidTables.Add(matchedTableItem ?? new TableDataExportInfo(tableName));
+                    if (matchedTableItem == null)
+                    {
+                        var tableInfo = new TableDataExportInfo(tableName) {
+                            UsePgInsert = chkUsePgInsert.Checked
+                        };
+                        validTables.Add(tableInfo);
+                    }
+                    else
+                    {
+                        matchedTableItem.UsePgInsert = chkUsePgInsert.Checked;
+                        validTables.Add(matchedTableItem);
+                    }
                 }
             }
 
-            return lstValidTables;
+            cancelExport = false;
+            return validTables;
         }
 
         private List<string> GetSelectedListboxItems(ListBox listBox)
@@ -838,7 +856,13 @@ namespace DB_Schema_Export_Tool
             {
                 // Populate mDatabaseListToProcess and mTablesForDataExport
                 mDatabaseListToProcess = GetSelectedDatabases();
-                mTablesForDataExport = GetSelectedTableNamesForDataExport(mnuEditWarnOnHighTableRowCount.Checked);
+                mTablesForDataExport = GetSelectedTableNamesForDataExport(mnuEditWarnOnHighTableRowCount.Checked, out var cancelExport);
+
+                if (cancelExport)
+                {
+                    MessageBox.Show("Operation cancelled", "Nothing To Do", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
 
                 if (mDatabaseListToProcess.Count == 0 && !mSchemaExportOptions.ExportServerSettingsLoginsAndJobs)
                 {
