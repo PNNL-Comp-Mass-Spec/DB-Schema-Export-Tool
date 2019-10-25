@@ -49,13 +49,13 @@ DB_Schema_Export_Tool.exe
  [/Data:TableDataToExport.txt] [/Map:ColumnMapping.txt]
  [/DefaultSchema:SchemaName]
  [/NoAutoData] [/ExportAllData] [/MaxRows:1000]
- [/SnakeCase] [/PgDump]
+ [/SnakeCase] [/PgDump] [/PgInsert] [/PgInsertChunkSize:5000]
  [/ServerInfo] [/NoSchema]
  [/Sync:TargetDirectoryPath] [/Git] [/Svn] [/Hg] [/Commit]
  [/L[:LogFilePath]] [/LogDir:LogDirectoryPath] [/Preview] [/Stats]
 ```
 
-1SchemaFileDirectory1 is the path to the directory where the schema files will be saved
+`SchemaFileDirectory` is the path to the directory where the schema files will be saved
 
 To process a single database, use `/Server` and `/DB`
 
@@ -85,7 +85,7 @@ Use `/Data` or `/DataTables` to define a text file with table names (one name pe
 should be exported. In addition to table names defined in `/Data`, there are default tables 
 which will have their data exported; disable the defaults using `/NoAutoData`
 * Also supports a multi-column, tab-delimited format
-  * Put `<Skip>` in the TargetTableName column to indicate that the table should not be included when using `/ExportAllData`
+  * Put `<skip>` in the TargetTableName column to indicate that the table should not be included when using `/ExportAllData`
 * File format
 
 | SourceTableName  | TargetSchemaName | TargetTableName  | PgInsert  | KeyColumn(s)  |
@@ -127,7 +127,7 @@ SELECT currval('mc.t_mgr_types_mt_type_id_seq');
 ```
 
 Use `/Map` or `/ColumnMap` to define a tab-delimited text file mapping source column names to target column names, by table
-* Use keyword `<Skip>` in the `TargetColumnName` column to indicate that a source column should not be included in the output file
+* Use keyword `<skip>` in the `TargetColumnName` column to indicate that a source column should not be included in the output file
 * If `/SnakeCase` is used to auto-change column names, mappings in this file will override the snake case auto-conversion
 * File format:
 
