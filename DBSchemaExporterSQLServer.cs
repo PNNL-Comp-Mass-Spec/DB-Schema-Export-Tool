@@ -1045,17 +1045,21 @@ namespace DB_Schema_Export_Tool
 
                 var quoteWithSquareBrackets = !mOptions.PgDumpTableData && !dataExportParams.PgInsertEnabled;
 
+                // Get the table name, with schema, in the form schema.table_name
+                // The schema and table name will be quoted if necessary
+                dataExportParams.TargetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo,
+                                                                                quoteWithSquareBrackets, false,
+                                                                                out var targetTableName);
 
-                var targetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo,
-                                                                   quoteWithSquareBrackets, false,
-                                                                   out var targetTableName);
 
-                var quotedTargetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo,
-                                                                   quoteWithSquareBrackets, true,
-                                                                   out var quotedTargetTableName);
+                // Get the table name, with schema, in the form schema.table_name
+                // The schema and table name will always be quoted
+                dataExportParams.QuotedTargetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo,
+                                                                                      quoteWithSquareBrackets, true, out _);
 
                 var headerRows = new List<string>();
-                var header = COMMENT_START_TEXT + "Object:  Table " + quotedTargetTableNameWithSchema;
+
+                var header = COMMENT_START_TEXT + "Object:  Table " + dataExportParams.QuotedTargetTableNameWithSchema;
 
                 if (mOptions.ScriptingOptions.IncludeTimestampInScriptFileHeader)
                 {
@@ -1068,8 +1072,6 @@ namespace DB_Schema_Export_Tool
 
                 var columnCount = queryResults.Tables[0].Columns.Count;
 
-                var columnInfoByType = new List<KeyValuePair<string, Type>>();
-
                 for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
                 {
                     var currentColumn = queryResults.Tables[0].Columns[columnIndex];
@@ -1077,10 +1079,11 @@ namespace DB_Schema_Export_Tool
                     var currentColumnName = currentColumn.ColumnName;
                     var currentColumnType = currentColumn.DataType;
 
-                    columnInfoByType.Add(new KeyValuePair<string, Type>(currentColumnName, currentColumnType));
+                    dataExportParams.ColumnInfoByType.Add(new KeyValuePair<string, Type>(currentColumnName, currentColumnType));
                 }
 
-                var columnTypes = ConvertDataTableColumnInfo(databaseTable.Name, columnInfoByType, quoteWithSquareBrackets, out var headerRowValues);
+                var columnMapInfo = ConvertDataTableColumnInfo(databaseTable.Name, quoteWithSquareBrackets, dataExportParams);
+
 
                 var insertIntoLine = string.Empty;
 
