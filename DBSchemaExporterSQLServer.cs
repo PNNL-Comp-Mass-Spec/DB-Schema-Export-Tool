@@ -1221,6 +1221,7 @@ namespace DB_Schema_Export_Tool
                 else if (dataExportParams.IdentityColumnFound)
                 {
                     primaryKeyColumns = GetTargetColumnName(columnMapInfo, dataExportParams.IdentityColumnName);
+                    tableInfo.PrimaryKeyColumns.Add(primaryKeyColumns);
                 }
                 else
                 {
@@ -1241,18 +1242,18 @@ namespace DB_Schema_Export_Tool
                     var currentColumn = dataExportParams.ColumnInfoByType[columnIndex];
 
                     var currentColumnName = currentColumn.Key;
-                    if (tableInfo.PrimaryKeyColumns.Contains(currentColumnName))
-                    {
-                        // Skip this column
-                        continue;
-                    }
 
                     var dataColumnType = DataColumnTypeConstants.Numeric;
-
                     var targetColumnName = GetTargetColumnName(columnMapInfo, currentColumnName, ref dataColumnType);
 
                     if (dataColumnType == DataColumnTypeConstants.SkipColumn)
                         continue;
+
+                    if (tableInfo.PrimaryKeyColumns.Contains(targetColumnName))
+                    {
+                        // Skip this column
+                        continue;
+                    }
 
                     var optionalComma = columnIndex < dataExportParams.ColumnNamesAndTypes.Count - 1 ? "," : string.Empty;
 
