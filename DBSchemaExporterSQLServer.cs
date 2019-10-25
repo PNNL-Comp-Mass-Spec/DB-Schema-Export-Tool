@@ -95,6 +95,17 @@ namespace DB_Schema_Export_Tool
             dataExportParams.FooterWriteRequired = false;
         }
 
+        private void AppendPgExportHeaders(TextWriter writer, DataExportWorkingParams dataExportParams)
+        {
+            if (dataExportParams.PgInsertHeaders.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var line in dataExportParams.PgInsertHeaders)
+                writer.WriteLine(line);
+        }
+
         private void AppendToList(ICollection<string> serverInfo, string propertyName, string propertyValue)
         {
             if (propertyName != null && propertyValue != null)
@@ -1175,10 +1186,10 @@ namespace DB_Schema_Export_Tool
         }
 
         private string ExportDBTableDataInit(
-            TableDataExportInfo tableInfo,
-            ColumnMapInfo columnMapInfo,
-            DataExportWorkingParams dataExportParams,
-            List<string> headerRows)
+        TableDataExportInfo tableInfo,
+        ColumnMapInfo columnMapInfo,
+        DataExportWorkingParams dataExportParams,
+        List<string> headerRows)
         {
             string insertIntoLine;
 
@@ -1314,6 +1325,8 @@ namespace DB_Schema_Export_Tool
             var columnValues = new object[columnCount];
 
             var commandAndLfRequired = false;
+            var startingNewChunk = false;
+
             var rowCountWritten = 0;
 
             var usingPgInsert = dataExportParams.PgInsertEnabled;
@@ -1345,6 +1358,12 @@ namespace DB_Schema_Export_Tool
                     writer.WriteLine(",");
                 }
 
+                if (startingNewChunk)
+                {
+                    AppendPgExportHeaders(writer, dataExportParams);
+                    startingNewChunk = false;
+                }
+
                 ExportDBTableDataRow(writer, dataExportParams, delimitedRowValues, columnCount, columnValues);
                 if (usingPgInsert)
                     commandAndLfRequired = true;
@@ -1352,11 +1371,12 @@ namespace DB_Schema_Export_Tool
                 rowCountWritten++;
                 if (mOptions.PgInsertChunkSize > 0 && rowCountWritten > mOptions.PgInsertChunkSize)
                 {
-                    // ToDo: code this
-                    throw new NotImplementedException();
-
-
+                    dataExportParams.FooterWriteRequired = true;
+                    writer.WriteLine();
+                    AppendPgExportFooters(writer, dataExportParams);
+                    rowCountWritten = 0;
                     commandAndLfRequired = false;
+                    startingNewChunk = true;
                 }
             }
 
