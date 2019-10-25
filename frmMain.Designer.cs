@@ -95,6 +95,9 @@ namespace DB_Schema_Export_Tool
             this.txtServerName = new System.Windows.Forms.TextBox();
             this.lblPassword = new System.Windows.Forms.Label();
             this.lblUsername = new System.Windows.Forms.Label();
+            this.chkUsePgInsert = new System.Windows.Forms.CheckBox();
+            this.chkUsePgDump = new System.Windows.Forms.CheckBox();
+            this.chkSkipSchemaExport = new System.Windows.Forms.CheckBox();
             this.fraStatus.SuspendLayout();
             this.fraControls.SuspendLayout();
             this.fraObjectTypesToScript.SuspendLayout();
@@ -150,7 +153,7 @@ namespace DB_Schema_Export_Tool
             this.lblServerOutputDirectoryNamePrefix.Cursor = System.Windows.Forms.Cursors.Default;
             this.lblServerOutputDirectoryNamePrefix.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblServerOutputDirectoryNamePrefix.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.lblServerOutputDirectoryNamePrefix.Location = new System.Drawing.Point(349, 271);
+            this.lblServerOutputDirectoryNamePrefix.Location = new System.Drawing.Point(349, 297);
             this.lblServerOutputDirectoryNamePrefix.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblServerOutputDirectoryNamePrefix.Name = "lblServerOutputDirectoryNamePrefix";
             this.lblServerOutputDirectoryNamePrefix.RightToLeft = System.Windows.Forms.RightToLeft.No;
@@ -170,7 +173,7 @@ namespace DB_Schema_Export_Tool
             this.lblProgress.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblProgress.Name = "lblProgress";
             this.lblProgress.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.lblProgress.Size = new System.Drawing.Size(436, 30);
+            this.lblProgress.Size = new System.Drawing.Size(624, 30);
             this.lblProgress.TabIndex = 1;
             // 
             // txtServerOutputDirectoryNamePrefix
@@ -181,7 +184,7 @@ namespace DB_Schema_Export_Tool
             this.txtServerOutputDirectoryNamePrefix.Cursor = System.Windows.Forms.Cursors.IBeam;
             this.txtServerOutputDirectoryNamePrefix.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtServerOutputDirectoryNamePrefix.ForeColor = System.Drawing.SystemColors.WindowText;
-            this.txtServerOutputDirectoryNamePrefix.Location = new System.Drawing.Point(516, 267);
+            this.txtServerOutputDirectoryNamePrefix.Location = new System.Drawing.Point(516, 294);
             this.txtServerOutputDirectoryNamePrefix.Margin = new System.Windows.Forms.Padding(4);
             this.txtServerOutputDirectoryNamePrefix.MaxLength = 0;
             this.txtServerOutputDirectoryNamePrefix.Name = "txtServerOutputDirectoryNamePrefix";
@@ -199,7 +202,7 @@ namespace DB_Schema_Export_Tool
             this.chkExportServerSettingsLoginsAndJobs.Cursor = System.Windows.Forms.Cursors.Default;
             this.chkExportServerSettingsLoginsAndJobs.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.chkExportServerSettingsLoginsAndJobs.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.chkExportServerSettingsLoginsAndJobs.Location = new System.Drawing.Point(352, 244);
+            this.chkExportServerSettingsLoginsAndJobs.Location = new System.Drawing.Point(352, 267);
             this.chkExportServerSettingsLoginsAndJobs.Margin = new System.Windows.Forms.Padding(4);
             this.chkExportServerSettingsLoginsAndJobs.Name = "chkExportServerSettingsLoginsAndJobs";
             this.chkExportServerSettingsLoginsAndJobs.RightToLeft = System.Windows.Forms.RightToLeft.No;
@@ -215,7 +218,7 @@ namespace DB_Schema_Export_Tool
             this.lblSelectDefaultDBs.Cursor = System.Windows.Forms.Cursors.Default;
             this.lblSelectDefaultDBs.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblSelectDefaultDBs.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.lblSelectDefaultDBs.Location = new System.Drawing.Point(13, 209);
+            this.lblSelectDefaultDBs.Location = new System.Drawing.Point(13, 232);
             this.lblSelectDefaultDBs.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblSelectDefaultDBs.Name = "lblSelectDefaultDBs";
             this.lblSelectDefaultDBs.RightToLeft = System.Windows.Forms.RightToLeft.No;
@@ -230,7 +233,7 @@ namespace DB_Schema_Export_Tool
             this.cmdSelectDefaultDMSDBs.Cursor = System.Windows.Forms.Cursors.Default;
             this.cmdSelectDefaultDMSDBs.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.cmdSelectDefaultDMSDBs.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.cmdSelectDefaultDMSDBs.Location = new System.Drawing.Point(124, 205);
+            this.cmdSelectDefaultDMSDBs.Location = new System.Drawing.Point(124, 228);
             this.cmdSelectDefaultDMSDBs.Margin = new System.Windows.Forms.Padding(4);
             this.cmdSelectDefaultDMSDBs.Name = "cmdSelectDefaultDMSDBs";
             this.cmdSelectDefaultDMSDBs.RightToLeft = System.Windows.Forms.RightToLeft.No;
@@ -247,7 +250,7 @@ namespace DB_Schema_Export_Tool
             this.cmdSelectDefaultMTSDBs.Cursor = System.Windows.Forms.Cursors.Default;
             this.cmdSelectDefaultMTSDBs.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.cmdSelectDefaultMTSDBs.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.cmdSelectDefaultMTSDBs.Location = new System.Drawing.Point(235, 205);
+            this.cmdSelectDefaultMTSDBs.Location = new System.Drawing.Point(235, 228);
             this.cmdSelectDefaultMTSDBs.Margin = new System.Windows.Forms.Padding(4);
             this.cmdSelectDefaultMTSDBs.Name = "cmdSelectDefaultMTSDBs";
             this.cmdSelectDefaultMTSDBs.RightToLeft = System.Windows.Forms.RightToLeft.No;
@@ -264,7 +267,7 @@ namespace DB_Schema_Export_Tool
             this.lblOutputDirectoryNamePrefix.Cursor = System.Windows.Forms.Cursors.Default;
             this.lblOutputDirectoryNamePrefix.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblOutputDirectoryNamePrefix.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.lblOutputDirectoryNamePrefix.Location = new System.Drawing.Point(12, 274);
+            this.lblOutputDirectoryNamePrefix.Location = new System.Drawing.Point(12, 297);
             this.lblOutputDirectoryNamePrefix.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblOutputDirectoryNamePrefix.Name = "lblOutputDirectoryNamePrefix";
             this.lblOutputDirectoryNamePrefix.RightToLeft = System.Windows.Forms.RightToLeft.No;
@@ -280,7 +283,7 @@ namespace DB_Schema_Export_Tool
             this.txtOutputDirectoryNamePrefix.Cursor = System.Windows.Forms.Cursors.IBeam;
             this.txtOutputDirectoryNamePrefix.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtOutputDirectoryNamePrefix.ForeColor = System.Drawing.SystemColors.WindowText;
-            this.txtOutputDirectoryNamePrefix.Location = new System.Drawing.Point(179, 271);
+            this.txtOutputDirectoryNamePrefix.Location = new System.Drawing.Point(179, 294);
             this.txtOutputDirectoryNamePrefix.Margin = new System.Windows.Forms.Padding(4);
             this.txtOutputDirectoryNamePrefix.MaxLength = 0;
             this.txtOutputDirectoryNamePrefix.Name = "txtOutputDirectoryNamePrefix";
@@ -294,7 +297,7 @@ namespace DB_Schema_Export_Tool
             this.cboTableNamesToExportSortOrder.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.cboTableNamesToExportSortOrder.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboTableNamesToExportSortOrder.FormattingEnabled = true;
-            this.cboTableNamesToExportSortOrder.Location = new System.Drawing.Point(353, 205);
+            this.cboTableNamesToExportSortOrder.Location = new System.Drawing.Point(353, 228);
             this.cboTableNamesToExportSortOrder.Margin = new System.Windows.Forms.Padding(4);
             this.cboTableNamesToExportSortOrder.Name = "cboTableNamesToExportSortOrder";
             this.cboTableNamesToExportSortOrder.Size = new System.Drawing.Size(211, 24);
@@ -327,7 +330,7 @@ namespace DB_Schema_Export_Tool
             this.lstTableNamesToExportData.Margin = new System.Windows.Forms.Padding(4);
             this.lstTableNamesToExportData.Name = "lstTableNamesToExportData";
             this.lstTableNamesToExportData.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
-            this.lstTableNamesToExportData.Size = new System.Drawing.Size(278, 84);
+            this.lstTableNamesToExportData.Size = new System.Drawing.Size(580, 100);
             this.lstTableNamesToExportData.TabIndex = 5;
             this.lstTableNamesToExportData.KeyDown += new System.Windows.Forms.KeyEventHandler(this.lstTableNamesToExportData_KeyDown);
             this.lstTableNamesToExportData.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.lstTableNamesToExportData_KeyPress);
@@ -355,7 +358,7 @@ namespace DB_Schema_Export_Tool
             this.lstDatabasesToProcess.Margin = new System.Windows.Forms.Padding(4);
             this.lstDatabasesToProcess.Name = "lstDatabasesToProcess";
             this.lstDatabasesToProcess.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
-            this.lstDatabasesToProcess.Size = new System.Drawing.Size(321, 84);
+            this.lstDatabasesToProcess.Size = new System.Drawing.Size(321, 100);
             this.lstDatabasesToProcess.TabIndex = 3;
             this.lstDatabasesToProcess.KeyDown += new System.Windows.Forms.KeyEventHandler(this.lstDatabasesToProcess_KeyDown);
             this.lstDatabasesToProcess.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.lstDatabasesToProcess_KeyPress);
@@ -375,12 +378,12 @@ namespace DB_Schema_Export_Tool
             this.fraStatus.Controls.Add(this.pbarProgress);
             this.fraStatus.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.fraStatus.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.fraStatus.Location = new System.Drawing.Point(14, 473);
+            this.fraStatus.Location = new System.Drawing.Point(14, 496);
             this.fraStatus.Margin = new System.Windows.Forms.Padding(4);
             this.fraStatus.Name = "fraStatus";
             this.fraStatus.Padding = new System.Windows.Forms.Padding(4);
             this.fraStatus.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.fraStatus.Size = new System.Drawing.Size(773, 89);
+            this.fraStatus.Size = new System.Drawing.Size(961, 89);
             this.fraStatus.TabIndex = 9;
             this.fraStatus.TabStop = false;
             // 
@@ -396,7 +399,7 @@ namespace DB_Schema_Export_Tool
             this.lblMessage.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblMessage.Name = "lblMessage";
             this.lblMessage.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.lblMessage.Size = new System.Drawing.Size(752, 25);
+            this.lblMessage.Size = new System.Drawing.Size(940, 25);
             this.lblMessage.TabIndex = 3;
             // 
             // pbarProgress
@@ -659,7 +662,7 @@ namespace DB_Schema_Export_Tool
             this.txtOutputDirectoryPath.MaxLength = 0;
             this.txtOutputDirectoryPath.Name = "txtOutputDirectoryPath";
             this.txtOutputDirectoryPath.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.txtOutputDirectoryPath.Size = new System.Drawing.Size(619, 23);
+            this.txtOutputDirectoryPath.Size = new System.Drawing.Size(807, 23);
             this.txtOutputDirectoryPath.TabIndex = 1;
             this.txtOutputDirectoryPath.Text = "C:\\Temp\\";
             // 
@@ -683,6 +686,9 @@ namespace DB_Schema_Export_Tool
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.fraOutputOptions.BackColor = System.Drawing.SystemColors.Control;
+            this.fraOutputOptions.Controls.Add(this.chkSkipSchemaExport);
+            this.fraOutputOptions.Controls.Add(this.chkUsePgInsert);
+            this.fraOutputOptions.Controls.Add(this.chkUsePgDump);
             this.fraOutputOptions.Controls.Add(this.lblTableDataToExport);
             this.fraOutputOptions.Controls.Add(this.lblServerOutputDirectoryNamePrefix);
             this.fraOutputOptions.Controls.Add(this.txtServerOutputDirectoryNamePrefix);
@@ -707,7 +713,7 @@ namespace DB_Schema_Export_Tool
             this.fraOutputOptions.Name = "fraOutputOptions";
             this.fraOutputOptions.Padding = new System.Windows.Forms.Padding(4);
             this.fraOutputOptions.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.fraOutputOptions.Size = new System.Drawing.Size(773, 305);
+            this.fraOutputOptions.Size = new System.Drawing.Size(961, 328);
             this.fraOutputOptions.TabIndex = 8;
             this.fraOutputOptions.TabStop = false;
             this.fraOutputOptions.Text = "Output Options";
@@ -721,7 +727,7 @@ namespace DB_Schema_Export_Tool
             this.chkCreateDirectoryForEachDB.Cursor = System.Windows.Forms.Cursors.Default;
             this.chkCreateDirectoryForEachDB.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.chkCreateDirectoryForEachDB.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.chkCreateDirectoryForEachDB.Location = new System.Drawing.Point(15, 244);
+            this.chkCreateDirectoryForEachDB.Location = new System.Drawing.Point(15, 267);
             this.chkCreateDirectoryForEachDB.Margin = new System.Windows.Forms.Padding(4);
             this.chkCreateDirectoryForEachDB.Name = "chkCreateDirectoryForEachDB";
             this.chkCreateDirectoryForEachDB.RightToLeft = System.Windows.Forms.RightToLeft.No;
@@ -779,7 +785,7 @@ namespace DB_Schema_Export_Tool
             this.chkPostgreSQL.Margin = new System.Windows.Forms.Padding(4);
             this.chkPostgreSQL.Name = "chkPostgreSQL";
             this.chkPostgreSQL.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.chkPostgreSQL.Size = new System.Drawing.Size(182, 22);
+            this.chkPostgreSQL.Size = new System.Drawing.Size(182, 20);
             this.chkPostgreSQL.TabIndex = 7;
             this.chkPostgreSQL.Text = "PostgreSQL";
             this.chkPostgreSQL.UseVisualStyleBackColor = false;
@@ -824,7 +830,7 @@ namespace DB_Schema_Export_Tool
             this.txtPassword.Cursor = System.Windows.Forms.Cursors.IBeam;
             this.txtPassword.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtPassword.ForeColor = System.Drawing.SystemColors.WindowText;
-            this.txtPassword.Location = new System.Drawing.Point(192, 95);
+            this.txtPassword.Location = new System.Drawing.Point(192, 94);
             this.txtPassword.Margin = new System.Windows.Forms.Padding(4);
             this.txtPassword.MaxLength = 0;
             this.txtPassword.Name = "txtPassword";
@@ -841,7 +847,7 @@ namespace DB_Schema_Export_Tool
             this.txtUsername.Cursor = System.Windows.Forms.Cursors.IBeam;
             this.txtUsername.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtUsername.ForeColor = System.Drawing.SystemColors.WindowText;
-            this.txtUsername.Location = new System.Drawing.Point(192, 65);
+            this.txtUsername.Location = new System.Drawing.Point(192, 66);
             this.txtUsername.Margin = new System.Windows.Forms.Padding(4);
             this.txtUsername.MaxLength = 0;
             this.txtUsername.Name = "txtUsername";
@@ -872,7 +878,7 @@ namespace DB_Schema_Export_Tool
             this.lblPassword.Cursor = System.Windows.Forms.Cursors.Default;
             this.lblPassword.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblPassword.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.lblPassword.Location = new System.Drawing.Point(11, 95);
+            this.lblPassword.Location = new System.Drawing.Point(11, 94);
             this.lblPassword.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblPassword.Name = "lblPassword";
             this.lblPassword.RightToLeft = System.Windows.Forms.RightToLeft.No;
@@ -886,7 +892,7 @@ namespace DB_Schema_Export_Tool
             this.lblUsername.Cursor = System.Windows.Forms.Cursors.Default;
             this.lblUsername.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblUsername.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.lblUsername.Location = new System.Drawing.Point(11, 70);
+            this.lblUsername.Location = new System.Drawing.Point(11, 68);
             this.lblUsername.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblUsername.Name = "lblUsername";
             this.lblUsername.RightToLeft = System.Windows.Forms.RightToLeft.No;
@@ -894,11 +900,59 @@ namespace DB_Schema_Export_Tool
             this.lblUsername.TabIndex = 3;
             this.lblUsername.Text = "Username";
             // 
+            // chkUsePgInsert
+            // 
+            this.chkUsePgInsert.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.chkUsePgInsert.BackColor = System.Drawing.SystemColors.Control;
+            this.chkUsePgInsert.Cursor = System.Windows.Forms.Cursors.Default;
+            this.chkUsePgInsert.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.chkUsePgInsert.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.chkUsePgInsert.Location = new System.Drawing.Point(609, 247);
+            this.chkUsePgInsert.Margin = new System.Windows.Forms.Padding(4);
+            this.chkUsePgInsert.Name = "chkUsePgInsert";
+            this.chkUsePgInsert.RightToLeft = System.Windows.Forms.RightToLeft.No;
+            this.chkUsePgInsert.Size = new System.Drawing.Size(119, 20);
+            this.chkUsePgInsert.TabIndex = 20;
+            this.chkUsePgInsert.Text = "Use PgInsert";
+            this.chkUsePgInsert.UseVisualStyleBackColor = false;
+            // 
+            // chkUsePgDump
+            // 
+            this.chkUsePgDump.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.chkUsePgDump.BackColor = System.Drawing.SystemColors.Control;
+            this.chkUsePgDump.Cursor = System.Windows.Forms.Cursors.Default;
+            this.chkUsePgDump.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.chkUsePgDump.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.chkUsePgDump.Location = new System.Drawing.Point(609, 222);
+            this.chkUsePgDump.Margin = new System.Windows.Forms.Padding(4);
+            this.chkUsePgDump.Name = "chkUsePgDump";
+            this.chkUsePgDump.RightToLeft = System.Windows.Forms.RightToLeft.No;
+            this.chkUsePgDump.Size = new System.Drawing.Size(119, 20);
+            this.chkUsePgDump.TabIndex = 19;
+            this.chkUsePgDump.Text = "Use pg_dump";
+            this.chkUsePgDump.UseVisualStyleBackColor = false;
+            // 
+            // chkSkipSchemaExport
+            // 
+            this.chkSkipSchemaExport.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.chkSkipSchemaExport.BackColor = System.Drawing.SystemColors.Control;
+            this.chkSkipSchemaExport.Cursor = System.Windows.Forms.Cursors.Default;
+            this.chkSkipSchemaExport.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.chkSkipSchemaExport.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.chkSkipSchemaExport.Location = new System.Drawing.Point(736, 222);
+            this.chkSkipSchemaExport.Margin = new System.Windows.Forms.Padding(4);
+            this.chkSkipSchemaExport.Name = "chkSkipSchemaExport";
+            this.chkSkipSchemaExport.RightToLeft = System.Windows.Forms.RightToLeft.No;
+            this.chkSkipSchemaExport.Size = new System.Drawing.Size(174, 20);
+            this.chkSkipSchemaExport.TabIndex = 21;
+            this.chkSkipSchemaExport.Text = "Skip schema export";
+            this.chkSkipSchemaExport.UseVisualStyleBackColor = false;
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 573);
+            this.ClientSize = new System.Drawing.Size(988, 596);
             this.Controls.Add(this.fraStatus);
             this.Controls.Add(this.fraControls);
             this.Controls.Add(this.fraObjectTypesToScript);
@@ -984,6 +1038,9 @@ namespace DB_Schema_Export_Tool
         internal Label lblPassword;
         internal Label lblUsername;
         internal Label lblMessage;
+        internal CheckBox chkUsePgInsert;
+        internal CheckBox chkUsePgDump;
+        internal CheckBox chkSkipSchemaExport;
     }
 }
 

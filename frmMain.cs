@@ -754,14 +754,7 @@ namespace DB_Schema_Export_Tool
 
         private void InitializeDBSchemaExporter()
         {
-            if (mSchemaExportOptions.PostgreSQL)
-            {
-                mDBSchemaExporter = new DBSchemaExportTool(mSchemaExportOptions);
-            }
-            else
-            {
-                mDBSchemaExporter = new DBSchemaExportTool(mSchemaExportOptions);
-            }
+            mDBSchemaExporter = new DBSchemaExportTool(mSchemaExportOptions);
 
             mDBSchemaExporter.DBExportStarting += mDBSchemaExporter_DBExportStarting;
             mDBSchemaExporter.StatusEvent += mDBSchemaExporter_StatusMessage;
@@ -1053,8 +1046,14 @@ namespace DB_Schema_Export_Tool
 
                 chkUseIntegratedAuthentication.Checked = true;
                 chkPostgreSQL.Checked = false;
+
+                chkUsePgDump.Checked = false;
+                chkUsePgInsert.Checked = false;
+
                 txtUsername.Text = DBSchemaExporterSQLServer.SQL_SERVER_USERNAME_DEFAULT;
                 txtPassword.Text = DBSchemaExporterSQLServer.SQL_SERVER_PASSWORD_DEFAULT;
+
+                chkSkipSchemaExport.Checked = false;
 
                 mnuEditScriptObjectsThreaded.Checked = false;
                 mnuEditIncludeSystemObjects.Checked = false;
@@ -1388,6 +1387,9 @@ namespace DB_Schema_Export_Tool
             mSchemaExportOptions.ServerName = txtServerName.Text;
             mSchemaExportOptions.PostgreSQL = chkPostgreSQL.Checked;
 
+            mSchemaExportOptions.PgDumpTableData = chkUsePgDump.Checked;
+            mSchemaExportOptions.PgInsertTableData = chkUsePgInsert.Checked;
+
             if (chkUseIntegratedAuthentication.Checked && !mSchemaExportOptions.PostgreSQL)
             {
                 mSchemaExportOptions.DBUser = string.Empty;
@@ -1399,6 +1401,7 @@ namespace DB_Schema_Export_Tool
                 mSchemaExportOptions.DBUserPassword = txtPassword.Text;
             }
 
+            mSchemaExportOptions.NoSchema = chkSkipSchemaExport.Checked;
         }
 
         private void UpdateTableNamesInSelectedDB()
