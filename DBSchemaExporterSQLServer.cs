@@ -75,6 +75,26 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        private void AppendPgExportFooters(TextWriter writer, DataExportWorkingParams dataExportParams)
+        {
+            if (!dataExportParams.FooterWriteRequired)
+            {
+                return;
+            }
+
+            if (dataExportParams.PgInsertFooters.Count == 0)
+            {
+                writer.WriteLine(";");
+            }
+            else
+            {
+                foreach (var line in dataExportParams.PgInsertFooters)
+                    writer.WriteLine(line);
+            }
+
+            dataExportParams.FooterWriteRequired = false;
+        }
+
         private void AppendToList(ICollection<string> serverInfo, string propertyName, string propertyValue)
         {
             if (propertyName != null && propertyValue != null)
@@ -1111,18 +1131,7 @@ namespace DB_Schema_Export_Tool
 
                     if (dataExportParams.PgInsertEnabled)
                     {
-                        if (dataExportParams.FooterRequired)
-                        {
-                            if (dataExportParams.PgInsertFooters.Count == 0)
-                            {
-                                writer.WriteLine(";");
-                            }
-                            else
-                            {
-                                foreach (var line in dataExportParams.PgInsertFooters)
-                                    writer.WriteLine(line);
-                            }
-                        }
+                        AppendPgExportFooters(writer, dataExportParams);
 
                         if (dataExportParams.IdentityColumnFound)
                         {
@@ -1306,8 +1315,9 @@ namespace DB_Schema_Export_Tool
 
             var commandAndLfRequired = false;
             var rowCountWritten = 0;
+
             var usingPgInsert = dataExportParams.PgInsertEnabled;
-            dataExportParams.FooterRequired = false;
+            dataExportParams.FooterWriteRequired = false;
 
             foreach (DataRow currentRow in queryResults.Tables[0].Rows)
             {
@@ -1354,7 +1364,7 @@ namespace DB_Schema_Export_Tool
             {
                 // Add linefeed (but no comma)
                 writer.WriteLine();
-                dataExportParams.FooterRequired = true;
+                dataExportParams.FooterWriteRequired = true;
             }
 
             if (mOptions.PgDumpTableData && !usingPgInsert)

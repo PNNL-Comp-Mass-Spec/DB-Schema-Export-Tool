@@ -24,7 +24,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Set to true if the footer rows need to be written to the output file
         /// </summary>
-        public bool FooterRequired { get; set; }
+        public bool FooterWriteRequired { get; set; }
 
         /// <summary>
         /// List of column names, separated by a comma or a tab
