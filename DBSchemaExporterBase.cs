@@ -570,6 +570,7 @@ namespace DB_Schema_Export_Tool
         {
             var colSepChar = dataExportParams.ColSepChar;
             var nullValue = dataExportParams.NullValue;
+            var pgInsertEnabled = dataExportParams.PgInsertEnabled;
 
             for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
             {
@@ -604,11 +605,11 @@ namespace DB_Schema_Export_Tool
                     case DataColumnTypeConstants.Text:
                     case DataColumnTypeConstants.DateTime:
                     case DataColumnTypeConstants.GUID:
-                        if (mOptions.PgDumpTableData)
+                        if (mOptions.PgDumpTableData && !pgInsertEnabled)
                         {
                             delimitedRowValues.Append(CleanForCopyCommand(columnValues[columnIndex]));
                         }
-                        else if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+                        else if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || pgInsertEnabled)
                         {
                             delimitedRowValues.Append(PossiblyQuoteText(columnValues[columnIndex].ToString()));
                         }
@@ -670,12 +671,18 @@ namespace DB_Schema_Export_Tool
                         break;
 
                     default:
+                        // Ignore this column
                         break;
                 }
 
             }
 
-            if (mOptions.PgDumpTableData)
+            if (dataExportParams.PgInsertEnabled)
+            {
+                // Do not include a linefeed here; we may need to append a comma
+                writer.Write("  ({0})", delimitedRowValues);
+            }
+            else if (mOptions.PgDumpTableData)
             {
                 writer.WriteLine(delimitedRowValues.ToString());
             }

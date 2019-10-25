@@ -990,16 +990,36 @@ namespace DB_Schema_Export_Tool
 
                 OnProgressUpdate("Exporting data from " + tableInfo.SourceTableName, percentComplete);
 
+                string nullValueFlag;
+                if (mOptions.PgDumpTableData && !tableInfo.UsePgInsert)
+                {
+                    nullValueFlag = @"\N";
+                }
+                else if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || tableInfo.UsePgInsert)
+                {
+                    nullValueFlag = "null";
+                }
+                else
+                {
+                    nullValueFlag = string.Empty;
+                }
+
+                var dataExportParams = new DataExportWorkingParams(tableInfo.UsePgInsert, nullValueFlag);
+
                 // See if any of the columns in the table is an identity column
-                var identityColumnFound = false;
+                var identityColumnIndex = -1;
+
+                var index = -1;
                 foreach (Column currentColumn in databaseTable.Columns)
                 {
+                    index++;
                     if (currentColumn.Identity)
                     {
-                        identityColumnFound = true;
+                        dataExportParams.IdentityColumnFound = true;
+                        dataExportParams.IdentityColumnName = currentColumn.Name;
+                        identityColumnIndex = index;
                         break;
                     }
-
                 }
 
                 // Export the data from databaseTable, possibly limiting the number of rows to export
@@ -1023,7 +1043,8 @@ namespace DB_Schema_Export_Tool
 
                 var queryResults = mCurrentDatabase.ExecuteWithResults(sql);
 
-                var quoteWithSquareBrackets = !mOptions.PgDumpTableData;
+                var quoteWithSquareBrackets = !mOptions.PgDumpTableData && !dataExportParams.PgInsertEnabled;
+
 
                 var targetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo,
                                                                    quoteWithSquareBrackets, false,

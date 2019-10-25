@@ -15,6 +15,20 @@ namespace DB_Schema_Export_Tool
         public string TargetTableName { get; set; }
 
         public bool UseMergeStatement { get; set; }
+        /// <summary>
+        /// When true, export data from SQL Server using insert commands formatted as PostgreSQL compatible
+        /// INSERT INTO statements using the ON CONFLICT(key_column) DO UPDATE SET syntax
+        /// </summary>
+        public bool UsePgInsert { get; set; }
+
+        /// <summary>
+        /// Primary key column (or columns)
+        /// Only used when UsePgInsert is true
+        /// </summary>
+        /// <remarks>
+        /// If UsePgInsert is true, but this list is empty, will auto-populate using the table's identity column
+        /// </remarks>
+        public SortedSet<string> PrimaryKeyColumns { get; }
 
         /// <summary>
         /// Constructor

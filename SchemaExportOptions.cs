@@ -86,6 +86,16 @@ namespace DB_Schema_Export_Tool
                        "With PostgreSQL data, dump table data using pg_dump and COPY commands.")]
         public bool PgDumpTableData { get; set; }
 
+        [Option("PgInsertChunkSize", HelpShowsDefault = false,
+            HelpText = "Number of values to insert at a time when PgInsert is true for a table; only applicable when exporting data from SQL Server")]
+        public int PgInsertChunkSize { get; set; }
+
+        [Option("PgInsert", HelpShowsDefault = false,
+            HelpText = "With SQL Server databases, while reading the TableDataToExport.txt file, default the PgInsert column to true, " +
+                       "meaning table data will be exported via INSERT INTO statements using the ON CONFLICT (key_column) DO UPDATE SET syntax. " +
+                       "Ignored for PostgreSQL data")]
+        public bool PgInsertTableData { get; set; }
+
         [Option("PgUser", HelpShowsDefault = false, HelpText = "Database username when connecting to a PostgreSQL server")]
         public string PgUser
         {
@@ -169,7 +179,7 @@ namespace DB_Schema_Export_Tool
 
         [Option("Data", "DataTables", HelpShowsDefault = false,
             HelpText = "Text file with table names (one name per line) for which table data should be exported. " +
-                       @"Also supports a multi-column, tab-delimited format:\nSourceTableName TargetSchemaName TargetTableName UseMergeStatement")]
+                       @"Also supports a multi-column, tab-delimited format:\nSourceTableName TargetSchemaName TargetTableName PgInsert KeyColumn(s)")]
         public string TableDataToExportFile { get; set; }
 
         [Option("Map", "ColumnMap", HelpShowsDefault = false,
@@ -208,7 +218,7 @@ namespace DB_Schema_Export_Tool
         }
 
         [Option("SnakeCase", HelpShowsDefault = false,
-            HelpText = "Auto changes column names from Upper_Case and UpperCase to lower_case")]
+            HelpText = "Auto changes column names from Upper_Case and UpperCase to lower_case when exporting table data")]
         public bool TableDataSnakeCase { get; set; }
 
         [Option("ServerInfo", HelpShowsDefault = false, HelpText = "Export server settings, logins, and jobs")]
@@ -299,6 +309,10 @@ namespace DB_Schema_Export_Tool
 
             PostgreSQL = false;
             PgDumpTableData = false;
+
+            PgInsertTableData = false;
+            PgInsertChunkSize = 5000;
+
             PgPort = DBSchemaExporterPostgreSQL.DEFAULT_PORT;
 
             OutputDirectoryPath = string.Empty;
@@ -424,6 +438,11 @@ namespace DB_Schema_Export_Tool
             if (!string.IsNullOrWhiteSpace(TableDataToExportFile))
             {
                 Console.WriteLine(" {0,-48} {1}", "File with table names for exporting data:", TableDataToExportFile);
+                if (!PostgreSQL)
+                {
+                    Console.WriteLine(" {0,-48} {1}", "Default value for the PgInsert column:", PgInsertTableData);
+                    Console.WriteLine(" {0,-48} {1}", "PgInsert chunk size:", PgInsertChunkSize);
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(TableDataColumnMapFile))
@@ -433,12 +452,7 @@ namespace DB_Schema_Export_Tool
 
             if (!string.IsNullOrWhiteSpace(DefaultSchemaName))
             {
-                Console.WriteLine(" {0,-48} {1}", "Default schema for exported tables and data:", DefaultSchemaName);
-            }
-
-            if (!DisableAutoDataExport || !string.IsNullOrWhiteSpace(TableDataToExportFile) || ExportAllData)
-            {
-                Console.WriteLine(" {0,-48} {1}", "Convert table and column names to snake_case:", BoolToEnabledDisabled(TableDataSnakeCase));
+                Console.WriteLine(" {0,-48} {1}", "Default schema for exported data from tables:", DefaultSchemaName);
             }
 
             if (ExportAllData)
