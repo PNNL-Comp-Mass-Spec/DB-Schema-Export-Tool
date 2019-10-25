@@ -53,6 +53,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ColumnMapInfo.cs" />
+    <Compile Include="DataExportWorkingParams.cs" />
     <Compile Include="ProgramRunner.cs" />
     <Compile Include="DBSchemaExporterBase.cs" />
     <Compile Include="DBSchemaExporterPostgreSQL.cs" />

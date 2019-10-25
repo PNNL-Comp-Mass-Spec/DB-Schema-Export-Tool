@@ -206,7 +206,6 @@ namespace DB_Schema_Export_Tool
                                 currentLine = currentLine.Substring(0, indexStartCurrent).TrimEnd(whitespaceChars) + COMMENT_END_TEXT +
                                               currentLine.Substring(indexEndCurrent + COMMENT_END_TEXT_SHORT.Length);
                             }
-
                         }
 
                         if (!(removeAllScriptDateOccurrences && indexStartCurrent > 0))

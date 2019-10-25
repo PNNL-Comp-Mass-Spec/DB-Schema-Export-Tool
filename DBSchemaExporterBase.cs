@@ -336,24 +336,20 @@ namespace DB_Schema_Export_Tool
         /// Examine column types to populate a list of enum DataColumnTypeConstants
         /// </summary>
         /// <param name="sourceTableName"></param>
-        /// <param name="columnInfoByType"></param>
         /// <param name="quoteWithSquareBrackets">When true, quote names using double quotes instead of square brackets</param>
-        /// <param name="headerRowValues"></param>
-        /// <returns></returns>
-        protected List<DataColumnTypeConstants> ConvertDataTableColumnInfo(
+        /// <param name="dataExportParams"></param>
+        /// <returns>List of column names and column names (names are the column names in the target table)</returns>
+        protected ColumnMapInfo ConvertDataTableColumnInfo(
             string sourceTableName,
-            IReadOnlyCollection<KeyValuePair<string, Type>> columnInfoByType,
             bool quoteWithSquareBrackets,
-            out StringBuilder headerRowValues)
+            DataExportWorkingParams dataExportParams)
         {
 
-            var columnTypes = new List<DataColumnTypeConstants>();
-            headerRowValues = new StringBuilder();
             var columnIndex = 0;
 
             mOptions.ColumnMapForDataExport.TryGetValue(sourceTableName, out var columnMapInfo);
 
-            foreach (var item in columnInfoByType)
+            foreach (var item in dataExportParams.ColumnInfoByType)
             {
                 var currentColumnName = item.Key;
                 var currentColumnType = item.Value;
@@ -419,56 +415,36 @@ namespace DB_Schema_Export_Tool
 
                 string delimiter;
 
-                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || mOptions.PgDumpTableData)
+                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || mOptions.PgDumpTableData || dataExportParams.PgInsertEnabled)
                     delimiter = ", ";
                 else
                     delimiter = "\t";
 
-                columnTypes.Add(dataColumnType);
-
-                string targetColumnName;
-
-                // Rename the column if defined in mOptions.ColumnMapForDataExport or if mOptions.TableDataSnakeCase is true
-                if (columnMapInfo != null && columnMapInfo.IsColumnDefined(currentColumnName))
-                {
-                    targetColumnName = columnMapInfo.GetTargetColumnName(currentColumnName);
-                    if (targetColumnName.Equals("<skip>", StringComparison.OrdinalIgnoreCase))
-                    {
-                        // Do not include this column in the output file
-                        dataColumnType = DataColumnTypeConstants.SkipColumn;
-                        columnTypes[columnTypes.Count - 1] = dataColumnType;
-                    }
-                }
-                else if (mOptions.TableDataSnakeCase)
-                {
-                    targetColumnName = ConvertNameToSnakeCase(currentColumnName);
-                }
-                else
-                {
-                    targetColumnName = currentColumnName;
-                }
+                var targetColumnName = GetTargetColumnName(columnMapInfo, currentColumnName, ref dataColumnType);
 
                 if (dataColumnType != DataColumnTypeConstants.SkipColumn)
                 {
-                    if (columnIndex > 0 && headerRowValues.Length > 0)
+                    if (columnIndex > 0 && dataExportParams.HeaderRowValues.Length > 0)
                     {
-                        headerRowValues.Append(delimiter);
+                        dataExportParams.HeaderRowValues.Append(delimiter);
                     }
 
-                    if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || mOptions.PgDumpTableData)
+                    if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || mOptions.PgDumpTableData || dataExportParams.PgInsertEnabled)
                     {
-                        headerRowValues.Append(PossiblyQuoteName(targetColumnName, quoteWithSquareBrackets));
+                        dataExportParams.HeaderRowValues.Append(PossiblyQuoteName(targetColumnName, quoteWithSquareBrackets));
                     }
                     else
                     {
-                        headerRowValues.Append(targetColumnName);
+                        dataExportParams.HeaderRowValues.Append(targetColumnName);
                     }
                 }
+
+                dataExportParams.ColumnNamesAndTypes.Add(new KeyValuePair<string, DataColumnTypeConstants>(targetColumnName, dataColumnType));
 
                 columnIndex++;
             }
 
-            return columnTypes;
+            return columnMapInfo;
         }
 
         private string ConvertNameToSnakeCase(string objectName)
@@ -537,10 +513,10 @@ namespace DB_Schema_Export_Tool
 
                 foreach (var tableItem in tablesToExport)
                 {
-                    var tableName = tableItem.Key;
+                    var tableInfo = tableItem.Key;
                     var maxRowsToExport = tableItem.Value;
 
-                    var success = ExportDBTableData(databaseName, tableName, maxRowsToExport, workingParams);
+                    var success = ExportDBTableData(databaseName, tableInfo, maxRowsToExport, workingParams);
                     if (!success)
                     {
                         return false;
@@ -580,24 +556,24 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Append a single row of results to the output file
         /// </summary>
-        /// <param name="writer"></param>
-        /// <param name="colSepChar"></param>
-        /// <param name="delimitedRowValues"></param>
-        /// <param name="columnTypes"></param>
-        /// <param name="columnCount"></param>
-        /// <param name="columnValues"></param>
+        /// <param name="writer">Text file writer</param>
+        /// <param name="dataExportParams"></param>
+        /// <param name="delimitedRowValues">Text to write to the current line</param>
+        /// <param name="columnCount">Number of columns</param>
+        /// <param name="columnValues">Column values</param>
         protected void ExportDBTableDataRow(
             TextWriter writer,
-            char colSepChar,
+            DataExportWorkingParams dataExportParams,
             StringBuilder delimitedRowValues,
-            IReadOnlyList<DataColumnTypeConstants> columnTypes,
             int columnCount,
             IReadOnlyList<object> columnValues)
         {
+            var colSepChar = dataExportParams.ColSepChar;
+            var nullValue = dataExportParams.NullValue;
 
             for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
             {
-                if (columnTypes[columnIndex] == DataColumnTypeConstants.SkipColumn)
+                if (dataExportParams.ColumnNamesAndTypes[columnIndex].Value == DataColumnTypeConstants.SkipColumn)
                 {
                     // Skip this column
                     continue;
@@ -610,7 +586,7 @@ namespace DB_Schema_Export_Tool
 
                 if (columnValues[columnIndex] == null)
                 {
-                    delimitedRowValues.Append(mOptions.PgDumpTableData ? @"\N" : string.Empty);
+                    delimitedRowValues.Append(nullValue);
 
                     if (columnIndex < columnCount - 1)
                     {
@@ -619,7 +595,7 @@ namespace DB_Schema_Export_Tool
                     continue;
                 }
 
-                switch (columnTypes[columnIndex])
+                switch (dataExportParams.ColumnNamesAndTypes[columnIndex].Value)
                 {
                     case DataColumnTypeConstants.Numeric:
                         delimitedRowValues.Append(columnValues[columnIndex]);
