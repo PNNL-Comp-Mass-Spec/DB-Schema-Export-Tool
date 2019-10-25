@@ -688,8 +688,8 @@ namespace DB_Schema_Export_Tool
             if (tableDataOutputFile.LastWriteTime > existingData)
             {
 
-                // Parse the pgDump output file to clean it up
-                ProcessPgDumpDataFile(tableDataOutputFile);
+                // Skip: Parse the pgDump output file to clean it up
+                // ProcessPgDumpDataFile(tableDataOutputFile);
                 return true;
             }
 
@@ -1593,6 +1593,7 @@ namespace DB_Schema_Export_Tool
             targetScriptFile = namePrefix + nameToUse + ".sql";
         }
 
+        [Obsolete("Unused")]
         private void ProcessPgDumpDataFile(FileSystemInfo pgDumpOutputFile)
         {
             var linesProcessed = 0;
