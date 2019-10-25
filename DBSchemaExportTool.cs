@@ -634,6 +634,23 @@ namespace DB_Schema_Export_Tool
                         if (string.IsNullOrWhiteSpace(dataLine))
                             continue;
 
+                        // Supports the following tab-delimited columns
+
+                        // Option 1:
+                        // SourceTableName
+
+                        // Option 2:
+                        // SourceTableName  TargetTableName
+
+                        // Option 3:
+                        // SourceTableName  TargetSchemaName  TargetTableName
+
+                        // Option 4:
+                        // SourceTableName  TargetSchemaName  TargetTableName  PgInsert
+
+                        // Option 4:
+                        // SourceTableName  TargetSchemaName  TargetTableName  PgInsert  KeyColumn(s)
+
                         var lineParts = dataLine.Split('\t');
 
                         if (!headerLineChecked)
@@ -647,7 +664,9 @@ namespace DB_Schema_Export_Tool
 
                         var sourceTableName = lineParts[0].Trim();
 
-                        var tableInfo = new TableDataExportInfo(sourceTableName);
+                        var tableInfo = new TableDataExportInfo(sourceTableName) {
+                            UsePgInsert = mOptions.PgInsertTableData
+                        };
 
                         if (lineParts.Length == 2)
                         {
@@ -659,13 +678,37 @@ namespace DB_Schema_Export_Tool
                             tableInfo.TargetTableName = lineParts[2].Trim();
                         }
 
+                        // Check for TargetTableName being "true" or "false"
+                        if (tableInfo.TargetTableName != null &&
+                            (tableInfo.TargetTableName.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+                             tableInfo.TargetTableName.Equals("false", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            OnWarningEvent(string.Format(
+                                               "Invalid line in the table data file; target table name cannot be {0}; see {1}",
+                                               tableInfo.TargetTableName, dataLine));
+                            continue;
+                        }
+
                         if (lineParts.Length >= 4)
                         {
+                            // Treat the text "true" or a positive integer as true
                             if (bool.TryParse(lineParts[3].Trim(), out var parsedValue))
-                                tableInfo.UseMergeStatement = parsedValue;
+                            {
+                                tableInfo.UsePgInsert = parsedValue;
+                            }
                             else if (int.TryParse(lineParts[3].Trim(), out var parsedNumber))
                             {
-                                tableInfo.UseMergeStatement = parsedNumber > 0;
+                                tableInfo.UsePgInsert = parsedNumber > 0;
+                            }
+                        }
+
+                        if (lineParts.Length >= 5)
+                        {
+                            // One or more primary key columns
+                            var primaryKeyColumns = lineParts[4].Trim().Split(',');
+                            foreach (var primaryKeyColumn in primaryKeyColumns)
+                            {
+                                tableInfo.PrimaryKeyColumns.Add(primaryKeyColumn);
                             }
                         }
 

@@ -758,6 +758,60 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        /// <summary>
+        /// Get the target column name to use when exporting data
+        /// </summary>
+        /// <param name="columnMapInfo"></param>
+        /// <param name="currentColumnName"></param>
+        /// <returns></returns>
+        protected string GetTargetColumnName(ColumnMapInfo columnMapInfo, string currentColumnName)
+        {
+            var unusedDataColumnType = DataColumnTypeConstants.Numeric;
+            return GetTargetColumnName(columnMapInfo, currentColumnName, ref unusedDataColumnType);
+        }
+
+        /// <summary>
+        /// Get the target column name to use when exporting data
+        /// </summary>
+        /// <param name="columnMapInfo"></param>
+        /// <param name="currentColumnName"></param>
+        /// <param name="dataColumnType"></param>
+        /// <returns></returns>
+        protected string GetTargetColumnName(ColumnMapInfo columnMapInfo, string currentColumnName, ref DataColumnTypeConstants dataColumnType)
+        {
+            string targetColumnName;
+
+            // Rename the column if defined in mOptions.ColumnMapForDataExport or if mOptions.TableDataSnakeCase is true
+            if (columnMapInfo != null && columnMapInfo.IsColumnDefined(currentColumnName))
+            {
+                targetColumnName = columnMapInfo.GetTargetColumnName(currentColumnName);
+                if (targetColumnName.Equals("<skip>", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Do not include this column in the output file
+                    dataColumnType = DataColumnTypeConstants.SkipColumn;
+                }
+            }
+            else if (mOptions.TableDataSnakeCase)
+            {
+                targetColumnName = ConvertNameToSnakeCase(currentColumnName);
+            }
+            else
+            {
+                targetColumnName = currentColumnName;
+            }
+
+            return targetColumnName;
+        }
+
+        /// <summary>
+        /// Get the target table name to use when exporting data
+        /// </summary>
+        /// <param name="sourceTableNameAndSchema">Source table: schema.table_name</param>
+        /// <param name="tableInfo">Table info object</param>
+        /// <param name="quoteWithSquareBrackets">When true, quote with square brackets; otherwise, quote with double quotes</param>
+        /// <param name="alwaysQuoteNames">When true, always returned quoted schema.table_name</param>
+        /// <param name="targetTableName">Target table name, without quotes or square brackets (even if alwaysQuoteNames is true, this is unquoted)</param>
+        /// <returns></returns>
         protected string GetTargetTableName(
             string sourceTableNameAndSchema,
             TableDataExportInfo tableInfo,

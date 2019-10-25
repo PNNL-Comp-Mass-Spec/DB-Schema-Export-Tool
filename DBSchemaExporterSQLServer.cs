@@ -1051,6 +1051,12 @@ namespace DB_Schema_Export_Tool
                                                                                 quoteWithSquareBrackets, false,
                                                                                 out var targetTableName);
 
+                if (targetTableName.Equals("<skip>"))
+                {
+                    // Skip this table
+                    OnStatusEvent(string.Format("Skipping data export from table {0} in database {1}", sourceTableNameWithSchema, databaseName));
+                    return true;
+                }
 
                 // Get the table name, with schema, in the form schema.table_name
                 // The schema and table name will always be quoted
