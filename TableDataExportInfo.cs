@@ -1,4 +1,6 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace DB_Schema_Export_Tool
 {
@@ -8,13 +10,18 @@ namespace DB_Schema_Export_Tool
         /// Source table name
         /// </summary>
         /// <remarks>Can either be just the table name or SchemaName.TableName</remarks>
-        public string SourceTableName { get;}
+        public string SourceTableName { get; }
 
+        /// <summary>
+        /// Target schema name
+        /// </summary>
         public string TargetSchemaName { get; set; }
 
+        /// <summary>
+        /// Target table name
+        /// </summary>
         public string TargetTableName { get; set; }
 
-        public bool UseMergeStatement { get; set; }
         /// <summary>
         /// When true, export data from SQL Server using insert commands formatted as PostgreSQL compatible
         /// INSERT INTO statements using the ON CONFLICT(key_column) DO UPDATE SET syntax
@@ -33,12 +40,17 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="sourceTableName">Can either be just the table name or SchemaName.TableName</param>
+        /// <param name="sourceTableName">Either just the table name or SchemaName.TableName (depends on the circumstance)</param>
         public TableDataExportInfo(string sourceTableName)
         {
             SourceTableName = sourceTableName;
+            PrimaryKeyColumns = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// ToString text
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return SourceTableName;

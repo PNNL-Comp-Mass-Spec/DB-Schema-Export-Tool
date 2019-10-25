@@ -1084,53 +1084,9 @@ namespace DB_Schema_Export_Tool
 
                 var columnMapInfo = ConvertDataTableColumnInfo(databaseTable.Name, quoteWithSquareBrackets, dataExportParams);
 
+                var insertIntoLine = ExportDBTableDataInit(tableInfo, columnMapInfo, dataExportParams, headerRows);
 
-                var insertIntoLine = string.Empty;
-
-                char colSepChar;
-                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData)
-                {
-                    if (identityColumnFound)
-                    {
-                        insertIntoLine = string.Format("INSERT INTO {0} ({1}) VALUES (", quotedTargetTableNameWithSchema, headerRowValues);
-
-                        headerRows.Add("SET IDENTITY_INSERT " + quotedTargetTableNameWithSchema + " ON");
-                    }
-                    else
-                    {
-                        // Identity column not present; no need to explicitly list the column names
-                        insertIntoLine = string.Format("INSERT INTO {0} VALUES (", quotedTargetTableNameWithSchema);
-
-                        headerRows.Add(COMMENT_START_TEXT + "Columns: " + headerRowValues + COMMENT_END_TEXT);
-                    }
-
-                    colSepChar = ',';
-                }
-                else if (mOptions.PgDumpTableData)
-                {
-                    if (tableInfo.UseMergeStatement)
-                    {
-                        // ToDo: Code this
-                        var mergeCommand = string.Format("MERGE ...");
-                        headerRows.Add(mergeCommand);
-                        colSepChar = ',';
-                    }
-                    else
-                    {
-                        // ReSharper disable once StringLiteralTypo
-                        var copyCommand = string.Format("COPY {0} ({1}) from stdin;", targetTableNameWithSchema, headerRowValues);
-                        headerRows.Add(copyCommand);
-                        colSepChar = '\t';
-                    }
-
-                }
-                else
-                {
-                    headerRows.Add(headerRowValues.ToString());
-                    colSepChar = '\t';
-                }
-
-                var outFilePath = GetFileNameForTableDataExport(targetTableName, targetTableNameWithSchema, workingParams);
+                var outFilePath = GetFileNameForTableDataExport(targetTableName, dataExportParams.TargetTableNameWithSchema, workingParams);
                 OnDebugEvent("Writing table data to " + outFilePath);
 
                 using (var writer = new StreamWriter(new FileStream(outFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
@@ -1145,11 +1101,52 @@ namespace DB_Schema_Export_Tool
                         writer.WriteLine(headerRow);
                     }
 
-                    ExportDBTableDataWork(writer, queryResults, columnTypes, insertIntoLine, colSepChar);
+                    ExportDBTableDataWork(writer, queryResults, insertIntoLine, dataExportParams);
 
-                    if (identityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData)
+                    if (dataExportParams.PgInsertEnabled)
                     {
-                        writer.WriteLine("SET IDENTITY_INSERT " + quotedTargetTableNameWithSchema + " OFF");
+                        if (dataExportParams.FooterRequired)
+                        {
+                            if (dataExportParams.PgInsertFooters.Count == 0)
+                            {
+                                writer.WriteLine(";");
+                            }
+                            else
+                            {
+                                foreach (var line in dataExportParams.PgInsertFooters)
+                                    writer.WriteLine(line);
+                            }
+                        }
+
+                        if (dataExportParams.IdentityColumnFound)
+                        {
+                            string primaryKeyColumnName;
+                            if (identityColumnIndex >= 0)
+                            {
+                                primaryKeyColumnName = dataExportParams.ColumnNamesAndTypes[identityColumnIndex].Key;
+                            }
+                            else
+                            {
+                                primaryKeyColumnName = dataExportParams.IdentityColumnName;
+                            }
+
+                            // Make an educated guess of the sequence name, for example
+                            // mc.t_mgr_types_mt_type_id_seq
+                            var sequenceName = string.Format("{0}_{1}_seq",
+                                                             dataExportParams.TargetTableNameWithSchema.Replace("\"", ""),
+                                                             primaryKeyColumnName);
+
+                            writer.WriteLine("-- Set the sequence's current value to the maximum current ID");
+                            writer.WriteLine("SELECT setval('{0}', (SELECT MAX({1}) FROM {2}));",
+                                             sequenceName, primaryKeyColumnName, dataExportParams.TargetTableNameWithSchema);
+                            writer.WriteLine();
+                            writer.WriteLine("-- Preview the ID that will be assigned to the next item");
+                            writer.WriteLine("SELECT currval('{0}');", sequenceName);
+                        }
+                    }
+                    else if (dataExportParams.IdentityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData)
+                    {
+                        writer.WriteLine("SET IDENTITY_INSERT " + dataExportParams.QuotedTargetTableNameWithSchema + " OFF");
                     }
                 }
 
@@ -1162,21 +1159,138 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        private string ExportDBTableDataInit(
+            TableDataExportInfo tableInfo,
+            ColumnMapInfo columnMapInfo,
+            DataExportWorkingParams dataExportParams,
+            List<string> headerRows)
+        {
+            string insertIntoLine;
+
+            if (dataExportParams.PgInsertEnabled)
+            {
+                var insertCommand = string.Format("INSERT INTO {0} ({1})",
+                                                  dataExportParams.QuotedTargetTableNameWithSchema,
+                                                  dataExportParams.HeaderRowValues);
+
+                dataExportParams.PgInsertHeaders.Add(insertCommand);
+                dataExportParams.PgInsertHeaders.Add("OVERRIDING SYSTEM VALUE");
+                dataExportParams.PgInsertHeaders.Add("VALUES");
+
+                headerRows.AddRange(dataExportParams.PgInsertHeaders);
+
+                string primaryKeyColumns;
+
+                if (tableInfo.PrimaryKeyColumns.Count > 0)
+                {
+                    var targetColumnNames = new List<string>();
+                    foreach (var primaryKeyColumn in tableInfo.PrimaryKeyColumns)
+                    {
+                        var targetColumnName = GetTargetColumnName(columnMapInfo, primaryKeyColumn);
+                        targetColumnNames.Add(targetColumnName);
+                    }
+
+                    primaryKeyColumns = string.Join(",", targetColumnNames);
+                }
+                else if (dataExportParams.IdentityColumnFound)
+                {
+                    primaryKeyColumns = GetTargetColumnName(columnMapInfo, dataExportParams.IdentityColumnName);
+                }
+                else
+                {
+                    primaryKeyColumns = string.Empty;
+                }
+
+                dataExportParams.ColSepChar = ',';
+                insertIntoLine = string.Empty;
+
+                if (primaryKeyColumns.Length <= 0)
+                    return insertIntoLine;
+
+                dataExportParams.PgInsertFooters.Add(string.Format("ON CONFLICT ({0})", primaryKeyColumns));
+                dataExportParams.PgInsertFooters.Add("DO UPDATE SET");
+
+                for (var columnIndex = 0; columnIndex < dataExportParams.ColumnNamesAndTypes.Count; columnIndex++)
+                {
+                    var currentColumn = dataExportParams.ColumnInfoByType[columnIndex];
+
+                    var currentColumnName = currentColumn.Key;
+                    if (tableInfo.PrimaryKeyColumns.Contains(currentColumnName))
+                    {
+                        // Skip this column
+                        continue;
+                    }
+
+                    var dataColumnType = DataColumnTypeConstants.Numeric;
+
+                    var targetColumnName = GetTargetColumnName(columnMapInfo, currentColumnName, ref dataColumnType);
+
+                    if (dataColumnType == DataColumnTypeConstants.SkipColumn)
+                        continue;
+
+                    var optionalComma = columnIndex < dataExportParams.ColumnNamesAndTypes.Count - 1 ? "," : string.Empty;
+
+                    dataExportParams.PgInsertFooters.Add(string.Format("  {0} = EXCLUDED.{0}{1}", targetColumnName, optionalComma));
+                }
+
+                dataExportParams.PgInsertFooters.Add(";");
+
+            }
+            else if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData)
+            {
+                if (dataExportParams.IdentityColumnFound)
+                {
+                    insertIntoLine = string.Format("INSERT INTO {0} ({1}) VALUES (",
+                                                   dataExportParams.QuotedTargetTableNameWithSchema,
+                                                   dataExportParams.HeaderRowValues);
+
+                    headerRows.Add("SET IDENTITY_INSERT " + dataExportParams.QuotedTargetTableNameWithSchema + " ON");
+                }
+                else
+                {
+                    // Identity column not present; no need to explicitly list the column names
+                    insertIntoLine = string.Format("INSERT INTO {0} VALUES (",
+                                                   dataExportParams.QuotedTargetTableNameWithSchema);
+
+                    headerRows.Add(COMMENT_START_TEXT + "Columns: " + dataExportParams.HeaderRowValues + COMMENT_END_TEXT);
+                }
+
+                dataExportParams.ColSepChar = ',';
+            }
+            else if (mOptions.PgDumpTableData)
+            {
+                // ReSharper disable once StringLiteralTypo
+                var copyCommand = string.Format("COPY {0} ({1}) from stdin;",
+                                                dataExportParams.TargetTableNameWithSchema,
+                                                dataExportParams.HeaderRowValues);
+                headerRows.Add(copyCommand);
+                dataExportParams.ColSepChar = '\t';
+                insertIntoLine = string.Empty;
+            }
+            else
+            {
+                // Export data as a tab-delimited table
+                headerRows.Add(dataExportParams.HeaderRowValues.ToString());
+                dataExportParams.ColSepChar = '\t';
+                insertIntoLine = string.Empty;
+            }
+
+            return insertIntoLine;
+        }
+
         /// <summary>
         /// Step through the results in queryResults
         /// Append lines to the output file
         /// </summary>
-        /// <param name="writer"></param>
-        /// <param name="queryResults"></param>
-        /// <param name="columnTypes"></param>
-        /// <param name="insertIntoLine"></param>
-        /// <param name="colSepChar"></param>
+        /// <param name="writer">Text file writer</param>
+        /// <param name="queryResults">Query results dataset</param>
+        /// <param name="insertIntoLine">Insert Into (Column1, Column2, Column3) line</param>
+        /// <param name="dataExportParams"></param>
         private void ExportDBTableDataWork(
             TextWriter writer,
             DataSet queryResults,
-            IReadOnlyList<DataColumnTypeConstants> columnTypes,
             string insertIntoLine,
-            char colSepChar)
+            DataExportWorkingParams dataExportParams)
         {
             var columnCount = queryResults.Tables[0].Columns.Count;
 
@@ -1184,10 +1298,15 @@ namespace DB_Schema_Export_Tool
 
             var columnValues = new object[columnCount];
 
+            var commandAndLfRequired = false;
+            var rowCountWritten = 0;
+            var usingPgInsert = dataExportParams.PgInsertEnabled;
+            dataExportParams.FooterRequired = false;
+
             foreach (DataRow currentRow in queryResults.Tables[0].Rows)
             {
                 delimitedRowValues.Clear();
-                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData)
+                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData && !usingPgInsert)
                 {
                     delimitedRowValues.Append(insertIntoLine);
                 }
@@ -1204,10 +1323,35 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
-                ExportDBTableDataRow(writer, colSepChar, delimitedRowValues, columnTypes, columnCount, columnValues);
+                if (commandAndLfRequired)
+                {
+                    // Add a comma and a linefeed
+                    writer.WriteLine(",");
+                }
+
+                ExportDBTableDataRow(writer, dataExportParams, delimitedRowValues, columnCount, columnValues);
+                if (usingPgInsert)
+                    commandAndLfRequired = true;
+
+                rowCountWritten++;
+                if (mOptions.PgInsertChunkSize > 0 && rowCountWritten > mOptions.PgInsertChunkSize)
+                {
+                    // ToDo: code this
+                    throw new NotImplementedException();
+
+
+                    commandAndLfRequired = false;
+                }
             }
 
-            if (mOptions.PgDumpTableData)
+            if (commandAndLfRequired)
+            {
+                // Add linefeed (but no comma)
+                writer.WriteLine();
+                dataExportParams.FooterRequired = true;
+            }
+
+            if (mOptions.PgDumpTableData && !usingPgInsert)
             {
                 writer.WriteLine(@"\.");
                 writer.WriteLine(@";");
