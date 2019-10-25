@@ -1609,8 +1609,6 @@ namespace DB_Schema_Export_Tool
                     if (linesProcessed < 10)
                         Console.WriteLine(dataLine);
 
-                    // ToDo: is anything required?
-
                     linesProcessed++;
                 }
             }
