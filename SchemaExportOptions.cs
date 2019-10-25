@@ -464,6 +464,18 @@ namespace DB_Schema_Export_Tool
                 Console.WriteLine(" {0,-48} {1}", "Data export from standard tables:", BoolToEnabledDisabled(!DisableAutoDataExport));
             }
 
+            if (PostgreSQL && PgDumpTableData && TableDataSnakeCase)
+            {
+                // Assure that this is false
+                ConsoleMsgUtils.ShowWarning("Ignoring /SnakeCase since exporting data from a PostgreSQL server using pg_dump");
+                TableDataSnakeCase = false;
+            }
+
+            if (!DisableAutoDataExport || !string.IsNullOrWhiteSpace(TableDataToExportFile) || ExportAllData)
+            {
+                Console.WriteLine(" {0,-48} {1}", "Use snake_case for table and column names:", BoolToEnabledDisabled(TableDataSnakeCase) + " (when exporting data)");
+            }
+
             if (MaxRowsToExport == null)
             {
                 if (ExportAllData)
