@@ -177,6 +177,12 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         public bool CreateDirectoryForEachDB { get; set; }
 
+        [Option("ServerInfo", HelpShowsDefault = false, HelpText = "Export server settings, logins, and jobs")]
+        public bool ExportServerInfo
+        {
+            get => ScriptingOptions.ExportServerSettingsLoginsAndJobs;
+            set => ScriptingOptions.ExportServerSettingsLoginsAndJobs = value;
+        }
         [Option("Data", "DataTables", HelpShowsDefault = false,
             HelpText = "Text file with table names (one name per line) for which table data should be exported. " +
                        @"Also supports a multi-column, tab-delimited format:\nSourceTableName TargetSchemaName TargetTableName PgInsert KeyColumn(s)")]
@@ -220,13 +226,6 @@ namespace DB_Schema_Export_Tool
         [Option("SnakeCase", HelpShowsDefault = false,
             HelpText = "Auto changes column names from Upper_Case and UpperCase to lower_case when exporting table data")]
         public bool TableDataSnakeCase { get; set; }
-
-        [Option("ServerInfo", HelpShowsDefault = false, HelpText = "Export server settings, logins, and jobs")]
-        public bool ExportServerInfo
-        {
-            get => ScriptingOptions.ExportServerSettingsLoginsAndJobs;
-            set => ScriptingOptions.ExportServerSettingsLoginsAndJobs = value;
-        }
 
         public bool IncludeSystemObjects
         {
