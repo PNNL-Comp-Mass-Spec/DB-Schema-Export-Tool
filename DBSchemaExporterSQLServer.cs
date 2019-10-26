@@ -112,7 +112,6 @@ namespace DB_Schema_Export_Tool
             {
                 serverInfo.Add(propertyName + "=" + propertyValue);
             }
-
         }
 
         private void AppendToList(ICollection<string> serverInfo, string propertyName, int propertyValue)
@@ -121,7 +120,6 @@ namespace DB_Schema_Export_Tool
             {
                 serverInfo.Add(propertyName + "=" + propertyValue);
             }
-
         }
 
         private void AppendToList(ICollection<string> serverInfo, string propertyName, bool propertyValue)
@@ -130,7 +128,6 @@ namespace DB_Schema_Export_Tool
             {
                 serverInfo.Add(propertyName + "=" + propertyValue);
             }
-
         }
 
         private void AppendToList(ICollection<string> serverInfo, ConfigProperty configProperty)
@@ -139,7 +136,6 @@ namespace DB_Schema_Export_Tool
             {
                 serverInfo.Add(configProperty.DisplayName + "=" + configProperty.ConfigValue);
             }
-
         }
 
         /// <summary>
@@ -1186,10 +1182,10 @@ namespace DB_Schema_Export_Tool
         }
 
         private string ExportDBTableDataInit(
-        TableDataExportInfo tableInfo,
-        ColumnMapInfo columnMapInfo,
-        DataExportWorkingParams dataExportParams,
-        List<string> headerRows)
+            TableDataExportInfo tableInfo,
+            ColumnMapInfo columnMapInfo,
+            DataExportWorkingParams dataExportParams,
+            List<string> headerRows)
         {
             string insertIntoLine;
 
@@ -1665,6 +1661,10 @@ namespace DB_Schema_Export_Tool
 
         }
 
+        /// <summary>
+        /// Get default SQL Server scripting options
+        /// </summary>
+        /// <returns></returns>
         private ScriptingOptions GetDefaultScriptOptions()
         {
             var scriptOptions = new ScriptingOptions
@@ -1701,7 +1701,7 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
-        /// Retrieve a list of database names for the current server
+        /// Retrieve a list of database names on the server defined in mOptions
         /// </summary>
         /// <returns></returns>
         public override IEnumerable<string> GetServerDatabases()
@@ -1741,12 +1741,21 @@ namespace DB_Schema_Export_Tool
 
         }
 
+        /// <summary>
+        /// Get the list of databases from the current server
+        /// </summary>
+        /// <returns></returns>
+        /// <remarks>Assumes we already have an active server connection</remarks>
         protected override IEnumerable<string> GetServerDatabasesCurrentConnection()
         {
             var databaseNames = GetSqlServerDatabasesWork();
             return databaseNames;
         }
 
+        /// <summary>
+        /// Get the list of databases from the current server
+        /// </summary>
+        /// <returns></returns>
         private IEnumerable<string> GetSqlServerDatabasesWork()
         {
             var databaseNames = new List<string>();
@@ -1935,6 +1944,10 @@ namespace DB_Schema_Export_Tool
             return processCount;
         }
 
+        /// <summary>
+        /// Export SQL Server settings and SQL Server Agent jobs
+        /// </summary>
+        /// <returns></returns>
         protected override bool ScriptServerObjects()
         {
             return ScriptServerObjects(mSqlServer);
@@ -2012,6 +2025,10 @@ namespace DB_Schema_Export_Tool
             return scriptInfo;
         }
 
+        /// <summary>
+        /// Return true if we have a valid server connection
+        /// </summary>
+        /// <returns></returns>
         protected override bool ValidServerConnection()
         {
             return mConnectedToServer && mSqlServer != null && mSqlServer.State == SqlSmoState.Existing;

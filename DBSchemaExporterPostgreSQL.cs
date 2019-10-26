@@ -254,7 +254,7 @@ namespace DB_Schema_Export_Tool
         {
             var workingParams = new WorkingParams();
 
-            // Keys are table names to export
+            // Keys are table names to export data
             // Values are the maximum number of rows to export
             Dictionary<TableDataExportInfo, long> tablesToExport;
             databaseNotFound = false;
@@ -1045,6 +1045,10 @@ namespace DB_Schema_Export_Tool
             return string.Format("{0}, port {1}, user {2}", mOptions.ServerName, mOptions.PgPort, mOptions.DBUser);
         }
 
+        /// <summary>
+        /// Retrieve a list of database names on the server defined in mOptions
+        /// </summary>
+        /// <returns></returns>
         public override IEnumerable<string> GetServerDatabases()
         {
             try
@@ -1081,6 +1085,11 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        /// <summary>
+        /// Get the list of databases from the current server
+        /// </summary>
+        /// <returns></returns>
+        /// <remarks>Assumes we already have an active server connection</remarks>
         protected override IEnumerable<string> GetServerDatabasesCurrentConnection()
         {
             var databaseNames = GetServerDatabasesWork();
@@ -1726,6 +1735,10 @@ namespace DB_Schema_Export_Tool
 
         }
 
+        /// <summary>
+        /// Export PostgreSQL Server settings
+        /// </summary>
+        /// <returns></returns>
         protected override bool ScriptServerObjects()
         {
 
@@ -1831,6 +1844,10 @@ namespace DB_Schema_Export_Tool
             currentObjectOwner = match.Groups["Owner"].Value;
         }
 
+        /// <summary>
+        /// Return true if we have a valid server connection
+        /// </summary>
+        /// <returns></returns>
         protected override bool ValidServerConnection()
         {
             return mConnectedToServer && mPgConnection != null &&

@@ -94,7 +94,6 @@ namespace DB_Schema_Export_Tool
             PgInsertEnabled = pgInsertEnabled;
 
             NullValue = nullValueFlag ?? string.Empty;
-
         }
 
     }
