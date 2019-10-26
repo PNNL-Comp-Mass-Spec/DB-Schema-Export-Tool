@@ -1,0 +1,4 @@
+SourceTableName  SourceColumnName TargetColumnName
+T_MgrTypes	mt_typeid	mt_type_id
+T_MgrTypes	mt_typename	mt_type_name
+T_MgrTypes	mt_active	mt_active

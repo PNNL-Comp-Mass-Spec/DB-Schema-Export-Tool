@@ -1,0 +1,4 @@
+SourceTableName	TargetSchemaName	TargetTableName	PgInsert	KeyColumn(s)
+T_Mgrs	mc	t_mgrs	true	m_id
+x_T_MgrState	public	<skip>
+SchemaChangeLog	public	<skip>
