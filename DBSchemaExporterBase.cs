@@ -199,6 +199,7 @@ namespace DB_Schema_Export_Tool
                         if (SkipTableForDataExport(tablesForDataExport, candidateTable.SourceTableName))
                             continue;
 
+                        candidateTable.UsePgInsert = mOptions.PgInsertTableData;
                         tablesToExport.Add(candidateTable, maxRowsToExportPerTable);
                     }
 
