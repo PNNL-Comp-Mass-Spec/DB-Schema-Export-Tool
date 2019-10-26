@@ -1122,6 +1122,11 @@ namespace DB_Schema_Export_Tool
                 var outFilePath = GetFileNameForTableDataExport(targetTableName, dataExportParams.TargetTableNameWithSchema, workingParams);
                 OnDebugEvent("Writing table data to " + outFilePath);
 
+                if (mOptions.ScriptPgLoadCommands)
+                {
+                    workingParams.AddDataLoadScriptFile(Path.GetFileName(outFilePath));
+                }
+
                 using (var writer = new StreamWriter(new FileStream(outFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
                 {
                     if (mOptions.PgDumpTableData)

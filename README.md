@@ -50,7 +50,7 @@ DB_Schema_Export_Tool.exe
  [/DefaultSchema:SchemaName]
  [/NoAutoData] [/ExportAllData] [/MaxRows:1000]
  [/SnakeCase] [/PgDump] [/PgInsert] [/PgInsertChunkSize:5000]
- [/ServerInfo] [/NoSchema]
+ [/ServerInfo] [/NoSchema] [/ScriptLoad]
  [/Sync:TargetDirectoryPath] [/Git] [/Svn] [/Hg] [/Commit]
  [/L[:LogFilePath]] [/LogDir:LogDirectoryPath] [/Preview] [/Stats]
 ```
@@ -161,6 +161,8 @@ Use `/PgDump` or `/PgDumpData` to specify that exported data should use `COPY` c
 Use `/ServerInfo` to export server settings, logins, and SQL Server Agent jobs
 
 Use `/NoSchema` to skip exporting schema (tables, views, functions, etc.)
+
+Use `/ScriptLoad` to create a bash script file for loading exported table data into a PostgreSQL database
 
 Use `/Sync` to copy new/changed files from the output directory to an alternative directory. 
 * This is advantageous to prevent file timestamps from getting updated every time the schema is exported

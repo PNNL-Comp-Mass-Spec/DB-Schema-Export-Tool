@@ -522,6 +522,27 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
+        /// Create a bash script for loading data into a PostgreSQL database
+        /// </summary>
+        /// <param name="workingParams"></param>
+        private void CreateDataLoadScriptFile(WorkingParams workingParams)
+        {
+            var scriptFilePath = Path.Combine(workingParams.OutputDirectoryPathCurrentDB, "LoadData.sh");
+
+            OnStatusEvent("Creating file " + scriptFilePath);
+
+            var currentUser = Environment.UserName.ToLower();
+
+            using (var writer = new StreamWriter(new FileStream(scriptFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
+            {
+                foreach (var scriptFileName in workingParams.DataLoadScriptFiles)
+                {
+                    writer.WriteLine("psql -d dms -h localhost -U {0} -f {1}", currentUser, scriptFileName);
+                }
+            }
+        }
+
+        /// <summary>
         /// Export the tables, views, procedures, etc. in the given database
         /// </summary>
         /// <param name="databaseName"></param>
@@ -579,6 +600,11 @@ namespace DB_Schema_Export_Tool
                         return true;
                     }
 
+                }
+
+                if (mOptions.ScriptPgLoadCommands)
+                {
+                    CreateDataLoadScriptFile(workingParams);
                 }
 
                 return true;

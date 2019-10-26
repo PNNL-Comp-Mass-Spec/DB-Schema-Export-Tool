@@ -11,6 +11,10 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         public bool CountObjectsOnly { get; set; }
 
+        /// <summary>
+        /// List of script file names for loading data into a PostgreSQL database
+        /// </summary>
+        public List<string> DataLoadScriptFiles { get; }
 
         /// <summary>
         /// Output directory for the current database
@@ -37,6 +41,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         public WorkingParams()
         {
+            DataLoadScriptFiles = new List<string>();
             Reset();
         }
 

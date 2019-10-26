@@ -15,7 +15,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "October 21, 2019";
+        public const string PROGRAM_DATE = "October 25, 2019";
 
         public const string DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX = "DBSchema__";
 
@@ -222,6 +222,10 @@ namespace DB_Schema_Export_Tool
             }
             set => MaxRowsToExport = value;
         }
+
+        [Option("ScriptLoad", "Script", HelpShowsDefault = false,
+            HelpText = "Generate a bash script for loading table data")]
+        public bool ScriptPgLoadCommands { get; set; }
 
         [Option("SnakeCase", HelpShowsDefault = false,
             HelpText = "Auto changes column names from Upper_Case and UpperCase to lower_case when exporting table data")]
@@ -531,6 +535,7 @@ namespace DB_Schema_Export_Tool
                 }
             }
 
+            Console.WriteLine(" {0,-48} {1}", "Create a bash script for loading data with psql:", BoolToEnabledDisabled(ScriptPgLoadCommands));
 
             if (LogMessagesToFile)
             {
