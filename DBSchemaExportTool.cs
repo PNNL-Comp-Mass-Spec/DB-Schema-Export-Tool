@@ -168,13 +168,13 @@ namespace DB_Schema_Export_Tool
 
                 if (mOptions.DisableAutoDataExport)
                 {
-                    mDBSchemaExporter.TableNamesToAutoSelect.Clear();
-                    mDBSchemaExporter.TableNameAutoSelectRegEx.Clear();
+                    mDBSchemaExporter.TableNamesToAutoExportData.Clear();
+                    mDBSchemaExporter.TableNameRegexToAutoExportData.Clear();
                 }
                 else
                 {
-                    mDBSchemaExporter.StoreTableNamesToAutoSelect(GetTableNamesToAutoExportData(mOptions.PostgreSQL));
-                    mDBSchemaExporter.StoreTableNameAutoSelectRegEx(GetTableRegExToAutoExportData());
+                    mDBSchemaExporter.StoreTableNamesToAutoExportData(GetTableNamesToAutoExportData(mOptions.PostgreSQL));
+                    mDBSchemaExporter.StoreTableNameRegexToAutoExportData(GetTableRegExToAutoExportData());
                 }
 
                 var databaseList = databaseNamesAndOutputPaths.Keys.ToList();
@@ -1009,14 +1009,14 @@ namespace DB_Schema_Export_Tool
             return success;
         }
 
-        public void StoreTableNameAutoSelectRegEx(SortedSet<string> tableNameRegExSpecs)
+        public void StoreTableNameRegexToAutoExportData(SortedSet<string> tableNameRegExSpecs)
         {
-            mDBSchemaExporter.StoreTableNameAutoSelectRegEx(tableNameRegExSpecs);
+            mDBSchemaExporter.StoreTableNameRegexToAutoExportData(tableNameRegExSpecs);
         }
 
-        public void StoreTableNamesToAutoSelect(SortedSet<string> tableNames)
+        public void StoreTableNamesToAutoExportData(SortedSet<string> tableNames)
         {
-            mDBSchemaExporter.StoreTableNameAutoSelectRegEx(tableNames);
+            mDBSchemaExporter.StoreTableNameRegexToAutoExportData(tableNames);
         }
 
         /// <summary>

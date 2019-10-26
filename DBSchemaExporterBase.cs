@@ -87,9 +87,9 @@ namespace DB_Schema_Export_Tool
 
         public Dictionary<string, string> SchemaOutputDirectories { get; }
 
-        public SortedSet<string> TableNamesToAutoSelect { get; }
+        public SortedSet<string> TableNamesToAutoExportData { get; }
 
-        public SortedSet<string> TableNameAutoSelectRegEx { get; }
+        public SortedSet<string> TableNameRegexToAutoExportData { get; }
 
         #endregion
 
@@ -122,8 +122,8 @@ namespace DB_Schema_Export_Tool
             mOptions = options;
 
             SchemaOutputDirectories = new Dictionary<string, string>();
-            TableNamesToAutoSelect = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
-            TableNameAutoSelectRegEx = new SortedSet<string>();
+            TableNamesToAutoExportData = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+            TableNameRegexToAutoExportData = new SortedSet<string>();
 
             var regExOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline;
 
@@ -208,9 +208,9 @@ namespace DB_Schema_Export_Tool
                 }
 
                 // Copy the table names from mTableNamesToAutoSelect to tablesToExport (if not yet present)
-                if (TableNamesToAutoSelect != null)
+                if (TableNamesToAutoExportData != null)
                 {
-                    foreach (var tableName in TableNamesToAutoSelect)
+                    foreach (var tableName in TableNamesToAutoExportData)
                     {
                         foreach (var candidateTable in tablesInDatabase)
                         {
@@ -225,11 +225,11 @@ namespace DB_Schema_Export_Tool
 
                 const RegexOptions regExOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline;
 
-                if (TableNameAutoSelectRegEx == null)
+                if (TableNameRegexToAutoExportData == null)
                     return tablesToExport;
 
                 var regExMatchers = new List<Regex>();
-                foreach (var regexItem in TableNameAutoSelectRegEx)
+                foreach (var regexItem in TableNameRegexToAutoExportData)
                 {
                     regExMatchers.Add(new Regex(regexItem, regExOptions));
                 }
@@ -1191,23 +1191,31 @@ namespace DB_Schema_Export_Tool
             return false;
         }
 
-        public void StoreTableNameAutoSelectRegEx(SortedSet<string> tableNameRegExSpecs)
+        /// <summary>
+        /// Store the Regex specs to use to find tables from which data should be exported
+        /// </summary>
+        /// <param name="tableNameRegExSpecs"></param>
+        public void StoreTableNameRegexToAutoExportData(SortedSet<string> tableNameRegExSpecs)
         {
-            TableNameAutoSelectRegEx.Clear();
+            TableNameRegexToAutoExportData.Clear();
             foreach (var item in tableNameRegExSpecs)
             {
-                TableNameAutoSelectRegEx.Add(item);
+                TableNameRegexToAutoExportData.Add(item);
             }
         }
 
-        public void StoreTableNamesToAutoSelect(SortedSet<string> tableNames)
+        /// <summary>
+        /// Store the names of tables from which data should be exported
+        /// </summary>
+        /// <param name="tableNames"></param>
+        public void StoreTableNamesToAutoExportData(SortedSet<string> tableNames)
         {
-            TableNamesToAutoSelect.Clear();
+            TableNamesToAutoExportData.Clear();
             foreach (var item in tableNames)
             {
-                if (!TableNamesToAutoSelect.Contains(item))
+                if (!TableNamesToAutoExportData.Contains(item))
                 {
-                    TableNamesToAutoSelect.Add(item);
+                    TableNamesToAutoExportData.Add(item);
                 }
             }
         }
