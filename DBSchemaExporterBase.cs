@@ -148,7 +148,7 @@ namespace DB_Schema_Export_Tool
 
             mColumnCharNonStandardRegEx = new Regex("[^a-z0-9_]", regExOptions);
 
-            mNonStandardOSChars = new Regex(@"[^a-z0-9_ =+-,.';`~!@#$%^&(){}\[\]]", regExOptions);
+            mNonStandardOSChars = new Regex(@"[^a-z0-9_ =+-,.;~!@#$%^&(){}\[\]]", regExOptions);
 
             mConnectedToServer = false;
             mCurrentServerInfo = new ServerConnectionInfo(string.Empty, true);
