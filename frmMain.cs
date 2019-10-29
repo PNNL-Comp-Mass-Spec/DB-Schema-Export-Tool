@@ -879,12 +879,12 @@ namespace DB_Schema_Export_Tool
 
                 if (mTableNamesToAutoSelect != null)
                 {
-                    mDBSchemaExporter.StoreTableNamesToAutoSelect(mTableNamesToAutoSelect);
+                    mDBSchemaExporter.StoreTableNamesToAutoExportData(mTableNamesToAutoSelect);
                 }
 
                 if (mTableNameAutoSelectRegEx != null)
                 {
-                    mDBSchemaExporter.StoreTableNameAutoSelectRegEx(mTableNameAutoSelectRegEx);
+                    mDBSchemaExporter.StoreTableNameRegexToAutoExportData(mTableNameAutoSelectRegEx);
                 }
 
             }
