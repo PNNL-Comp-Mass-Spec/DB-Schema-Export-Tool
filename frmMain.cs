@@ -598,7 +598,7 @@ namespace DB_Schema_Export_Tool
                 else
                 {
                     // Sort on table name
-                    lstSortedTables = (from item in mCachedTableList orderby item.Key select item).ToList();
+                    lstSortedTables = (from item in mCachedTableList orderby item.Key.ToString() select item).ToList();
                 }
 
                 // Assure that the auto-select table names are not nothing
