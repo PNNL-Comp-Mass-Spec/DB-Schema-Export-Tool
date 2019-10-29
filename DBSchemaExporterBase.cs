@@ -663,11 +663,6 @@ namespace DB_Schema_Export_Tool
                 if (columnValues[columnIndex] == null)
                 {
                     delimitedRowValues.Append(nullValue);
-
-                    if (columnIndex < columnCount - 1)
-                    {
-                        delimitedRowValues.Append(colSepChar);
-                    }
                     continue;
                 }
 
