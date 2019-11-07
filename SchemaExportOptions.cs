@@ -476,7 +476,8 @@ namespace DB_Schema_Export_Tool
 
             if (!DisableAutoDataExport || !string.IsNullOrWhiteSpace(TableDataToExportFile) || ExportAllData)
             {
-                Console.WriteLine(" {0,-48} {1}", "Use snake_case for table and column names:", BoolToEnabledDisabled(TableDataSnakeCase) + " (when exporting data)");
+                var enabledNote = TableDataSnakeCase ? " (when exporting data)" : string.Empty;
+                Console.WriteLine(" {0,-48} {1}", "Use snake_case for table and column names:", BoolToEnabledDisabled(TableDataSnakeCase) + enabledNote);
             }
 
             if (MaxRowsToExport == null)
