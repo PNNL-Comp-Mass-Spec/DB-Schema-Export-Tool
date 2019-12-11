@@ -449,7 +449,7 @@ namespace DB_Schema_Export_Tool
 
             if (!string.IsNullOrWhiteSpace(TableDataToExportFile))
             {
-                Console.WriteLine(" {0,-48} {1}", "File with table names for exporting data:", TableDataToExportFile);
+                Console.WriteLine(" {0,-48} {1}", "File with table names for exporting data:", PathUtils.CompactPathString(TableDataToExportFile, 80));
                 if (!PostgreSQL)
                 {
                     Console.WriteLine(" {0,-48} {1}", "Default value for the PgInsert column:", PgInsertTableData);
@@ -459,7 +459,8 @@ namespace DB_Schema_Export_Tool
 
             if (!string.IsNullOrWhiteSpace(TableDataColumnMapFile))
             {
-                Console.WriteLine(" {0,-48} {1}", "File with source/target column names:", TableDataColumnMapFile);
+                Console.WriteLine(" {0,-48} {1}", "File with source/target column names:", PathUtils.CompactPathString(TableDataColumnMapFile, 80));
+            }
 
             if (!string.IsNullOrWhiteSpace(ExistingSchemaFileToParse))
             {

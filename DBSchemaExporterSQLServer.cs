@@ -1145,7 +1145,7 @@ namespace DB_Schema_Export_Tool
                 var insertIntoLine = ExportDBTableDataInit(tableInfo, columnMapInfo, dataExportParams, headerRows);
 
                 var outFilePath = GetFileNameForTableDataExport(targetTableName, dataExportParams.TargetTableNameWithSchema, workingParams);
-                OnDebugEvent("Writing table data to " + outFilePath);
+                OnDebugEvent("Writing table data to " + PathUtils.CompactPathString(outFilePath, 120));
 
                 if (mOptions.ScriptPgLoadCommands)
                 {
