@@ -45,7 +45,7 @@ DB_Schema_Export_Tool.exe
  /DB:Database /DBList:CommaSeparatedDatabaseName
  [/DBUser:username] [/DBPass:username]
  [/PgUser:username] [/PgPass:password] [/PgPort:5432]
- [/DirectoryPrefix:PrefixText] [/NoSubdirectory]
+ [/DirectoryPrefix:PrefixText] [/NoSubdirectory] [/CreateDBDirectories]
  [/Data:TableDataToExport.txt] [/Map:ColumnMapping.txt]
  [/DefaultSchema:SchemaName]
  [/NoAutoData] [/ExportAllData] [/MaxRows:1000]
@@ -80,6 +80,8 @@ By default, a subdirectory named DBSchema__DatabaseName will be created below `S
 
 Use `/NoSubdirectory` to disable auto creating a subdirectory for the database being exported. 
 * Note: subdirectories will always be created if you use `/DBList` and specify more than one database
+
+Use `/CreateDBDirectories:False` to disable creating a subdirectory for the schema files for each database
 
 Use `/Data` or `/DataTables` to define a text file with table names (one name per line) for which the data 
 should be exported. In addition to table names defined in `/Data`, there are default tables 

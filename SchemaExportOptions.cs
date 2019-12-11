@@ -172,9 +172,7 @@ namespace DB_Schema_Export_Tool
             HelpText = "Disable creating a subdirectory for each database when copying data to the Sync directory")]
         public bool NoSubdirectoryOnSync { get; set; }
 
-        /// <summary>
-        /// When true (default), create a directory for each database
-        /// </summary>
+        [Option("CreateDBDirectories", HelpShowsDefault = false, HelpText = "Create a directory for the schema files for each database")]
         public bool CreateDirectoryForEachDB { get; set; }
 
         [Option("ServerInfo", HelpShowsDefault = false, HelpText = "Export server settings, logins, and jobs")]
@@ -360,7 +358,9 @@ namespace DB_Schema_Export_Tool
 
             Console.WriteLine(" {0,-48} {1}", "Output directory path:", OutputDirectoryPath);
 
-            Console.WriteLine(" {0,-48} {1}", "Server:", ServerName);
+            Console.WriteLine(" {0,-48} {1}", "Create directory for each DB:", BoolToEnabledDisabled(CreateDirectoryForEachDB));
+
+            Console.WriteLine(" {0,-48} {1}", "Source Server:", ServerName);
 
             if (!PostgreSQL)
             {
