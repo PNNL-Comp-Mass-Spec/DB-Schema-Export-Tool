@@ -54,6 +54,8 @@ namespace DB_Schema_Export_Tool
                 // ReSharper restore StringLiteralTypo
             };
 
+            parser.AddParamFileKey("Conf");
+
             if (args.Length == 0)
             {
 #if ENABLE_GUI

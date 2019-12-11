@@ -52,7 +52,9 @@ DB_Schema_Export_Tool.exe
  [/SnakeCase] [/PgDump] [/PgInsert] [/PgInsertChunkSize:5000]
  [/ServerInfo] [/NoSchema] [/ScriptLoad]
  [/Sync:TargetDirectoryPath] [/Git] [/Svn] [/Hg] [/Commit]
- [/L[:LogFilePath]] [/LogDir:LogDirectoryPath] [/Preview] [/Stats]
+ [/L[:LogFilePath]] [/LogDir:LogDirectoryPath] 
+ [/Preview] [/Stats]
+ [/ParamFile:ParamFileName.conf] [/CreateParamFile]
 ```
 
 `SchemaFileDirectory` is the path to the directory where the schema files will be saved
@@ -185,6 +187,16 @@ Use `/LogDirectory` to specify the directory to save the log file in.
 Use `/Preview` to count the number of database objects that would be exported
 
 Use `/Stats` to show (but not log) export stats
+
+The processing options can be specified in a parameter file using `/ParamFile:Options.conf` or `/Conf:Options.conf`
+* Define options using the format `ArgumentName=Value`
+* Lines starting with `#` or `;` will be treated as comments
+* Additional arguments on the command line can supplement or override the arguments in the parameter file
+
+Use `/CreateParamFile` to create an example parameter file
+* By default, the example parameter file content is shown at the console
+* To create a file named Options.conf, use `/CreateParamFile:Options.conf`
+
 
 ## Software Dependencies
 
