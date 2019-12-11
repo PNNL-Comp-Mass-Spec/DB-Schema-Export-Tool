@@ -52,12 +52,12 @@ namespace DB_Schema_Export_Tool
         public string TargetTableNameWithSchema { get; set; }
 
         /// <summary>
-        /// SQL to add before the list of values to insert into a table (when PgInsertEnabled is true)
+        /// SQL to add after the list of values to insert into a table (when PgInsertEnabled is true)
         /// </summary>
         public List<string> PgInsertFooters { get; }
 
         /// <summary>
-        /// SQL to add after the list of values to insert into a table (when PgInsertEnabled is true)
+        /// SQL to add before the list of values to insert into a table (when PgInsertEnabled is true)
         /// </summary>
         public List<string> PgInsertHeaders { get; }
 
