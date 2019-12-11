@@ -50,7 +50,7 @@ DB_Schema_Export_Tool.exe
  [/DefaultSchema:SchemaName]
  [/ExistingSchema:SchemaFileName]
  [/NoAutoData] [/ExportAllData] [/MaxRows:1000]
- [/SnakeCase] [/PgDump] [/PgInsert] [/PgInsertChunkSize:5000]
+ [/SnakeCase] [/PgDump] [/PgInsert] [/PgInsertChunkSize:5000] 
  [/ServerInfo] [/NoSchema] [/ScriptLoad]
  [/Sync:TargetDirectoryPath] [/Git] [/Svn] [/Hg] [/Commit]
  [/L[:LogFilePath]] [/LogDir:LogDirectoryPath] 
@@ -58,7 +58,7 @@ DB_Schema_Export_Tool.exe
  [/ParamFile:ParamFileName.conf] [/CreateParamFile]
 ```
 
-`SchemaFileDirectory` is the path to the directory where the schema files will be saved
+`SchemaFileDirectory` is the path to the directory where the schema files will be saved (aka the output directory)
 
 To process a single database, use `/Server` and `/DB`
 
