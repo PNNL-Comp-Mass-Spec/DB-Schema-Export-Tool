@@ -75,6 +75,12 @@ namespace DB_Schema_Export_Tool
                        "List one entry per line, using the format server:port:database:username:password (see README.md for more info)")]
         public string DBUserPassword { get; set; }
 
+        [Option("ExistingSchema", "ExistingDDL", HelpShowsDefault = false, IsInputFilePath = true,
+            HelpText = "Existing schema (DDL) file to parse to rename columns based on information in the ColumnMap file; " +
+                       "will also skip any tables with <skip> in the DataTables file. " +
+                       "The updated DDL file will end with _UpdatedColumnNames.sql")]
+        public string ExistingSchemaFileToParse { get; set; }
+
         /// <summary>
         /// When true, connecting to a PostgreSQL server
         /// </summary>
@@ -317,6 +323,8 @@ namespace DB_Schema_Export_Tool
 
             PgPort = DBSchemaExporterPostgreSQL.DEFAULT_PORT;
 
+            ExistingSchemaFileToParse = string.Empty;
+
             OutputDirectoryPath = string.Empty;
             DatabaseSubdirectoryPrefix = DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX;
             CreateDirectoryForEachDB = true;
@@ -452,6 +460,10 @@ namespace DB_Schema_Export_Tool
             if (!string.IsNullOrWhiteSpace(TableDataColumnMapFile))
             {
                 Console.WriteLine(" {0,-48} {1}", "File with source/target column names:", TableDataColumnMapFile);
+
+            if (!string.IsNullOrWhiteSpace(ExistingSchemaFileToParse))
+            {
+                Console.WriteLine(" {0,-48} {1}", "Existing schema file to update column names:", PathUtils.CompactPathString(ExistingSchemaFileToParse, 80));
             }
 
             if (!string.IsNullOrWhiteSpace(DefaultSchemaName))

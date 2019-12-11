@@ -194,6 +194,13 @@ namespace DB_Schema_Export_Tool
                     LoadColumnMapInfo(mOptions.TableDataColumnMapFile);
                 }
 
+                if (!string.IsNullOrWhiteSpace(mOptions.ExistingSchemaFileToParse))
+                {
+                    var successUpdatingNames = UpdateColumnNamesInExistingSchemaFile(mOptions, tablesForDataExport);
+                    if (!successUpdatingNames)
+                        return false;
+                }
+
                 var success = ScriptServerAndDBObjectsWork(databaseList, tablesForDataExport);
 
                 // Populate a dictionary with the database names (properly capitalized) and the output directory path used for each
@@ -1177,6 +1184,183 @@ namespace DB_Schema_Export_Tool
         public void TogglePause()
         {
             mDBSchemaExporter?.TogglePause();
+        }
+
+        private void UpdateColumnNamesInDDL(
+            StreamReader reader,
+            TextWriter writer,
+            SchemaExportOptions options,
+            IEnumerable<TableDataExportInfo> tablesForDataExport,
+            Match createItemMatch,
+            bool renameColumns = true)
+        {
+            var columnNameMatcher = new Regex(@"^(?<Prefix>[^[]+)\[(?<ColumnName>[^]]+)\](?<Suffix>.+)$", RegexOptions.Compiled);
+
+            var outputLines = new List<string>();
+            var writeOutput = true;
+
+            var sourceTableName = createItemMatch.Groups["TableName"].ToString();
+
+            foreach (var tableInfo in tablesForDataExport)
+            {
+                if (!tableInfo.SourceTableName.Equals(sourceTableName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (DBSchemaExporterBase.SkipTableForDataExport(tableInfo))
+                {
+                    // Skip this table
+                    writeOutput = false;
+                }
+                break;
+            }
+
+            if (!options.ColumnMapForDataExport.TryGetValue(sourceTableName, out var columnMapInfo))
+            {
+                columnMapInfo = new ColumnMapInfo(sourceTableName);
+            }
+
+            outputLines.Add(createItemMatch.Value);
+
+            while (!reader.EndOfStream)
+            {
+                var dataLine = reader.ReadLine();
+                if (dataLine == null)
+                    continue;
+
+                if (dataLine.StartsWith("GO"))
+                {
+                    // End of block
+
+                    if (!writeOutput)
+                        return;
+
+                    outputLines.Add(dataLine);
+
+                    foreach (var outputLine in outputLines)
+                    {
+                        writer.WriteLine(outputLine);
+                    }
+                    return;
+                }
+
+                var columnMatch = columnNameMatcher.Match(dataLine);
+                if (!columnMatch.Success || !renameColumns)
+                {
+                    outputLines.Add(dataLine);
+                    continue;
+                }
+
+                var columnName = columnMatch.Groups["ColumnName"].Value;
+                if (!columnMapInfo.IsColumnDefined(columnName))
+                {
+                    outputLines.Add(dataLine);
+                    continue;
+                }
+
+                var prefix = columnMatch.Groups["Prefix"].ToString();
+                var suffix = columnMatch.Groups["Suffix"].ToString();
+
+                var newColumnName = columnMapInfo.GetTargetColumnName(columnName);
+
+                if (newColumnName.Equals("<skip>"))
+                {
+                    // Skip this column
+                    continue;
+                }
+
+                var updatedDataLine = string.Format("{0}[{1}]{2}", prefix, newColumnName, suffix);
+                outputLines.Add(updatedDataLine);
+            }
+
+            // GO was not found; this is unexpected
+            foreach (var outputLine in outputLines)
+            {
+                writer.WriteLine(outputLine);
+            }
+
+
+        }
+
+        private bool UpdateColumnNamesInExistingSchemaFile(SchemaExportOptions options, IReadOnlyCollection<TableDataExportInfo> tablesForDataExport)
+        {
+            try
+            {
+                var existingSchemaFile = new FileInfo(options.ExistingSchemaFileToParse);
+                if (!existingSchemaFile.Exists)
+                {
+                    OnWarningEvent("File not found: " + existingSchemaFile.FullName);
+                    OnWarningEvent("Cannot update names in an existing schema file");
+                    return false;
+                }
+
+                if (existingSchemaFile.Directory == null)
+                {
+                    OnWarningEvent("Unable to determine the parent directory of: " + existingSchemaFile.FullName);
+                    OnWarningEvent("Cannot update names in an existing schema file");
+                    return false;
+                }
+
+                var updatedSchemaFile = Path.Combine(existingSchemaFile.Directory.FullName,
+                                                     Path.GetFileNameWithoutExtension(existingSchemaFile.Name) + "_UpdatedColumnNames" +
+                                                     existingSchemaFile.Extension);
+
+                var tableNameMatcher = new Regex(@"^CREATE TABLE.+\[(?<SchemaName>.+)\]\.\[(?<TableName>.+)\].*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                var indexNameMatcher = new Regex(@"^CREATE.+INDEX.+\[(?<IndexName>.+)\] ON \[(?<SchemaName>.+)\]\.\[(?<TableName>.+)\].*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                var viewNameMatcher = new Regex(@"^CREATE VIEW.+\[(?<SchemaName>.+)\]\.\[(?<TableName>.+)\].*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+                Console.WriteLine();
+                Console.WriteLine("Opening " + PathUtils.CompactPathString(options.ExistingSchemaFileToParse, 120));
+
+                using (var reader = new StreamReader(new FileStream(options.ExistingSchemaFileToParse, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+                using (var writer = new StreamWriter(new FileStream(updatedSchemaFile, FileMode.Create, FileAccess.Write, FileShare.Read)))
+                {
+                    while (!reader.EndOfStream)
+                    {
+                        var dataLine = reader.ReadLine();
+                        if (string.IsNullOrWhiteSpace(dataLine))
+                        {
+                            writer.WriteLine(dataLine);
+                            continue;
+                        }
+
+                        var createTableMatch = tableNameMatcher.Match(dataLine);
+                        if (createTableMatch.Success)
+                        {
+                            UpdateColumnNamesInDDL(reader, writer, options, tablesForDataExport, createTableMatch);
+                            continue;
+                        }
+
+                        var createIndexMatch = indexNameMatcher.Match(dataLine);
+                        if (createIndexMatch.Success)
+                        {
+                            UpdateColumnNamesInDDL(reader, writer, options, tablesForDataExport, createIndexMatch);
+                            continue;
+                        }
+
+
+                        var createViewMatch = viewNameMatcher.Match(dataLine);
+                        if (createViewMatch.Success)
+                        {
+                            // Note: only check for whether or not to skip the view; do not update column names in the view
+                            UpdateColumnNamesInDDL(reader, writer, options, tablesForDataExport, createViewMatch, false);
+                            continue;
+                        }
+
+
+                        writer.WriteLine(dataLine);
+                    }
+                }
+
+                Console.WriteLine();
+                Console.WriteLine("Created " + PathUtils.CompactPathString(updatedSchemaFile, 120));
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                OnErrorEvent("Error in UpdateNamesInExistingSchemaFile", ex);
+                return false;
+            }
         }
 
         private void UpdateRepoChanges(

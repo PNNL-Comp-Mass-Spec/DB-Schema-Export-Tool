@@ -48,6 +48,7 @@ DB_Schema_Export_Tool.exe
  [/DirectoryPrefix:PrefixText] [/NoSubdirectory] [/CreateDBDirectories]
  [/Data:TableDataToExport.txt] [/Map:ColumnMapping.txt]
  [/DefaultSchema:SchemaName]
+ [/ExistingSchema:SchemaFileName]
  [/NoAutoData] [/ExportAllData] [/MaxRows:1000]
  [/SnakeCase] [/PgDump] [/PgInsert] [/PgInsertChunkSize:5000]
  [/ServerInfo] [/NoSchema] [/ScriptLoad]
@@ -144,6 +145,11 @@ Use `/Map` or `/ColumnMap` to define a tab-delimited text file mapping source co
 
 Use `/DefaultSchema` to define the default schema name to use when exporting data from tables
 * Entries in the `/DataTables` file will override this default schema
+
+Use `/ExistingSchema` or `/ExistingDDL` to define a text file that should be parsed to rename columns, based on data loaded from the `/ColumnMap` file
+* Will create a new text file with CREATE TABLE blocks that include the new column names
+  * Will skip columns with `<skip>`
+* Will skip tables (and views, procedures, etc.) that are defined in the `/DataTables` file but have `<skip>` in the TargetTableName column
 
 Use `/ExportAllData` or `/ExportAllTables` to export data from every table in the database
 
