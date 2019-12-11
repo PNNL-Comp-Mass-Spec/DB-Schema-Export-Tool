@@ -183,12 +183,13 @@ namespace DB_Schema_Export_Tool
             get => ScriptingOptions.ExportServerSettingsLoginsAndJobs;
             set => ScriptingOptions.ExportServerSettingsLoginsAndJobs = value;
         }
-        [Option("Data", "DataTables", HelpShowsDefault = false,
+
+        [Option("Data", "DataTables", HelpShowsDefault = false, IsInputFilePath = true,
             HelpText = "Text file with table names (one name per line) for which table data should be exported. " +
                        @"Also supports a multi-column, tab-delimited format:\nSourceTableName TargetSchemaName TargetTableName PgInsert KeyColumn(s)")]
         public string TableDataToExportFile { get; set; }
 
-        [Option("Map", "ColumnMap", HelpShowsDefault = false,
+        [Option("Map", "ColumnMap", HelpShowsDefault = false, IsInputFilePath = true,
             HelpText = "Text file mapping source column names to target column names. " +
                        @"Tab-delimited columns are:\nSourceTableName  SourceColumnName  TargetColumnName\n" +
                        "The TargetColumn supports <Skip> for not including the given column in the output file")]
