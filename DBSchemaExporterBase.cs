@@ -213,6 +213,10 @@ namespace DB_Schema_Export_Tool
                 {
                     foreach (var item in tablesForDataExport)
                     {
+                        if (SkipTableForDataExport(item))
+                        {
+                            continue;
+                        }
 
                         tablesToExportData.Add(item, maxRowsToExportPerTable);
 
@@ -1284,7 +1288,23 @@ namespace DB_Schema_Export_Tool
             OnPauseStatusChange();
         }
 
-        private bool SkipTableForDataExport(IReadOnlyCollection<TableDataExportInfo> tablesForDataExport, string candidateTableSourceTableName)
+        /// <summary>
+        /// Determine whether this table should be skipped when exporting data
+        /// </summary>
+        /// <param name="tableInfo"></param>
+        /// <returns>True (meaning to skip the table) if the table has "&lt;skip&gt;" for the TargetTableName</returns>
+        public static bool SkipTableForDataExport(TableDataExportInfo tableInfo)
+        {
+            return tableInfo.TargetTableName != null && tableInfo.TargetTableName.Equals("<skip>", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Determine whether this table should be skipped when exporting data
+        /// </summary>
+        /// <param name="tablesForDataExport"></param>
+        /// <param name="candidateTableSourceTableName"></param>
+        /// <returns>True (meaning to skip the table) if the table name is defined in tablesForDataExport and has "&lt;skip&gt;" for the TargetTableName</returns>
+        protected bool SkipTableForDataExport(IReadOnlyCollection<TableDataExportInfo> tablesForDataExport, string candidateTableSourceTableName)
         {
             if (tablesForDataExport == null)
                 return false;
@@ -1294,7 +1314,7 @@ namespace DB_Schema_Export_Tool
                 if (!item.SourceTableName.Equals(candidateTableSourceTableName, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                if (item.TargetTableName.Equals("<skip>", StringComparison.OrdinalIgnoreCase))
+                if (SkipTableForDataExport(item))
                     return true;
             }
 

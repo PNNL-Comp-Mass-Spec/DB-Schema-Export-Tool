@@ -152,6 +152,7 @@ Use `/ExistingSchema` or `/ExistingDDL` to define a text file that should be par
 * Will skip tables (and views, procedures, etc.) that are defined in the `/DataTables` file but have `<skip>` in the TargetTableName column
 
 Use `/ExportAllData` or `/ExportAllTables` to export data from every table in the database
+* Will skip tables (and views) that are defined in the `/DataTables` file but have `<skip>` in the TargetTableName column
 
 Use `/MaxRows` to define the maximum number of data rows to export
 * Defaults to 1000

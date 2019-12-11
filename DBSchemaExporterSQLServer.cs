@@ -376,6 +376,15 @@ namespace DB_Schema_Export_Tool
                 return false;
             }
 
+            // Populate the TablesToSkip list in the working params
+            foreach (var item in tablesForDataExport)
+            {
+                if (SkipTableForDataExport(item))
+                {
+                    workingParams.TablesToSkip.Add(item.SourceTableName);
+                }
+            }
+
             try
             {
                 if (mOptions.ScriptingOptions.AutoSelectTablesForDataExport || mOptions.ExportAllData)
@@ -660,6 +669,11 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
+                if (workingParams.TablesToSkip.Contains(databaseTable.Name))
+                {
+                    includeTable = false;
+                }
+
                 if (includeTable)
                 {
                     var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
@@ -836,7 +850,7 @@ namespace DB_Schema_Export_Tool
                 {
                     case 0:
                         // Views
-                        objectType = "Views";
+                        objectType = "View";
                         if (mOptions.ScriptingOptions.ExportViews)
                         {
                             sql = "SELECT table_schema, table_name FROM INFORMATION_SCHEMA.tables WHERE table_type = 'view' ";
@@ -851,7 +865,7 @@ namespace DB_Schema_Export_Tool
                         break;
                     case 1:
                         // Stored procedures
-                        objectType = "Stored procedures";
+                        objectType = "Stored procedure";
                         if (mOptions.ScriptingOptions.ExportStoredProcedures)
                         {
                             sql = "SELECT routine_schema, routine_name FROM INFORMATION_SCHEMA.routines WHERE routine_type = 'procedure'";
@@ -866,7 +880,7 @@ namespace DB_Schema_Export_Tool
                         break;
                     case 2:
                         // User defined functions
-                        objectType = "User defined functions";
+                        objectType = "User defined function";
                         if (mOptions.ScriptingOptions.ExportUserDefinedFunctions)
                         {
                             sql = "SELECT routine_schema, routine_name FROM INFORMATION_SCHEMA.routines " +
@@ -877,7 +891,7 @@ namespace DB_Schema_Export_Tool
                         break;
                     case 3:
                         // Synonyms
-                        objectType = "Synonyms";
+                        objectType = "Synonym";
                         if (mOptions.ScriptingOptions.ExportSynonyms)
                         {
                             sql = "SELECT B.name AS SchemaName, A.name FROM sys.synonyms A " +
@@ -937,12 +951,21 @@ namespace DB_Schema_Export_Tool
 
                         if (smoObjectArray != null)
                         {
-                            var smoObjectArrayArray = new[] {
-                                smoObjectArray
-                            };
+                            if (workingParams.TablesToSkip.Contains(objectName))
+                            {
+                                // Skip this object
+                                OnDebugEvent(string.Format("Skipping {0} {1} ", objectType, objectName));
+                            }
+                            else
+                            {
+                                var smoObjectArrayArray = new[]
+                                {
+                                    smoObjectArray
+                                };
 
-                            var scriptInfo = CleanSqlScript(StringCollectionToList(scripter.Script(smoObjectArrayArray)));
-                            WriteTextToFile(workingParams.OutputDirectory, objectName, scriptInfo);
+                                var scriptInfo = CleanSqlScript(StringCollectionToList(scripter.Script(smoObjectArrayArray)));
+                                WriteTextToFile(workingParams.OutputDirectory, objectName, scriptInfo);
+                            }
                         }
 
                         workingParams.ProcessCount++;
@@ -958,7 +981,7 @@ namespace DB_Schema_Export_Tool
                     if (mOptions.ShowStats)
                     {
                         OnDebugEvent(string.Format(
-                                         "Exported {0} {1} in {2:0.0} seconds",
+                                         "Exported {0} {1}s in {2:0.0} seconds",
                                          queryResults.Tables[0].Rows.Count, objectType, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
                     }
                 }
@@ -1070,6 +1093,13 @@ namespace DB_Schema_Export_Tool
                     return true;
                 }
 
+                if (SkipTableForDataExport(tableInfo))
+                {
+                    // Skip this table
+                    OnStatusEvent(string.Format("Skipping data export from table {0} in database {1}", sourceTableNameWithSchema, databaseName));
+                    return true;
+                }
+
                 var queryResults = mCurrentDatabase.ExecuteWithResults(sql);
 
                 var quoteWithSquareBrackets = !mOptions.PgDumpTableData && !dataExportParams.PgInsertEnabled;
@@ -1079,13 +1109,6 @@ namespace DB_Schema_Export_Tool
                 dataExportParams.TargetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo,
                                                                                 quoteWithSquareBrackets, false,
                                                                                 out var targetTableName);
-
-                if (targetTableName.Equals("<skip>"))
-                {
-                    // Skip this table
-                    OnStatusEvent(string.Format("Skipping data export from table {0} in database {1}", sourceTableNameWithSchema, databaseName));
-                    return true;
-                }
 
                 // Get the table name, with schema, in the form schema.table_name
                 // The schema and table name will always be quoted

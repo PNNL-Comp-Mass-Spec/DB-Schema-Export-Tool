@@ -36,11 +36,17 @@ namespace DB_Schema_Export_Tool
         public int ProcessCountExpected { get; set; }
 
         /// <summary>
+        /// Table names to skip for schema and/or data export
+        /// </summary>
+        public SortedSet<string> TablesToSkip { get; }
+
+        /// <summary>
         /// Constructor
         /// </summary>
         public WorkingParams()
         {
             DataLoadScriptFiles = new List<string>();
+            TablesToSkip = new SortedSet<string>();
             Reset();
         }
 
