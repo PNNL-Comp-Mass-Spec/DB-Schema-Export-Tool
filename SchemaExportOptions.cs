@@ -197,7 +197,7 @@ namespace DB_Schema_Export_Tool
         [Option("Map", "ColumnMap", HelpShowsDefault = false, IsInputFilePath = true,
             HelpText = "Text file mapping source column names to target column names. " +
                        @"Tab-delimited columns are:\nSourceTableName  SourceColumnName  TargetColumnName\n" +
-                       "The TargetColumn supports <Skip> for not including the given column in the output file")]
+                       "The TargetColumn supports <skip> for not including the given column in the output file")]
         public string TableDataColumnMapFile { get; set; }
 
         [Option("DefaultSchema", "Schema", HelpShowsDefault = false,
