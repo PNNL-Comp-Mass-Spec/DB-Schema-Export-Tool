@@ -53,7 +53,6 @@ namespace DB_Schema_Export_Tool
 
         #endregion
 
-
         #region "Events"
 
         public event DBSchemaExporterBase.DBExportStartingHandler DBExportStarting;
@@ -570,11 +569,9 @@ namespace DB_Schema_Export_Tool
 
                         if (!headerLineChecked)
                         {
+                            headerLineChecked = true;
                             if (lineParts[0].Equals("SourceTableName"))
                                 continue;
-
-                            headerLineChecked = true;
-                            continue;
                         }
 
                         if (lineParts.Length < 3)
@@ -662,11 +659,9 @@ namespace DB_Schema_Export_Tool
 
                         if (!headerLineChecked)
                         {
+                            headerLineChecked = true;
                             if (lineParts[0].Equals("SourceTableName"))
                                 continue;
-
-                            headerLineChecked = true;
-                            continue;
                         }
 
                         var sourceTableName = lineParts[0].Trim();
