@@ -1191,10 +1191,15 @@ namespace DB_Schema_Export_Tool
         {
             var columnNameMatcher = new Regex(@"^(?<Prefix>[^[]+)\[(?<ColumnName>[^]]+)\](?<Suffix>.+)$", RegexOptions.Compiled);
 
+            var foreignKeyReferenceMatcher = new Regex(@"^REFERENCES \[(?<SchemaName>[^[]+)\]\.\[(?<TableName>[^[]+)\] *\( *\[(?<ColumnName>[^[]+)\] *\).*", RegexOptions.Compiled);
+
             var outputLines = new List<string>();
             var writeOutput = true;
 
             var sourceTableName = createItemMatch.Groups["TableName"].ToString();
+
+            // This group will exist for default constraints and foreign key constraints
+            var defaultConstraintColumn = createItemMatch.Groups["ColumnName"].ToString();
 
             foreach (var tableInfo in tablesForDataExport)
             {
@@ -1214,7 +1219,27 @@ namespace DB_Schema_Export_Tool
                 columnMapInfo = new ColumnMapInfo(sourceTableName);
             }
 
-            outputLines.Add(createItemMatch.Value);
+            if (!string.IsNullOrWhiteSpace(defaultConstraintColumn))
+            {
+                // Matched a default constraint, e.g.
+                // ALTER TABLE [dbo].[T_ParamValue] ADD  CONSTRAINT [DF_T_ParamValue_Last_Affected]  DEFAULT (getdate()) FOR [Last_Affected]
+
+                if (!columnMapInfo.IsColumnDefined(defaultConstraintColumn))
+                {
+                    outputLines.Add(createItemMatch.Value);
+                }
+                else
+                {
+                    var newColumnName = columnMapInfo.GetTargetColumnName(defaultConstraintColumn);
+                    var updatedLine = createItemMatch.Value.Replace("[" + defaultConstraintColumn + "]",
+                                                                    "[" + newColumnName + "]");
+                    outputLines.Add(updatedLine);
+                }
+            }
+            else
+            {
+                outputLines.Add(createItemMatch.Value);
+            }
 
             while (!reader.EndOfStream)
             {
@@ -1236,6 +1261,26 @@ namespace DB_Schema_Export_Tool
                         writer.WriteLine(outputLine);
                     }
                     return;
+                }
+
+                if (dataLine.StartsWith("REFERENCES"))
+                {
+                    var referenceMatch = foreignKeyReferenceMatcher.Match(dataLine);
+
+                    if (referenceMatch.Success)
+                    {
+                        var foreignKeyTableName = referenceMatch.Groups["TableName"].ToString();
+                        var foreignKeyColumnName = referenceMatch.Groups["ColumnName"].ToString();
+
+                        if (options.ColumnMapForDataExport.TryGetValue(foreignKeyTableName, out var foreignKeyTableColumnMapInfo))
+                        {
+                            var newForeignKeyColumnName = foreignKeyTableColumnMapInfo.GetTargetColumnName(foreignKeyColumnName);
+                            var updatedLine = dataLine.Replace("[" + foreignKeyColumnName + "]",
+                                                               "[" + newForeignKeyColumnName + "]");
+                            outputLines.Add(updatedLine);
+                            continue;
+                        }
+                    }
                 }
 
                 var columnMatch = columnNameMatcher.Match(dataLine);
@@ -1299,9 +1344,12 @@ namespace DB_Schema_Export_Tool
                                                      Path.GetFileNameWithoutExtension(existingSchemaFile.Name) + "_UpdatedColumnNames" +
                                                      existingSchemaFile.Extension);
 
-                var tableNameMatcher = new Regex(@"^CREATE TABLE.+\[(?<SchemaName>.+)\]\.\[(?<TableName>.+)\].*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                var indexNameMatcher = new Regex(@"^CREATE.+INDEX.+\[(?<IndexName>.+)\] ON \[(?<SchemaName>.+)\]\.\[(?<TableName>.+)\].*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                var viewNameMatcher = new Regex(@"^CREATE VIEW.+\[(?<SchemaName>.+)\]\.\[(?<TableName>.+)\].*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                var tableNameMatcher = new Regex(@"^CREATE TABLE[^[]+\[(?<SchemaName>[^[]+)\]\.\[(?<TableName>[^[]+)\].*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                var indexNameMatcher = new Regex(@"^CREATE.+INDEX[^[]+\[(?<IndexName>[^[]+)\] ON \[(?<SchemaName>[^[]+)\]\.\[(?<TableName>.+)\].*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                var viewNameMatcher = new Regex(@"^CREATE VIEW[^[]+\[(?<SchemaName>[^[]+)\]\.\[(?<TableName>[^[]+)\].*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+                var defaultConstraintMatcher = new Regex(@"^ALTER TABLE[^[]+\[(?<SchemaName>[^[]+)\]\.\[(?<TableName>[^[]+)\][^[]+ADD[^[]+CONSTRAINT.+DEFAULT.+ FOR \[(?<ColumnName>[^[]+)\].*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                var foreignKeyConstraintMatcher = new Regex(@"^ALTER TABLE[^[]+\[(?<SchemaName>[^[]+)\]\.\[(?<TableName>[^[]+)\][^[]+ADD[^[]+CONSTRAINT.+FOREIGN KEY.*\(\[(?<ColumnName>[^[]+)\]\).*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
                 Console.WriteLine();
                 Console.WriteLine("Opening " + PathUtils.CompactPathString(options.ExistingSchemaFileToParse, 120));
@@ -1332,7 +1380,6 @@ namespace DB_Schema_Export_Tool
                             continue;
                         }
 
-
                         var createViewMatch = viewNameMatcher.Match(dataLine);
                         if (createViewMatch.Success)
                         {
@@ -1341,6 +1388,21 @@ namespace DB_Schema_Export_Tool
                             continue;
                         }
 
+                        var defaultConstraintMatch = defaultConstraintMatcher.Match(dataLine);
+                        if (defaultConstraintMatch.Success)
+                        {
+                            // Note: The target column name for the default constraint is tracked in defaultConstraintMatch as group "ColumnName"
+                            UpdateColumnNamesInDDL(reader, writer, options, tablesForDataExport, defaultConstraintMatch, false);
+                            continue;
+                        }
+
+                        var foreignKeyConstraintMatch = foreignKeyConstraintMatcher.Match(dataLine);
+                        if (foreignKeyConstraintMatch.Success)
+                        {
+                            // Note: The target column name for the foreign key constraint is tracked in foreignKeyConstraintMatch as group "ColumnName"
+                            UpdateColumnNamesInDDL(reader, writer, options, tablesForDataExport, foreignKeyConstraintMatch, false);
+                            continue;
+                        }
 
                         writer.WriteLine(dataLine);
                     }
