@@ -151,8 +151,8 @@ namespace DB_Schema_Export_Tool
             var dtTables = currentDatabase.EnumObjects(DatabaseObjectTypes.Table, SortOrder.Name);
             var tablesInDatabase = (from DataRow item in dtTables.Rows select new TableDataExportInfo(item["Name"].ToString())).ToList();
 
-            var tablesToExport = AutoSelectTablesForDataExport(tablesInDatabase, tablesForDataExport);
-            return tablesToExport;
+            var tablesToExportData = AutoSelectTablesForDataExport(tablesInDatabase, tablesForDataExport);
+            return tablesToExportData;
         }
 
         private IEnumerable<string> CleanSqlScript(IEnumerable<string> scriptInfo)
@@ -353,7 +353,7 @@ namespace DB_Schema_Export_Tool
 
             // Keys are table names to export
             // Values are the maximum number of rows to export
-            Dictionary<TableDataExportInfo, long> tablesToExport;
+            Dictionary<TableDataExportInfo, long> tablesToExportData;
 
             OnDBExportStarting(databaseName);
 
@@ -380,14 +380,19 @@ namespace DB_Schema_Export_Tool
             {
                 if (mOptions.ScriptingOptions.AutoSelectTablesForDataExport || mOptions.ExportAllData)
                 {
-                    tablesToExport = AutoSelectTablesForDataExport(mCurrentDatabase, tablesForDataExport);
+                    tablesToExportData = AutoSelectTablesForDataExport(mCurrentDatabase, tablesForDataExport);
                 }
                 else
                 {
-                    tablesToExport = new Dictionary<TableDataExportInfo, long>();
+                    tablesToExportData = new Dictionary<TableDataExportInfo, long>();
                     foreach (var item in tablesForDataExport)
                     {
-                        tablesToExport.Add(item, 0);
+                        if (SkipTableForDataExport(item))
+                        {
+                            continue;
+                        }
+
+                        tablesToExportData.Add(item, 0);
                     }
                 }
             }
@@ -418,19 +423,16 @@ namespace DB_Schema_Export_Tool
 
                     OnStatusEvent(string.Format("  Found {0} database objects to export", workingParams.ProcessCountExpected));
 
-                    if (tablesToExport.Count > 0)
+                    if (tablesToExportData.Count > 0)
                     {
-                        OnStatusEvent(string.Format("  Would export table data for {0} tables", tablesToExport.Count));
+                        OnStatusEvent(string.Format("  Would export table data for {0} tables", tablesToExportData.Count));
                     }
 
                     success = true;
                 }
                 else
                 {
-                    if (tablesForDataExport != null)
-                    {
-                        workingParams.ProcessCountExpected += Math.Max(tablesForDataExport.Count, tablesToExport.Count);
-                    }
+                    workingParams.ProcessCountExpected += Math.Max(tablesForDataExport.Count, tablesToExportData.Count);
 
                     OnDebugEvent(string.Format("Scripting {0} objects", workingParams.ProcessCountExpected));
 
@@ -445,8 +447,8 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
-                // Export data from tables specified by tablesToExport (will preview the SQL to be used if mOptions.Preview is true)
-                var dataSuccess = ExportDBTableData(mCurrentDatabase.Name, tablesToExport, workingParams);
+                // Export data from tables specified by tablesToExportData (will preview the SQL to be used if mOptions.Preview is true)
+                var dataSuccess = ExportDBTableData(mCurrentDatabase.Name, tablesToExportData, workingParams);
 
                 return success && dataSuccess;
             }

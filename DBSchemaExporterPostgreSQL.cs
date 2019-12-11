@@ -123,8 +123,8 @@ namespace DB_Schema_Export_Tool
             var tablesInDatabase = mCachedDatabaseTableInfo[databaseName];
             databaseNotFound = false;
 
-            var tablesToExport = AutoSelectTablesForDataExport(tablesInDatabase.Keys.ToList(), tablesForDataExport);
-            return tablesToExport;
+            var tablesToExportData = AutoSelectTablesForDataExport(tablesInDatabase.Keys.ToList(), tablesForDataExport);
+            return tablesToExportData;
         }
 
         private void CacheDatabaseTables(string databaseName, out bool databaseNotFound)
@@ -256,7 +256,7 @@ namespace DB_Schema_Export_Tool
 
             // Keys are table names to export data
             // Values are the maximum number of rows to export
-            Dictionary<TableDataExportInfo, long> tablesToExport;
+            Dictionary<TableDataExportInfo, long> tablesToExportData;
             databaseNotFound = false;
 
             OnDBExportStarting(databaseName);
@@ -271,14 +271,14 @@ namespace DB_Schema_Export_Tool
             {
                 if (mOptions.ScriptingOptions.AutoSelectTablesForDataExport || mOptions.ExportAllData)
                 {
-                    tablesToExport = AutoSelectTablesForDataExport(databaseName, tablesForDataExport, out databaseNotFound);
+                    tablesToExportData = AutoSelectTablesForDataExport(databaseName, tablesForDataExport, out databaseNotFound);
                 }
                 else
                 {
-                    tablesToExport = new Dictionary<TableDataExportInfo, long>();
+                    tablesToExportData = new Dictionary<TableDataExportInfo, long>();
                     foreach (var item in tablesForDataExport)
                     {
-                        tablesToExport.Add(item, 0);
+                        tablesToExportData.Add(item, 0);
                     }
 
                 }
@@ -296,8 +296,8 @@ namespace DB_Schema_Export_Tool
                 // Export the database schema
                 var success = ExportDBObjectsWork(databaseName, workingParams, out databaseNotFound);
 
-                // Export data from tables specified by tablesToExport
-                var dataSuccess = ExportDBTableData(databaseName, tablesToExport, workingParams);
+                // Export data from tables specified by tablesToExportData
+                var dataSuccess = ExportDBTableData(databaseName, tablesToExportData, workingParams);
 
                 return success && dataSuccess;
             }
