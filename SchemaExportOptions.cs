@@ -15,7 +15,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "October 28, 2019";
+        public const string PROGRAM_DATE = "December 11, 2019";
 
         public const string DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX = "DBSchema__";
 
@@ -27,8 +27,9 @@ namespace DB_Schema_Export_Tool
 
         /// <summary>
         /// Column name mapping
+        /// Keys are source table name, values are a class tracking the source and target column names for the table
         /// </summary>
-        /// <remarks>Keys are source table name, values are a class tracking the source and target column names for the table</remarks>
+        /// <remarks>Keys are not case sensitive</remarks>
         public Dictionary<string, ColumnMapInfo> ColumnMapForDataExport { get; }
 
         /// <summary>
@@ -92,7 +93,7 @@ namespace DB_Schema_Export_Tool
                        "With PostgreSQL data, dump table data using pg_dump and COPY commands.")]
         public bool PgDumpTableData { get; set; }
 
-        [Option("PgInsertChunkSize", HelpShowsDefault = false,
+        [Option("PgInsertChunkSize", HelpShowsDefault = true,
             HelpText = "Number of values to insert at a time when PgInsert is true for a table; only applicable when exporting data from SQL Server")]
         public int PgInsertChunkSize { get; set; }
 
@@ -178,7 +179,7 @@ namespace DB_Schema_Export_Tool
             HelpText = "Disable creating a subdirectory for each database when copying data to the Sync directory")]
         public bool NoSubdirectoryOnSync { get; set; }
 
-        [Option("CreateDBDirectories", HelpShowsDefault = false, HelpText = "Create a directory for the schema files for each database")]
+        [Option("CreateDBDirectories", HelpShowsDefault = false, HelpText = "Create a subdirectory for the schema files for each database")]
         public bool CreateDirectoryForEachDB { get; set; }
 
         [Option("ServerInfo", HelpShowsDefault = false, HelpText = "Export server settings, logins, and jobs")]
