@@ -209,7 +209,7 @@ namespace DB_Schema_Export_Tool
                 var userDefinedTableNames = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 // Copy the table names from tablesForDataExport to tablesToExportData
-                if (tablesForDataExport != null)
+                if (tablesForDataExport != null && tablesForDataExport.Count > 0)
                 {
                     foreach (var item in tablesForDataExport)
                     {
@@ -228,7 +228,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 // Copy the table names from TableNamesToAutoExportData to tablesToExportData (if not yet present)
-                if (TableNamesToAutoExportData != null)
+                if (TableNamesToAutoExportData != null && TableNamesToAutoExportData.Count > 0)
                 {
                     foreach (var tableName in TableNamesToAutoExportData)
                     {
@@ -245,7 +245,7 @@ namespace DB_Schema_Export_Tool
 
                 const RegexOptions regExOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline;
 
-                if (TableNameRegexToAutoExportData == null)
+                if (TableNameRegexToAutoExportData == null || TableNameRegexToAutoExportData.Count == 0)
                     return tablesToExportData;
 
                 var regExMatchers = new List<Regex>();
