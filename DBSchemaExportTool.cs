@@ -5,11 +5,12 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using PRISM;
+using PRISM.Logging;
 
 namespace DB_Schema_Export_Tool
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public class DBSchemaExportTool : EventNotifier
+    public class DBSchemaExportTool : LoggerBase
     {
 
         #region "Constants and Enums"
@@ -61,6 +62,18 @@ namespace DB_Schema_Export_Tool
 
         public event DBSchemaExporterBase.ProgressCompleteHandler ProgressComplete;
 
+        /// <summary>
+        /// Progress updated
+        /// </summary>
+        public event ProgressUpdateEventHandler ProgressUpdate;
+
+        /// <summary>
+        /// Progress updated
+        /// </summary>
+        /// <param name="progressMessage"></param>
+        /// <param name="percentComplete">Value between 0 and 100</param>
+        public delegate void ProgressUpdateEventHandler(string progressMessage, float percentComplete);
+
         #endregion
 
         /// <summary>
@@ -81,6 +94,8 @@ namespace DB_Schema_Export_Tool
                 mDBSchemaExporter = new DBSchemaExporterSQLServer(mOptions);
             }
             RegisterEvents(mDBSchemaExporter);
+
+            InitializeLogFile(options);
         }
 
         /// <summary>
@@ -532,6 +547,21 @@ namespace DB_Schema_Export_Tool
             return regExSpecs;
         }
 
+        private void InitializeLogFile(SchemaExportOptions options)
+        {
+            if (!options.LogMessagesToFile)
+                return;
+
+            var baseLogFilePath = SchemaExportOptions.GetLogFilePath(options, "DB_Schema_Export_Tool_log");
+
+            LogTools.CreateFileLogger(baseLogFilePath, BaseLogger.LogLevels.DEBUG);
+
+            // Move log files over 32 days old into a year-based subdirectory
+            FileLogger.ArchiveOldLogFilesNow();
+
+            ConsoleMsgUtils.ShowDebug("Log file path: " + LogTools.CurrentLogFilePath);
+        }
+
         private void LoadColumnMapInfo(string columnMapFilePath)
         {
             mOptions.ColumnMapForDataExport.Clear();
@@ -576,7 +606,7 @@ namespace DB_Schema_Export_Tool
 
                         if (lineParts.Length < 3)
                         {
-                            OnDebugEvent("Skipping line with fewer than three columns: " + dataLine);
+                            LogDebug("Skipping line with fewer than three columns: " + dataLine);
                             continue;
                         }
 
@@ -731,15 +761,15 @@ namespace DB_Schema_Export_Tool
             return tablesForDataExport;
         }
 
-        protected new void OnErrorEvent(string message)
+        protected void OnErrorEvent(string message)
         {
-            base.OnErrorEvent(message);
+            LogError(message);
             StatusMessage = message;
         }
 
-        protected new void OnErrorEvent(string message, Exception ex)
+        protected void OnErrorEvent(string message, Exception ex)
         {
-            base.OnErrorEvent(message, ex);
+            LogError(message, ex);
             if (ex != null && !message.Contains(ex.Message))
             {
                 StatusMessage = message + ": " + ex.Message;
@@ -750,14 +780,29 @@ namespace DB_Schema_Export_Tool
             }
         }
 
-        protected new void OnWarningEvent(string message)
+        /// <summary>
+        /// Progress update
+        /// </summary>
+        /// <param name="progressMessage">Progress message</param>
+        /// <param name="percentComplete">Value between 0 and 100</param>
+        protected void OnProgressUpdate(string progressMessage, float percentComplete)
         {
-            base.OnWarningEvent(message);
+            if (ProgressUpdate == null)
+            {
+                Console.WriteLine("{0:F2}%: {1}", percentComplete, progressMessage);
+            }
+
+            ProgressUpdate?.Invoke(progressMessage, percentComplete);
+        }
+
+        protected void OnWarningEvent(string message)
+        {
+            LogWarning(message);
             StatusMessage = message;
         }
-        protected new void OnStatusEvent(string message)
+        protected void OnStatusEvent(string message)
         {
-            base.OnStatusEvent(message);
+            LogWarning(message);
             StatusMessage = message;
         }
 
@@ -1115,14 +1160,14 @@ namespace DB_Schema_Export_Tool
                             switch (differenceReason)
                             {
                                 case DifferenceReasonType.NewFile:
-                                    OnDebugEvent("  Copying new file " + sourceFile.Name);
+                                    LogDebug("  Copying new file " + sourceFile.Name);
                                     newFilePaths.Add(fiTargetFile.FullName);
                                     break;
                                 case DifferenceReasonType.Changed:
-                                    OnDebugEvent("  Copying changed file " + sourceFile.Name);
+                                    LogDebug("  Copying changed file " + sourceFile.Name);
                                     break;
                                 default:
-                                    OnDebugEvent("  Copying file " + sourceFile.Name);
+                                    LogDebug("  Copying file " + sourceFile.Name);
                                     break;
                             }
                             sourceFile.CopyTo(fiTargetFile.FullName, true);
@@ -1158,8 +1203,8 @@ namespace DB_Schema_Export_Tool
 
                 if (mOptions.ShowStats)
                 {
-                    OnDebugEvent(string.Format(
-                                     "Synchronized schema files in {0:0.0} seconds", DateTime.UtcNow.Subtract(startTime).TotalSeconds));
+                    LogDebug(string.Format(
+                                 "Synchronized schema files in {0:0.0} seconds", DateTime.UtcNow.Subtract(startTime).TotalSeconds));
                 }
 
                 return true;

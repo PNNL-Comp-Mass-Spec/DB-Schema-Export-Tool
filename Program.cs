@@ -110,9 +110,6 @@ namespace DB_Schema_Export_Tool
             {
                 var schemaExporter = new DBSchemaExportTool(options);
 
-                schemaExporter.ErrorEvent += Processor_ErrorEvent;
-                schemaExporter.StatusEvent += Processor_StatusEvent;
-                schemaExporter.WarningEvent += Processor_WarningEvent;
                 schemaExporter.ProgressUpdate += Processor_ProgressUpdate;
 
                 var success = schemaExporter.ProcessDatabases(options);
@@ -144,16 +141,6 @@ namespace DB_Schema_Export_Tool
             ConsoleMsgUtils.ShowDebug(message);
         }
 
-        private static void Processor_ErrorEvent(string message, Exception ex)
-        {
-            ConsoleMsgUtils.ShowErrorCustom(message, ex, false);
-        }
-
-        private static void Processor_StatusEvent(string message)
-        {
-            Console.WriteLine(message);
-        }
-
         private static void Processor_ProgressUpdate(string progressMessage, float percentComplete)
         {
             if (DateTime.UtcNow.Subtract(mLastProgressTime).TotalSeconds < 3)
@@ -164,9 +151,5 @@ namespace DB_Schema_Export_Tool
             Processor_DebugEvent(percentComplete.ToString("0.0") + "%, " + progressMessage);
         }
 
-        private static void Processor_WarningEvent(string message)
-        {
-            ConsoleMsgUtils.ShowWarning(message);
-        }
     }
 }

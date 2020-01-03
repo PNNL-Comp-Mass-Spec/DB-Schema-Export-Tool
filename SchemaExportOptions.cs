@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using PRISM;
+using PRISM.Logging;
 
 namespace DB_Schema_Export_Tool
 {
@@ -15,7 +17,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "December 11, 2019";
+        public const string PROGRAM_DATE = "January 2, 2020";
 
         public const string DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX = "DBSchema__";
 
@@ -277,11 +279,11 @@ namespace DB_Schema_Export_Tool
         [Option("Commit", HelpShowsDefault = false, HelpText = "Commit any updates to the repository")]
         public bool CommitUpdates { get; set; }
 
-        [Option("L", HelpShowsDefault = false, HelpText = "Log messages to a file; specify a log file name using /LogFile:LogFilePath")]
+        [Option("CreateLogFile", "L", HelpShowsDefault = false, HelpText = "Log messages to a file; specify a log file name using /LogFile:LogFilePath")]
         public bool LogMessagesToFile { get; set; }
 
-        [Option("LogFile", HelpShowsDefault = false, HelpText = "Log file name")]
-        public string LogFilePath { get; set; }
+        [Option("BaseLogFileName", "LogFile", HelpShowsDefault = false, HelpText = "Base log file name (the actual name will include today's date); defaults to DB_Schema_Export_Tool")]
+        public string LogFileBaseName { get; set; }
 
         [Option("LogDir", HelpShowsDefault = false, HelpText = "Specify the directory to save the log file in; by default, the log file is created in the current working directory")]
         public string LogDirectoryPath { get; set; }
@@ -333,6 +335,10 @@ namespace DB_Schema_Export_Tool
             ServerOutputDirectoryNamePrefix = DEFAULT_SERVER_OUTPUT_DIRECTORY_NAME_PREFIX;
 
             ScriptingOptions = new DatabaseScriptingOptions();
+
+            LogMessagesToFile = false;
+            LogFileBaseName = string.Empty;
+            LogDirectoryPath = string.Empty;
         }
 
         /// <summary>
@@ -355,6 +361,32 @@ namespace DB_Schema_Export_Tool
             var version = Assembly.GetExecutingAssembly().GetName().Version + " (" + PROGRAM_DATE + ")";
 
             return version;
+        }
+
+        /// <summary>
+        /// Get the expected base log file path
+        /// </summary>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public static string GetLogFilePath(SchemaExportOptions options)
+        {
+            var defaultBaseLogFileName = Path.GetFileNameWithoutExtension(BaseLogger.ExecutableName) + "_log.txt";
+            return GetLogFilePath(options, defaultBaseLogFileName);
+        }
+
+        /// <summary>
+        /// Get the expected base log file path
+        /// </summary>
+        /// <param name="options"></param>
+        /// <param name="defaultBaseLogFileName">Explicit base log file name to use</param>
+        /// <returns></returns>
+        public static string GetLogFilePath(SchemaExportOptions options, string defaultBaseLogFileName)
+        {
+            var logDirectoryPath = string.IsNullOrWhiteSpace(options.LogDirectoryPath) ? "." : options.LogDirectoryPath;
+            var baseLogFileName = string.IsNullOrWhiteSpace(options.LogFileBaseName) ? defaultBaseLogFileName : options.LogFileBaseName;
+            var baseLogFilePath = Path.Combine(logDirectoryPath, baseLogFileName);
+
+            return baseLogFilePath;
         }
 
         /// <summary>
@@ -555,13 +587,13 @@ namespace DB_Schema_Export_Tool
 
             if (LogMessagesToFile)
             {
-                if (string.IsNullOrWhiteSpace(LogFilePath))
+                if (string.IsNullOrWhiteSpace(LogFileBaseName))
                 {
-                    Console.WriteLine(" {0,-48} {1}", "Logging messages to:", "Default log file");
+                    Console.WriteLine(" {0,-48} {1}", "Base log file name: ", "Default");
                 }
                 else
                 {
-                    Console.WriteLine(" {0,-48} {1}", "Logging messages to:", LogFilePath);
+                    Console.WriteLine(" {0,-48} {1}", "Base log file name:", LogFileBaseName);
                 }
 
                 if (!string.IsNullOrWhiteSpace(LogDirectoryPath))

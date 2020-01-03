@@ -50,6 +50,7 @@
     <Compile Include="DBSchemaExporterSQLServer.cs" />
     <Compile Include="DBSchemaExportTool.cs" />
     <Compile Include="DataExportWorkingParams.cs" />
+    <Compile Include="LoggerBase.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProgramRunner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
