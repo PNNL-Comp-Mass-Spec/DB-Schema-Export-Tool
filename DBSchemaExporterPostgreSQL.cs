@@ -375,7 +375,14 @@ namespace DB_Schema_Export_Tool
                 else
                 {
                     // Delete the _AllObjects_.sql file (since we no longer need it)
-                    pgDumpOutputFile.Delete();
+                    try
+                    {
+                        pgDumpOutputFile.Delete();
+                    }
+                    catch (Exception ex)
+                    {
+                        OnWarningEvent(string.Format("Unable to delete {0}: {1}", pgDumpOutputFile.FullName, ex.Message));
+                    }
                 }
 
                 return true;
