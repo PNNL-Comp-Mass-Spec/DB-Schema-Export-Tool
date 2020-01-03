@@ -4,8 +4,17 @@ using PRISM.Logging;
 
 namespace DB_Schema_Export_Tool
 {
-    public abstract class LoggerBase
+    public abstract class LoggerBase : EventNotifier
     {
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        protected LoggerBase()
+        {
+            // The LogTools class displays messages at the console; we don't need the EventNotifier class also doing this
+            WriteToConsoleIfNoListener = false;
+        }
 
         /// <summary>
         /// Show a status message at the console and optionally include in the log file, tagging it as a debug message
@@ -13,8 +22,9 @@ namespace DB_Schema_Export_Tool
         /// <param name="statusMessage">Status message</param>
         /// <param name="writeToLog">True to write to the log file; false to only display at console</param>
         /// <remarks>The message is shown in dark grey in the console.</remarks>
-        protected static void LogDebug(string statusMessage, bool writeToLog = true)
+        protected void LogDebug(string statusMessage, bool writeToLog = true)
         {
+            OnDebugEvent(statusMessage);
             LogTools.LogDebug(statusMessage, writeToLog);
         }
 
@@ -23,8 +33,9 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="errorMessage">Error message</param>
         /// <param name="logToDb">When true, log the message to the database and the local log file</param>
-        protected static void LogError(string errorMessage, bool logToDb = false)
+        protected void LogError(string errorMessage, bool logToDb = false)
         {
+            OnErrorEvent(errorMessage);
             LogTools.LogError(errorMessage, null, logToDb);
         }
 
@@ -33,8 +44,9 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="errorMessage">Error message (do not include ex.message)</param>
         /// <param name="ex">Exception to log</param>
-        protected static void LogError(string errorMessage, Exception ex)
+        protected void LogError(string errorMessage, Exception ex)
         {
+            OnErrorEvent(errorMessage, ex);
             LogTools.LogError(errorMessage, ex);
         }
 
@@ -44,8 +56,9 @@ namespace DB_Schema_Export_Tool
         /// <param name="statusMessage">Status message</param>
         /// <param name="isError">True if this is an error</param>
         /// <param name="writeToLog">True to write to the log file; false to only display at console</param>
-        public static void LogMessage(string statusMessage, bool isError = false, bool writeToLog = true)
+        public void LogMessage(string statusMessage, bool isError = false, bool writeToLog = true)
         {
+            OnStatusEvent(statusMessage);
             LogTools.LogMessage(statusMessage, isError, writeToLog);
         }
 
@@ -54,8 +67,9 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="warningMessage">Warning message</param>
         /// <param name="logToDb">When true, log the message to the database and the local log file</param>
-        protected static void LogWarning(string warningMessage, bool logToDb = false)
+        protected void LogWarning(string warningMessage, bool logToDb = false)
         {
+            OnWarningEvent(warningMessage);
             LogTools.LogWarning(warningMessage, logToDb);
         }
 

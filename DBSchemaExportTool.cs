@@ -62,18 +62,6 @@ namespace DB_Schema_Export_Tool
 
         public event DBSchemaExporterBase.ProgressCompleteHandler ProgressComplete;
 
-        /// <summary>
-        /// Progress updated
-        /// </summary>
-        public event ProgressUpdateEventHandler ProgressUpdate;
-
-        /// <summary>
-        /// Progress updated
-        /// </summary>
-        /// <param name="progressMessage"></param>
-        /// <param name="percentComplete">Value between 0 and 100</param>
-        public delegate void ProgressUpdateEventHandler(string progressMessage, float percentComplete);
-
         #endregion
 
         /// <summary>
@@ -761,13 +749,13 @@ namespace DB_Schema_Export_Tool
             return tablesForDataExport;
         }
 
-        protected void OnErrorEvent(string message)
+        protected new void OnErrorEvent(string message)
         {
             LogError(message);
             StatusMessage = message;
         }
 
-        protected void OnErrorEvent(string message, Exception ex)
+        protected new void OnErrorEvent(string message, Exception ex)
         {
             LogError(message, ex);
             if (ex != null && !message.Contains(ex.Message))
@@ -780,27 +768,12 @@ namespace DB_Schema_Export_Tool
             }
         }
 
-        /// <summary>
-        /// Progress update
-        /// </summary>
-        /// <param name="progressMessage">Progress message</param>
-        /// <param name="percentComplete">Value between 0 and 100</param>
-        protected void OnProgressUpdate(string progressMessage, float percentComplete)
-        {
-            if (ProgressUpdate == null)
-            {
-                Console.WriteLine("{0:F2}%: {1}", percentComplete, progressMessage);
-            }
-
-            ProgressUpdate?.Invoke(progressMessage, percentComplete);
-        }
-
-        protected void OnWarningEvent(string message)
+        protected new void OnWarningEvent(string message)
         {
             LogWarning(message);
             StatusMessage = message;
         }
-        protected void OnStatusEvent(string message)
+        protected new void OnStatusEvent(string message)
         {
             LogWarning(message);
             StatusMessage = message;

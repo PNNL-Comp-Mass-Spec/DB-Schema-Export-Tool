@@ -1774,8 +1774,6 @@ namespace DB_Schema_Export_Tool
             else
             {
                 AppendNewMessage(message, MessageTypeConstants.Debug);
-                ConsoleMsgUtils.ShowDebug(message);
-
             }
 
             Application.DoEvents();
@@ -1800,7 +1798,6 @@ namespace DB_Schema_Export_Tool
                 }
 
                 AppendNewMessage(formattedMessage, MessageTypeConstants.Error);
-                ConsoleMsgUtils.ShowError(formattedMessage);
             }
 
             Application.DoEvents();
@@ -1815,7 +1812,6 @@ namespace DB_Schema_Export_Tool
             else
             {
                 AppendNewMessage(message, MessageTypeConstants.Normal);
-                Console.WriteLine(message);
             }
 
             Application.DoEvents();
@@ -1830,7 +1826,6 @@ namespace DB_Schema_Export_Tool
             else
             {
                 AppendNewMessage(message, MessageTypeConstants.Warning);
-                ConsoleMsgUtils.ShowWarning(message);
             }
 
             Application.DoEvents();
