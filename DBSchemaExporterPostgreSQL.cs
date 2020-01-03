@@ -1635,6 +1635,15 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        /// <summary>
+        /// Process the database dump file created by pgDump
+        /// </summary>
+        /// <param name="databaseName"></param>
+        /// <param name="pgDumpOutputFile"></param>
+        /// <param name="unhandledScriptingCommands"></param>
+        /// <remarks>
+        /// This file will have DDL for schemas, roles, permissions, extensions, functions, tables, and views
+        /// </remarks>
         private void ProcessPgDumpSchemaFile(string databaseName, FileInfo pgDumpOutputFile, out bool unhandledScriptingCommands)
         {
 
@@ -1711,38 +1720,6 @@ namespace DB_Schema_Export_Tool
 
                 var outputDirectory = pgDumpOutputFile.Directory.FullName;
                 WriteCachedLines(outputDirectory, scriptInfoByObject);
-
-                if (mOptions.ScriptingOptions.ExportDBSchemasAndRoles)
-                {
-                    // Create files for schemas and roles
-                    if (mAbortProcessing)
-                    {
-                        return;
-                    }
-                }
-
-                if (mOptions.ScriptingOptions.ExportTables)
-                {
-                    // Create files for tables
-                    if (mAbortProcessing)
-                    {
-                        return;
-                    }
-                }
-
-                if (mOptions.ScriptingOptions.ExportViews ||
-                    mOptions.ScriptingOptions.ExportUserDefinedFunctions ||
-                    mOptions.ScriptingOptions.ExportStoredProcedures ||
-                    mOptions.ScriptingOptions.ExportSynonyms ||
-                    mOptions.ScriptingOptions.ExportUserDefinedDataTypes ||
-                    mOptions.ScriptingOptions.ExportUserDefinedTypes)
-                {
-                    // Create files for views, functions, etc.
-                    if (mAbortProcessing)
-                    {
-                        return;
-                    }
-                }
             }
 
         }
