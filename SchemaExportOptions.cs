@@ -42,7 +42,10 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Maximum rows of data to export
         /// </summary>
-        /// <remarks>When null, default to 1000 rows, unless ExportAllData is true, then default to 0</remarks>
+        /// <remarks>
+        /// When null and ExportAllData is false, default to 1000 rows
+        /// When null and ExportAllData is true, default to 0
+        /// </remarks>
         public int? MaxRowsToExport { get; private set; }
 
         /// <summary>
@@ -63,7 +66,7 @@ namespace DB_Schema_Export_Tool
         public string ServerOutputDirectoryNamePrefix { get; set; }
 
         [Option("Server", Required = true, HelpShowsDefault = false,
-            HelpText = "Database server name; assumed to be Microsoft SQL Server unless /PgUser is provided")]
+            HelpText = "Database server name; assumed to be Microsoft SQL Server unless /PgUser is provided (or PgUser is defined in the .conf file)")]
         public string ServerName { get; set; }
 
         [Option("DBUser", HelpShowsDefault = false,
@@ -79,8 +82,8 @@ namespace DB_Schema_Export_Tool
         public string DBUserPassword { get; set; }
 
         [Option("ExistingSchema", "ExistingDDL", HelpShowsDefault = false, IsInputFilePath = true,
-            HelpText = "Existing schema (DDL) file to parse to rename columns based on information in the ColumnMap file; " +
-                       "will also skip any tables with <skip> in the DataTables file. " +
+            HelpText = "Existing schema (DDL) file to parse to rename columns based on information in the ColumnMap file\n" +
+                       "Will also skip any tables with <skip> in the DataTables file.\n" +
                        "The updated DDL file will end with _UpdatedColumnNames.sql")]
         public string ExistingSchemaFileToParse { get; set; }
 
@@ -191,7 +194,7 @@ namespace DB_Schema_Export_Tool
             set => ScriptingOptions.ExportServerSettingsLoginsAndJobs = value;
         }
 
-        [Option("Data", "DataTables", HelpShowsDefault = false, IsInputFilePath = true,
+        [Option("DataTables", "Data", HelpShowsDefault = false, IsInputFilePath = true,
             HelpText = "Text file with table names (one name per line) for which table data should be exported. " +
                        "Also supports a multi-column, tab-delimited format:\n" +
                        "SourceTableName  TargetSchemaName  TargetTableName  PgInsert  KeyColumn(s)")]
@@ -209,21 +212,19 @@ namespace DB_Schema_Export_Tool
         public string DefaultSchemaName { get; set; }
 
         [Option("NoAutoData", HelpShowsDefault = false,
-            HelpText = "In addition to table names defined in /Data, there are default tables which will have their data exported. " +
-                       "Disable the defaults using /NoAutoData")]
+            HelpText = "In addition to table names defined in /Data, there are default tables which will have their data exported.\n" +
+                       "Disable the defaults using NoAutoData=True (or /NoAutoData)")]
         public bool DisableAutoDataExport { get; set; }
 
-        [Option("NoTableData", "NoData", HelpShowsDefault = false,
-                HelpText = "Use NoTableData=True (or /NoTableData) to prevent any table data from being exported\n" +
-                           "This parameter useful when processing an existing DDL file with ExistingDDL")]
-        public bool DisableDataExport { get; set; }
-
         [Option("ExportAllData", "ExportAllTables", "AllData", HelpShowsDefault = false,
-            HelpText = "Export data from every table in the database; ignored if DisableDataExport is true")]
+            HelpText = "Export data from every table in the database\n" +
+                       "Will skip tables (and views) that have <skip> in the DataTables file\n" +
+                       "Ignored if NoTableData is true")]
         public bool ExportAllData { get; set; }
 
         [Option("MaxRows", HelpShowsDefault = false,
-            HelpText = "Maximum number of rows of data to export; defaults to 1000")]
+            HelpText = "Maximum number of rows of data to export; defaults to 1000\n" +
+                       "Use 0 to export all rows")]
         public int MaxRows
         {
             get
@@ -238,12 +239,19 @@ namespace DB_Schema_Export_Tool
             set => MaxRowsToExport = value;
         }
 
+        [Option("NoTableData", "NoData", HelpShowsDefault = false,
+                HelpText = "Use NoTableData=True (or /NoTableData) to prevent any table data from being exported\n" +
+                           "This parameter is useful when processing an existing DDL file with ExistingDDL")]
+        public bool DisableDataExport { get; set; }
+
         [Option("ScriptLoad", "Script", HelpShowsDefault = false,
             HelpText = "Generate a bash script for loading table data")]
         public bool ScriptPgLoadCommands { get; set; }
 
         [Option("SnakeCase", HelpShowsDefault = false,
-            HelpText = "Auto changes column names from Upper_Case and UpperCase to lower_case when exporting table data")]
+            HelpText = "Auto changes column names from Upper_Case and UpperCase to lower_case when exporting table data\n" +
+                       "Also used for table names when exporting data\n" +
+                       "Entries in the DataTables and ColumnMap files will override auto-generated snake_case names")]
         public bool TableDataSnakeCase { get; set; }
 
         public bool IncludeSystemObjects
@@ -286,13 +294,15 @@ namespace DB_Schema_Export_Tool
         [Option("Commit", HelpShowsDefault = false, HelpText = "Commit any updates to the repository")]
         public bool CommitUpdates { get; set; }
 
-        [Option("CreateLogFile", "L", HelpShowsDefault = false, HelpText = "Log messages to a file; specify a log file name using /LogFile:LogFilePath")]
+        [Option("CreateLogFile", "L", HelpShowsDefault = false, HelpText = "Log messages to a file; specify a base log file name using /LogFile:LogFileName")]
         public bool LogMessagesToFile { get; set; }
 
         [Option("BaseLogFileName", "LogFile", HelpShowsDefault = false, HelpText = "Base log file name (the actual name will include today's date); defaults to DB_Schema_Export_Tool")]
         public string LogFileBaseName { get; set; }
 
-        [Option("LogDir", HelpShowsDefault = false, HelpText = "Specify the directory to save the log file in; by default, the log file is created in the current working directory")]
+        [Option("LogDir", "LogDirectory",
+            HelpShowsDefault = false, HelpText = "Specify the directory to save the log file in\n" +
+                                                 "By default, the log file is created in the current working directory")]
         public string LogDirectoryPath { get; set; }
 
         [Option("Preview", HelpShowsDefault = false, HelpText = "Count the number of database objects that would be exported")]
@@ -563,7 +573,7 @@ namespace DB_Schema_Export_Tool
                 {
                     if (string.IsNullOrWhiteSpace(ExistingSchemaFileToParse))
                     {
-                        ConsoleMsgUtils.ShowWarning("Warning: DisableDataExport=True, NoSchema=True, and ExistingSchemaFileToParse is empty; there is nothing to do");
+                        ConsoleMsgUtils.ShowWarning("Warning: NoTableData=True, NoSchema=True, and ExistingSchemaFileToParse is empty; there is nothing to do");
                         Console.WriteLine();
                     }
                 }
