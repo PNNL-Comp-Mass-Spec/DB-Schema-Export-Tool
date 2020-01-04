@@ -1,6 +1,6 @@
 # DB Schema Export Tool
 
-The DB Schema Export Tool exports SQL Server or PostgreSQL database objects as schema files. 
+The DB Schema Export Tool exports SQL Server or PostgreSQL database objects as schema files.
 Exported objects include tables, views, stored procedures, functions, and synonyms,
 plus also database properties including database roles and logins.
 
@@ -28,14 +28,13 @@ Example command (wrapped here for readability):
 ```
 DB_Schema_Export_Tool.exe 
   C:\Cached_DBSchema 
-  /server:Proteinseqs 
+  /Server:Proteinseqs 
   /DBList:Manager_Control,Protein_Sequences 
-  /sync:"F:\Projects\Database_Schema\DMS" 
+  /Sync:"F:\Projects\Database_Schema\DMS" 
   /Git /Commit 
   /L /LogDir:Logs 
   /Data:ProteinSeqs_Data_Tables.txt
 ```
-
 
 ## Console switches
 
@@ -46,19 +45,20 @@ DB_Schema_Export_Tool.exe
  [/DBUser:username] [/DBPass:username]
  [/PgUser:username] [/PgPass:password] [/PgPort:5432]
  [/DirectoryPrefix:PrefixText] [/NoSubdirectory] [/CreateDBDirectories]
- [/Data:TableDataToExport.txt] [/Map:ColumnMapping.txt]
- [/DefaultSchema:SchemaName]
+ [/DataTables:TableDataToExport.txt] [/Map:ColumnMapping.txt]
+ [/Schema:SchemaName]
  [/ExistingSchema:SchemaFileName]
- [/NoAutoData] [/ExportAllData] [/MaxRows:1000]
+ [/NoAutoData] [/ExportAllData] [/MaxRows:1000] [/NoData]
  [/SnakeCase] [/PgDump] [/PgInsert] [/PgInsertChunkSize:5000] 
  [/ServerInfo] [/NoSchema] [/ScriptLoad]
  [/Sync:TargetDirectoryPath] [/Git] [/Svn] [/Hg] [/Commit]
- [/L[:LogFilePath]] [/LogDir:LogDirectoryPath] 
+ [/L] [/LogFile:BaseName] [/LogDir:LogDirectoryPath] 
  [/Preview] [/Stats]
  [/ParamFile:ParamFileName.conf] [/CreateParamFile]
 ```
 
 `SchemaFileDirectory` is the path to the directory where the schema files will be saved (aka the output directory)
+* Optionally use named parameter `/OutputDir:DirectoryPath`
 
 To process a single database, use `/Server` and `/DB`
 
@@ -81,7 +81,7 @@ Use `/PgPort` to specify the port to use for PostgreSQL
 By default, a subdirectory named DBSchema__DatabaseName will be created below `SchemaFileDirectory/`
 * Customize this prefix text using `/DirectoryPrefix`
 
-Use `/NoSubdirectory` to disable auto creating a subdirectory for the database being exported. 
+Use `/NoSubdirectory` to disable auto creating a subdirectory for the database being exported
 * Note: subdirectories will always be created if you use `/DBList` and specify more than one database
 
 Use `/CreateDBDirectories:False` to disable creating a subdirectory for the schema files for each database
@@ -143,7 +143,7 @@ Use `/Map` or `/ColumnMap` to define a tab-delimited text file mapping source co
 | T_Analysis_Job   | AJ_finish        | finish           |
 | t_users	       | name_with_prn	  | `<skip>`         |
 
-Use `/DefaultSchema` to define the default schema name to use when exporting data from tables
+Use `/Schema` or `/DefaultSchema` to define the default schema name to use when exporting data from tables
 * Entries in the `/DataTables` file will override this default schema
 
 Use `/ExistingSchema` or `/ExistingDDL` to define a text file that should be parsed to rename columns, based on data loaded from the `/ColumnMap` file
@@ -153,11 +153,15 @@ Use `/ExistingSchema` or `/ExistingDDL` to define a text file that should be par
 
 Use `/ExportAllData` or `/ExportAllTables` to export data from every table in the database
 * Will skip tables (and views) that are defined in the `/DataTables` file but have `<skip>` in the TargetTableName column
+* Ignored if `/NoTableData/` is true
 
 Use `/MaxRows` to define the maximum number of data rows to export
 * Defaults to 1000
 * Use 0 to export all rows
 * If you use `/ExportAllData` but do not specify `/MaxRows`, the program will auto set `/MaxRows` to 0
+
+Use `/NoTableData` or `/NoData` to prevent any table data from being exported
+* This parameter is useful when processing an existing DDL file with `/ExistingDDL`
 
 Use `/SnakeCase` to auto change column names from Upper_Case and UpperCase to lower_case when exporting data from tables
 * Also used for table names when exporting data from tables
@@ -167,7 +171,7 @@ Use `/PgDump` or `/PgDumpData` to specify that exported data should use `COPY` c
 * With SQL Server databases, table data will be exported using pg_dump compatible COPY commands when `/PgDump` is used
 * With PostgreSQL data, table data will be exported using the pg_dump application
 * With SQL Server data and PostgreSQL data, if `/PgDump` is not provided, data is exported with `INSERT INTO` statements
-* With SQL Server data, if `/PgDump` is provided, but the table data file has `true` in the `PgInsert` column, `INSERT INTO` statements will be used
+* With SQL Server data, if `/PgDump` is provided, but the `/DataTables` file has `true` in the `PgInsert` column, `INSERT INTO` statements will be used
 
 Use `/ServerInfo` to export server settings, logins, and SQL Server Agent jobs
 
@@ -175,7 +179,7 @@ Use `/NoSchema` to skip exporting schema (tables, views, functions, etc.)
 
 Use `/ScriptLoad` to create a bash script file for loading exported table data into a PostgreSQL database
 
-Use `/Sync` to copy new/changed files from the output directory to an alternative directory. 
+Use `/Sync` to copy new/changed files from the output directory to an alternative directory
 * This is advantageous to prevent file timestamps from getting updated every time the schema is exported
 
 Use `/Git` to auto-update any new or changed files using Git
@@ -186,10 +190,13 @@ Use `/Hg`  to auto-update any new or changed files using Mercurial
 
 Use `/Commit` to commit any updates to the repository
 
-Use `/L` to log messages to a file; you can optionally specify a log file name using `/L:LogFilePath`
+Use `/L` to log messages to a file
 
-Use `/LogDirectory` to specify the directory to save the log file in. 
-* By default, the log file is created in the current working directory.
+Use `/LogFile`' to specify the base name for the log file
+* Log files will be named using the base name, followed by the current date
+
+Use `/LogDir` or `/LogDirectory` to specify the directory to save the log file in
+* By default, the log file is created in the current working directory
 
 Use `/Preview` to count the number of database objects that would be exported
 
@@ -204,10 +211,10 @@ Use `/CreateParamFile` to create an example parameter file
 * By default, the example parameter file content is shown at the console
 * To create a file named Options.conf, use `/CreateParamFile:Options.conf`
 
-
 ## Software Dependencies
 
-This program leverages SMO from SQL Server 2012.
+This program leverages the SQL Server Management Objects (SMO) Framework
+* All of the required DLLs should be included in the DBSchemaExportTool .zip file
 
 In order to use the `/Git,` `/Svn,` or `/Hg` switches, you need the following software installed
 and the executables present at a specific location.
@@ -226,13 +233,13 @@ Mercurial
 
 ### PostgreSQL
 
-Schema export from PostgreSQL databases utilizes the pg_dump utility. 
+Schema export from PostgreSQL databases utilizes the pg_dump utility
 * pg_dump.exe is available as part of the PostgreSQL for Windows installer from the EDB website
   * https://www.enterprisedb.com/downloads/postgres-postgresql-downloads
-* Run the installer, but de-select installing PostgreSQL Server
+* Run the installer
+  * De-select installing PostgreSQL Server
 * Copy `pg_dump.exe` plus several DLLs from `C:\Program Files\PostgreSQL\12\bin` to the directory with the DB_Schema_Export_Tool executable
   * See batch file Lib\Copy_pg_dump_files.bat
-
 
 File `pgpass.conf` at `%APPDATA%\postgresql` can be used to store the password for the PostgreSQL user
 * On Linux, the file is stored at `~/.pgpass`
