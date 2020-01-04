@@ -57,7 +57,7 @@ namespace DB_Schema_Export_Tool
 
         #region "Command Line Argument Properties "
 
-        [Option("O", ArgPosition = 1, Required = true, HelpShowsDefault = false, HelpText = "Directory to save the schema files")]
+        [Option("OutputDir", "O", ArgPosition = 1, Required = true, HelpShowsDefault = false, HelpText = "Directory to save the schema files")]
         public string OutputDirectoryPath { get; set; }
 
         /// <summary>
