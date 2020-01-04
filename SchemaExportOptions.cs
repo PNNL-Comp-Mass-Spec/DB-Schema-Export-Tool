@@ -213,8 +213,13 @@ namespace DB_Schema_Export_Tool
                        "Disable the defaults using /NoAutoData")]
         public bool DisableAutoDataExport { get; set; }
 
+        [Option("NoTableData", "NoData", HelpShowsDefault = false,
+                HelpText = "Use NoTableData=True (or /NoTableData) to prevent any table data from being exported\n" +
+                           "This parameter useful when processing an existing DDL file with ExistingDDL")]
+        public bool DisableDataExport { get; set; }
+
         [Option("ExportAllData", "ExportAllTables", "AllData", HelpShowsDefault = false,
-            HelpText = "Export data from every table in the database")]
+            HelpText = "Export data from every table in the database; ignored if DisableDataExport is true")]
         public bool ExportAllData { get; set; }
 
         [Option("MaxRows", HelpShowsDefault = false,
@@ -507,47 +512,65 @@ namespace DB_Schema_Export_Tool
                 Console.WriteLine(" {0,-48} {1}", "Default schema for exported data from tables:", DefaultSchemaName);
             }
 
-            if (ExportAllData)
+            if (DisableDataExport)
             {
-                Console.WriteLine(" {0,-48} {1}", "Data export from all tables:", BoolToEnabledDisabled(ExportAllData));
+                Console.WriteLine(" {0,-48} {1}", "Data export from tables:", "Disabled");
             }
             else
             {
-                Console.WriteLine(" {0,-48} {1}", "Data export from standard tables:", BoolToEnabledDisabled(!DisableAutoDataExport));
-            }
-
-            if (PostgreSQL && PgDumpTableData && TableDataSnakeCase)
-            {
-                // Assure that this is false
-                ConsoleMsgUtils.ShowWarning("Ignoring /SnakeCase since exporting data from a PostgreSQL server using pg_dump");
-                TableDataSnakeCase = false;
-            }
-
-            if (!DisableAutoDataExport || !string.IsNullOrWhiteSpace(TableDataToExportFile) || ExportAllData)
-            {
-                var enabledNote = TableDataSnakeCase ? " (when exporting data)" : string.Empty;
-                Console.WriteLine(" {0,-48} {1}", "Use snake_case for table and column names:", BoolToEnabledDisabled(TableDataSnakeCase) + enabledNote);
-            }
-
-            if (MaxRowsToExport == null)
-            {
                 if (ExportAllData)
                 {
-                    Console.WriteLine(" {0,-48} {1}", "Maximum rows to export, per table:", "Export all rows");
+                    Console.WriteLine(" {0,-48} {1}", "Data export from all tables:", BoolToEnabledDisabled(ExportAllData));
+                }
+                else
+                {
+                    Console.WriteLine(" {0,-48} {1}", "Data export from standard tables:", BoolToEnabledDisabled(!DisableAutoDataExport));
+                }
+
+                if (PostgreSQL && PgDumpTableData && TableDataSnakeCase)
+                {
+                    // Assure that this is false
+                    ConsoleMsgUtils.ShowWarning("Ignoring /SnakeCase since exporting data from a PostgreSQL server using pg_dump");
+                    TableDataSnakeCase = false;
+                }
+
+                if (!DisableAutoDataExport || !string.IsNullOrWhiteSpace(TableDataToExportFile) || ExportAllData)
+                {
+                    var enabledNote = TableDataSnakeCase ? " (when exporting data)" : string.Empty;
+                    Console.WriteLine(" {0,-48} {1}", "Use snake_case for table and column names:", BoolToEnabledDisabled(TableDataSnakeCase) + enabledNote);
+                }
+
+                if (MaxRowsToExport == null)
+                {
+                    if (ExportAllData)
+                    {
+                        Console.WriteLine(" {0,-48} {1}", "Maximum rows to export, per table:", "Export all rows");
+                    }
+                    else
+                    {
+                        Console.WriteLine(" {0,-48} {1}", "Maximum rows to export, per table:", MaxRows);
+                    }
                 }
                 else
                 {
                     Console.WriteLine(" {0,-48} {1}", "Maximum rows to export, per table:", MaxRows);
                 }
             }
-            else
-            {
-                Console.WriteLine(" {0,-48} {1}", "Maximum rows to export, per table:", MaxRows);
-            }
 
             if (NoSchema)
             {
-                Console.WriteLine(" {0,-48} {1}", "Export table data only; no schema:", "Enabled");
+                if (DisableDataExport)
+                {
+                    if (string.IsNullOrWhiteSpace(ExistingSchemaFileToParse))
+                    {
+                        ConsoleMsgUtils.ShowWarning("Warning: DisableDataExport=True, NoSchema=True, and ExistingSchemaFileToParse is empty; there is nothing to do");
+                        Console.WriteLine();
+                    }
+                }
+                else
+                {
+                    Console.WriteLine(" {0,-48} {1}", "Export table data only; no schema:", "Enabled");
+                }
             }
             else
             {

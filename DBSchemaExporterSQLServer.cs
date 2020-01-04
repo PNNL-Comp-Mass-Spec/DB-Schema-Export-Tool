@@ -387,7 +387,11 @@ namespace DB_Schema_Export_Tool
 
             try
             {
-                if (mOptions.ScriptingOptions.AutoSelectTablesForDataExport || mOptions.ExportAllData)
+                if (mOptions.DisableDataExport)
+                {
+                    tablesToExportData = new Dictionary<TableDataExportInfo, long>();
+                }
+                else if (mOptions.ScriptingOptions.AutoSelectTablesForDataExport || mOptions.ExportAllData)
                 {
                     tablesToExportData = AutoSelectTablesForDataExport(mCurrentDatabase, tablesForDataExport);
                 }

@@ -184,7 +184,7 @@ namespace DB_Schema_Export_Tool
 
                 var maxRowsToExportPerTable = mOptions.MaxRows;
 
-                if (mOptions.ExportAllData)
+                if (mOptions.ExportAllData && ! mOptions.DisableDataExport)
                 {
                     // Export data from every table in the database
                     // Skip any tables in tablesForDataExport where the TargetTableName is <skip>
@@ -1194,6 +1194,12 @@ namespace DB_Schema_Export_Tool
             IReadOnlyList<string> databaseList,
             IReadOnlyList<TableDataExportInfo> tablesForDataExport)
         {
+            if (mOptions.NoSchema && mOptions.DisableDataExport)
+            {
+                OnDebugEvent("Schema and data export are disabled; not processing " + mOptions.ServerName);
+                return true;
+            }
+
             var validated = ValidateOptionsToScriptServerAndDBObjects(databaseList);
             if (!validated)
                 return false;
