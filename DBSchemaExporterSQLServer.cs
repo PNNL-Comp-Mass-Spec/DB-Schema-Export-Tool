@@ -1096,13 +1096,13 @@ namespace DB_Schema_Export_Tool
                 foreach (Column currentColumn in databaseTable.Columns)
                 {
                     index++;
-                    if (currentColumn.Identity)
-                    {
-                        dataExportParams.IdentityColumnFound = true;
-                        dataExportParams.IdentityColumnName = currentColumn.Name;
-                        identityColumnIndex = index;
-                        break;
-                    }
+                    if (!currentColumn.Identity)
+                        continue;
+
+                    dataExportParams.IdentityColumnFound = true;
+                    dataExportParams.IdentityColumnName = currentColumn.Name;
+                    identityColumnIndex = index;
+                    break;
                 }
 
                 // Export the data from databaseTable, possibly limiting the number of rows to export
