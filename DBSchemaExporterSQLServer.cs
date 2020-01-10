@@ -1176,6 +1176,14 @@ namespace DB_Schema_Export_Tool
                 var insertIntoLine = ExportDBTableDataInit(tableInfo, columnMapInfo, dataExportParams, headerRows);
 
                 var outFilePath = GetFileNameForTableDataExport(targetTableName, dataExportParams.TargetTableNameWithSchema, workingParams);
+                if (string.IsNullOrWhiteSpace(outFilePath))
+                {
+                    // Skip this table
+                    OnStatusEvent(string.Format("GetFileNameForTableDataExport returned an empty output file name for table {0} in database {1}",
+                                                sourceTableNameWithSchema, databaseName));
+                    return false;
+                }
+
                 OnDebugEvent("Writing table data to " + PathUtils.CompactPathString(outFilePath, 120));
 
                 if (mOptions.ScriptPgLoadCommands)
