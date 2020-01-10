@@ -1235,7 +1235,8 @@ namespace DB_Schema_Export_Tool
 
                 headerRows.AddRange(dataExportParams.PgInsertHeaders);
 
-                string primaryKeyColumns;
+                // Comma separated list of primary key columns
+                string primaryKeyColumnList;
 
                 if (tableInfo.PrimaryKeyColumns.Count > 0)
                 {
@@ -1246,25 +1247,25 @@ namespace DB_Schema_Export_Tool
                         targetColumnNames.Add(targetColumnName);
                     }
 
-                    primaryKeyColumns = string.Join(",", targetColumnNames);
+                    primaryKeyColumnList = string.Join(",", targetColumnNames);
                 }
                 else if (dataExportParams.IdentityColumnFound)
                 {
-                    primaryKeyColumns = GetTargetColumnName(columnMapInfo, dataExportParams.IdentityColumnName);
-                    tableInfo.PrimaryKeyColumns.Add(primaryKeyColumns);
+                    primaryKeyColumnList = GetTargetColumnName(columnMapInfo, dataExportParams.IdentityColumnName);
+                    tableInfo.PrimaryKeyColumns.Add(primaryKeyColumnList);
                 }
                 else
                 {
-                    primaryKeyColumns = string.Empty;
+                    primaryKeyColumnList = string.Empty;
                 }
 
                 dataExportParams.ColSepChar = ',';
                 insertIntoLine = string.Empty;
 
-                if (primaryKeyColumns.Length <= 0)
+                if (primaryKeyColumnList.Length <= 0)
                     return insertIntoLine;
 
-                dataExportParams.PgInsertFooters.Add(string.Format("ON CONFLICT ({0})", primaryKeyColumns));
+                dataExportParams.PgInsertFooters.Add(string.Format("ON CONFLICT ({0})", primaryKeyColumnList));
                 dataExportParams.PgInsertFooters.Add("DO UPDATE SET");
 
                 for (var columnIndex = 0; columnIndex < dataExportParams.ColumnNamesAndTypes.Count; columnIndex++)
