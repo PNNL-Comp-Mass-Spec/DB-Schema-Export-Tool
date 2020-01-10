@@ -6,6 +6,7 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.SqlServer.Management.Common;
 using Microsoft.SqlServer.Management.Smo;
 using PRISM;
@@ -33,6 +34,13 @@ namespace DB_Schema_Export_Tool
         private readonly SortedSet<string> mSchemaToIgnore;
 
         private Server mSqlServer;
+
+        /// <summary>
+        /// This object is used to determine primary keys on tables when exporting table data
+        /// </summary>
+        private Scripter mTableDataScripter;
+
+        private bool mTableDataScripterInitialized;
 
         #endregion
 
@@ -64,6 +72,8 @@ namespace DB_Schema_Export_Tool
                 "sys"
                 // ReSharper restore StringLiteralTypo
             };
+            mTableDataScripter = null;
+            mTableDataScripterInitialized = false;
 
             if (string.IsNullOrWhiteSpace(mOptions.ServerName))
                 return;
@@ -1025,6 +1035,23 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
+                if (!mTableDataScripterInitialized)
+                {
+                    var scriptOptions = GetDefaultScriptOptions();
+                    scriptOptions.Indexes = false;
+                    scriptOptions.Permissions = false;
+                    scriptOptions.Statistics = false;
+                    scriptOptions.Triggers = false;
+
+                    // Initialize the scripter and smoObjectArray
+                    mTableDataScripter = new Scripter(mSqlServer)
+                    {
+                        Options = scriptOptions
+                    };
+
+                    mTableDataScripterInitialized = true;
+                }
+
                 Table databaseTable;
                 if (mCurrentDatabase.Tables.Contains(tableInfo.SourceTableName))
                 {
@@ -1253,6 +1280,17 @@ namespace DB_Schema_Export_Tool
                 {
                     primaryKeyColumnList = GetTargetColumnName(columnMapInfo, dataExportParams.IdentityColumnName);
                     tableInfo.PrimaryKeyColumns.Add(primaryKeyColumnList);
+                }
+                else if (mTableDataScripter != null)
+                {
+                    var primaryKeyColumns = GetPrimaryKeysForTableViaScripter(tableInfo);
+
+                    primaryKeyColumnList = string.Join(",", primaryKeyColumns);
+
+                    foreach (var primaryKeyColumn in primaryKeyColumns)
+                    {
+                        tableInfo.PrimaryKeyColumns.Add(primaryKeyColumn);
+                    }
                 }
                 else
                 {
@@ -1733,6 +1771,81 @@ namespace DB_Schema_Export_Tool
         public override Dictionary<TableDataExportInfo, long> GetDatabaseTables(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
         {
             return GetSqlServerDatabaseTables(databaseName, includeTableRowCounts, includeSystemObjects);
+        }
+
+        /// <summary>
+        /// Use mScripter to look for primary key column(s) for the table
+        /// </summary>
+        /// <param name="tableInfo"></param>
+        /// <returns>Comma separated list of primary key columns</returns>
+        private SortedSet<string> GetPrimaryKeysForTableViaScripter(TableDataExportInfo tableInfo)
+        {
+            var primaryKeyColumns = new SortedSet<string>();
+
+            var rowSplitter = new Regex(@"\r\n", RegexOptions.Compiled);
+
+            var columnNameMatcher = new Regex(@"\[(?<ColumnName>.+)\]", RegexOptions.Compiled);
+
+            if (!mCurrentDatabase.Tables.Contains(tableInfo.SourceTableName))
+                return primaryKeyColumns;
+
+            var databaseTable = mCurrentDatabase.Tables[tableInfo.SourceTableName];
+
+            var smoObjectArray = new SqlSmoObject[] {
+                databaseTable
+            };
+
+            var scriptInfo = mTableDataScripter.Script(smoObjectArray);
+
+            // Look for the constraint line, which will be followed by the primary key names, surrounded by an open and close parentheses
+            // CONSTRAINT [PK_T_ParamValue] PRIMARY KEY CLUSTERED
+            // (
+            // 	[Entry_ID] ASC
+            // )
+
+            var insidePrimaryKey = false;
+
+            foreach (var item in scriptInfo)
+            {
+                if (!item.StartsWith("CREATE TABLE"))
+                    continue;
+
+                var createTableDDL = rowSplitter.Split(item);
+
+                foreach (var currentLine in createTableDDL)
+                {
+                    if (currentLine.Trim().StartsWith("CONSTRAINT") && currentLine.Contains("PRIMARY KEY"))
+                    {
+                        insidePrimaryKey = true;
+                        continue;
+                    }
+
+                    if (!insidePrimaryKey)
+                        continue;
+
+                    if (currentLine.Trim().StartsWith("("))
+                    {
+                        // Skip this line
+                        continue;
+                    }
+
+                    if (currentLine.Trim().StartsWith(")"))
+                    {
+                        // End of the primary key section
+                        insidePrimaryKey = false;
+                        continue;
+                    }
+
+                    // Extract the column name from the square brackets
+                    var columnMatch = columnNameMatcher.Match(currentLine);
+                    if (columnMatch.Success)
+                    {
+                        primaryKeyColumns.Add(columnMatch.Groups["ColumnName"].Value);
+                    }
+                }
+            }
+
+            return primaryKeyColumns;
         }
 
         /// <summary>
