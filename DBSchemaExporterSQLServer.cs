@@ -1198,6 +1198,12 @@ namespace DB_Schema_Export_Tool
                         writer.NewLine = "\n";
                     }
 
+                    if (dataExportParams.PgInsertEnabled)
+                    {
+                        writer.WriteLine("SET session_replication_role = replica;");
+                        writer.WriteLine();
+                    }
+
                     foreach (var headerRow in headerRows)
                     {
                         writer.WriteLine(headerRow);
@@ -1234,6 +1240,9 @@ namespace DB_Schema_Export_Tool
                             writer.WriteLine("-- Preview the ID that will be assigned to the next item");
                             writer.WriteLine("SELECT currval('{0}');", sequenceName);
                         }
+
+                        writer.WriteLine();
+                        writer.WriteLine("SET session_replication_role = origin;");
                     }
                     else if (dataExportParams.IdentityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData)
                     {
@@ -1338,7 +1347,6 @@ namespace DB_Schema_Export_Tool
                 }
 
                 dataExportParams.PgInsertFooters.Add(";");
-
             }
             else if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData)
             {
