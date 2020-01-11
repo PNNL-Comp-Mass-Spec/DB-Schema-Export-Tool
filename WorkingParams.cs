@@ -41,12 +41,19 @@ namespace DB_Schema_Export_Tool
         public SortedSet<string> TablesToSkip { get; }
 
         /// <summary>
+        /// Warning messages shown at the console
+        /// </summary>
+        /// <remarks>These messages are displayed again after all tables have been processed</remarks>
+        public SortedSet<string> WarningMessages { get; }
+
+        /// <summary>
         /// Constructor
         /// </summary>
         public WorkingParams()
         {
             DataLoadScriptFiles = new List<string>();
             TablesToSkip = new SortedSet<string>();
+            WarningMessages = new SortedSet<string>();
             Reset();
         }
 
@@ -60,15 +67,30 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
+        /// Add a warning message
+        /// </summary>
+        /// <param name="message"></param>
+        public void AddWarningMessage(string message)
+        {
+            if (WarningMessages.Contains(message))
+                return;
+
+            WarningMessages.Add(message);
+        }
+
+        /// <summary>
         /// Reset properties to their initial values
         /// </summary>
         public void Reset()
         {
             CountObjectsOnly = true;
             DataLoadScriptFiles.Clear();
+            TablesToSkip.Clear();
+            WarningMessages.Clear();
             OutputDirectoryPathCurrentDB = string.Empty;
             ProcessCount = 0;
             ProcessCountExpected = 0;
         }
+
     }
 }

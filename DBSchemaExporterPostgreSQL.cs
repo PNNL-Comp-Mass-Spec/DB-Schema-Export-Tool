@@ -246,13 +246,15 @@ namespace DB_Schema_Export_Tool
         /// <param name="databaseName">Database name</param>
         /// <param name="tablesForDataExport">Table names that should be auto-selected</param>
         /// <param name="databaseNotFound">Output: true if the database does not exist on the server (or is inaccessible)</param>
+        /// <param name="workingParams"></param>
         /// <returns>True if successful, false if an error</returns>
         protected override bool ExportDBObjectsAndTableData(
             string databaseName,
             IReadOnlyList<TableDataExportInfo> tablesForDataExport,
-            out bool databaseNotFound)
+            out bool databaseNotFound,
+            out WorkingParams workingParams)
         {
-            var workingParams = new WorkingParams();
+            workingParams = new WorkingParams();
 
             // Keys are table names to export data
             // Values are the maximum number of rows to export

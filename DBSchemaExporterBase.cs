@@ -184,7 +184,7 @@ namespace DB_Schema_Export_Tool
 
                 var maxRowsToExportPerTable = mOptions.MaxRows;
 
-                if (mOptions.ExportAllData && ! mOptions.DisableDataExport)
+                if (mOptions.ExportAllData && !mOptions.DisableDataExport)
                 {
                     // Export data from every table in the database
                     // Skip any tables in tablesForDataExport where the TargetTableName is <skip>
@@ -573,11 +573,13 @@ namespace DB_Schema_Export_Tool
         /// <param name="databaseName"></param>
         /// <param name="tablesForDataExport"></param>
         /// <param name="databaseNotFound"></param>
+        /// <param name="workingParams"></param>
         /// <returns>True if successful, false if an error</returns>
         protected abstract bool ExportDBObjectsAndTableData(
             string databaseName,
             IReadOnlyList<TableDataExportInfo> tablesForDataExport,
-            out bool databaseNotFound);
+            out bool databaseNotFound,
+            out WorkingParams workingParams);
 
         /// <summary>
         /// Export data from the specified tables
@@ -1126,6 +1128,8 @@ namespace DB_Schema_Export_Tool
                     databasesOnServer.Add(item.ToLower(), item);
                 }
 
+                var warningsByDatabase = new Dictionary<string, SortedSet<string>>();
+
                 foreach (var item in databaseListToProcess)
                 {
                     var currentDB = string.Copy(item);
@@ -1156,7 +1160,13 @@ namespace DB_Schema_Export_Tool
                     {
                         currentDB = string.Copy(currentDbName);
                         OnDebugEvent(tasksToPerform + " from database " + currentDbName);
-                        success = ExportDBObjectsAndTableData(currentDbName, tablesForDataExport, out databaseNotFound);
+                        success = ExportDBObjectsAndTableData(currentDbName, tablesForDataExport, out databaseNotFound, out var workingParams);
+
+                        if (!warningsByDatabase.ContainsKey(currentDB))
+                        {
+                            warningsByDatabase.Add(currentDB, workingParams.WarningMessages);
+                        }
+
                         if (!databaseNotFound)
                         {
                             if (!success)
@@ -1191,6 +1201,8 @@ namespace DB_Schema_Export_Tool
                     }
 
                 }
+
+                ShowDatabaseWarnings(warningsByDatabase);
 
                 return true;
             }
@@ -1311,6 +1323,27 @@ namespace DB_Schema_Export_Tool
         {
             PauseStatus = newPauseStatus;
             OnPauseStatusChange();
+        }
+
+        private void ShowDatabaseWarnings(Dictionary<string, SortedSet<string>> warningsByDatabase)
+        {
+            var query = from item in warningsByDatabase.Keys orderby item select item;
+
+            foreach (var databaseName in query)
+            {
+                var warningMessages = warningsByDatabase[databaseName];
+
+                if (warningMessages.Count <= 0)
+                    continue;
+
+                Console.WriteLine();
+                OnWarningEvent(string.Format("Warning summary for database {0}:", databaseName));
+
+                foreach (var message in warningMessages)
+                {
+                    OnWarningEvent("  " + message);
+                }
+            }
         }
 
         /// <summary>

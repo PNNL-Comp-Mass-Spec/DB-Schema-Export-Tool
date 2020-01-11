@@ -333,13 +333,15 @@ namespace DB_Schema_Export_Tool
         /// <param name="databaseName"></param>
         /// <param name="tablesForDataExport"></param>
         /// <param name="databaseNotFound"></param>
+        /// <param name="workingParams"></param>
         /// <returns>True if successful, false if an error</returns>
         protected override bool ExportDBObjectsAndTableData(
             string databaseName,
             IReadOnlyList<TableDataExportInfo> tablesForDataExport,
-            out bool databaseNotFound)
+            out bool databaseNotFound,
+            out WorkingParams workingParams)
         {
-            return ExportDBObjectsUsingSMO(mSqlServer, databaseName, tablesForDataExport, out databaseNotFound);
+            return ExportDBObjectsUsingSMO(mSqlServer, databaseName, tablesForDataExport, out databaseNotFound, out workingParams);
         }
 
         /// <summary>
@@ -350,14 +352,16 @@ namespace DB_Schema_Export_Tool
         /// <param name="databaseName">Database name</param>
         /// <param name="tablesForDataExport">Table names that should be auto-selected</param>
         /// <param name="databaseNotFound">Output: true if the database does not exist on the server (or is inaccessible)</param>
+        /// <param name="workingParams"></param>
         /// <returns>True if successful, false if an error</returns>
         private bool ExportDBObjectsUsingSMO(
             Server sqlServer,
             string databaseName,
             IReadOnlyList<TableDataExportInfo> tablesForDataExport,
-            out bool databaseNotFound)
+            out bool databaseNotFound,
+            out WorkingParams workingParams)
         {
-            var workingParams = new WorkingParams();
+            workingParams = new WorkingParams();
 
             ScriptingOptions scriptOptions;
 
@@ -1173,7 +1177,7 @@ namespace DB_Schema_Export_Tool
 
                 var columnMapInfo = ConvertDataTableColumnInfo(databaseTable.Name, quoteWithSquareBrackets, dataExportParams);
 
-                var insertIntoLine = ExportDBTableDataInit(tableInfo, columnMapInfo, dataExportParams, headerRows);
+                var insertIntoLine = ExportDBTableDataInit(tableInfo, columnMapInfo, dataExportParams, headerRows, workingParams);
 
                 var outFilePath = GetFileNameForTableDataExport(targetTableName, dataExportParams.TargetTableNameWithSchema, workingParams);
                 if (string.IsNullOrWhiteSpace(outFilePath))
@@ -1263,7 +1267,8 @@ namespace DB_Schema_Export_Tool
             TableDataExportInfo tableInfo,
             ColumnMapInfo columnMapInfo,
             DataExportWorkingParams dataExportParams,
-            List<string> headerRows)
+            List<string> headerRows,
+            WorkingParams workingParams)
         {
             string insertIntoLine;
 
@@ -1277,18 +1282,25 @@ namespace DB_Schema_Export_Tool
                 {
                     truncateTableEnabled = true;
                     Console.WriteLine();
-                    OnStatusEvent(string.Format(
-                                       "Every column in table {0} is part of the primary key; will use TRUNCATE TABLE instead of ON CONFLICT ... DO UPDATE",
-                                       dataExportParams.QuotedTargetTableNameWithSchema));
+
+                    var message = string.Format("Every column in table {0} is part of the primary key; " +
+                                                "will use TRUNCATE TABLE instead of ON CONFLICT ... DO UPDATE",
+                                                dataExportParams.QuotedTargetTableNameWithSchema);
+
+                    OnStatusEvent(message);
+
+                    workingParams.AddWarningMessage(message);
 
                 }
                 else if (tableInfo.PrimaryKeyColumns.Count == 0)
                 {
                     truncateTableEnabled = true;
-                    OnWarningEvent(string.Format(
-                                       "Table {0} does not have a primary key; will use TRUNCATE TABLE since ON CONFLICT ... DO UPDATE is not possible",
-                                       dataExportParams.QuotedTargetTableNameWithSchema));
+                    var warningMessage = string.Format("Table {0} does not have a primary key; " +
+                                                       "will use TRUNCATE TABLE since ON CONFLICT ... DO UPDATE is not possible",
+                                                       dataExportParams.QuotedTargetTableNameWithSchema);
+                    OnWarningEvent(warningMessage);
 
+                    workingParams.AddWarningMessage(warningMessage);
                 }
                 else
                 {
