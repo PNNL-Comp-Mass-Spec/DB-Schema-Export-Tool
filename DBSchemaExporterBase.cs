@@ -863,12 +863,12 @@ namespace DB_Schema_Export_Tool
         /// Get the target column name to use when exporting data
         /// </summary>
         /// <param name="columnMapInfo"></param>
-        /// <param name="currentColumnName"></param>
+        /// <param name="columnName"></param>
         /// <returns></returns>
-        protected string GetTargetColumnName(ColumnMapInfo columnMapInfo, string currentColumnName)
+        protected string GetTargetColumnName(ColumnMapInfo columnMapInfo, string columnName)
         {
             var unusedDataColumnType = DataColumnTypeConstants.Numeric;
-            return GetTargetColumnName(columnMapInfo, currentColumnName, ref unusedDataColumnType);
+            return GetTargetColumnName(columnMapInfo, columnName, ref unusedDataColumnType);
         }
 
         /// <summary>
