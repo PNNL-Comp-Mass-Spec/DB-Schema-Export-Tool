@@ -1270,6 +1270,19 @@ namespace DB_Schema_Export_Tool
             if (dataExportParams.PgInsertEnabled)
             {
                 var primaryKeyColumnList = ResolvePrimaryKeys(dataExportParams, tableInfo, columnMapInfo);
+
+                var truncateTableEnabled = tableInfo.PrimaryKeyColumns.Count == dataExportParams.ColumnNamesAndTypes.Count;
+
+                if (truncateTableEnabled)
+                {
+                    OnWarningEvent(string.Format(
+                                       "Every column in table {0} is part of the primary key; will use TRUNCATE TABLE instead of ON CONFLICT ... DO UPDATE",
+                                       dataExportParams.QuotedTargetTableNameWithSchema));
+
+                    dataExportParams.PgInsertHeaders.Add(string.Format("TRUNCATE TABLE {0};", dataExportParams.QuotedTargetTableNameWithSchema));
+                    dataExportParams.PgInsertHeaders.Add(string.Empty);
+                }
+
                 var insertCommand = string.Format("INSERT INTO {0} ({1})",
                                                   dataExportParams.QuotedTargetTableNameWithSchema,
                                                   dataExportParams.HeaderRowValues);
@@ -1285,6 +1298,11 @@ namespace DB_Schema_Export_Tool
 
                 if (primaryKeyColumnList.Length <= 0)
                     return insertIntoLine;
+
+                if (truncateTableEnabled)
+                {
+                    return insertIntoLine;
+                }
 
                 dataExportParams.PgInsertFooters.Add(string.Format("ON CONFLICT ({0})", primaryKeyColumnList));
                 dataExportParams.PgInsertFooters.Add("DO UPDATE SET");
