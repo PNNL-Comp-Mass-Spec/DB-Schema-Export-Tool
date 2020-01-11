@@ -545,8 +545,14 @@ namespace DB_Schema_Export_Tool
 
             using (var writer = new StreamWriter(new FileStream(scriptFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
             {
+                // Use linux-compatible line feeds
+                writer.NewLine = "\n";
+
+                writer.WriteLine("#!/bin/sh");
+
                 foreach (var scriptFileName in workingParams.DataLoadScriptFiles)
                 {
+                    writer.WriteLine("echo Processing " + scriptFileName);
                     writer.WriteLine("psql -d dms -h localhost -U {0} -f {1}", currentUser, scriptFileName);
                 }
             }
