@@ -339,7 +339,7 @@ namespace DB_Schema_Export_Tool
             PgDumpTableData = false;
 
             PgInsertTableData = false;
-            PgInsertChunkSize = 5000;
+            PgInsertChunkSize = 50000;
 
             PgPort = DBSchemaExporterPostgreSQL.DEFAULT_PORT;
 
