@@ -153,6 +153,9 @@ namespace DB_Schema_Export_Tool
             }
             set
             {
+                if (string.IsNullOrWhiteSpace(value))
+                    return;
+
                 if (!DatabasesToProcess.Contains(value))
                 {
                     DatabasesToProcess.Add(value);
@@ -215,12 +218,18 @@ namespace DB_Schema_Export_Tool
 
         [Option("TableFilterList", "TableNameFilter", HelpShowsDefault = false,
             HelpText = "Table name (or comma separated list of names) to restrict table export operations. " +
-            "This is useful for exporting the data from just a single table")]
+                       "This is useful for exporting the data from just a single table")]
         public string TableNameFilterList
         {
             get => TableNameFilterSet.Count == 0 ? string.Empty : string.Join(", ", TableNameFilterSet);
             set
             {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    TableNameFilterSet.Clear();
+                    return;
+                }
+
                 foreach (var tableName in value.Split(','))
                 {
                     if (!TableNameFilterSet.Contains(tableName))
