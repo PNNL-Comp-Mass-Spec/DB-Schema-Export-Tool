@@ -200,6 +200,7 @@ namespace DB_Schema_Export_Tool
                             continue;
 
                         candidateTable.UsePgInsert = mOptions.PgInsertTableData;
+
                         tablesToExportData.Add(candidateTable, maxRowsToExportPerTable);
                     }
 
@@ -234,7 +235,9 @@ namespace DB_Schema_Export_Tool
                     {
                         foreach (var candidateTable in tablesInDatabase)
                         {
-                            if (candidateTable.SourceTableName.Equals(tableName, StringComparison.OrdinalIgnoreCase) && !userDefinedTableNames.Contains(tableName))
+                            if (candidateTable.SourceTableName.Equals(tableName, StringComparison.OrdinalIgnoreCase) &&
+                                !userDefinedTableNames.Contains(tableName) &&
+                                TableNamePassesFilters(tableName))
                             {
                                 tablesToExportData.Add(candidateTable, maxRowsToExportPerTable);
                                 userDefinedTableNames.Add(tableName);
@@ -259,7 +262,8 @@ namespace DB_Schema_Export_Tool
                     if (!regExMatchers.Any(matcher => matcher.Match(candidateTable.SourceTableName).Success))
                         continue;
 
-                    if (!userDefinedTableNames.Contains(candidateTable.SourceTableName))
+                    if (!userDefinedTableNames.Contains(candidateTable.SourceTableName) &&
+                        TableNamePassesFilters(candidateTable.SourceTableName))
                     {
                         tablesToExportData.Add(candidateTable, maxRowsToExportPerTable);
                         userDefinedTableNames.Add(candidateTable.SourceTableName);
@@ -1299,8 +1303,22 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="tableInfo"></param>
         /// <returns>True (meaning to skip the table) if the table has "&lt;skip&gt;" for the TargetTableName</returns>
-        public static bool SkipTableForDataExport(TableDataExportInfo tableInfo)
+        public bool SkipTableForDataExport(TableDataExportInfo tableInfo)
         {
+            return SkipTableForDataExport(mOptions, tableInfo);
+        }
+
+        /// <summary>
+        /// Determine whether this table should be skipped when exporting data
+        /// </summary>
+        /// <param name="options"></param>
+        /// <param name="tableInfo"></param>
+        /// <returns>True (meaning to skip the table) if the table has "&lt;skip&gt;" for the TargetTableName</returns>
+        public static bool SkipTableForDataExport(SchemaExportOptions options, TableDataExportInfo tableInfo)
+        {
+            if (!TableNamePassesFilters(options, tableInfo.SourceTableName))
+                return true;
+
             return tableInfo.TargetTableName != null && tableInfo.TargetTableName.Equals("<skip>", StringComparison.OrdinalIgnoreCase);
         }
 
@@ -1312,6 +1330,9 @@ namespace DB_Schema_Export_Tool
         /// <returns>True (meaning to skip the table) if the table name is defined in tablesForDataExport and has "&lt;skip&gt;" for the TargetTableName</returns>
         protected bool SkipTableForDataExport(IReadOnlyCollection<TableDataExportInfo> tablesForDataExport, string candidateTableSourceTableName)
         {
+            if (!TableNamePassesFilters(candidateTableSourceTableName))
+                return true;
+
             if (tablesForDataExport == null)
                 return false;
 
@@ -1354,6 +1375,28 @@ namespace DB_Schema_Export_Tool
                     TableNamesToAutoExportData.Add(item);
                 }
             }
+        }
+
+        /// <summary>
+        /// Check whether mOptions.TableNameFilterSet is empty, or contains the table name
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <returns>True if the filter set is empty, or contains the table name; otherwise false</returns>
+        private bool TableNamePassesFilters(string tableName)
+        {
+            return TableNamePassesFilters(mOptions, tableName);
+        }
+
+        /// <summary>
+        /// Check whether options.TableNameFilterSet is empty, or contains the table name
+        /// </summary>
+        /// <param name="options"></param>
+        /// <param name="tableName"></param>
+        /// <returns>True if the filter set is empty, or contains the table name; otherwise false</returns>
+        protected static bool TableNamePassesFilters(SchemaExportOptions options, string tableName)
+        {
+            return options.TableNameFilterSet.Count == 0 ||
+                   options.TableNameFilterSet.Contains(tableName);
         }
 
         /// <summary>

@@ -1224,7 +1224,7 @@ namespace DB_Schema_Export_Tool
                 if (!tableInfo.SourceTableName.Equals(sourceTableName, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                if (DBSchemaExporterBase.SkipTableForDataExport(tableInfo))
+                if (DBSchemaExporterBase.SkipTableForDataExport(options, tableInfo))
                 {
                     // Skip this table
                     writeOutput = false;

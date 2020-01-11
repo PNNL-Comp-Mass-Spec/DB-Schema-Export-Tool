@@ -40,6 +40,12 @@ namespace DB_Schema_Export_Tool
         public SortedSet<string> DatabasesToProcess { get; }
 
         /// <summary>
+        /// List of tables to limit the processing to
+        /// </summary>
+        /// <remarks>If this is empty, processes all tables specified via other settings</remarks>
+        public SortedSet<string> TableNameFilterSet { get; }
+
+        /// <summary>
         /// Maximum rows of data to export
         /// </summary>
         /// <remarks>
@@ -207,6 +213,25 @@ namespace DB_Schema_Export_Tool
                        "TargetColumnName supports <skip> for not including the given column in the output file")]
         public string TableDataColumnMapFile { get; set; }
 
+        [Option("TableFilterList", "TableNameFilter", HelpShowsDefault = false,
+            HelpText = "Table name (or comma separated list of names) to restrict table export operations. " +
+            "This is useful for exporting the data from just a single table")]
+        public string TableNameFilterList
+        {
+            get => TableNameFilterSet.Count == 0 ? string.Empty : string.Join(", ", TableNameFilterSet);
+            set
+            {
+                foreach (var tableName in value.Split(','))
+                {
+                    if (!TableNameFilterSet.Contains(tableName))
+                    {
+                        TableNameFilterSet.Add(tableName);
+                    }
+                }
+            }
+
+        }
+
         [Option("DefaultSchema", "Schema", HelpShowsDefault = false,
             HelpText = "Default schema for exported tables and data. If undefined, use the original table's schema")]
         public string DefaultSchemaName { get; set; }
@@ -324,7 +349,10 @@ namespace DB_Schema_Export_Tool
         public SchemaExportOptions()
         {
             OutputDirectoryPath = ".";
+
             DatabasesToProcess = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+            TableNameFilterSet = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+
             DatabaseSubdirectoryPrefix = DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX;
 
             ColumnMapForDataExport = new Dictionary<string, ColumnMapInfo>(StringComparer.OrdinalIgnoreCase);
@@ -505,6 +533,13 @@ namespace DB_Schema_Export_Tool
                     Console.WriteLine(" {0,-48} {1}", "Default value for the PgInsert column:", PgInsertTableData);
                     Console.WriteLine(" {0,-48} {1}", "PgInsert chunk size:", PgInsertChunkSize);
                 }
+            }
+
+            if (TableNameFilterSet.Count > 0)
+            {
+                Console.WriteLine(" {0,-48} {1}",
+                                  TableNameFilterSet.Count > 1 ? "List of tables to process:" : "Single table to process:",
+                                  TableNameFilterList);
             }
 
             if (!string.IsNullOrWhiteSpace(TableDataColumnMapFile))
