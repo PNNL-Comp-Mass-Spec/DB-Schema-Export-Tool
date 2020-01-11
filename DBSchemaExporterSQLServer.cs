@@ -1269,6 +1269,7 @@ namespace DB_Schema_Export_Tool
 
             if (dataExportParams.PgInsertEnabled)
             {
+                var primaryKeyColumnList = ResolvePrimaryKeys(dataExportParams, tableInfo, columnMapInfo);
                 var insertCommand = string.Format("INSERT INTO {0} ({1})",
                                                   dataExportParams.QuotedTargetTableNameWithSchema,
                                                   dataExportParams.HeaderRowValues);
@@ -1278,41 +1279,6 @@ namespace DB_Schema_Export_Tool
                 dataExportParams.PgInsertHeaders.Add("VALUES");
 
                 headerRows.AddRange(dataExportParams.PgInsertHeaders);
-
-                // Comma separated list of primary key columns
-                string primaryKeyColumnList;
-
-                if (tableInfo.PrimaryKeyColumns.Count > 0)
-                {
-                    var targetColumnNames = new List<string>();
-                    foreach (var primaryKeyColumn in tableInfo.PrimaryKeyColumns)
-                    {
-                        var targetColumnName = GetTargetColumnName(columnMapInfo, primaryKeyColumn);
-                        targetColumnNames.Add(targetColumnName);
-                    }
-
-                    primaryKeyColumnList = string.Join(",", targetColumnNames);
-                }
-                else if (dataExportParams.IdentityColumnFound)
-                {
-                    primaryKeyColumnList = GetTargetColumnName(columnMapInfo, dataExportParams.IdentityColumnName);
-                    tableInfo.PrimaryKeyColumns.Add(primaryKeyColumnList);
-                }
-                else if (mTableDataScripter != null)
-                {
-                    var primaryKeyColumns = GetPrimaryKeysForTableViaScripter(tableInfo);
-
-                    primaryKeyColumnList = string.Join(",", primaryKeyColumns);
-
-                    foreach (var primaryKeyColumn in primaryKeyColumns)
-                    {
-                        tableInfo.PrimaryKeyColumns.Add(primaryKeyColumn);
-                    }
-                }
-                else
-                {
-                    primaryKeyColumnList = string.Empty;
-                }
 
                 dataExportParams.ColSepChar = ',';
                 insertIntoLine = string.Empty;
@@ -2022,6 +1988,18 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        private string GetTargetColumnNames(ColumnMapInfo columnMapInfo, IEnumerable<string> sourceColumnNames, out List<string> targetColumnNames)
+        {
+            targetColumnNames = new List<string>();
+            foreach (var columnName in sourceColumnNames)
+            {
+                var targetColumnName = GetTargetColumnName(columnMapInfo, columnName);
+                targetColumnNames.Add(targetColumnName);
+            }
+
+            return string.Join(",", targetColumnNames);
+        }
+
         /// <summary>
         /// Login to the server
         /// </summary>
@@ -2072,6 +2050,40 @@ namespace DB_Schema_Export_Tool
         private string PossiblyQuoteName(string objectName)
         {
             return PossiblyQuoteName(objectName, true);
+        }
+
+        private string ResolvePrimaryKeys(DataExportWorkingParams dataExportParams, TableDataExportInfo tableInfo, ColumnMapInfo columnMapInfo)
+        {
+
+            // Comma separated list of primary key columns
+            string primaryKeyColumnList;
+
+            if (tableInfo.PrimaryKeyColumns.Count > 0)
+            {
+                primaryKeyColumnList = GetTargetColumnNames(columnMapInfo, tableInfo.PrimaryKeyColumns, out _);
+            }
+            else if (dataExportParams.IdentityColumnFound)
+            {
+                primaryKeyColumnList = GetTargetColumnName(columnMapInfo, dataExportParams.IdentityColumnName);
+                tableInfo.PrimaryKeyColumns.Add(primaryKeyColumnList);
+            }
+            else if (mTableDataScripter != null)
+            {
+                var primaryKeyColumns = GetPrimaryKeysForTableViaScripter(tableInfo);
+
+                primaryKeyColumnList = GetTargetColumnNames(columnMapInfo, primaryKeyColumns, out var targetPrimaryKeyColumns);
+
+                foreach (var targetColumnName in targetPrimaryKeyColumns)
+                {
+                    tableInfo.PrimaryKeyColumns.Add(targetColumnName);
+                }
+            }
+            else
+            {
+                primaryKeyColumnList = string.Empty;
+            }
+
+            return primaryKeyColumnList;
         }
 
         /// <summary>
