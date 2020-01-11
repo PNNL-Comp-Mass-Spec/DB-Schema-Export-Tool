@@ -1271,14 +1271,32 @@ namespace DB_Schema_Export_Tool
             {
                 var primaryKeyColumnList = ResolvePrimaryKeys(dataExportParams, tableInfo, columnMapInfo);
 
-                var truncateTableEnabled = tableInfo.PrimaryKeyColumns.Count == dataExportParams.ColumnNamesAndTypes.Count;
+                bool truncateTableEnabled;
 
-                if (truncateTableEnabled)
+                if (tableInfo.PrimaryKeyColumns.Count == dataExportParams.ColumnNamesAndTypes.Count)
                 {
-                    OnWarningEvent(string.Format(
+                    truncateTableEnabled = true;
+                    Console.WriteLine();
+                    OnStatusEvent(string.Format(
                                        "Every column in table {0} is part of the primary key; will use TRUNCATE TABLE instead of ON CONFLICT ... DO UPDATE",
                                        dataExportParams.QuotedTargetTableNameWithSchema));
 
+                }
+                else if (tableInfo.PrimaryKeyColumns.Count == 0)
+                {
+                    truncateTableEnabled = true;
+                    OnWarningEvent(string.Format(
+                                       "Table {0} does not have a primary key; will use TRUNCATE TABLE since ON CONFLICT ... DO UPDATE is not possible",
+                                       dataExportParams.QuotedTargetTableNameWithSchema));
+
+                }
+                else
+                {
+                    truncateTableEnabled = false;
+                }
+
+                if (truncateTableEnabled)
+                {
                     dataExportParams.PgInsertHeaders.Add(string.Format("TRUNCATE TABLE {0};", dataExportParams.QuotedTargetTableNameWithSchema));
                     dataExportParams.PgInsertHeaders.Add(string.Empty);
                 }
