@@ -550,10 +550,19 @@ namespace DB_Schema_Export_Tool
 
                 writer.WriteLine("#!/bin/sh");
 
+                writer.WriteLine();
+                writer.WriteLine("mkdir -p Done");
+
                 foreach (var scriptFileName in workingParams.DataLoadScriptFiles)
                 {
+                    writer.WriteLine();
                     writer.WriteLine("echo Processing " + scriptFileName);
                     writer.WriteLine("psql -d dms -h localhost -U {0} -f {1}", currentUser, scriptFileName);
+
+                    var targetFilePath = "Done/" + scriptFileName;
+
+                    writer.WriteLine("test -f {0} && rm {0}", targetFilePath);
+                    writer.WriteLine("mv {0} {1} && echo '   ... moved to {1}'", scriptFileName, targetFilePath);
                 }
             }
         }
