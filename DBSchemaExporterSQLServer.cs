@@ -719,8 +719,8 @@ namespace DB_Schema_Export_Tool
             if (mOptions.ShowStats)
             {
                 OnDebugEvent(string.Format(
-                                 "Exported {0} tables in {1:0.0} seconds",
-                                 currentDatabase.Tables.Count, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
+                    "Exported {0} tables in {1:0.0} seconds",
+                    currentDatabase.Tables.Count, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
             }
 
             return true;
@@ -999,8 +999,8 @@ namespace DB_Schema_Export_Tool
                     if (mOptions.ShowStats)
                     {
                         OnDebugEvent(string.Format(
-                                         "Exported {0} {1}s in {2:0.0} seconds",
-                                         queryResults.Tables[0].Rows.Count, objectType, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
+                            "Exported {0} {1}s in {2:0.0} seconds",
+                            queryResults.Tables[0].Rows.Count, objectType, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
                     }
                 }
             }
@@ -1117,8 +1117,8 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var sourceTableNameWithSchema = string.Format("{0}.{1}",
-                                                             PossiblyQuoteName(databaseTable.Schema),
-                                                             PossiblyQuoteName(databaseTable.Name));
+                    PossiblyQuoteName(databaseTable.Schema),
+                    PossiblyQuoteName(databaseTable.Name));
 
                 sql += " * FROM " + sourceTableNameWithSchema;
 
@@ -1146,14 +1146,16 @@ namespace DB_Schema_Export_Tool
 
                 // Get the table name, with schema, in the form schema.table_name
                 // The schema and table name will be quoted if necessary
-                dataExportParams.TargetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo,
-                                                                                quoteWithSquareBrackets, false,
-                                                                                out var targetTableName);
+                dataExportParams.TargetTableNameWithSchema = GetTargetTableName(
+                    sourceTableNameWithSchema, tableInfo,
+                    quoteWithSquareBrackets, false,
+                    out var targetTableName);
 
                 // Get the table name, with schema, in the form schema.table_name
                 // The schema and table name will always be quoted
-                dataExportParams.QuotedTargetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo,
-                                                                                      quoteWithSquareBrackets, true, out _);
+                dataExportParams.QuotedTargetTableNameWithSchema = GetTargetTableName(
+                    sourceTableNameWithSchema, tableInfo,
+                    quoteWithSquareBrackets, true, out _);
 
                 var headerRows = new List<string>();
 
@@ -1188,8 +1190,10 @@ namespace DB_Schema_Export_Tool
                 if (string.IsNullOrWhiteSpace(outFilePath))
                 {
                     // Skip this table
-                    OnStatusEvent(string.Format("GetFileNameForTableDataExport returned an empty output file name for table {0} in database {1}",
-                                                sourceTableNameWithSchema, databaseName));
+                    OnStatusEvent(string.Format(
+                        "GetFileNameForTableDataExport returned an empty output file name for table {0} in database {1}",
+                        sourceTableNameWithSchema, databaseName));
+
                     return false;
                 }
 
@@ -1439,6 +1443,7 @@ namespace DB_Schema_Export_Tool
 
             foreach (DataRow currentRow in queryResults.Tables[0].Rows)
             {
+
                 delimitedRowValues.Clear();
                 if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData && !usingPgInsert)
                 {

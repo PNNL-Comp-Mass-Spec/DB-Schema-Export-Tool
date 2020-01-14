@@ -231,8 +231,8 @@ namespace DB_Schema_Export_Tool
                 if (mOptions.ShowStats)
                 {
                     OnStatusEvent(string.Format(
-                                      "Exported database schema in {0:0.0} seconds",
-                                      DateTime.UtcNow.Subtract(startTime).TotalSeconds));
+                        "Exported database schema in {0:0.0} seconds",
+                        DateTime.UtcNow.Subtract(startTime).TotalSeconds));
                 }
 
                 return success;
@@ -811,8 +811,9 @@ namespace DB_Schema_Export_Tool
                              tableInfo.TargetTableName.Equals("false", StringComparison.OrdinalIgnoreCase)))
                         {
                             OnWarningEvent(string.Format(
-                                               "Invalid line in the table data file; target table name cannot be {0}; see {1}",
-                                               tableInfo.TargetTableName, dataLine));
+                                "Invalid line in the table data file; target table name cannot be {0}; see {1}",
+                                tableInfo.TargetTableName, dataLine));
+
                             continue;
                         }
 
@@ -1250,6 +1251,7 @@ namespace DB_Schema_Export_Tool
                                     LogDebug("  Copying file " + sourceFile.Name);
                                     break;
                             }
+
                             sourceFile.CopyTo(fiTargetFile.FullName, true);
                             fileCopyCount++;
                         }
@@ -1284,7 +1286,7 @@ namespace DB_Schema_Export_Tool
                 if (mOptions.ShowStats)
                 {
                     LogDebug(string.Format(
-                                 "Synchronized schema files in {0:0.0} seconds", DateTime.UtcNow.Subtract(startTime).TotalSeconds));
+                        "Synchronized schema files in {0:0.0} seconds", DateTime.UtcNow.Subtract(startTime).TotalSeconds));
                 }
 
                 return true;
@@ -1601,10 +1603,11 @@ namespace DB_Schema_Export_Tool
                 Console.WriteLine();
                 if (newFilePaths.Count > 0)
                 {
-                    OnStatusEvent(string.Format("Adding {0} new {1} for tracking by {2}",
-                                                newFilePaths.Count,
-                                                CheckPlural(newFilePaths.Count, "file", "files"),
-                                                toolName));
+                    OnStatusEvent(string.Format(
+                        "Adding {0} new {1} for tracking by {2}",
+                        newFilePaths.Count,
+                        CheckPlural(newFilePaths.Count, "file", "files"),
+                        toolName));
 
                     // Add each of the new files
                     foreach (var newFilePath in newFilePaths)
@@ -1696,9 +1699,9 @@ namespace DB_Schema_Export_Tool
 
                 if (fileCopyCount > 0 && modifiedFileCount == 0)
                 {
-                    OnWarningEvent(string.Format
-                                       ("Note: File Copy Count is {0} yet the Modified File Count reported by {1} is zero; " +
-                                        "this may indicate a problem", fileCopyCount, toolName));
+                    OnWarningEvent(string.Format(
+                        "Note: File Copy Count is {0} yet the Modified File Count reported by {1} is zero; " +
+                        "this may indicate a problem", fileCopyCount, toolName));
 
                     Console.WriteLine();
                 }
@@ -1708,9 +1711,10 @@ namespace DB_Schema_Export_Tool
 
                 if (modifiedFileCount > 0)
                 {
-                    OnStatusEvent(string.Format("Found {0} modified {1}",
-                                                modifiedFileCount,
-                                                CheckPlural(modifiedFileCount, "file", "files")));
+                    OnStatusEvent(string.Format(
+                        "Found {0} modified {1}",
+                        modifiedFileCount,
+                        CheckPlural(modifiedFileCount, "file", "files")));
                 }
 
                 var commitMessage = string.Format("{0:yyyy-MM-dd} auto-commit", DateTime.Now);

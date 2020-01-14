@@ -70,7 +70,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// When exporting table data, this defines the text to write for null columns
         /// </summary>
-        public string NullValue { get;  }
+        public string NullValue { get; }
 
         /// <summary>
         /// Constructor
