@@ -1122,6 +1122,11 @@ namespace DB_Schema_Export_Tool
 
                 sql += " * FROM " + sourceTableNameWithSchema;
 
+                if (tableInfo.FilterByDate)
+                {
+                    sql += string.Format(" WHERE [{0}] >= '{1:yyyy-MM-dd}'", tableInfo.DateColumnName, tableInfo.MinimumDate);
+                }
+
                 if (mOptions.PreviewExport)
                 {
                     OnStatusEvent(string.Format("Preview querying database {0} with {1}", databaseName, sql));
@@ -1176,10 +1181,10 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var columnMapInfo = ConvertDataTableColumnInfo(databaseTable.Name, quoteWithSquareBrackets, dataExportParams);
-
+                
                 var insertIntoLine = ExportDBTableDataInit(tableInfo, columnMapInfo, dataExportParams, headerRows, workingParams);
 
-                var outFilePath = GetFileNameForTableDataExport(targetTableName, dataExportParams.TargetTableNameWithSchema, workingParams);
+                var outFilePath = GetFileNameForTableDataExport(tableInfo, targetTableName, dataExportParams, workingParams);
                 if (string.IsNullOrWhiteSpace(outFilePath))
                 {
                     // Skip this table

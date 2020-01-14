@@ -196,10 +196,11 @@ namespace DB_Schema_Export_Tool
                             continue;
                         }
 
-                        if (SkipTableForDataExport(tablesForDataExport, candidateTable.SourceTableName))
+                        if (SkipTableForDataExport(tablesForDataExport, candidateTable.SourceTableName, out var tableInfo))
                             continue;
 
                         candidateTable.UsePgInsert = mOptions.PgInsertTableData;
+                        candidateTable.DefineDateFilter(tableInfo.DateColumnName, tableInfo.MinimumDate);
 
                         tablesToExportData.Add(candidateTable, maxRowsToExportPerTable);
                     }
@@ -809,12 +810,19 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Generate the file name to exporting table data
         /// </summary>
+        /// <param name="tableInfo"></param>
         /// <param name="targetTableName"></param>
-        /// <param name="targetTableNameWithSchema"></param>
+        /// <param name="dataExportParams"></param>
         /// <param name="workingParams"></param>
         /// <returns></returns>
-        protected string GetFileNameForTableDataExport(string targetTableName, string targetTableNameWithSchema, WorkingParams workingParams)
+        protected string GetFileNameForTableDataExport(
+            TableDataExportInfo tableInfo,
+            string targetTableName,
+            DataExportWorkingParams dataExportParams,
+            WorkingParams workingParams)
         {
+            var targetTableNameWithSchema = dataExportParams.TargetTableNameWithSchema;
+
             // Make sure output file name doesn't contain any invalid characters
             string cleanName;
             if (targetTableNameWithSchema.StartsWith("dbo.") ||
@@ -823,7 +831,11 @@ namespace DB_Schema_Export_Tool
             else
                 cleanName = CleanNameForOS(targetTableNameWithSchema + "_Data");
 
-            var outFilePath = Path.Combine(workingParams.OutputDirectory.FullName, cleanName + ".sql");
+            var suffix = tableInfo.FilterByDate ?
+                             string.Format("_Since_{0:yyyy-MM-dd}", tableInfo.MinimumDate) :
+                             string.Empty;
+
+            var outFilePath = Path.Combine(workingParams.OutputDirectory.FullName, cleanName + suffix + ".sql");
 
             return outFilePath;
         }
@@ -1375,25 +1387,33 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="tablesForDataExport"></param>
         /// <param name="candidateTableSourceTableName"></param>
+        /// <param name="tableInfo"></param>
         /// <returns>True (meaning to skip the table) if the table name is defined in tablesForDataExport and has "&lt;skip&gt;" for the TargetTableName</returns>
-        protected bool SkipTableForDataExport(IReadOnlyCollection<TableDataExportInfo> tablesForDataExport, string candidateTableSourceTableName)
+        protected bool SkipTableForDataExport(
+            IReadOnlyCollection<TableDataExportInfo> tablesForDataExport,
+            string candidateTableSourceTableName,
+            out TableDataExportInfo tableInfo)
         {
             if (!TableNamePassesFilters(candidateTableSourceTableName))
-                return true;
-
-            if (tablesForDataExport == null)
-                return false;
-
-            foreach (var item in tablesForDataExport)
             {
-                if (!item.SourceTableName.Equals(candidateTableSourceTableName, StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                if (SkipTableForDataExport(item))
-                    return true;
+                tableInfo = null;
+                return true;
             }
 
+            if (tablesForDataExport == null)
+            {
+                tableInfo = new TableDataExportInfo(candidateTableSourceTableName);
+                return false;
+            }
+
+            if (DBSchemaExportTool.GetTableByName(tablesForDataExport, candidateTableSourceTableName, out tableInfo))
+            {
+                return SkipTableForDataExport(tableInfo);
+            }
+
+            tableInfo = new TableDataExportInfo(candidateTableSourceTableName);
             return false;
+
         }
 
         /// <summary>

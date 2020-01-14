@@ -203,6 +203,11 @@ namespace DB_Schema_Export_Tool
                         return false;
                 }
 
+                if (!string.IsNullOrWhiteSpace(mOptions.TableDataDateFilterFile))
+                {
+                    LoadDateFiltersForTableData(mOptions.TableDataDateFilterFile, tablesForDataExport);
+                }
+
                 var success = ScriptServerAndDBObjectsWork(databaseList, tablesForDataExport);
 
                 // Populate a dictionary with the database names (properly capitalized) and the output directory path used for each
@@ -422,6 +427,29 @@ namespace DB_Schema_Export_Tool
             return mDBSchemaExporter.GetServerDatabases();
         }
 
+        /// <summary>
+        /// Look for the table named sourceTableName in tablesForDataExport
+        /// </summary>
+        /// <param name="tablesForDataExport"></param>
+        /// <param name="sourceTableName"></param>
+        /// <param name="tableInfo">Output: tableInfo for the named table, or null if not found</param>
+        /// <returns>True if found, otherwise false</returns>
+        public static bool GetTableByName(IEnumerable<TableDataExportInfo> tablesForDataExport, string sourceTableName, out TableDataExportInfo tableInfo)
+        {
+
+            foreach (var candidateTable in tablesForDataExport)
+            {
+                if (!candidateTable.SourceTableName.Equals(sourceTableName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                tableInfo = candidateTable;
+                return true;
+            }
+
+            tableInfo = null;
+            return false;
+        }
+
         public static SortedSet<string> GetTableNamesToAutoExportData(bool postgreSQLNames)
         {
             // Keys are table names
@@ -623,6 +651,85 @@ namespace DB_Schema_Export_Tool
                 OnErrorEvent("Error in LoadColumnMapInfo", ex);
             }
 
+        }
+
+        private void LoadDateFiltersForTableData(string dateFilterFilePath, ICollection<TableDataExportInfo> tablesForDataExport)
+        {
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(dateFilterFilePath))
+                {
+                    return;
+                }
+
+                var dataFile = new FileInfo(dateFilterFilePath);
+                if (!dataFile.Exists)
+                {
+                    Console.WriteLine();
+                    OnStatusEvent("Table Data Date Filter File not found");
+                    OnWarningEvent("File not found: " + dataFile.FullName);
+                    return;
+                }
+
+                var headerLineChecked = false;
+
+                using (var dataReader = new StreamReader(new FileStream(dataFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+                {
+                    while (!dataReader.EndOfStream)
+                    {
+                        var dataLine = dataReader.ReadLine();
+                        if (string.IsNullOrWhiteSpace(dataLine))
+                            continue;
+
+                        var lineParts = dataLine.Split('\t');
+
+                        if (!headerLineChecked)
+                        {
+                            headerLineChecked = true;
+                            if (lineParts[0].Equals("SourceTableName"))
+                                continue;
+                        }
+
+                        if (lineParts.Length < 3)
+                        {
+                            LogDebug("Skipping line with fewer than three columns: " + dataLine);
+                            continue;
+                        }
+
+                        var sourceTableName = lineParts[0].Trim();
+                        var dateColumnName = lineParts[1].Trim();
+                        var minimumDateText = lineParts[2].Trim();
+
+                        if (!DateTime.TryParse(minimumDateText, out var minimumDate))
+                        {
+                            LogDebug(string.Format(
+                                "Date filter for column {0} in table {1} is not a valid date: {2}",
+                                dateColumnName, sourceTableName, minimumDateText));
+
+                            continue;
+                        }
+
+                        TableDataExportInfo tableInfo;
+                        if (GetTableByName(tablesForDataExport, sourceTableName, out var matchingTableInfo))
+                        {
+                            tableInfo = matchingTableInfo;
+                        }
+                        else
+                        {
+                            tableInfo = new TableDataExportInfo(sourceTableName);
+                            tablesForDataExport.Add(tableInfo);
+                        }
+
+                        tableInfo.DefineDateFilter(dateColumnName, minimumDate);
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+                OnErrorEvent("Error in LoadColumnMapInfo", ex);
+            }
         }
 
         private List<TableDataExportInfo> LoadTablesForDataExport(string tableDataFilePath)
@@ -1219,17 +1326,13 @@ namespace DB_Schema_Export_Tool
             // This group will exist for default constraints and foreign key constraints
             var defaultConstraintColumn = createItemMatch.Groups["ColumnName"].ToString();
 
-            foreach (var tableInfo in tablesForDataExport)
+            if (GetTableByName(tablesForDataExport, sourceTableName, out var tableInfo))
             {
-                if (!tableInfo.SourceTableName.Equals(sourceTableName, StringComparison.OrdinalIgnoreCase))
-                    continue;
-
                 if (DBSchemaExporterBase.SkipTableForDataExport(options, tableInfo))
                 {
                     // Skip this table
                     writeOutput = false;
                 }
-                break;
             }
 
             if (!options.ColumnMapForDataExport.TryGetValue(sourceTableName, out var columnMapInfo))

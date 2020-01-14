@@ -38,6 +38,23 @@ namespace DB_Schema_Export_Tool
         public SortedSet<string> PrimaryKeyColumns { get; }
 
         /// <summary>
+        /// Column name for filtering rows by date when exporting data
+        /// </summary>
+        /// <remarks>Empty string if the filter is not enabled</remarks>
+        public string DateColumnName { get; private set; }
+
+        /// <summary>
+        /// Minimum date to use when filtering rows by Date
+        /// </summary>
+        /// <remarks>Ignored if DateColumnName is empty</remarks>
+        public DateTime MinimumDate { get; private set; }
+
+        /// <summary>
+        /// True if DateColumnName is defined; otherwise false
+        /// </summary>
+        public bool FilterByDate => !string.IsNullOrWhiteSpace(DateColumnName);
+
+        /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="sourceTableName">Either just the table name or SchemaName.TableName (depends on the circumstance)</param>
@@ -45,6 +62,27 @@ namespace DB_Schema_Export_Tool
         {
             SourceTableName = sourceTableName;
             PrimaryKeyColumns = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            DefineDateFilter(string.Empty, DateTime.MinValue);
+        }
+
+        /// <summary>
+        /// Update the date column and minimum date
+        /// </summary>
+        /// <param name="dateColumnName"></param>
+        /// <param name="minimumDate"></param>
+        /// <remarks>To remove a filter, send an empty string for dateColumnName</remarks>
+        public void DefineDateFilter(string dateColumnName, DateTime minimumDate)
+        {
+            if (string.IsNullOrWhiteSpace(dateColumnName))
+            {
+                DateColumnName = string.Empty;
+                MinimumDate = DateTime.MinValue;
+                return;
+            }
+
+            DateColumnName = dateColumnName;
+            MinimumDate = minimumDate;
         }
 
         /// <summary>

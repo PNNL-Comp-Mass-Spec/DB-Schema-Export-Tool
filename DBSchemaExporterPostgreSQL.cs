@@ -499,6 +499,12 @@ namespace DB_Schema_Export_Tool
 
             // Export the data from tableNameWithSchema, possibly limiting the number of rows to export
             var sql = "SELECT * FROM " + sourceTableNameWithSchema;
+
+            if (tableInfo.FilterByDate)
+            {
+                sql += string.Format(" WHERE {0} >= '{1:yyyy-MM-dd}'", tableInfo.DateColumnName, tableInfo.MinimumDate);
+            }
+
             if (maxRowsToExport > 0)
             {
                 sql += " limit " + maxRowsToExport;
@@ -587,7 +593,17 @@ namespace DB_Schema_Export_Tool
                     dataExportParams.ColSepChar = '\t';
                 }
 
-                var outFilePath = GetFileNameForTableDataExport(targetTableName, dataExportParams.TargetTableNameWithSchema, workingParams);
+                var outFilePath = GetFileNameForTableDataExport(tableInfo, targetTableName, dataExportParams, workingParams);
+                if (string.IsNullOrWhiteSpace(outFilePath))
+                {
+                    // Skip this table
+                    OnStatusEvent(string.Format(
+                        "GetFileNameForTableDataExport returned an empty output file name for table {0} in database {1}",
+                        sourceTableNameWithSchema, databaseName));
+
+                    return false;
+                }
+
                 OnDebugEvent("Writing table data to " + outFilePath);
 
                 if (mOptions.ScriptPgLoadCommands)
@@ -607,7 +623,7 @@ namespace DB_Schema_Export_Tool
                     if (dataExportParams.IdentityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
                     {
                         writer.WriteLine("-- If a table has an identity value, after inserting data with explicit identities,");
-                        writer.WriteLine("-- the sequence will need to be sync'd up with the table");
+                        writer.WriteLine("-- the sequence will need to be synchronized up with the table");
                         writer.WriteLine();
                         writer.WriteLine("-- Option 1, for columns that use a serial for the identity field");
                         writer.WriteLine("-- select setval(pg_get_serial_sequence('{0}', 'my_serial_column'),", dataExportParams.TargetTableNameWithSchema);
@@ -661,7 +677,22 @@ namespace DB_Schema_Export_Tool
         {
             var targetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo, out var targetTableName);
 
-            var outFilePath = GetFileNameForTableDataExport(targetTableName, targetTableNameWithSchema, workingParams);
+            var dataExportParams = new DataExportWorkingParams(false, "null")
+            {
+                TargetTableNameWithSchema = targetTableNameWithSchema
+            };
+
+            var outFilePath = GetFileNameForTableDataExport(tableInfo, targetTableName, dataExportParams, workingParams);
+            if (string.IsNullOrWhiteSpace(outFilePath))
+            {
+                // Skip this table
+                OnStatusEvent(string.Format(
+                    "GetFileNameForTableDataExport returned an empty output file name for table {0} in database {1}",
+                    sourceTableNameWithSchema, databaseName));
+
+                return false;
+            }
+
             var tableDataOutputFile = new FileInfo(outFilePath);
 
             var existingData = tableDataOutputFile.Exists ? tableDataOutputFile.LastWriteTime : DateTime.MinValue;

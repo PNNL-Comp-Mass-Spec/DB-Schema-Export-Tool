@@ -241,6 +241,12 @@ namespace DB_Schema_Export_Tool
 
         }
 
+        [Option("TableDataDateFilter", "DateFilter", HelpShowsDefault = false, IsInputFilePath = true,
+            HelpText = "Text file used to filter data by date when exporting data from tables. " +
+                       "Tab-delimited columns are:\n" +
+                       "SourceTableName  DateColumnName  MinimumDate")]
+        public string TableDataDateFilterFile { get; set; }
+
         [Option("DefaultSchema", "Schema", HelpShowsDefault = false,
             HelpText = "Default schema for exported tables and data. If undefined, use the original table's schema")]
         public string DefaultSchemaName { get; set; }
@@ -554,6 +560,11 @@ namespace DB_Schema_Export_Tool
             if (!string.IsNullOrWhiteSpace(TableDataColumnMapFile))
             {
                 Console.WriteLine(" {0,-48} {1}", "File with source/target column names:", PathUtils.CompactPathString(TableDataColumnMapFile, 80));
+            }
+
+            if (!string.IsNullOrWhiteSpace(TableDataDateFilterFile))
+            {
+                Console.WriteLine(" {0,-48} {1}", "File with date filter column info:", PathUtils.CompactPathString(TableDataDateFilterFile, 80));
             }
 
             if (!string.IsNullOrWhiteSpace(ExistingSchemaFileToParse))
