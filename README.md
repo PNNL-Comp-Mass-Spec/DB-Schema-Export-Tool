@@ -46,7 +46,7 @@ DB_Schema_Export_Tool.exe
  [/PgUser:username] [/PgPass:password] [/PgPort:5432]
  [/DirectoryPrefix:PrefixText] [/NoSubdirectory] [/CreateDBDirectories]
  [/DataTables:TableDataToExport.txt] [/Map:ColumnMapping.txt]
- [/Schema:SchemaName]
+ [/DateFilter:MinimumDate] [/Schema:SchemaName]
  [/ExistingSchema:SchemaFileName]
  [/NoAutoData] [/ExportAllData] [/MaxRows:1000] [/NoData]
  [/SnakeCase] [/PgDump] [/PgInsert] [/PgInsertChunkSize:5000] 
@@ -143,6 +143,17 @@ Use `/Map` or `/ColumnMap` to define a tab-delimited text file mapping source co
 | T_Analysis_Job   | AJ_finish        | finish           |
 | t_users	       | name_with_prn	  | `<skip>`         |
 
+Use `/DateFilter` or `/TableDataDateFilter` to define a tab-delimited text file that defines date filters to use when exporting data from tables.
+* File format:
+
+| SourceTableName  | DateColumnName   | MinimumDate      |
+|------------------|------------------|------------------|
+| T_Event_Log      | Entered          | 2020-01-01       |
+| T_Log_Entries    | posting_time     | 2020-01-01       |
+| T_ParamValue     | last_affected    | 2020-01-01       |
+| T_ParamValue_OldManagers | last_affected | 2016-01-07  |
+
+                       "Tab-delimited columns ar
 Use `/Schema` or `/DefaultSchema` to define the default schema name to use when exporting data from tables
 * Entries in the `/DataTables` file will override this default schema
 
