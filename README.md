@@ -144,16 +144,16 @@ Use `/Map` or `/ColumnMap` to define a tab-delimited text file mapping source co
 | t_users	       | name_with_prn	  | `<skip>`         |
 
 Use `/DateFilter` or `/TableDataDateFilter` to define a tab-delimited text file that defines date filters to use when exporting data from tables.
+* The data file will include the start date in the name, for example: `mc.t_log_entries_Data_Since_2020-01-01.sql`
 * File format:
 
-| SourceTableName  | DateColumnName   | MinimumDate      |
-|------------------|------------------|------------------|
-| T_Event_Log      | Entered          | 2020-01-01       |
-| T_Log_Entries    | posting_time     | 2020-01-01       |
-| T_ParamValue     | last_affected    | 2020-01-01       |
-| T_ParamValue_OldManagers | last_affected | 2016-01-07  |
+| SourceTableName          | DateColumnName   | MinimumDate  |
+|--------------------------|------------------|--------------|
+| T_Event_Log              | Entered          | 2020-01-01   |
+| T_Log_Entries            | posting_time     | 2020-01-01   |
+| T_ParamValue             | last_affected    | 2020-01-01   |
+| T_ParamValue_OldManagers | last_affected    | 2016-01-07   |
 
-                       "Tab-delimited columns ar
 Use `/Schema` or `/DefaultSchema` to define the default schema name to use when exporting data from tables
 * Entries in the `/DataTables` file will override this default schema
 
