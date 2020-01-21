@@ -906,8 +906,8 @@ namespace DB_Schema_Export_Tool
 
                             sql += " ORDER BY table_name";
                         }
-
                         break;
+
                     case 1:
                         // Stored procedures
                         objectType = "Stored procedure";
@@ -921,8 +921,8 @@ namespace DB_Schema_Export_Tool
 
                             sql += " ORDER BY routine_name";
                         }
-
                         break;
+
                     case 2:
                         // User defined functions
                         objectType = "User defined function";
@@ -932,8 +932,8 @@ namespace DB_Schema_Export_Tool
                                   "WHERE routine_type = 'function' " +
                                   "ORDER BY routine_name";
                         }
-
                         break;
+
                     case 3:
                         // Synonyms
                         objectType = "Synonym";
@@ -943,7 +943,6 @@ namespace DB_Schema_Export_Tool
                                   "INNER JOIN sys.schemas B ON A.schema_id = B.schema_id " +
                                   "ORDER BY A.Name";
                         }
-
                         break;
                 }
 
@@ -1223,7 +1222,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var columnMapInfo = ConvertDataTableColumnInfo(databaseTable.Name, quoteWithSquareBrackets, dataExportParams);
-                
+
                 var insertIntoLine = ExportDBTableDataInit(tableInfo, columnMapInfo, dataExportParams, headerRows, workingParams);
 
                 var outFilePath = GetFileNameForTableDataExport(tableInfo, targetTableName, dataExportParams, workingParams);
