@@ -1569,8 +1569,7 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
-                Console.WriteLine();
-                Console.WriteLine("Created " + PathUtils.CompactPathString(updatedSchemaFile, 120));
+                LogMessage("Created " + PathUtils.CompactPathString(updatedSchemaFile, 120));
 
                 return true;
             }
