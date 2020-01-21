@@ -232,9 +232,10 @@ namespace DB_Schema_Export_Tool
 
                 foreach (var tableName in value.Split(','))
                 {
-                    if (!TableNameFilterSet.Contains(tableName))
+                    var trimmedName = tableName.Trim();
+                    if (!TableNameFilterSet.Contains(trimmedName))
                     {
-                        TableNameFilterSet.Add(tableName);
+                        TableNameFilterSet.Add(trimmedName);
                     }
                 }
             }
