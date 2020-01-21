@@ -553,6 +553,25 @@ namespace DB_Schema_Export_Tool
 
             if (TableNameFilterSet.Count > 0)
             {
+                if (TableNameFilterSet.Count == 1)
+                {
+                    try
+                    {
+
+                        // Make sure the user didn't specify a text file
+                        var candidateFile = new FileInfo(TableNameFilterSet.First());
+                        if (candidateFile.Exists)
+                        {
+                            ConsoleMsgUtils.ShowWarning("Warning: The -TableNameFilterSet parameter must be the name of a table; not a file on disk");
+                            Console.WriteLine();
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore errors here
+                    }
+                }
+
                 Console.WriteLine(" {0,-48} {1}",
                                   TableNameFilterSet.Count > 1 ? "List of tables to process:" : "Single table to process:",
                                   TableNameFilterList);
