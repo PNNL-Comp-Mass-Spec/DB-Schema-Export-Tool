@@ -53,7 +53,7 @@ DB_Schema_Export_Tool.exe
  [/ServerInfo] [/NoSchema] [/ScriptLoad]
  [/Sync:TargetDirectoryPath] [/Git] [/Svn] [/Hg] [/Commit]
  [/L] [/LogFile:BaseName] [/LogDir:LogDirectoryPath] 
- [/Preview] [/Stats]
+ [/Preview] [/Stats] [/Trace]
  [/ParamFile:ParamFileName.conf] [/CreateParamFile]
 ```
 
@@ -147,6 +147,7 @@ Use `/Map` or `/ColumnMap` to define a tab-delimited text file mapping source co
 
 Use `/TableFilterList` or `/TableNameFilter` to specify a table name (or comma separated list of names) to restrict table export operations. 
 * This is useful for exporting the data from just a single table
+* This parameter does not support reading names from a table; it only supports actual table names
 
 Use `/DateFilter` or `/TableDataDateFilter` to define a tab-delimited text file that defines date filters to use when exporting data from tables.
 * The data file will include the start date in the name, for example: `mc.t_log_entries_Data_Since_2020-01-01.sql`
@@ -224,6 +225,8 @@ Use `/LogDir` or `/LogDirectory` to specify the directory to save the log file i
 Use `/Preview` to count the number of database objects that would be exported
 
 Use `/Stats` to show (but not log) export stats
+
+Use `/Trace` to show additional debug messages at the console
 
 The processing options can be specified in a parameter file using `/ParamFile:Options.conf` or `/Conf:Options.conf`
 * Define options using the format `ArgumentName=Value`
