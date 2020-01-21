@@ -168,6 +168,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Determines the table names for which data will be exported
         /// </summary>
+        /// <param name="databaseName">Database name</param>
         /// <param name="tablesInDatabase">Tables in the database</param>
         /// <param name="tablesForDataExport">Tables that should be auto-selected; also used to track tables that should be skipped if the TargetTableName is &lt;skip&gt;</param>
         /// <returns>Dictionary where keys are table names and values are the maximum number of rows to export</returns>
@@ -187,6 +188,8 @@ namespace DB_Schema_Export_Tool
 
                 if (mOptions.ExportAllData && !mOptions.DisableDataExport)
                 {
+                    ShowTrace("Exporting data from every table in the database (unless tagged with <skip> in the file specified by the DataTables parameter)");
+
                     // Export data from every table in the database
                     // Skip any tables in tablesForDataExport where the TargetTableName is <skip>
                     foreach (var candidateTable in tablesInDatabase)
@@ -194,11 +197,15 @@ namespace DB_Schema_Export_Tool
                         if (candidateTable.SourceTableName.Equals("sysdiagrams") ||
                             candidateTable.SourceTableName.Equals("dtproperties"))
                         {
+                            ShowTrace("Skipping data export from system table " + candidateTable.SourceTableName);
                             continue;
                         }
 
                         if (SkipTableForDataExport(tablesForDataExport, candidateTable.SourceTableName, out var tableInfo))
+                        {
+                            ShowTrace("Skipping data export from table " + candidateTable.SourceTableName);
                             continue;
+                        }
 
                         candidateTable.UsePgInsert = mOptions.PgInsertTableData;
                         candidateTable.DefineDateFilter(tableInfo.DateColumnName, tableInfo.MinimumDate);
@@ -206,6 +213,7 @@ namespace DB_Schema_Export_Tool
                         tablesToExportData.Add(candidateTable, maxRowsToExportPerTable);
                     }
 
+                    ShowTraceTableExportCount(tablesToExportData, databaseName);
                     return tablesToExportData;
                 }
 
@@ -218,6 +226,7 @@ namespace DB_Schema_Export_Tool
                     {
                         if (SkipTableForDataExport(item))
                         {
+                            ShowTrace("Skipping data export from table " + item.SourceTableName);
                             continue;
                         }
 
@@ -251,7 +260,10 @@ namespace DB_Schema_Export_Tool
                 const RegexOptions regExOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline;
 
                 if (TableNameRegexToAutoExportData == null || TableNameRegexToAutoExportData.Count == 0)
+                {
+                    ShowTraceTableExportCount(tablesToExportData, databaseName);
                     return tablesToExportData;
+                }
 
                 var regExMatchers = new List<Regex>();
                 foreach (var regexItem in TableNameRegexToAutoExportData)
@@ -272,6 +284,7 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
+                ShowTraceTableExportCount(tablesToExportData, databaseName);
                 return tablesToExportData;
             }
             catch (Exception ex)
@@ -599,6 +612,7 @@ namespace DB_Schema_Export_Tool
             {
                 if (tablesToExportData == null || tablesToExportData.Count == 0)
                 {
+                    ShowTrace("Skipping table data export since no tables have been selected for data export");
                     return true;
                 }
 
@@ -871,6 +885,7 @@ namespace DB_Schema_Export_Tool
                 // Create the directory if it doesn't exist
                 if (!serverInfoOutputDirectory.Exists && !mOptions.PreviewExport)
                 {
+                    ShowTrace("Creating directory " + serverInfoOutputDirectory.FullName);
                     serverInfoOutputDirectory.Create();
                 }
 
@@ -1248,6 +1263,11 @@ namespace DB_Schema_Export_Tool
             if (!validated)
                 return false;
 
+            if (mOptions.Trace)
+            {
+                Console.WriteLine();
+            }
+
             OnStatusEvent("Exporting schema/data to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
             OnDebugEvent("Connecting to " + mOptions.ServerName);
 
@@ -1359,6 +1379,21 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        protected void ShowTrace(string message)
+        {
+            if (mOptions.Trace)
+            {
+                OnDebugEvent(message);
+            }
+        }
+
+        private void ShowTraceTableExportCount(Dictionary<TableDataExportInfo, long> tablesToExportData, string databaseName)
+        {
+            var tableText = tablesToExportData.Count == 1 ? "table" : "tables";
+            ShowTrace(string.Format(
+                "Will export data from {0} {1} in database {2}", tablesToExportData.Count, tableText, databaseName));
+        }
+
         /// <summary>
         /// Determine whether this table should be skipped when exporting data
         /// </summary>
@@ -1423,6 +1458,8 @@ namespace DB_Schema_Export_Tool
         /// <param name="tableNameRegExSpecs"></param>
         public void StoreTableNameRegexToAutoExportData(SortedSet<string> tableNameRegExSpecs)
         {
+            ShowTrace(string.Format("Storing {0} default RegEx specs for finding tables for data export", tableNameRegExSpecs.Count));
+
             TableNameRegexToAutoExportData.Clear();
             foreach (var item in tableNameRegExSpecs)
             {
@@ -1436,6 +1473,8 @@ namespace DB_Schema_Export_Tool
         /// <param name="tableNames"></param>
         public void StoreTableNamesToAutoExportData(SortedSet<string> tableNames)
         {
+            ShowTrace(string.Format("Storing {0} default names for finding tables for data export", tableNames.Count));
+
             TableNamesToAutoExportData.Clear();
             foreach (var item in tableNames)
             {
@@ -1558,6 +1597,7 @@ namespace DB_Schema_Export_Tool
                 // Create the directory if it doesn't exist
                 if (!workingParams.OutputDirectory.Exists && !mOptions.PreviewExport)
                 {
+                    ShowTrace("Creating directory " + workingParams.OutputDirectory.FullName);
                     workingParams.OutputDirectory.Create();
                 }
 
@@ -1598,6 +1638,8 @@ namespace DB_Schema_Export_Tool
 
                 if (outputDirectory.Exists || mOptions.PreviewExport)
                     return true;
+
+                ShowTrace("Creating directory " + outputDirectory.FullName);
 
                 // Try to create it
                 outputDirectory.Create();

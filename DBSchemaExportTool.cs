@@ -170,6 +170,7 @@ namespace DB_Schema_Export_Tool
 
                 if (mOptions.DisableAutoDataExport)
                 {
+                    ShowTrace("Auto selection of tables for data export is disabled");
                     mDBSchemaExporter.TableNamesToAutoExportData.Clear();
                     mDBSchemaExporter.TableNameRegexToAutoExportData.Clear();
                 }
@@ -601,6 +602,8 @@ namespace DB_Schema_Export_Tool
                     return;
                 }
 
+                ShowTrace(string.Format("Reading column information from {0}", dataFile.FullName));
+
                 var headerLineChecked = false;
 
                 using (var dataReader = new StreamReader(new FileStream(dataFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
@@ -645,6 +648,10 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
+                var tableText = mOptions.ColumnMapForDataExport.Count == 1 ? "table" : "tables";
+                ShowTrace(string.Format(
+                    "Loaded column information for {0} {1} from {2}",
+                    mOptions.ColumnMapForDataExport.Count, tableText, dataFile.Name));
             }
             catch (Exception ex)
             {
@@ -672,7 +679,10 @@ namespace DB_Schema_Export_Tool
                     return;
                 }
 
+                ShowTrace(string.Format("Reading date filter information from {0}", dataFile.FullName));
+
                 var headerLineChecked = false;
+                var tableCountWithFilters = 0;
 
                 using (var dataReader = new StreamReader(new FileStream(dataFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
                 {
@@ -722,8 +732,15 @@ namespace DB_Schema_Export_Tool
                         }
 
                         tableInfo.DefineDateFilter(dateColumnName, minimumDate);
+                        tableCountWithFilters++;
                     }
                 }
+
+
+                var tableText = tableCountWithFilters == 1 ? "table" : "tables";
+                ShowTrace(string.Format(
+                    "Loaded date filters for {0} {1} from {2}",
+                    tableCountWithFilters, tableText, dataFile.Name));
 
             }
             catch (Exception ex)
@@ -752,6 +769,8 @@ namespace DB_Schema_Export_Tool
                     LogWarning("File not found: " + dataFile.FullName);
                     return tablesForDataExport;
                 }
+
+                ShowTrace(string.Format("Reading table information from {0}", dataFile.FullName));
 
                 var headerLineChecked = false;
 
@@ -848,6 +867,11 @@ namespace DB_Schema_Export_Tool
 
                     }
                 }
+
+                var tableText = tablesForDataExport.Count == 1 ? "table" : "tables";
+                ShowTrace(string.Format(
+                    "Loaded information for {0} {1} from {2}",
+                    tablesForDataExport.Count, tableText, dataFile.Name));
             }
             catch (Exception ex)
             {
@@ -855,6 +879,11 @@ namespace DB_Schema_Export_Tool
             }
 
             return tablesForDataExport;
+        }
+
+        protected new void OnDebugEvent(string message)
+        {
+            LogDebug(message);
         }
 
         protected new void OnErrorEvent(string message)
@@ -1073,6 +1102,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var success = ExportSchema(outputDirectoryPath, ref databaseNamesAndOutputPaths);
+
                 if (success && mOptions.Sync)
                 {
                     success = SyncSchemaFiles(databaseNamesAndOutputPaths, mOptions.SyncDirectoryPath);
@@ -1136,6 +1166,14 @@ namespace DB_Schema_Export_Tool
         {
             var success = mDBSchemaExporter.ScriptServerAndDBObjects(databaseList, tablesForDataExport);
             return success;
+        }
+
+        private void ShowTrace(string message)
+        {
+            if (mOptions.Trace)
+            {
+                OnDebugEvent(message);
+            }
         }
 
         public void StoreTableNameRegexToAutoExportData(SortedSet<string> tableNameRegExSpecs)
@@ -1475,8 +1513,7 @@ namespace DB_Schema_Export_Tool
                 var defaultConstraintMatcher = new Regex(@"^ALTER TABLE[^[]+\[(?<SchemaName>[^[]+)\]\.\[(?<TableName>[^[]+)\][^[]+ADD[^[]+CONSTRAINT.+DEFAULT.+ FOR \[(?<ColumnName>[^[]+)\].*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
                 var foreignKeyConstraintMatcher = new Regex(@"^ALTER TABLE[^[]+\[(?<SchemaName>[^[]+)\]\.\[(?<TableName>[^[]+)\][^[]+ADD[^[]+CONSTRAINT.+FOREIGN KEY.*\(\[(?<ColumnName>[^[]+)\]\).*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-                Console.WriteLine();
-                Console.WriteLine("Opening " + PathUtils.CompactPathString(options.ExistingSchemaFileToParse, 120));
+                ShowTrace("Opening " + PathUtils.CompactPathString(options.ExistingSchemaFileToParse, 120));
 
                 using (var reader = new StreamReader(new FileStream(options.ExistingSchemaFileToParse, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
                 using (var writer = new StreamWriter(new FileStream(updatedSchemaFile, FileMode.Create, FileAccess.Write, FileShare.Read)))

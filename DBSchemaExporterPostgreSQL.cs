@@ -123,7 +123,14 @@ namespace DB_Schema_Export_Tool
             var tablesInDatabase = mCachedDatabaseTableInfo[databaseName];
             databaseNotFound = false;
 
-            var tablesToExportData = AutoSelectTablesForDataExport(tablesInDatabase.Keys.ToList(), tablesForDataExport);
+            var tableText = tablesInDatabase.Count == 1 ? "table" : "tables";
+            ShowTrace(string.Format(
+                "Found {0} {1} in database {2}",
+                tablesInDatabase.Count, tableText, databaseName));
+
+            var tablesToExportData = AutoSelectTablesForDataExport(
+                databaseName, tablesInDatabase.Keys.ToList(), tablesForDataExport);
+
             return tablesToExportData;
         }
 

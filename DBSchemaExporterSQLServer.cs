@@ -161,6 +161,10 @@ namespace DB_Schema_Export_Tool
             var dtTables = currentDatabase.EnumObjects(DatabaseObjectTypes.Table, SortOrder.Name);
             var tablesInDatabase = (from DataRow item in dtTables.Rows select new TableDataExportInfo(item["Name"].ToString())).ToList();
 
+            var tableText = tablesInDatabase.Count == 1 ? "table" : "tables";
+            ShowTrace(string.Format(
+                "Found {0} {1} in database {2}",
+                tablesInDatabase.Count, tableText, currentDatabase.Name));
 
             var tablesToExportData = AutoSelectTablesForDataExport(currentDatabase.Name, tablesInDatabase, tablesForDataExport);
 
@@ -301,6 +305,7 @@ namespace DB_Schema_Export_Tool
                     if (string.Equals(mSqlServer.Name, mOptions.ServerName, StringComparison.OrdinalIgnoreCase))
                     {
                         // Already connected; no need to re-connect
+                        ShowTrace("Already connected to " + mSqlServer.Name);
                         return true;
                     }
                 }
@@ -314,6 +319,8 @@ namespace DB_Schema_Export_Tool
                         SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error logging into the server: " + mOptions.ServerName);
                     }
                 }
+
+                ShowTrace("Connected to " + mSqlServer.Name);
 
                 return connected;
             }
@@ -397,6 +404,7 @@ namespace DB_Schema_Export_Tool
             {
                 if (SkipTableForDataExport(item))
                 {
+                    ShowTrace("Skipping data export from table " + item.SourceTableName);
                     workingParams.TablesToSkip.Add(item.SourceTableName);
                 }
             }
@@ -418,6 +426,7 @@ namespace DB_Schema_Export_Tool
                     {
                         if (SkipTableForDataExport(item))
                         {
+                            ShowTrace("Skipping data export from table " + item.SourceTableName);
                             continue;
                         }
 
@@ -575,6 +584,8 @@ namespace DB_Schema_Export_Tool
         {
             if (workingParams.CountObjectsOnly)
             {
+                ShowTrace("Counting non built-in schemas and roles");
+
                 workingParams.ProcessCount++;
                 if (SqlServer2005OrNewer(currentDatabase))
                 {
@@ -600,6 +611,8 @@ namespace DB_Schema_Export_Tool
 
             try
             {
+                ShowTrace("Exporting non built-in schemas and roles");
+
                 var scriptInfo = CleanSqlScript(StringCollectionToList(currentDatabase.Script(scriptOptions)));
                 WriteTextToFile(workingParams.OutputDirectory, DB_DEFINITION_FILE_PREFIX + currentDatabase.Name, scriptInfo);
             }
@@ -616,7 +629,11 @@ namespace DB_Schema_Export_Tool
                 for (var index = 0; index < currentDatabase.Schemas.Count; index++)
                 {
                     if (!ExportSchema(currentDatabase.Schemas[index]))
+                    {
                         continue;
+                    }
+
+                    ShowTrace("Exporting schema " + currentDatabase.Schemas[index]);
 
                     var scriptInfo = CleanSqlScript(StringCollectionToList(currentDatabase.Schemas[index].Script(scriptOptions)));
 
@@ -657,11 +674,15 @@ namespace DB_Schema_Export_Tool
 
             if (workingParams.CountObjectsOnly)
             {
+                ShowTrace("Counting Tables");
+
                 // Note: currentDatabase.Tables includes system tables, so workingParams.ProcessCount will be
                 //       an overestimate if mOptions.ScriptingOptions.IncludeSystemObjects = False
                 workingParams.ProcessCount += currentDatabase.Tables.Count;
                 return true;
             }
+
+            ShowTrace("Scripting tables");
 
             var dtStartTime = DateTime.UtcNow;
 
@@ -692,6 +713,7 @@ namespace DB_Schema_Export_Tool
 
                 if (workingParams.TablesToSkip.Contains(databaseTable.Name))
                 {
+                    ShowTrace("Skipping schema export from table " + databaseTable.Name);
                     includeTable = false;
                 }
 
@@ -737,6 +759,7 @@ namespace DB_Schema_Export_Tool
             }
             else
             {
+                ShowTrace("Scripting User Defined Data Types");
                 var itemCount = ScriptCollectionOfObjects(currentDatabase.UserDefinedDataTypes, scriptOptions, workingParams.OutputDirectory);
                 workingParams.ProcessCount += itemCount;
             }
@@ -754,6 +777,7 @@ namespace DB_Schema_Export_Tool
                 }
                 else
                 {
+                    ShowTrace("Scripting User Defined Types");
                     var itemCount = ScriptCollectionOfObjects(currentDatabase.UserDefinedTypes, scriptOptions, workingParams.OutputDirectory);
                     workingParams.ProcessCount += itemCount;
                 }
@@ -926,11 +950,24 @@ namespace DB_Schema_Export_Tool
                 if (string.IsNullOrWhiteSpace(sql))
                     continue;
 
+                if (workingParams.CountObjectsOnly)
+                {
+                    ShowTrace(string.Format("Counting {0}s", objectType));
+                }
+                else
+                {
+                    ShowTrace(string.Format("Scripting {0}s", objectType));
+                }
+
                 var dtStartTime = DateTime.UtcNow;
                 var queryResults = currentDatabase.ExecuteWithResults(sql);
                 if (workingParams.CountObjectsOnly)
                 {
-                    workingParams.ProcessCount += queryResults.Tables[0].Rows.Count;
+                    var foundItemCount = queryResults.Tables[0].Rows.Count;
+                    workingParams.ProcessCount += foundItemCount;
+
+                    var pluralAddon = foundItemCount == 1 ? string.Empty : "s";
+                    ShowTrace(string.Format(" found {0} {1}{2}", foundItemCount, objectType.ToLower(), pluralAddon));
                 }
                 else
                 {
@@ -1960,6 +1997,15 @@ namespace DB_Schema_Export_Tool
             }
 
             databaseNames.Sort();
+
+            var databaseText = databaseNames.Count == 1 ? "database" : "databases";
+            ShowTrace(string.Format(
+                "Found {0} {1} on server {2}", databaseNames.Count, databaseText, mSqlServer.Name));
+
+            if (mOptions.Trace)
+            {
+                Console.WriteLine();
+            }
 
             return databaseNames;
         }

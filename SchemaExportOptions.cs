@@ -352,6 +352,9 @@ namespace DB_Schema_Export_Tool
         [Option("Stats", HelpShowsDefault = false, HelpText = "Show (but do not log) export stats")]
         public bool ShowStats { get; set; }
 
+        [Option("Trace", HelpShowsDefault = false, HelpText = "Show additional debug messages")]
+        public bool Trace { get; set; }
+
         /// <summary>
         /// This returns true if DBUser is empty; or false if a username is defined
         /// </summary>
