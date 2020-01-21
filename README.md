@@ -46,10 +46,10 @@ DB_Schema_Export_Tool.exe
  [/PgUser:username] [/PgPass:password] [/PgPort:5432]
  [/DirectoryPrefix:PrefixText] [/NoSubdirectory] [/CreateDBDirectories]
  [/DataTables:TableDataToExport.txt] [/Map:ColumnMapping.txt]
- [/DateFilter:MinimumDate] [/Schema:SchemaName]
- [/ExistingSchema:SchemaFileName]
+ [/DateFilter:MinimumDate] [/TableFilterList]
+ [/Schema:SchemaName] [/ExistingSchema:SchemaFileName]
  [/NoAutoData] [/ExportAllData] [/MaxRows:1000] [/NoData]
- [/SnakeCase] [/PgDump] [/PgInsert] [/PgInsertChunkSize:5000] 
+ [/SnakeCase] [/PgDump] [/PgInsert] [/PgInsertChunkSize:50000] 
  [/ServerInfo] [/NoSchema] [/ScriptLoad]
  [/Sync:TargetDirectoryPath] [/Git] [/Svn] [/Hg] [/Commit]
  [/L] [/LogFile:BaseName] [/LogDir:LogDirectoryPath] 
@@ -61,7 +61,9 @@ DB_Schema_Export_Tool.exe
 * Optionally use named parameter `/OutputDir:DirectoryPath`
 
 To process a single database, use `/Server` and `/DB`
-
+* The server is assumed to be Microsoft SQL Server
+* However, if `/PgUser` is provided (or `PgUser` is defined in the parameter file), will treat as a Postgres server
+                      
 Use `/DBList` to process several databases (separate names with commas)
 
 Use `/DBUser` and `/DBPass` to specify a username and password for connecting to a SQL Server instance
@@ -86,7 +88,7 @@ Use `/NoSubdirectory` to disable auto creating a subdirectory for the database b
 
 Use `/CreateDBDirectories:False` to disable creating a subdirectory for the schema files for each database
 
-Use `/Data` or `/DataTables` to define a text file with table names (one name per line) for which the data 
+Use `/DataTables` or `/Data` to define a text file with table names (one name per line) for which the data 
 should be exported. In addition to table names defined in `/Data`, there are default tables 
 which will have their data exported; disable the defaults using `/NoAutoData`
 * Also supports a multi-column, tab-delimited format
@@ -143,6 +145,9 @@ Use `/Map` or `/ColumnMap` to define a tab-delimited text file mapping source co
 | T_Analysis_Job   | AJ_finish        | finish           |
 | t_users	       | name_with_prn	  | `<skip>`         |
 
+Use `/TableFilterList` or `/TableNameFilter` to specify a table name (or comma separated list of names) to restrict table export operations. 
+* This is useful for exporting the data from just a single table
+
 Use `/DateFilter` or `/TableDataDateFilter` to define a tab-delimited text file that defines date filters to use when exporting data from tables.
 * The data file will include the start date in the name, for example: `mc.t_log_entries_Data_Since_2020-01-01.sql`
 * File format:
@@ -164,7 +169,7 @@ Use `/ExistingSchema` or `/ExistingDDL` to define a text file that should be par
 
 Use `/ExportAllData` or `/ExportAllTables` to export data from every table in the database
 * Will skip tables (and views) that are defined in the `/DataTables` file but have `<skip>` in the TargetTableName column
-* Ignored if `/NoTableData/` is true
+* Ignored if `/NoTableData` is true
 
 Use `/MaxRows` to define the maximum number of data rows to export
 * Defaults to 1000
@@ -182,13 +187,20 @@ Use `/PgDump` or `/PgDumpData` to specify that exported data should use `COPY` c
 * With SQL Server databases, table data will be exported using pg_dump compatible COPY commands when `/PgDump` is used
 * With PostgreSQL data, table data will be exported using the pg_dump application
 * With SQL Server data and PostgreSQL data, if `/PgDump` is not provided, data is exported with `INSERT INTO` statements
-* With SQL Server data, if `/PgDump` is provided, but the `/DataTables` file has `true` in the `PgInsert` column, `INSERT INTO` statements will be used
+* With SQL Server data, if `/PgDump` is provided, but the `/DataTables` file has `true` in the `PgInsert` column, `INSERT INTO` statements will be used for that table
+
+The `/PgInsert` applies when exporting data from SQL Server database tables
+* While reading the TableDataToExport.txt file, default the PgInsert column to true when `/PgInsert` is provided, meaning table data will be exported via INSERT INTO statements, as mentioned above
+* Ignored for PostgreSQL data
+
+Use `PgInsertChunkSize` to specify the number of values to insert at a time when PgInsert is true for a table
+* Only applicable when exporting data from SQL Server
 
 Use `/ServerInfo` to export server settings, logins, and SQL Server Agent jobs
 
 Use `/NoSchema` to skip exporting schema (tables, views, functions, etc.)
 
-Use `/ScriptLoad` to create a bash script file for loading exported table data into a PostgreSQL database
+Use `/ScriptLoad` or `/Script` to create a bash script file for loading exported table data into a PostgreSQL database
 
 Use `/Sync` to copy new/changed files from the output directory to an alternative directory
 * This is advantageous to prevent file timestamps from getting updated every time the schema is exported
