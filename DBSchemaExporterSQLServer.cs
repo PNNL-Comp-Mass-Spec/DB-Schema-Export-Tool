@@ -161,7 +161,9 @@ namespace DB_Schema_Export_Tool
             var dtTables = currentDatabase.EnumObjects(DatabaseObjectTypes.Table, SortOrder.Name);
             var tablesInDatabase = (from DataRow item in dtTables.Rows select new TableDataExportInfo(item["Name"].ToString())).ToList();
 
-            var tablesToExportData = AutoSelectTablesForDataExport(tablesInDatabase, tablesForDataExport);
+
+            var tablesToExportData = AutoSelectTablesForDataExport(currentDatabase.Name, tablesInDatabase, tablesForDataExport);
+
             return tablesToExportData;
         }
 
@@ -461,7 +463,8 @@ namespace DB_Schema_Export_Tool
                 {
                     workingParams.ProcessCountExpected += Math.Max(tablesForDataExport.Count, tablesToExportData.Count);
 
-                    OnDebugEvent(string.Format("Scripting {0} objects", workingParams.ProcessCountExpected));
+                    var pluralAddon = workingParams.ProcessCountExpected == 1 ? string.Empty : "s";
+                    OnDebugEvent(string.Format("Scripting {0} object{1}", workingParams.ProcessCountExpected, pluralAddon));
 
                     workingParams.CountObjectsOnly = false;
                     if (workingParams.ProcessCount > 0)

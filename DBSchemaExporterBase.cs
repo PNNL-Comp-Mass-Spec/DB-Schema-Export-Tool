@@ -172,12 +172,13 @@ namespace DB_Schema_Export_Tool
         /// <param name="tablesForDataExport">Tables that should be auto-selected; also used to track tables that should be skipped if the TargetTableName is &lt;skip&gt;</param>
         /// <returns>Dictionary where keys are table names and values are the maximum number of rows to export</returns>
         protected Dictionary<TableDataExportInfo, long> AutoSelectTablesForDataExport(
+            string databaseName,
             IReadOnlyList<TableDataExportInfo> tablesInDatabase,
             IReadOnlyList<TableDataExportInfo> tablesForDataExport)
         {
             try
             {
-                OnDebugEvent("Auto-selecting tables to export data from");
+                OnDebugEvent("Auto-selecting tables for data export in database " + databaseName);
 
                 // Tracks the table names and maximum number of data rows to export (0 means all rows)
                 var tablesToExportData = new Dictionary<TableDataExportInfo, long>();

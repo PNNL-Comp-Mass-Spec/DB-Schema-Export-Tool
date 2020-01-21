@@ -622,7 +622,7 @@ namespace DB_Schema_Export_Tool
 
                         if (lineParts.Length < 3)
                         {
-                            LogDebug("Skipping line with fewer than three columns: " + dataLine);
+                            OnDebugEvent("Skipping line with fewer than three columns: " + dataLine);
                             continue;
                         }
 
@@ -693,7 +693,7 @@ namespace DB_Schema_Export_Tool
 
                         if (lineParts.Length < 3)
                         {
-                            LogDebug("Skipping line with fewer than three columns: " + dataLine);
+                            OnDebugEvent("Skipping line with fewer than three columns: " + dataLine);
                             continue;
                         }
 
@@ -703,7 +703,7 @@ namespace DB_Schema_Export_Tool
 
                         if (!DateTime.TryParse(minimumDateText, out var minimumDate))
                         {
-                            LogDebug(string.Format(
+                            OnDebugEvent(string.Format(
                                 "Date filter for column {0} in table {1} is not a valid date: {2}",
                                 dateColumnName, sourceTableName, minimumDateText));
 
@@ -728,7 +728,7 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                OnErrorEvent("Error in LoadColumnMapInfo", ex);
+                OnErrorEvent("Error in LoadDateFiltersForTableData", ex);
             }
         }
 
@@ -749,7 +749,7 @@ namespace DB_Schema_Export_Tool
                 {
                     Console.WriteLine();
                     OnStatusEvent("Table Data File not found; default tables will be used");
-                    OnWarningEvent("File not found: " + dataFile.FullName);
+                    LogWarning("File not found: " + dataFile.FullName);
                     return tablesForDataExport;
                 }
 
@@ -810,7 +810,7 @@ namespace DB_Schema_Export_Tool
                             (tableInfo.TargetTableName.Equals("true", StringComparison.OrdinalIgnoreCase) ||
                              tableInfo.TargetTableName.Equals("false", StringComparison.OrdinalIgnoreCase)))
                         {
-                            OnWarningEvent(string.Format(
+                            LogWarning(string.Format(
                                 "Invalid line in the table data file; target table name cannot be {0}; see {1}",
                                 tableInfo.TargetTableName, dataLine));
 
@@ -876,12 +876,13 @@ namespace DB_Schema_Export_Tool
             }
         }
 
-        protected new void OnWarningEvent(string message)
+        protected new void OnStatusEvent(string message)
         {
-            LogWarning(message);
+            LogMessage(message);
             StatusMessage = message;
         }
-        protected new void OnStatusEvent(string message)
+
+        protected new void OnWarningEvent(string message)
         {
             LogWarning(message);
             StatusMessage = message;
@@ -1241,14 +1242,14 @@ namespace DB_Schema_Export_Tool
                             switch (differenceReason)
                             {
                                 case DifferenceReasonType.NewFile:
-                                    LogDebug("  Copying new file " + sourceFile.Name);
+                                    OnDebugEvent("  Copying new file " + sourceFile.Name);
                                     newFilePaths.Add(fiTargetFile.FullName);
                                     break;
                                 case DifferenceReasonType.Changed:
-                                    LogDebug("  Copying changed file " + sourceFile.Name);
+                                    OnDebugEvent("  Copying changed file " + sourceFile.Name);
                                     break;
                                 default:
-                                    LogDebug("  Copying file " + sourceFile.Name);
+                                    OnDebugEvent("  Copying file " + sourceFile.Name);
                                     break;
                             }
 
@@ -1285,7 +1286,7 @@ namespace DB_Schema_Export_Tool
 
                 if (mOptions.ShowStats)
                 {
-                    LogDebug(string.Format(
+                    OnDebugEvent(string.Format(
                         "Synchronized schema files in {0:0.0} seconds", DateTime.UtcNow.Subtract(startTime).TotalSeconds));
                 }
 
@@ -1345,7 +1346,7 @@ namespace DB_Schema_Export_Tool
             if (!string.IsNullOrWhiteSpace(defaultConstraintColumn))
             {
                 // Matched a default constraint, e.g.
-                // ALTER TABLE [dbo].[T_ParamValue] ADD  CONSTRAINT [DF_T_ParamValue_Last_Affected]  DEFAULT (getdate()) FOR [Last_Affected]
+                // ALTER TABLE [dbo].[T_ParamValue] ADD  CONSTRAINT [DF_T_ParamValue_Last_Affected]  DEFAULT (GetDate()) FOR [Last_Affected]
 
                 if (!columnMapInfo.IsColumnDefined(defaultConstraintColumn))
                 {
@@ -1451,15 +1452,15 @@ namespace DB_Schema_Export_Tool
                 var existingSchemaFile = new FileInfo(options.ExistingSchemaFileToParse);
                 if (!existingSchemaFile.Exists)
                 {
+                    LogWarning("Existing schema file is missing; cannot update names");
                     OnWarningEvent("File not found: " + existingSchemaFile.FullName);
-                    OnWarningEvent("Cannot update names in an existing schema file");
                     return false;
                 }
 
                 if (existingSchemaFile.Directory == null)
                 {
+                    LogWarning("Cannot update names in an existing schema file");
                     OnWarningEvent("Unable to determine the parent directory of: " + existingSchemaFile.FullName);
-                    OnWarningEvent("Cannot update names in an existing schema file");
                     return false;
                 }
 
@@ -1633,13 +1634,13 @@ namespace DB_Schema_Export_Tool
 
                         if (!success)
                         {
-                            OnWarningEvent(string.Format("Error reported for {0}: {1}", toolName, addConsoleOutput));
+                            LogWarning(string.Format("Error reported for {0}: {1}", toolName, addConsoleOutput));
                             return;
                         }
 
                         if (repoManagerType == RepoManagerType.Git && addErrorOutput.StartsWith("fatal", StringComparison.OrdinalIgnoreCase))
                         {
-                            OnWarningEvent(string.Format("Error reported for {0}: {1}", toolName, addErrorOutput));
+                            LogWarning(string.Format("Error reported for {0}: {1}", toolName, addErrorOutput));
                             if (addErrorOutput.Contains("not a git repository"))
                             {
                                 return;
@@ -1677,7 +1678,7 @@ namespace DB_Schema_Export_Tool
 
                 if (repoManagerType == RepoManagerType.Git && statusErrorOutput.StartsWith("fatal", StringComparison.OrdinalIgnoreCase))
                 {
-                    OnWarningEvent(string.Format("Error reported for {0}: {1}", toolName, statusErrorOutput));
+                    LogWarning(string.Format("Error reported for {0}: {1}", toolName, statusErrorOutput));
                 }
 
                 Console.WriteLine();
@@ -1699,7 +1700,7 @@ namespace DB_Schema_Export_Tool
 
                 if (fileCopyCount > 0 && modifiedFileCount == 0)
                 {
-                    OnWarningEvent(string.Format(
+                    LogWarning(string.Format(
                         "Note: File Copy Count is {0} yet the Modified File Count reported by {1} is zero; " +
                         "this may indicate a problem", fileCopyCount, toolName));
 
@@ -1755,13 +1756,13 @@ namespace DB_Schema_Export_Tool
 
                     if (repoManagerType == RepoManagerType.Git && commitErrorOutput.StartsWith("fatal", StringComparison.OrdinalIgnoreCase))
                     {
-                        OnWarningEvent(string.Format("Error reported for {0}: {1}", toolName, commitErrorOutput));
+                        LogWarning(string.Format("Error reported for {0}: {1}", toolName, commitErrorOutput));
                         return;
                     }
 
                     if (repoManagerType == RepoManagerType.Svn && commitErrorOutput.IndexOf("Commit failed", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
-                        OnWarningEvent(string.Format("Error reported for {0}: {1}", toolName, commitErrorOutput));
+                        LogWarning(string.Format("Error reported for {0}: {1}", toolName, commitErrorOutput));
                         return;
                     }
 
