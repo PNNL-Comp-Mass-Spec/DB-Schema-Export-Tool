@@ -1615,16 +1615,45 @@ namespace DB_Schema_Export_Tool
             // Can only do this for SQL Server 2005 or newer
             if (SqlServer2005OrNewer(sqlServer))
             {
-                var mailInfo = StringCollectionToList(sqlServer.Mail.Script(scriptOptions));
-                var cleanedMailInfo = CleanSqlScript(mailInfo, false, false);
-                WriteTextToFile(outputDirectoryPathCurrentServer, "ServerMail", cleanedMailInfo);
+                try
+                {
+
+                    var outputFile = new FileInfo(Path.Combine(
+                        outputDirectoryPathCurrentServer.FullName, "ServerMail.sql"));
+
+                    ShowTrace("Scripting database mail options to " + outputFile.FullName);
+
+                    var mailInfo = StringCollectionToList(sqlServer.Mail.Script(scriptOptions));
+                    var cleanedMailInfo = CleanSqlScript(mailInfo, false, false);
+                    WriteTextToFile(outputFile, cleanedMailInfo);
+                }
+                catch (Exception ex)
+                {
+                    OnWarningEvent("Error scripting the SQL Server database mail settings; " +
+                                   "most likely the user is not a server administrator: " + ex.Message);
+                }
             }
 
-            // Save the Registry Settings to file ServerRegistrySettings.sql
-            var serverSettings = StringCollectionToList(sqlServer.Settings.Script(scriptOptions));
-            var cleanedServerSettings = CleanSqlScript(serverSettings, false, false);
-            cleanedServerSettings.Insert(0, "-- Registry Settings for " + sqlServer.Name);
-            WriteTextToFile(outputDirectoryPathCurrentServer, "ServerRegistrySettings", cleanedServerSettings, false);
+            try
+            {
+                // Save the Registry Settings to file ServerRegistrySettings.sql
+
+                var outputFile = new FileInfo(Path.Combine(
+                    outputDirectoryPathCurrentServer.FullName, "ServerRegistrySettings.sql"));
+
+                ShowTrace("Exporting registry settings to " + outputFile.FullName);
+
+                var serverSettings = StringCollectionToList(sqlServer.Settings.Script(scriptOptions));
+                var cleanedServerSettings = CleanSqlScript(serverSettings, false, false);
+                cleanedServerSettings.Insert(0, "-- Registry Settings for " + sqlServer.Name);
+
+                WriteTextToFile(outputFile, cleanedServerSettings, false);
+            }
+            catch (Exception ex)
+            {
+                OnWarningEvent("Error scripting the SQL Server registry settings; most likely the user is not a server admin: " + ex.Message);
+            }
+
         }
 
         private void ExportSQLServerInfoToIni(Server sqlServer, DirectoryInfo outputDirectoryPathCurrentServer)
@@ -2270,7 +2299,21 @@ namespace DB_Schema_Export_Tool
                     return true;
                 }
 
-                ExportSQLServerAgentJobs(sqlServer, scriptOptions, serverInfoOutputDirectory);
+                try
+                {
+                    ExportSQLServerAgentJobs(sqlServer, scriptOptions, serverInfoOutputDirectory);
+                }
+                catch (Exception ex2)
+                {
+                    if (ex2.InnerException != null &&
+                        ex2.InnerException.Message.Contains("permission was denied"))
+                    {
+                        OnWarningEvent("Error scripting the SQL Server Agent jobs; most likely the user is not a server administrator");
+                        OnWarningEvent(ex2.InnerException.Message);
+                    }
+                    else
+                        throw;
+                }
 
                 if (mAbortProcessing)
                 {
