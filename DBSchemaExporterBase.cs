@@ -560,7 +560,7 @@ namespace DB_Schema_Export_Tool
 
             using (var writer = new StreamWriter(new FileStream(scriptFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
             {
-                // Use linux-compatible line feeds
+                // Use Linux-compatible line feeds
                 writer.NewLine = "\n";
 
                 writer.WriteLine("#!/bin/sh");
@@ -1660,6 +1660,22 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <returns></returns>
         protected abstract bool ValidServerConnection();
+
+        protected bool WriteTextToFile(
+            FileInfo outputFile,
+            IEnumerable<string> scriptInfo,
+            bool autoAddGoStatements = true)
+        {
+
+            var result = WriteTextToFile(
+                outputFile.Directory,
+                Path.GetFileNameWithoutExtension(outputFile.Name),
+                scriptInfo,
+                autoAddGoStatements,
+                outputFile.Extension);
+
+            return result;
+        }
 
         protected bool WriteTextToFile(
             DirectoryInfo outputDirectory,

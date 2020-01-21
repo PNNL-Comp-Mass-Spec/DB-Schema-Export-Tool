@@ -1601,7 +1601,7 @@ namespace DB_Schema_Export_Tool
 
         }
 
-        private void ExportSQLServerConfiguration(Server sqlServer, ScriptingOptions scriptOptions, DirectoryInfo outputDirectoryPathCurrentServer)
+        private void ExportSQLServerConfiguration(Server sqlServer, ScriptingOptions scriptOptions, FileSystemInfo outputDirectoryPathCurrentServer)
         {
             OnProgressUpdate("Exporting server configuration info", 0);
 
@@ -1656,8 +1656,13 @@ namespace DB_Schema_Export_Tool
 
         }
 
-        private void ExportSQLServerInfoToIni(Server sqlServer, DirectoryInfo outputDirectoryPathCurrentServer)
+        private void ExportSQLServerInfoToIni(Server sqlServer, FileSystemInfo outputDirectoryPathCurrentServer)
         {
+            var outputFile = new FileInfo(Path.Combine(
+                outputDirectoryPathCurrentServer.FullName, "ServerInformation.ini"));
+
+            ShowTrace("Exporting server information to " + outputFile.FullName);
+
             var serverInfo = new List<string>
                 {
                     "[Server Information for " + sqlServer.Name + "]"
@@ -1685,11 +1690,16 @@ namespace DB_Schema_Export_Tool
             AppendToList(serverInfo, "RootDirectory", sqlServer.Information.RootDirectory);
             AppendToList(serverInfo, "VersionString", sqlServer.Information.VersionString);
 
-            WriteTextToFile(outputDirectoryPathCurrentServer, "ServerInformation", serverInfo, false, ".ini");
+            WriteTextToFile(outputFile, serverInfo, false);
         }
 
-        private void ExportSQLServerConfigToIni(Server sqlServer, DirectoryInfo outputDirectoryPathCurrentServer)
+        private void ExportSQLServerConfigToIni(Server sqlServer, FileSystemInfo outputDirectoryPathCurrentServer)
         {
+            var outputFile = new FileInfo(Path.Combine(
+                outputDirectoryPathCurrentServer.FullName, "ServerConfiguration.ini"));
+
+            ShowTrace("Exporting server configuration to " + outputFile.FullName);
+
             var serverConfig = new List<string>
                 {
                     "[Server Configuration for " + sqlServer.Name + "]"
@@ -1758,7 +1768,7 @@ namespace DB_Schema_Export_Tool
             AppendToList(serverConfig, sqlServer.Configuration.UserOptions);
             AppendToList(serverConfig, sqlServer.Configuration.XPCmdShellEnabled);
 
-            WriteTextToFile(outputDirectoryPathCurrentServer, "ServerConfiguration", serverConfig, false, ".ini");
+            WriteTextToFile(outputFile, serverConfig, false);
         }
 
         /// <summary>
