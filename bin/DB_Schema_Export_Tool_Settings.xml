@@ -1,25 +1,26 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <sections>
   <section name="DBSchemaExportOptions">
-    <item key="WindowWidth" value="932" />
-    <item key="WindowHeight" value="800" />
+    <item key="WindowWidth" value="921" />
+    <item key="WindowHeight" value="695" />
     <item key="OutputDirectoryPath" value="C:\Temp\" />
     <item key="ScriptObjectsThreaded" value="False" />
     <item key="PauseAfterEachDatabase" value="False" />
+    <item key="IncludeTimestampInScriptFileHeader" value="False" />
     <item key="CreateDirectoryForEachDB" value="True" />
+    <item key="OutputDirectoryNamePrefix" value="DBSchema__" />
+    <item key="ExportServerSettingsLoginsAndJobs" value="False" />
+    <item key="ServerOutputDirectoryNamePrefix" value="ServerSchema__" />
     <item key="IncludeTableRowCounts" value="True" />
     <item key="AutoSelectDefaultTableNames" value="True" />
     <item key="SaveDataAsInsertIntoStatements" value="True" />
     <item key="WarnOnHighTableRowCount" value="True" />
-    <item key="OutputDirectoryNamePrefix" value="DBSchema__" />
-    <item key="IncludeTimestampInScriptFileHeader" value="False" />
-    <item key="ExportServerSettingsLoginsAndJobs" value="False" />
-    <item key="ServerOutputDirectoryNamePrefix" value="ServerSchema__" />
   </section>
   <section name="DBSchemaExportDatabaseSettings">
-    <item key="ServerName" value="Pogo" />
+    <item key="ServerName" value="prismweb3" />
     <item key="UseIntegratedAuthentication" value="True" />
-    <item key="Username" value="mtuser" />
-    <item key="Password" value="mt4fun" />
+    <item key="Username" value="d3l243" />
+    <item key="Password" value="" />
+    <item key="PostgreSQL" value="True" />
   </section>
 </sections>
