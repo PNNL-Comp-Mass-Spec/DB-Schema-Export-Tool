@@ -42,7 +42,11 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// List of tables to limit the processing to
         /// </summary>
-        /// <remarks>If this is empty, processes all tables specified via other settings</remarks>
+        /// <remarks>
+        /// If this is empty, processes all tables specified via other settings
+        /// If this is not empty and if NoSchema is False, will only export the schema for tables in this list
+        /// (will not export schema for views, procedures, etc.)
+        /// </remarks>
         public SortedSet<string> TableNameFilterSet { get; }
 
         /// <summary>

@@ -516,7 +516,7 @@ namespace DB_Schema_Export_Tool
             if (mOptions.NoSchema)
                 return true;
 
-            if (mOptions.ScriptingOptions.ExportDBSchemasAndRoles)
+            if (mOptions.ScriptingOptions.ExportDBSchemasAndRoles && mOptions.TableNameFilterSet.Count == 0)
             {
                 var success = ExportDBSchemasAndRoles(currentDatabase, scriptOptions, workingParams);
                 if (!success)
@@ -538,6 +538,12 @@ namespace DB_Schema_Export_Tool
                 {
                     return true;
                 }
+            }
+
+            if (mOptions.TableNameFilterSet.Count > 0)
+            {
+                // Do not export any other objects, since limiting operations to a single table (or small set of tables)
+                return true;
             }
 
             if (mOptions.ScriptingOptions.ExportViews ||
@@ -713,8 +719,21 @@ namespace DB_Schema_Export_Tool
 
                 if (workingParams.TablesToSkip.Contains(databaseTable.Name))
                 {
-                    ShowTrace("Skipping schema export from table " + databaseTable.Name);
+                    ShowTrace(string.Format(
+                        "Skipping schema export from table {0} since defined in TablesToSkip", databaseTable.Name));
+
                     includeTable = false;
+                }
+
+                if (mOptions.TableNameFilterSet.Count > 0)
+                {
+                    if (!mOptions.TableNameFilterSet.Contains(databaseTable.Name))
+                    {
+                        ShowTrace(string.Format(
+                            "Skipping schema export from table {0} since not in the list specified by TableFilterList", databaseTable.Name));
+
+                        includeTable = false;
+                    }
                 }
 
                 if (includeTable)

@@ -770,7 +770,7 @@ namespace DB_Schema_Export_Tool
                     return tablesForDataExport;
                 }
 
-                ShowTrace(string.Format("Reading table information from {0}", dataFile.FullName));
+                ShowTrace(string.Format("Reading table information from table data file {0}", dataFile.FullName));
 
                 var headerLineChecked = false;
 
