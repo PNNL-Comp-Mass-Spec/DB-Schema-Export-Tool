@@ -47,7 +47,7 @@ DB_Schema_Export_Tool.exe
  [/DirectoryPrefix:PrefixText] [/NoSubdirectory] [/CreateDBDirectories]
  [/DataTables:TableDataToExport.txt] [/Map:ColumnMapping.txt]
  [/DateFilter:MinimumDate] [/TableFilterList]
- [/Schema:SchemaName] [/ExistingSchema:SchemaFileName]
+ [/Schema:SchemaName] [/ExistingDDL:SchemaFileName]
  [/NoAutoData] [/ExportAllData] [/MaxRows:1000] [/NoData]
  [/SnakeCase] [/PgDump] [/PgInsert] [/PgInsertChunkSize:50000] 
  [/ServerInfo] [/NoSchema] [/ScriptLoad]
@@ -163,11 +163,12 @@ Use `/DateFilter` or `/TableDataDateFilter` to define a tab-delimited text file 
 Use `/Schema` or `/DefaultSchema` to define the default schema name to use when exporting data from tables
 * Entries in the `/DataTables` file will override this default schema
 
-Use `/ExistingSchema` or `/ExistingDDL` to define a text file that should be parsed to rename columns, based on data loaded from the `/ColumnMap` file
+Use `/ExistingDDL` or `/ExistingSchema` to define a text file that should be parsed to rename columns, based on data loaded from the `/ColumnMap` file
 * Will create a new text file with CREATE TABLE blocks that include the new column names
   * Will skip columns with `<skip>`
 * Will skip tables (and views, procedures, etc.) that are defined in the `/DataTables` file but have `<skip>` in the TargetTableName column
-
+  * Does not rename tables
+  
 Use `/ExportAllData` or `/ExportAllTables` to export data from every table in the database
 * Will skip tables (and views) that are defined in the `/DataTables` file but have `<skip>` in the TargetTableName column
 * Ignored if `/NoTableData` is true
