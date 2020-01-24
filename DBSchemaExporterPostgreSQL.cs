@@ -1433,26 +1433,23 @@ namespace DB_Schema_Export_Tool
         private void ProcessCachedLines(
             string databaseName,
             IList<string> cachedLines,
-            string currentObjectName,
-            string currentObjectType,
-            string currentObjectSchema,
+            DatabaseObjectInfo currentObject,
             string previousTargetScriptFile,
             out string targetScriptFile,
             out bool unhandledScriptingCommands)
         {
 
             unhandledScriptingCommands = false;
-
-            if (string.IsNullOrEmpty(currentObjectName))
+            if (string.IsNullOrEmpty(currentObject.Name))
             {
                 targetScriptFile = string.Format("DatabaseInfo_{0}.sql", databaseName);
                 return;
             }
 
-            var schemaToUse = currentObjectSchema;
-            var nameToUse = currentObjectName;
+            var schemaToUse = currentObject.Schema;
+            var nameToUse = currentObject.Name;
 
-            switch (currentObjectType)
+            switch (currentObject.Type)
             {
                 case "TABLE":
                 case "VIEW":
@@ -1460,8 +1457,8 @@ namespace DB_Schema_Export_Tool
 
                 case "ACL":
                     var aclFunctionMatch = mAclMatcherFunction.Match(currentObjectName);
-                    var aclSchemaMatch = mAclMatcherSchema.Match(currentObjectName);
-                    var aclTableMatch = mAclMatcherTable.Match(currentObjectName);
+                    var aclSchemaMatch = mAclMatcherSchema.Match(currentObject.Name);
+                    var aclTableMatch = mAclMatcherTable.Match(currentObject.Name);
 
                     if (aclTableMatch.Success)
                     {
@@ -1491,7 +1488,7 @@ namespace DB_Schema_Export_Tool
                     break;
 
                 case "COMMENT":
-                    var typeMatch = mNameTypeTargetMatcher.Match(currentObjectName);
+                    var typeMatch = mNameTypeTargetMatcher.Match(currentObject.Name);
                     if (typeMatch.Success)
                     {
                         var targetObjectType = typeMatch.Groups["ObjectType"].Value;
@@ -1516,7 +1513,7 @@ namespace DB_Schema_Export_Tool
                     }
                     else
                     {
-                        OnWarningEvent("Comment object type match failure for " + currentObjectName);
+                        OnWarningEvent("Comment object type match failure for " + currentObject.Name);
                         unhandledScriptingCommands = true;
                     }
 
@@ -1565,17 +1562,17 @@ namespace DB_Schema_Export_Tool
 
                     if (!alterTableMatched)
                     {
-                        OnWarningEvent("Did not find a valid ALTER TABLE line in the cached lines for a constraint against: " + currentObjectName);
+                        OnWarningEvent("Did not find a valid ALTER TABLE line in the cached lines for a constraint against: " + currentObject.Name);
                         unhandledScriptingCommands = true;
                     }
                     break;
 
                 case "EVENT TRIGGER":
-                    nameToUse = "_EventTrigger_" + currentObjectName;
+                    nameToUse = "_EventTrigger_" + currentObject.Name;
                     break;
 
                 case "EXTENSION":
-                    nameToUse = "_Extension_" + currentObjectName;
+                    nameToUse = "_Extension_" + currentObject.Name;
                     break;
 
                 case "FUNCTION":
@@ -1593,7 +1590,7 @@ namespace DB_Schema_Export_Tool
                     break;
 
                 case "INDEX":
-                    var indexName = currentObjectName;
+                    var indexName = currentObject.Name;
                     var createIndexMatcher = new Regex(string.Format(@"CREATE.+INDEX {0} ON (?<TargetTable>.+) USING", indexName),
                                                        RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
@@ -1611,14 +1608,14 @@ namespace DB_Schema_Export_Tool
 
                     if (!createIndexMatched)
                     {
-                        OnWarningEvent("Did not find a valid CREATE INDEX line in the cached lines for index: " + currentObjectName);
+                        OnWarningEvent("Did not find a valid CREATE INDEX line in the cached lines for index: " + currentObject.Name);
                         unhandledScriptingCommands = true;
                     }
 
                     break;
 
                 case "SCHEMA":
-                    nameToUse = "_Schema_" + currentObjectName;
+                    nameToUse = "_Schema_" + currentObject.Name;
                     schemaToUse = string.Empty;
                     break;
 
@@ -1631,7 +1628,7 @@ namespace DB_Schema_Export_Tool
                     return;
 
                 case "TRIGGER":
-                    var triggerTableMatch = mTriggerTargetTableMatcher.Match(currentObjectName);
+                    var triggerTableMatch = mTriggerTargetTableMatcher.Match(currentObject.Name);
 
                     if (triggerTableMatch.Success)
                     {
@@ -1639,13 +1636,13 @@ namespace DB_Schema_Export_Tool
                     }
                     else
                     {
-                        OnWarningEvent("Did not find a valid table name for trigger: " + currentObjectName);
+                        OnWarningEvent("Did not find a valid table name for trigger: " + currentObject.Name);
                         unhandledScriptingCommands = true;
                     }
                     break;
 
                 default:
-                    OnWarningEvent("Unrecognized object type: " + currentObjectType);
+                    OnWarningEvent("Unrecognized object type: " + currentObject.Type);
                     unhandledScriptingCommands = true;
                     break;
             }
@@ -1707,9 +1704,8 @@ namespace DB_Schema_Export_Tool
             using (var reader = new StreamReader(new FileStream(pgDumpOutputFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
             {
                 var cachedLines = new List<string>();
-                var currentObjectName = string.Empty;
-                var currentObjectType = string.Empty;
-                var currentObjectSchema = string.Empty;
+                var currentObject = new DatabaseObjectInfo();
+
                 var previousTargetScriptFile = string.Empty;
 
                 while (!reader.EndOfStream)
@@ -1751,7 +1747,7 @@ namespace DB_Schema_Export_Tool
                         StoreCachedLinesForObject(scriptInfoByObject, cachedLines, targetScriptFile);
                         previousTargetScriptFile = string.Copy(targetScriptFile);
 
-                        UpdateCachedObjectInfo(match, out currentObjectName, out currentObjectType, out currentObjectSchema, out _);
+                        UpdateCachedObjectInfo(match, currentObject);
                         cachedLines = new List<string> {
                             "--",
                             dataLine
@@ -1869,15 +1865,12 @@ namespace DB_Schema_Export_Tool
 
         private void UpdateCachedObjectInfo(
             Match match,
-            out string currentObjectName,
-            out string currentObjectType,
-            out string currentObjectSchema,
-            out string currentObjectOwner)
+            DatabaseObjectInfo currentObject)
         {
-            currentObjectName = match.Groups["Name"].Value;
-            currentObjectType = match.Groups["Type"].Value;
-            currentObjectSchema = match.Groups["Schema"].Value;
-            currentObjectOwner = match.Groups["Owner"].Value;
+            currentObject.Name = match.Groups["Name"].Value;
+            currentObject.Type = match.Groups["Type"].Value;
+            currentObject.Schema = match.Groups["Schema"].Value;
+            currentObject.Owner = match.Groups["Owner"].Value;
         }
 
         /// <summary>
