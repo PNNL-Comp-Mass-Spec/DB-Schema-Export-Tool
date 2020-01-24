@@ -1476,10 +1476,8 @@ namespace DB_Schema_Export_Tool
             DatabaseObjectInfo currentObject,
             string previousTargetScriptFile,
             out string targetScriptFile,
-            out bool unhandledScriptingCommands)
+            ref bool unhandledScriptingCommands)
         {
-
-            unhandledScriptingCommands = false;
             if (string.IsNullOrEmpty(currentObject.Name))
             {
                 targetScriptFile = string.Format("DatabaseInfo_{0}.sql", databaseName);
