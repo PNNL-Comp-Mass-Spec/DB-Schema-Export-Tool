@@ -142,7 +142,7 @@ namespace DB_Schema_Export_Tool
                 if (!Directory.Exists(outputDirectoryPath))
                 {
                     // Try to create the missing directory
-                    OnStatusEvent("Creating " + outputDirectoryPath);
+                    OnStatusEvent("Creating output directory: " + outputDirectoryPath);
                     Directory.CreateDirectory(outputDirectoryPath);
                 }
 
@@ -1240,63 +1240,18 @@ namespace DB_Schema_Export_Tool
                         return false;
                     }
 
-                    if (!targetDirectory.Exists)
-                    {
-                        OnStatusEvent("Creating target directory for synchronization: " + targetDirectory.FullName);
-                        targetDirectory.Create();
-                    }
-
                     if (sourceDirectory.FullName == targetDirectory.FullName)
                     {
                         OnErrorEvent("Sync directory is identical to the output SchemaFileDirectory; cannot synchronize");
                         return false;
                     }
 
-                    // ReSharper disable once NotAccessedVariable
-                    var fileProcessCount = 0;
                     var fileCopyCount = 0;
 
                     // This list holds the the files that are copied from sourceDirectory to targetDirectory
                     var newFilePaths = new List<string>();
-                    var filesToCopy = sourceDirectory.GetFiles().ToList();
 
-                    foreach (var sourceFile in filesToCopy)
-                    {
-                        if (sourceFile.Name.StartsWith("x_", StringComparison.OrdinalIgnoreCase) ||
-                            sourceFile.Name.StartsWith("t_tmp_", StringComparison.OrdinalIgnoreCase) ||
-                            sourceFile.Name.StartsWith("t_CandidateModsSeqWork_", StringComparison.OrdinalIgnoreCase) ||
-                            sourceFile.Name.StartsWith("t_CandidateSeqWork_", StringComparison.OrdinalIgnoreCase))
-                        {
-                            OnStatusEvent(string.Format("Skipping {0} object {1}", databaseName, sourceFile.Name));
-                            continue;
-                        }
-
-                        var fiTargetFile = new FileInfo(Path.Combine(targetDirectory.FullName, sourceFile.Name));
-
-                        if (FilesDiffer(sourceFile, fiTargetFile, out var differenceReason))
-                        {
-                            // var subtaskPercentComplete = fileProcessCount / ((float)filesToCopy.Count * 100);
-
-                            switch (differenceReason)
-                            {
-                                case DifferenceReasonType.NewFile:
-                                    OnDebugEvent("  Copying new file " + sourceFile.Name);
-                                    newFilePaths.Add(fiTargetFile.FullName);
-                                    break;
-                                case DifferenceReasonType.Changed:
-                                    OnDebugEvent("  Copying changed file " + sourceFile.Name);
-                                    break;
-                                default:
-                                    OnDebugEvent("  Copying file " + sourceFile.Name);
-                                    break;
-                            }
-
-                            sourceFile.CopyTo(fiTargetFile.FullName, true);
-                            fileCopyCount++;
-                        }
-
-                        fileProcessCount++;
-                    }
+                    SyncSchemaFilesRecursive(sourceDirectory, targetDirectory, databaseName, newFilePaths, ref fileCopyCount);
 
                     var commitMessageAppend = string.Empty;
                     if (includeDbNameInCommitMessage)
@@ -1334,6 +1289,68 @@ namespace DB_Schema_Export_Tool
             {
                 OnErrorEvent("Error in SyncSchemaFiles", ex);
                 return false;
+            }
+
+        }
+
+        private void SyncSchemaFilesRecursive(
+            DirectoryInfo sourceDirectory,
+            DirectoryInfo targetDirectory,
+            string databaseName,
+            ICollection<string> newFilePaths,
+            ref int fileCopyCount)
+        {
+
+            if (!targetDirectory.Exists)
+            {
+                OnStatusEvent("Creating target directory for synchronization: " + targetDirectory.FullName);
+                targetDirectory.Create();
+            }
+
+            var filesToCopy = sourceDirectory.GetFiles().ToList();
+
+            foreach (var sourceFile in filesToCopy)
+            {
+                if (sourceFile.Name.StartsWith("x_", StringComparison.OrdinalIgnoreCase) ||
+                    sourceFile.Name.StartsWith("t_tmp_", StringComparison.OrdinalIgnoreCase) ||
+                    sourceFile.Name.StartsWith("t_CandidateModsSeqWork_", StringComparison.OrdinalIgnoreCase) ||
+                    sourceFile.Name.StartsWith("t_CandidateSeqWork_", StringComparison.OrdinalIgnoreCase) ||
+                    sourceFile.Name.Equals("_AllObjects_.sql", StringComparison.OrdinalIgnoreCase))
+                {
+                    OnStatusEvent(string.Format("Skipping {0} object {1}", databaseName, sourceFile.Name));
+                    continue;
+                }
+
+                var fiTargetFile = new FileInfo(Path.Combine(targetDirectory.FullName, sourceFile.Name));
+
+                if (FilesDiffer(sourceFile, fiTargetFile, out var differenceReason))
+                {
+                    // var subtaskPercentComplete = fileProcessCount / ((float)filesToCopy.Count * 100);
+
+                    switch (differenceReason)
+                    {
+                        case DifferenceReasonType.NewFile:
+                            OnDebugEvent("  Copying new file " + sourceFile.Name);
+                            newFilePaths.Add(fiTargetFile.FullName);
+                            break;
+                        case DifferenceReasonType.Changed:
+                            OnDebugEvent("  Copying changed file " + sourceFile.Name);
+                            break;
+                        default:
+                            OnDebugEvent("  Copying file " + sourceFile.Name);
+                            break;
+                    }
+
+                    sourceFile.CopyTo(fiTargetFile.FullName, true);
+                    fileCopyCount++;
+                }
+            }
+
+            // Recursively call this method for each subdirectory
+            foreach (var subdirectory in sourceDirectory.GetDirectories())
+            {
+                var targetSubdirectory = new DirectoryInfo(Path.Combine(targetDirectory.FullName, subdirectory.Name));
+                SyncSchemaFilesRecursive(subdirectory, targetSubdirectory, databaseName, newFilePaths, ref fileCopyCount);
             }
 
         }
