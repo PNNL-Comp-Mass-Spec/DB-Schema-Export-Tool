@@ -1748,6 +1748,27 @@ namespace DB_Schema_Export_Tool
                     if (dataLine == null)
                         continue;
 
+                    if (dataLine.StartsWith("-- PostgreSQL database dump complete"))
+                    {
+                        // The previous cached line is likely "--"
+                        // Remove it
+                        if (cachedLines.Count > 0 && cachedLines.Last().Equals("--"))
+                        {
+                            cachedLines.RemoveAt(cachedLines.Count - 1);
+                        }
+
+                        ProcessAndStoreCachedLinesTargetScriptFile(
+                            scriptInfoByObject,
+                            databaseName,
+                            cachedLines,
+                            currentObject,
+                            previousTargetScriptFile,
+                            ref unhandledScriptingCommands);
+
+                        cachedLines.Clear();
+                        break;
+                    }
+
                     var match = mNameTypeSchemaMatcher.Match(dataLine);
                     try
                     {
