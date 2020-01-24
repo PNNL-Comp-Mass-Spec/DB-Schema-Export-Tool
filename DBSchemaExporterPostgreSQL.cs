@@ -1710,6 +1710,8 @@ namespace DB_Schema_Export_Tool
                 return;
             }
 
+            // Keys in this dictionary are object names (preceded by schema name if not public)
+            // Values are a list of DDL for creating the object
             var scriptInfoByObject = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
             using (var reader = new StreamReader(new FileStream(pgDumpOutputFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
@@ -1941,7 +1943,44 @@ namespace DB_Schema_Export_Tool
                 var outputFileName = item.Key;
                 var cachedLines = item.Value;
 
-                var outputFilePath = Path.Combine(outputDirectory, outputFileName);
+                string schemaName;
+                string outputFileNameToUse;
+                var baseName = Path.GetFileNameWithoutExtension(outputFileName);
+
+                if (string.IsNullOrWhiteSpace(baseName))
+                {
+                    OnWarningEvent("Unable to determine the file name; skipping " + outputFileName);
+                    continue;
+                }
+
+                // Write files that are not in the public schema to a subdirectory below the database directory
+                var periodIndex = baseName.IndexOf('.');
+
+                if (periodIndex > 0 && periodIndex < baseName.Length - 1)
+                {
+                    schemaName = baseName.Substring(0, periodIndex);
+                    outputFileNameToUse = schemaName + baseName.Substring(periodIndex) + Path.GetExtension(outputFileName);
+
+                    var targetDirectoryPath = Path.Combine(outputDirectory, schemaName);
+                    if (!previousDirectoryPath.Equals(targetDirectoryPath))
+                    {
+                        var targetDirectory = new DirectoryInfo(targetDirectoryPath);
+                        if (!targetDirectory.Exists)
+                        {
+                            OnStatusEvent("Creating output directory, " + targetDirectory.FullName);
+                            targetDirectory.Create();
+                        }
+
+                        previousDirectoryPath = targetDirectoryPath;
+                    }
+                }
+                else
+                {
+                    schemaName = string.Empty;
+                    outputFileNameToUse = outputFileName;
+                }
+
+                var outputFilePath = Path.Combine(outputDirectory, schemaName, outputFileNameToUse);
 
                 OnDebugEvent("Writing " + outputFilePath);
 
@@ -1951,6 +1990,13 @@ namespace DB_Schema_Export_Tool
                     {
                         writer.WriteLine(cachedLine);
                     }
+
+                    // Add one blank line to the end of the file (provided the previous line was not empty)
+                    if (cachedLines.Count == 0 || !string.IsNullOrWhiteSpace(cachedLines.Last()))
+                    {
+                        writer.WriteLine(string.Empty);
+                    }
+
                 }
 
             }
