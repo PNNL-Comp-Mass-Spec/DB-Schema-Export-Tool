@@ -1183,6 +1183,20 @@ namespace DB_Schema_Export_Tool
             return databaseNames;
         }
 
+        private string GetFunctionOrProcedureName(DatabaseObjectInfo currentObject, string objectDescription, ref bool unhandledScriptingCommands)
+        {
+
+            var nameMatch = mFunctionOrProcedureNameMatcher.Match(currentObject.Name);
+            if (nameMatch.Success)
+            {
+                return nameMatch.Value;
+            }
+
+            OnWarningEvent(string.Format("Did not find a {0} name in: {1}", objectDescription, currentObject.Name));
+            unhandledScriptingCommands = true;
+            return currentObject.Name;
+        }
+
         private string GetTargetTableName(string sourceTableNameWithSchema, TableDataExportInfo tableInfo, out string targetTableName)
         {
             const bool quoteWithSquareBrackets = false;
@@ -1461,7 +1475,7 @@ namespace DB_Schema_Export_Tool
                     break;
 
                 case "ACL":
-                    var aclFunctionMatch = mAclMatcherFunction.Match(currentObjectName);
+                    var aclFunctionOrProcedureMatch = mAclMatcherFunctionOrProcedure.Match(currentObject.Name);
                     var aclSchemaMatch = mAclMatcherSchema.Match(currentObject.Name);
                     var aclTableMatch = mAclMatcherTable.Match(currentObject.Name);
 
@@ -1469,9 +1483,9 @@ namespace DB_Schema_Export_Tool
                     {
                         nameToUse = aclTableMatch.Groups["TableName"].Value;
                     }
-                    else if (aclFunctionMatch.Success)
+                    else if (aclFunctionOrProcedureMatch.Success)
                     {
-                        nameToUse = aclFunctionMatch.Groups["FunctionName"].Value;
+                        nameToUse = aclFunctionOrProcedureMatch.Groups["ObjectName"].Value;
                     }
                     else if (aclSchemaMatch.Success)
                     {
@@ -1581,17 +1595,11 @@ namespace DB_Schema_Export_Tool
                     break;
 
                 case "FUNCTION":
-                    var functionNameMatch = mFunctionNameMatcher.Match(currentObjectName);
-                    if (functionNameMatch.Success)
-                    {
-                        nameToUse = functionNameMatch.Value;
-                    }
-                    else
-                    {
-                        OnWarningEvent("Did not find a function name in : " + currentObjectName);
-                        unhandledScriptingCommands = true;
-                    }
+                    nameToUse = GetFunctionOrProcedureName(currentObject, "function", ref unhandledScriptingCommands);
+                    break;
 
+                case "PROCEDURE":
+                    nameToUse = GetFunctionOrProcedureName(currentObject, "procedure", ref unhandledScriptingCommands);
                     break;
 
                 case "INDEX":
