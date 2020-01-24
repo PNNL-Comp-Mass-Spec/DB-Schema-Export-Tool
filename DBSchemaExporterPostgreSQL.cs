@@ -390,7 +390,10 @@ namespace DB_Schema_Export_Tool
                     // Delete the _AllObjects_.sql file (since we no longer need it)
                     try
                     {
-                        pgDumpOutputFile.Delete();
+                        if (!mOptions.KeepPgDumpFile)
+                        {
+                            pgDumpOutputFile.Delete();
+                        }
                     }
                     catch (Exception ex)
                     {

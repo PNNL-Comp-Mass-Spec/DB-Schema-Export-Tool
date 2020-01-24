@@ -49,7 +49,8 @@ DB_Schema_Export_Tool.exe
  [/DateFilter:MinimumDate] [/TableFilterList]
  [/Schema:SchemaName] [/ExistingDDL:SchemaFileName]
  [/NoAutoData] [/ExportAllData] [/MaxRows:1000] [/NoData]
- [/SnakeCase] [/PgDump] [/PgInsert] [/PgInsertChunkSize:50000] 
+ [/SnakeCase] [/PgDump] [/KeepPgDumpFile]
+ [/PgInsert] [/PgInsertChunkSize:50000] 
  [/ServerInfo] [/NoSchema] [/ScriptLoad]
  [/Sync:TargetDirectoryPath] [/Git] [/Svn] [/Hg] [/Commit]
  [/L] [/LogFile:BaseName] [/LogDir:LogDirectoryPath] 
@@ -190,6 +191,10 @@ Use `/PgDump` or `/PgDumpData` to specify that exported data should use `COPY` c
 * With PostgreSQL data, table data will be exported using the pg_dump application
 * With SQL Server data and PostgreSQL data, if `/PgDump` is not provided, data is exported with `INSERT INTO` statements
 * With SQL Server data, if `/PgDump` is provided, but the `/DataTables` file has `true` in the `PgInsert` column, `INSERT INTO` statements will be used for that table
+
+Use `/KeepPgDumpFile` to not delete the `_AllObjects_.sql` created for each database
+* By default, this is false, meaning the `_AllObjects_.sql` file will be deleted (since it is no longer needed because a separate .sql file has been created for each object)
+* If any unhandled scripting commands are encountered, the `_AllObjects_.sql` file will not be deleted, even if KeepPgDumpFile is false
 
 The `/PgInsert` applies when exporting data from SQL Server database tables
 * While reading the TableDataToExport.txt file, default the PgInsert column to true when `/PgInsert` is provided, meaning table data will be exported via INSERT INTO statements, as mentioned above

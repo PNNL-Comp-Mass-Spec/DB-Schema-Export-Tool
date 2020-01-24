@@ -17,7 +17,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "January 22, 2020";
+        public const string PROGRAM_DATE = "January 23, 2020";
 
         public const string DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX = "DBSchema__";
 
@@ -104,9 +104,15 @@ namespace DB_Schema_Export_Tool
         public bool PostgreSQL { get; set; }
 
         [Option("PgDump", "PgDumpData", HelpShowsDefault = false,
-            HelpText = "With SQL Server databases, dump table data using COPY commands instead of INSERT INTO statements.  " +
-                       "With PostgreSQL data, dump table data using pg_dump and COPY commands.")]
+            HelpText = "With SQL Server databases, dump table data using COPY commands instead of INSERT INTO statements. " +
+                       "With PostgreSQL data, dump table data using pg_dump.exe and COPY commands.")]
         public bool PgDumpTableData { get; set; }
+
+        [Option("KeepPgDumpFile", "KeepPgDump", HelpShowsDefault = false,
+            HelpText = "By default, the PgDump output file (_AllObjects_.sql) is deleted after it has been processed. " +
+                       "Set this to True to skip the deletion. " +
+                       "If any unhandled scripting commands are encountered, the _AllObjects_.sql file will not be deleted, even if KeepPgDumpFile is false.")]
+        public bool KeepPgDumpFile { get; set; }
 
         [Option("PgInsertChunkSize", HelpShowsDefault = true,
             HelpText = "Number of values to insert at a time when PgInsert is true for a table; only applicable when exporting data from SQL Server")]
@@ -388,6 +394,7 @@ namespace DB_Schema_Export_Tool
 
             PostgreSQL = false;
             PgDumpTableData = false;
+            KeepPgDumpFile = false;
 
             PgInsertTableData = false;
             PgInsertChunkSize = 50000;
@@ -536,6 +543,7 @@ namespace DB_Schema_Export_Tool
                 if (PostgreSQL)
                 {
                     Console.WriteLine(" {0,-48} {1}", "Table data export tool:", "pg_dump");
+                    Console.WriteLine(" {0,-48} {1}", "Keep the pg_dump output file, _AllObjects_.sql:", BoolToEnabledDisabled(KeepPgDumpFile));
                 }
                 Console.WriteLine(" {0,-48} {1}", "Dump table data as:", "PostgreSQL COPY commands");
             }
