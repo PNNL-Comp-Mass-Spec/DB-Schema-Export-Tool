@@ -35,17 +35,52 @@ namespace DB_Schema_Export_Tool
         /// <remarks>Keys are the executable name; values are the file info object</remarks>
         private readonly Dictionary<string, FileInfo> mCachedExecutables;
 
-        private readonly Regex mAclMatcherFunction;
-        private readonly Regex mAclMatcherSchema;
-        private readonly Regex mAclMatcherTable;
 
-        private readonly Regex mFunctionNameMatcher;
 
-        private readonly Regex mNameTypeSchemaMatcher;
+        /// <summary>
+        /// Use this to find text
+        /// FUNCTION get_stat_activity(
+        /// </summary>
+        private readonly Regex mAclMatcherFunctionOrProcedure = new Regex(
+            "(FUNCTION|PROCEDURE) (?<ObjectName>[^(]+)",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        private readonly Regex mNameTypeTargetMatcher;
+        // Match text like:
+        // SCHEMA mc
+        private readonly Regex mAclMatcherSchema = new Regex(
+            "SCHEMA (?<SchemaName>.+)",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        private readonly Regex mTriggerTargetTableMatcher;
+        // Match text like:
+        // TABLE t_event_log
+        private readonly Regex mAclMatcherTable = new Regex(
+            "TABLE (?<TableName>.+)",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+        // Match text like:
+        // get_stat_activity()
+        private readonly Regex mFunctionOrProcedureNameMatcher = new Regex(
+            "^[^(]+",
+            RegexOptions.Compiled);
+
+        // Match lines like:
+        // -- Name: t_param_value; Type: TABLE; Schema: mc; Owner: d3l243
+        // -- Name: v_manager_type_report; Type: VIEW; Schema: mc; Owner: d3l243
+        private readonly Regex mNameTypeSchemaMatcher = new Regex(
+            "^-- Name: (?<Name>.+); Type: (?<Type>.+); Schema: (?<Schema>.+); Owner: ?(?<Owner>.*)",
+            RegexOptions.Compiled);
+
+        // Match text like:
+        // FUNCTION get_stat_activity()
+        private readonly Regex mNameTypeTargetMatcher = new Regex(
+            "(?<ObjectType>[a-z]+) (?<ObjectName>[^(]+)",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        // Match text like:
+        // t_users t_users_trigger_update_persisted
+        private readonly Regex mTriggerTargetTableMatcher = new Regex(
+            "[^ ]+",
+            RegexOptions.Compiled);
 
         private readonly ProgramRunner mProgramRunner;
 
@@ -65,36 +100,6 @@ namespace DB_Schema_Export_Tool
             mCachedDatabaseTableInfo = new Dictionary<string, Dictionary<TableDataExportInfo, long>>();
 
             mCachedExecutables = new Dictionary<string, FileInfo>();
-
-            // Match text like:
-            // FUNCTION get_stat_activity(
-            mAclMatcherFunction = new Regex("FUNCTION (?<FunctionName>[^(]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-            // Match text like:
-            // SCHEMA mc
-            mAclMatcherSchema = new Regex("SCHEMA (?<SchemaName>.+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-            // Match text like:
-            // TABLE t_event_log
-            mAclMatcherTable = new Regex("TABLE (?<TableName>.+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-            // Match text like:
-            // get_stat_activity()
-            mFunctionNameMatcher = new Regex("^[^(]+", RegexOptions.Compiled);
-
-            // Match lines like:
-            // -- Name: t_param_value; Type: TABLE; Schema: mc; Owner: d3l243
-            // -- Name: v_manager_type_report; Type: VIEW; Schema: mc; Owner: d3l243
-            mNameTypeSchemaMatcher = new Regex("^-- Name: (?<Name>.+); Type: (?<Type>.+); Schema: (?<Schema>.+); Owner: ?(?<Owner>.*)", RegexOptions.Compiled);
-
-            // Match text like:
-            // FUNCTION get_stat_activity()
-            mNameTypeTargetMatcher = new Regex("(?<ObjectType>[a-z]+) (?<ObjectName>[^(]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-            // Match text like:
-            // t_users t_users_trigger_update_persisted
-            mTriggerTargetTableMatcher = new Regex("[^ ]+", RegexOptions.Compiled);
-
         }
 
         /// <summary>
