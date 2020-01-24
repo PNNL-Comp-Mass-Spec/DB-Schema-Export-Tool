@@ -35,11 +35,10 @@ namespace DB_Schema_Export_Tool
         /// <remarks>Keys are the executable name; values are the file info object</remarks>
         private readonly Dictionary<string, FileInfo> mCachedExecutables;
 
-
-
         /// <summary>
         /// Use this to find text
         /// FUNCTION get_stat_activity(
+        /// PROCEDURE post_log_entry(
         /// </summary>
         private readonly Regex mAclMatcherFunctionOrProcedure = new Regex(
             "(FUNCTION|PROCEDURE) (?<ObjectName>[^(]+)",
@@ -60,7 +59,7 @@ namespace DB_Schema_Export_Tool
         // Match text like:
         // get_stat_activity()
         private readonly Regex mFunctionOrProcedureNameMatcher = new Regex(
-            "^[^(]+",
+            "^(?<Name>[^(]+)",
             RegexOptions.Compiled);
 
         // Match lines like:
@@ -100,6 +99,104 @@ namespace DB_Schema_Export_Tool
             mCachedDatabaseTableInfo = new Dictionary<string, Dictionary<TableDataExportInfo, long>>();
 
             mCachedExecutables = new Dictionary<string, FileInfo>();
+        }
+
+        /// <summary>
+        /// Look for Name/Type lines in cachedLines, e.g. Name: function_name(argument int); Type: FUNCTION; Schema: public; Owner: username
+        /// If there is more than one Name/Type line, add a comment for each overload
+        /// </summary>
+        /// <param name="cachedLines"></param>
+        private void AddCommentsIfOverloaded(ICollection<string> cachedLines)
+        {
+            // Keys in this dictionary are of the form type_name
+            // Values are the occurrence count of each key
+            var nameTypeCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var cachedLine in cachedLines)
+            {
+                var match = mNameTypeSchemaMatcher.Match(cachedLine);
+                if (!match.Success)
+                    continue;
+
+                var objectType = match.Groups["Type"].Value;
+
+                if (!objectType.Equals("FUNCTION") &&
+                    !objectType.Equals("PROCEDURE"))
+                {
+                    continue;
+                }
+
+                var typeAndName = GetObjectTypeNameCode(match);
+
+                if (nameTypeCounts.TryGetValue(typeAndName, out var matchCount))
+                {
+                    nameTypeCounts[typeAndName] = matchCount + 1;
+                }
+                else
+                {
+                    nameTypeCounts.Add(typeAndName, 1);
+                }
+            }
+
+            // This tracks the list of overloaded items in cachedLines
+            // Keys are of the form type_name
+            // Values will be increment below as each overload is encountered
+            var overloadList = new Dictionary<string, int>();
+
+            foreach (var item in nameTypeCounts)
+            {
+                if (item.Value > 1)
+                {
+                    overloadList.Add(item.Key, 0);
+                }
+            }
+
+            if (overloadList.Count == 0)
+            {
+                return;
+            }
+
+            var updatedLines = new List<string>();
+            var addCommentAfterNextLine = false;
+            var overloadCountToUse = 1;
+
+            foreach (var cachedLine in cachedLines)
+            {
+                updatedLines.Add(cachedLine);
+
+                var match = mNameTypeSchemaMatcher.Match(cachedLine);
+
+                if (!match.Success)
+                {
+                    if (addCommentAfterNextLine)
+                    {
+                        updatedLines.Add(string.Format("-- Overload {0}", overloadCountToUse));
+                        addCommentAfterNextLine = false;
+                    }
+
+                    continue;
+                }
+
+                var typeAndName = GetObjectTypeNameCode(match);
+                if (!overloadList.TryGetValue(typeAndName, out var matchCount))
+                {
+                    continue;
+                }
+
+                // The next line should be "--"
+                // Add a comment after the next line, with the overload number
+                addCommentAfterNextLine = true;
+
+                overloadCountToUse = matchCount + 1;
+                overloadList[typeAndName] = overloadCountToUse;
+            }
+
+            cachedLines.Clear();
+            foreach (var updatedLine in updatedLines)
+            {
+                cachedLines.Add(updatedLine);
+            }
+
         }
 
         /// <summary>
@@ -899,6 +996,26 @@ namespace DB_Schema_Export_Tool
         public override Dictionary<TableDataExportInfo, long> GetDatabaseTables(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
         {
             return GetPgServerDatabaseTables(databaseName, includeTableRowCounts, includeSystemObjects, true, out _);
+        }
+
+        /// <summary>
+        /// Look for the "Name" and "Type" groups in the RegEx match
+        /// Combine them, but excluding any arguments after the object name
+        /// </summary>
+        /// <param name="match"></param>
+        /// <returns>Text of the form "FUNCTION_udf_timestamp_text"</returns>
+        private string GetObjectTypeNameCode(Match match)
+        {
+            var objectNameWithArguments = match.Groups["Name"].Value;
+            var objectType = match.Groups["Type"].Value;
+
+            var nameMatch = mFunctionOrProcedureNameMatcher.Match(objectNameWithArguments);
+            if (nameMatch.Success)
+            {
+                return objectType + "_" + nameMatch.Groups["Name"];
+            }
+
+            return objectType + "_" + objectNameWithArguments;
         }
 
         /// <summary>
@@ -1952,6 +2069,10 @@ namespace DB_Schema_Export_Tool
                     OnWarningEvent("Unable to determine the file name; skipping " + outputFileName);
                     continue;
                 }
+
+                // Check for an overloaded function or procedure
+                // If it is overloaded, add a comment for each overloaded instance
+                AddCommentsIfOverloaded(cachedLines);
 
                 // Write files that are not in the public schema to a subdirectory below the database directory
                 var periodIndex = baseName.IndexOf('.');
