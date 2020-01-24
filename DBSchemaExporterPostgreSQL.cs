@@ -1692,27 +1692,6 @@ namespace DB_Schema_Export_Tool
             targetScriptFile = namePrefix + nameToUse + ".sql";
         }
 
-        [Obsolete("Unused")]
-        private void ProcessPgDumpDataFile(FileSystemInfo pgDumpOutputFile)
-        {
-            var linesProcessed = 0;
-
-            using (var reader = new StreamReader(new FileStream(pgDumpOutputFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
-            {
-                while (!reader.EndOfStream)
-                {
-                    var dataLine = reader.ReadLine();
-                    if (dataLine == null)
-                        continue;
-
-                    if (linesProcessed < 10)
-                        Console.WriteLine(dataLine);
-
-                    linesProcessed++;
-                }
-            }
-        }
-
         /// <summary>
         /// Process the database dump file created by pgDump
         /// </summary>
