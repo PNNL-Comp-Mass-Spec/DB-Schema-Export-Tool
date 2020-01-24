@@ -990,7 +990,10 @@ namespace DB_Schema_Export_Tool
         /// <param name="includeTableRowCounts">When true, then determines the row count in each table</param>
         /// <param name="includeSystemObjects">When true, then also returns system var tables</param>
         /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
-        public override Dictionary<TableDataExportInfo, long> GetDatabaseTables(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
+        public override Dictionary<TableDataExportInfo, long> GetDatabaseTables(
+            string databaseName,
+            bool includeTableRowCounts,
+            bool includeSystemObjects)
         {
             return GetPgServerDatabaseTables(databaseName, includeTableRowCounts, includeSystemObjects, true, out _);
         }
@@ -1297,7 +1300,10 @@ namespace DB_Schema_Export_Tool
             return databaseNames;
         }
 
-        private string GetFunctionOrProcedureName(DatabaseObjectInfo currentObject, string objectDescription, ref bool unhandledScriptingCommands)
+        private string GetFunctionOrProcedureName(
+            DatabaseObjectInfo currentObject,
+            string objectDescription,
+            ref bool unhandledScriptingCommands)
         {
 
             var nameMatch = mFunctionOrProcedureNameMatcher.Match(currentObject.Name);
