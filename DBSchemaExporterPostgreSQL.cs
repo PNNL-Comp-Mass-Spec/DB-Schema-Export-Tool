@@ -848,9 +848,6 @@ namespace DB_Schema_Export_Tool
 
             if (tableDataOutputFile.LastWriteTime > existingData)
             {
-
-                // Skip: Parse the pgDump output file to clean it up
-                // ProcessPgDumpDataFile(tableDataOutputFile);
                 return true;
             }
 
