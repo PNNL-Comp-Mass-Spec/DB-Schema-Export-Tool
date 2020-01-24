@@ -1449,6 +1449,27 @@ namespace DB_Schema_Export_Tool
             return PossiblyQuoteName(objectName, false);
         }
 
+        private string ProcessAndStoreCachedLinesTargetScriptFile(
+            IDictionary<string, List<string>> scriptInfoByObject,
+            string databaseName,
+            List<string> cachedLines,
+            DatabaseObjectInfo currentObject,
+            string previousTargetScriptFile,
+            ref bool unhandledScriptingCommands)
+        {
+            if (cachedLines.Count == 0)
+                return previousTargetScriptFile;
+
+            ProcessCachedLines(databaseName, cachedLines,
+                currentObject,
+                previousTargetScriptFile,
+                out var targetScriptFile,
+                ref unhandledScriptingCommands);
+
+            StoreCachedLinesForObject(scriptInfoByObject, cachedLines, targetScriptFile);
+            return targetScriptFile;
+        }
+
         private void ProcessCachedLines(
             string databaseName,
             IList<string> cachedLines,
@@ -1751,13 +1772,14 @@ namespace DB_Schema_Export_Tool
                             continue;
                         }
 
-                        ProcessCachedLines(databaseName, cachedLines,
-                                           currentObjectName, currentObjectType, currentObjectSchema,
-                                           previousTargetScriptFile,
-                                           out var targetScriptFile,
-                                           out unhandledScriptingCommands);
+                        var targetScriptFile = ProcessAndStoreCachedLinesTargetScriptFile(
+                            scriptInfoByObject,
+                            databaseName,
+                            cachedLines,
+                            currentObject,
+                            previousTargetScriptFile,
+                            ref unhandledScriptingCommands);
 
-                        StoreCachedLinesForObject(scriptInfoByObject, cachedLines, targetScriptFile);
                         previousTargetScriptFile = string.Copy(targetScriptFile);
 
                         UpdateCachedObjectInfo(match, currentObject);
@@ -1773,6 +1795,14 @@ namespace DB_Schema_Export_Tool
                     }
 
                 }
+
+                ProcessAndStoreCachedLinesTargetScriptFile(
+                    scriptInfoByObject,
+                    databaseName,
+                    cachedLines,
+                    currentObject,
+                    previousTargetScriptFile,
+                    ref unhandledScriptingCommands);
 
                 var outputDirectory = pgDumpOutputFile.Directory.FullName;
                 WriteCachedLines(outputDirectory, scriptInfoByObject);
@@ -1897,8 +1927,17 @@ namespace DB_Schema_Export_Tool
                    mPgConnection.State != ConnectionState.Closed;
         }
 
-        private void WriteCachedLines(string outputDirectory, Dictionary<string, List<string>> scriptInfoByObject)
+        /// <summary>
+        /// Create .sql files in the output directory
+        /// </summary>
+        /// <param name="outputDirectory">Output directory</param>
+        /// <param name="scriptInfoByObject">Dictionary where strings are the target filename and value are the DDL commands to create the object</param>
+        private void WriteCachedLines(
+            string outputDirectory,
+            Dictionary<string, List<string>> scriptInfoByObject)
         {
+            var previousDirectoryPath = string.Empty;
+
             foreach (var item in scriptInfoByObject)
             {
                 var outputFileName = item.Key;
