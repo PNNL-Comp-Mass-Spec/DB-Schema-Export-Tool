@@ -1657,11 +1657,14 @@ namespace DB_Schema_Export_Tool
                             case "EXTENSION":
                                 nameToUse = "_Extension_" + targetObjectName;
                                 break;
+
                             case "FUNCTION":
+                            case "PROCEDURE":
                                 nameToUse = targetObjectName;
                                 break;
+
                             default:
-                                OnWarningEvent("Possibly add a custom object type handler for target object " + targetObjectType);
+                                OnWarningEvent("Possibly add a custom object type handler for comments on target object " + targetObjectType);
                                 nameToUse = targetObjectName;
                                 unhandledScriptingCommands = true;
                                 break;
