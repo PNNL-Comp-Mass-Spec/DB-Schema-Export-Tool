@@ -1226,7 +1226,16 @@ namespace DB_Schema_Export_Tool
 
                 header += COMMENT_END_TEXT;
                 headerRows.Add(header);
-                headerRows.Add(COMMENT_START_TEXT + "RowCount: " + databaseTable.RowCount + COMMENT_END_TEXT);
+
+                if (tableInfo.FilterByDate)
+                {
+                    headerRows.Add(string.Format("{0}Date filter: {1} >= '{2:yyyy-MM-dd}'{3}",
+                        COMMENT_START_TEXT, tableInfo.DateColumnName, tableInfo.MinimumDate, COMMENT_END_TEXT));
+                }
+                else
+                {
+                    headerRows.Add(COMMENT_START_TEXT + "RowCount: " + databaseTable.RowCount + COMMENT_END_TEXT);
+                }
 
                 var columnCount = queryResults.Tables[0].Columns.Count;
 
