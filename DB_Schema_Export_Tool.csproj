@@ -55,6 +55,7 @@
     <Compile Include="ColumnMapInfo.cs" />
     <Compile Include="DatabaseObjectInfo.cs" />
     <Compile Include="DataExportWorkingParams.cs" />
+    <Compile Include="DBSchemaUpdater.cs" />
     <Compile Include="LoggerBase.cs" />
     <Compile Include="ProgramRunner.cs" />
     <Compile Include="DBSchemaExporterBase.cs" />

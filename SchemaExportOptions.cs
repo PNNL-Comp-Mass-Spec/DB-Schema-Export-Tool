@@ -17,7 +17,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "January 31, 2020";
+        public const string PROGRAM_DATE = "February 1, 2020";
 
         public const string DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX = "DBSchema__";
 
