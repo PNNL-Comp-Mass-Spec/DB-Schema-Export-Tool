@@ -1920,20 +1920,15 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
-        /// Use mScripter to look for primary key column(s) for the table
+        /// Use mTableDataScripter to look for primary key column(s) for the table
         /// </summary>
         /// <param name="tableInfo"></param>
         /// <returns>Comma separated list of primary key columns</returns>
         private SortedSet<string> GetPrimaryKeysForTableViaScripter(TableDataExportInfo tableInfo)
         {
-            var primaryKeyColumns = new SortedSet<string>();
-
-            var rowSplitter = new Regex(@"\r\n", RegexOptions.Compiled);
-
-            var columnNameMatcher = new Regex(@"\[(?<ColumnName>.+)\]", RegexOptions.Compiled);
 
             if (!mCurrentDatabase.Tables.Contains(tableInfo.SourceTableName))
-                return primaryKeyColumns;
+                return new SortedSet<string>();
 
             var databaseTable = mCurrentDatabase.Tables[tableInfo.SourceTableName];
 
@@ -1941,7 +1936,38 @@ namespace DB_Schema_Export_Tool
                 databaseTable
             };
 
+            var rowSplitter = new Regex(@"\r\n", RegexOptions.Compiled);
+
             var scriptInfo = mTableDataScripter.Script(smoObjectArray);
+
+            foreach (var item in scriptInfo)
+            {
+                if (!item.StartsWith("CREATE TABLE"))
+                    continue;
+
+                var createTableDDL = rowSplitter.Split(item).ToList();
+
+                var primaryKeyColumns = GetPrimaryKeysForTableViaDDL(createTableDDL);
+                return primaryKeyColumns;
+            }
+
+            OnWarningEvent(string.Format(
+                "Table DDL scripted for {0} did not have a line that starts with CREATE TABLE",
+                tableInfo.SourceTableName));
+
+            return new SortedSet<string>();
+        }
+
+        /// <summary>
+        /// Examine the DDL for a table to look for primary key column(s) for the table
+        /// </summary>
+        /// <param name="createTableDDL">DDL to create the table</param>
+        /// <returns>Comma separated list of primary key columns</returns>
+        public static SortedSet<string> GetPrimaryKeysForTableViaDDL(List<string> createTableDDL)
+        {
+            var primaryKeyColumns = new SortedSet<string>();
+
+            var columnNameMatcher = new Regex(@"\[(?<ColumnName>.+)\]", RegexOptions.Compiled);
 
             // Look for the constraint line, which will be followed by the primary key names, surrounded by an open and close parentheses
             // CONSTRAINT [PK_T_ParamValue] PRIMARY KEY CLUSTERED
@@ -1951,43 +1977,35 @@ namespace DB_Schema_Export_Tool
 
             var insidePrimaryKey = false;
 
-            foreach (var item in scriptInfo)
+            foreach (var currentLine in createTableDDL)
             {
-                if (!item.StartsWith("CREATE TABLE"))
+                if (currentLine.Trim().StartsWith("CONSTRAINT") && currentLine.Contains("PRIMARY KEY"))
+                {
+                    insidePrimaryKey = true;
+                    continue;
+                }
+
+                if (!insidePrimaryKey)
                     continue;
 
-                var createTableDDL = rowSplitter.Split(item);
-
-                foreach (var currentLine in createTableDDL)
+                if (currentLine.Trim().StartsWith("("))
                 {
-                    if (currentLine.Trim().StartsWith("CONSTRAINT") && currentLine.Contains("PRIMARY KEY"))
-                    {
-                        insidePrimaryKey = true;
-                        continue;
-                    }
+                    // Skip this line
+                    continue;
+                }
 
-                    if (!insidePrimaryKey)
-                        continue;
+                if (currentLine.Trim().StartsWith(")"))
+                {
+                    // End of the primary key section
+                    insidePrimaryKey = false;
+                    continue;
+                }
 
-                    if (currentLine.Trim().StartsWith("("))
-                    {
-                        // Skip this line
-                        continue;
-                    }
-
-                    if (currentLine.Trim().StartsWith(")"))
-                    {
-                        // End of the primary key section
-                        insidePrimaryKey = false;
-                        continue;
-                    }
-
-                    // Extract the column name from the square brackets
-                    var columnMatch = columnNameMatcher.Match(currentLine);
-                    if (columnMatch.Success)
-                    {
-                        primaryKeyColumns.Add(columnMatch.Groups["ColumnName"].Value);
-                    }
+                // Extract the column name from the square brackets
+                var columnMatch = columnNameMatcher.Match(currentLine);
+                if (columnMatch.Success)
+                {
+                    primaryKeyColumns.Add(columnMatch.Groups["ColumnName"].Value);
                 }
             }
 
