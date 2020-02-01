@@ -33,6 +33,7 @@ namespace DB_Schema_Export_Tool
 
         #region "Classwide Variables"
 
+        private readonly Regex mColumnNameMatcher;
         private readonly Regex mDateMatcher;
 
         private DBSchemaExporterBase mDBSchemaExporter;
@@ -71,6 +72,9 @@ namespace DB_Schema_Export_Tool
         public DBSchemaExportTool(SchemaExportOptions options)
         {
             mOptions = options;
+
+            mColumnNameMatcher = new Regex(@"\[(?<ColumnName>[^]]+)\]|(?<ColumnName>[^\s]+)", RegexOptions.Compiled);
+
             mDateMatcher = new Regex(@"'\d+/\d+/\d+ \d+:\d+:\d+ [AP]M'", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
             if (mOptions.PostgreSQL)
@@ -810,7 +814,8 @@ namespace DB_Schema_Export_Tool
 
                         var sourceTableName = lineParts[0].Trim();
 
-                        var tableInfo = new TableDataExportInfo(sourceTableName) {
+                        var tableInfo = new TableDataExportInfo(sourceTableName)
+                        {
                             UsePgInsert = mOptions.PgInsertTableData
                         };
 
@@ -1435,10 +1440,7 @@ namespace DB_Schema_Export_Tool
 
                     outputLines.Add(dataLine);
 
-                    foreach (var outputLine in outputLines)
-                    {
-                        writer.WriteLine(outputLine);
-                    }
+                    WriteCreateTableDDL(writer, sourceTableName, outputLines);
                     return;
                 }
 
@@ -1492,12 +1494,9 @@ namespace DB_Schema_Export_Tool
             }
 
             // GO was not found; this is unexpected
-            foreach (var outputLine in outputLines)
-            {
-                writer.WriteLine(outputLine);
-            }
+            // Write out the cached lines anyway (ignore writeOutput to avoid unintentionally skipping DDL)
 
-
+            WriteCreateTableDDL(writer, sourceTableName, outputLines);
         }
 
         private bool UpdateColumnNamesInExistingSchemaFile(SchemaExportOptions options, IReadOnlyCollection<TableDataExportInfo> tablesForDataExport)
@@ -1595,6 +1594,186 @@ namespace DB_Schema_Export_Tool
                 OnErrorEvent("Error in UpdateNamesInExistingSchemaFile", ex);
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Examine the Create Table DDL to find the location of the primary key column
+        /// Move it to the first column if not in the first column
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="createTableDDL"></param>
+        /// <param name="primaryKeyColumns"></param>
+        /// <returns></returns>
+        private List<string> UpdateCreateTablePrimaryKeyPosition(
+            string tableName,
+            List<string> createTableDDL,
+            IEnumerable<string> primaryKeyColumns
+        )
+        {
+            // Keys in this dictionary are column name; values are the position (1 for the first column, 2 for the second, ...)
+            var tableColumns = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+            // Keys in this dictionary are column name; values are the DDL to for the column (data type, null / Not Null, collation, etc.)
+            var tableColumnDDL = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            var definingColumns = false;
+            var primaryKeyColumn = string.Empty;
+
+            var currentColumnName = string.Empty;
+
+            // This holds DDL up to the CREATE TABLE line
+            var prefixLines = new List<string>();
+
+            // This holds DDL after the last column
+            var suffixLines = new List<string>();
+
+            // Find the column names
+            // Assume they are listed between the CREATE TABLE and CONSTRAINT lines
+            // (or between CREATE TABLE and ) if the table does not have a primary key constraint)
+            for (var i = 0; i < createTableDDL.Count; i++)
+            {
+                var dataLine = createTableDDL[i];
+                var trimmedLine = dataLine.Trim();
+
+                if (tableColumns.Count == 0 && trimmedLine.StartsWith("CREATE TABLE", StringComparison.OrdinalIgnoreCase))
+                {
+                    definingColumns = true;
+                    prefixLines.Add(dataLine);
+                    continue;
+                }
+
+                if (!definingColumns)
+                {
+                    if (tableColumns.Count == 0)
+                        prefixLines.Add(dataLine);
+                    else
+                        suffixLines.Add(dataLine);
+
+                    continue;
+                }
+
+                if (trimmedLine.StartsWith(")", StringComparison.OrdinalIgnoreCase))
+                {
+                    definingColumns = false;
+                    suffixLines.Add(dataLine);
+                    continue;
+                }
+
+                if (trimmedLine.StartsWith("CONSTRAINT", StringComparison.OrdinalIgnoreCase))
+                {
+                    definingColumns = false;
+                    suffixLines.Add(dataLine);
+
+                    if (trimmedLine.IndexOf("PRIMARY KEY", StringComparison.OrdinalIgnoreCase) > 0)
+                    {
+                        // The next line should be (
+                        // The line after that should be the primary key column
+
+                        while (i < createTableDDL.Count - 1)
+                        {
+                            i++;
+
+                            var suffixLine = createTableDDL[i];
+                            suffixLines.Add(suffixLine);
+
+                            if (suffixLine.Trim().Equals("("))
+                                continue;
+
+                            var primaryKeyMatch = mColumnNameMatcher.Match(suffixLine);
+                            if (primaryKeyMatch.Success)
+                            {
+                                primaryKeyColumn = primaryKeyMatch.Groups["ColumnName"].Value;
+                            }
+
+                            break;
+                        }
+                    }
+
+                    continue;
+                }
+
+                var columnMatch = mColumnNameMatcher.Match(dataLine);
+                if (!columnMatch.Success)
+                {
+                    OnDebugEvent(string.Format("Appending DDL for column {0}: {1}", currentColumnName, dataLine));
+
+                    var updatedDDL = tableColumnDDL[currentColumnName] + Environment.NewLine + dataLine;
+                    tableColumnDDL[currentColumnName] = updatedDDL;
+
+                    continue;
+                }
+
+                var columnName = columnMatch.Groups["ColumnName"].Value;
+
+                if (tableColumns.ContainsKey(columnName))
+                {
+                    OnWarningEvent(string.Format(
+                        "Create Table DDL for {0} has column {1} listed more than once",
+                        tableName, columnName));
+                    continue;
+                }
+
+                var columnPosition = tableColumns.Count + 1;
+                currentColumnName = string.Copy(columnName);
+
+                tableColumns.Add(columnName, columnPosition);
+                tableColumnDDL.Add(columnName, dataLine);
+            }
+
+            string firstPrimaryKeyColumn;
+            if (string.IsNullOrWhiteSpace(primaryKeyColumn))
+                firstPrimaryKeyColumn = primaryKeyColumns.First();
+            else
+                firstPrimaryKeyColumn = primaryKeyColumn;
+
+            if (!tableColumns.TryGetValue(firstPrimaryKeyColumn, out var primaryKeyColumnPosition))
+            {
+                OnWarningEvent(string.Format("Table {0} does not have a primary key column", tableName));
+                return createTableDDL;
+            }
+
+            if (primaryKeyColumnPosition == 1)
+            {
+                OnDebugEvent(string.Format(
+                    "Primary key column {0} for table {1} is already at position 1",
+                    firstPrimaryKeyColumn, tableName));
+
+                return createTableDDL;
+            }
+
+            if (!tableColumnDDL.ContainsKey(firstPrimaryKeyColumn))
+            {
+                OnWarningEvent(string.Format(
+                    "tableColumnDDL dictionary does not have primary key column {0} for table {1}; this is unexpected",
+                    firstPrimaryKeyColumn, tableName));
+
+                return createTableDDL;
+            }
+
+            OnStatusEvent(string.Format(
+                "Moving primary key column {0} from position {1} to position 1 for table {2}",
+                firstPrimaryKeyColumn, primaryKeyColumnPosition, tableName));
+
+            var outputLines = new List<string>();
+            outputLines.AddRange(prefixLines);
+
+            outputLines.Add(tableColumnDDL[firstPrimaryKeyColumn]);
+
+            var query = from item in tableColumns orderby item.Value select item;
+            foreach (var columnInfo in query)
+            {
+                if (columnInfo.Value == primaryKeyColumnPosition)
+                {
+                    // This is the primary key column; skip it
+                    continue;
+                }
+
+                outputLines.Add(tableColumnDDL[columnInfo.Key]);
+            }
+
+            outputLines.AddRange(suffixLines);
+
+            return outputLines;
         }
 
         private void UpdateRepoChanges(
@@ -1904,6 +2083,27 @@ namespace DB_Schema_Export_Tool
                 }
                 return false;
             }
+        }
+
+        private void WriteCreateTableDDL(TextWriter writer, string tableName, List<string> createTableDDL)
+        {
+            var primaryKeyColumns = DBSchemaExporterSQLServer.GetPrimaryKeysForTableViaDDL(createTableDDL);
+
+            List<string> outputLines;
+            if (primaryKeyColumns.Count == 0)
+            {
+                outputLines = createTableDDL;
+            }
+            else
+            {
+                outputLines = UpdateCreateTablePrimaryKeyPosition(tableName, createTableDDL, primaryKeyColumns);
+            }
+
+            foreach (var outputLine in outputLines)
+            {
+                writer.WriteLine(outputLine);
+            }
+
         }
 
     }
