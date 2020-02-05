@@ -1,5 +1,5 @@
 SourceTableName	TargetSchemaName	TargetTableName	PgInsert	KeyColumn(s)
-T_Mgrs	mc	t_mgrs	true	m_id
+T_Mgrs	mc	t_mgrs	true	mgr_id
 T_MgrTypes	mc	t_mgr_types	true	mgr_type_id
 x_T_MgrState	public	<skip>		
 SchemaChangeLog	public	<skip>		

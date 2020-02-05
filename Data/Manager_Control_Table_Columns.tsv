@@ -4,12 +4,14 @@ T_MgrTypes	mt_typename	mgr_type_name
 T_MgrTypes	mt_active	mgr_type_active
 T_MgrType_ParamType_Map	MgrTypeID	mgr_type_id
 T_MgrType_ParamType_Map	ParamTypeID	param_type_id
-T_Mgrs	M_ID	m_id
-T_Mgrs	M_Name	m_name
+T_Mgrs	M_ID	mgr_id
+T_Mgrs	M_Name	mgr_name
 T_Mgrs	M_TypeID	mgr_type_id
 T_Mgrs	M_ParmValueChanged	param_value_changed
 T_Mgrs	M_ControlFromWebsite	control_from_website
 T_Mgrs	M_Comment	comment
+T_OldManagers	M_ID	mgr_id
+T_OldManagers	M_Name	mgr_name
 T_OldManagers	M_TypeID	mgr_type_id
 T_OldManagers	M_ParmValueChanged	param_value_changed
 T_OldManagers	M_ControlFromWebsite	control_from_website
