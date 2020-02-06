@@ -1207,13 +1207,12 @@ namespace DB_Schema_Export_Tool
                 dataExportParams.TargetTableNameWithSchema = GetTargetTableName(
                     sourceTableNameWithSchema, tableInfo,
                     quoteWithSquareBrackets, false,
+                    out var targetTableSchema,
                     out var targetTableName);
 
                 // Get the table name, with schema, in the form schema.table_name
                 // The schema and table name will always be quoted
-                dataExportParams.QuotedTargetTableNameWithSchema = GetTargetTableName(
-                    sourceTableNameWithSchema, tableInfo,
-                    quoteWithSquareBrackets, true, out _);
+                dataExportParams.QuotedTargetTableNameWithSchema = GetQuotedTargetTableName(sourceTableNameWithSchema, tableInfo, quoteWithSquareBrackets);
 
                 var headerRows = new List<string>();
 
@@ -1253,7 +1252,7 @@ namespace DB_Schema_Export_Tool
 
                 var insertIntoLine = ExportDBTableDataInit(tableInfo, columnMapInfo, dataExportParams, headerRows, workingParams);
 
-                var outFilePath = GetFileNameForTableDataExport(tableInfo, targetTableName, dataExportParams, workingParams);
+                var outFilePath = GetFileNameForTableDataExport(tableInfo, targetTableSchema, targetTableName, dataExportParams, workingParams);
                 if (string.IsNullOrWhiteSpace(outFilePath))
                 {
                     // Skip this table

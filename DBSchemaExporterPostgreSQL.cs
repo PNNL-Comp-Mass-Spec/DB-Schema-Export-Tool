@@ -637,7 +637,7 @@ namespace DB_Schema_Export_Tool
 
                 var dataExportParams = new DataExportWorkingParams(false, "null")
                 {
-                    TargetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo, out var targetTableName)
+                    TargetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo, out var targetTableSchema, out var targetTableName)
                 };
 
                 var headerRows = new List<string>();
@@ -705,7 +705,7 @@ namespace DB_Schema_Export_Tool
                     dataExportParams.ColSepChar = '\t';
                 }
 
-                var outFilePath = GetFileNameForTableDataExport(tableInfo, targetTableName, dataExportParams, workingParams);
+                var outFilePath = GetFileNameForTableDataExport(tableInfo, targetTableSchema, targetTableName, dataExportParams, workingParams);
                 if (string.IsNullOrWhiteSpace(outFilePath))
                 {
                     // Skip this table
@@ -787,14 +787,14 @@ namespace DB_Schema_Export_Tool
             TableDataExportInfo tableInfo,
             string sourceTableNameWithSchema)
         {
-            var targetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo, out var targetTableName);
+            var targetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo, out var targetTableSchema, out var targetTableName);
 
             var dataExportParams = new DataExportWorkingParams(false, "null")
             {
                 TargetTableNameWithSchema = targetTableNameWithSchema
             };
 
-            var outFilePath = GetFileNameForTableDataExport(tableInfo, targetTableName, dataExportParams, workingParams);
+            var outFilePath = GetFileNameForTableDataExport(tableInfo, targetTableSchema, targetTableName, dataExportParams, workingParams);
             if (string.IsNullOrWhiteSpace(outFilePath))
             {
                 // Skip this table
@@ -1317,14 +1317,18 @@ namespace DB_Schema_Export_Tool
             return currentObject.Name;
         }
 
-        private string GetTargetTableName(string sourceTableNameWithSchema, TableDataExportInfo tableInfo, out string targetTableName)
+        private string GetTargetTableName(
+            string sourceTableNameWithSchema,
+            TableDataExportInfo tableInfo,
+            out string targetTableSchema,
+            out string targetTableName)
         {
             const bool quoteWithSquareBrackets = false;
             const bool alwaysQuoteNames = false;
 
             var targetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo,
                                                                quoteWithSquareBrackets, alwaysQuoteNames,
-                                                               out targetTableName);
+                                                               out targetTableSchema, out targetTableName);
             return targetTableNameWithSchema;
         }
 

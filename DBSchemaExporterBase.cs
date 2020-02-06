@@ -826,12 +826,14 @@ namespace DB_Schema_Export_Tool
         /// Generate the file name to exporting table data
         /// </summary>
         /// <param name="tableInfo"></param>
+        /// <param name="targetTableSchema"></param>
         /// <param name="targetTableName"></param>
         /// <param name="dataExportParams"></param>
         /// <param name="workingParams"></param>
         /// <returns></returns>
         protected string GetFileNameForTableDataExport(
             TableDataExportInfo tableInfo,
+            string targetTableSchema,
             string targetTableName,
             DataExportWorkingParams dataExportParams,
             WorkingParams workingParams)
@@ -840,17 +842,26 @@ namespace DB_Schema_Export_Tool
 
             // Make sure output file name doesn't contain any invalid characters
             string cleanName;
-            if (targetTableNameWithSchema.StartsWith("dbo.") ||
-                targetTableNameWithSchema.StartsWith("public."))
+            var defaultOwnerSchema = IsDefaultOwnerSchema(targetTableSchema);
+
+            if (defaultOwnerSchema)
+            {
                 cleanName = CleanNameForOS(targetTableName + "_Data");
+            }
             else
+            {
                 cleanName = CleanNameForOS(targetTableNameWithSchema + "_Data");
+            }
 
             var suffix = tableInfo.FilterByDate ?
                              string.Format("_Since_{0:yyyy-MM-dd}", tableInfo.MinimumDate) :
                              string.Empty;
 
-            var outFilePath = Path.Combine(workingParams.OutputDirectory.FullName, cleanName + suffix + ".sql");
+            var fileName = cleanName + suffix + ".sql";
+
+            var fileNamePath = defaultOwnerSchema ? fileName : Path.Combine(targetTableSchema, fileName);
+
+            var outFilePath = Path.Combine(workingParams.OutputDirectory.FullName, fileNamePath);
 
             return outFilePath;
         }
@@ -999,9 +1010,7 @@ namespace DB_Schema_Export_Tool
                 targetTableName = tableInfo.TargetTableName;
             }
 
-            if (string.IsNullOrWhiteSpace(targetTableSchema) ||
-                targetTableSchema.Equals("dbo", StringComparison.OrdinalIgnoreCase) ||
-                targetTableSchema.Equals("public", StringComparison.OrdinalIgnoreCase))
+            if (IsDefaultOwnerSchema(targetTableSchema))
             {
                 return PossiblyQuoteName(targetTableName, quoteWithSquareBrackets, alwaysQuoteNames);
             }
@@ -1037,6 +1046,18 @@ namespace DB_Schema_Export_Tool
             {
                 SchemaOutputDirectories.Clear();
             }
+        }
+
+        /// <summary>
+        /// Return True if schemaName is "blank", "dbo", or "public"
+        /// </summary>
+        /// <param name="schemaName"></param>
+        /// <returns></returns>
+        private bool IsDefaultOwnerSchema(string schemaName)
+        {
+            return string.IsNullOrWhiteSpace(schemaName) ||
+                   schemaName.Equals("dbo", StringComparison.OrdinalIgnoreCase) ||
+                   schemaName.Equals("public", StringComparison.OrdinalIgnoreCase);
         }
 
         protected void OnDBExportStarting(string databaseName)
