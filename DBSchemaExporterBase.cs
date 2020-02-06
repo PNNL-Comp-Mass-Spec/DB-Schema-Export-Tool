@@ -957,45 +957,61 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get the target table name to use when exporting data
         /// </summary>
-        /// <param name="sourceTableNameAndSchema">Source table: schema.table_name</param>
+        /// <param name="sourceTableNameWithSchema">Source table: schema.table_name</param>
+        /// <param name="tableInfo">Table info object</param>
+        /// <param name="quoteWithSquareBrackets">When true, quote with square brackets; otherwise, quote with double quotes</param>
+        /// <returns></returns>
+        protected string GetQuotedTargetTableName(
+            string sourceTableNameWithSchema,
+            TableDataExportInfo tableInfo,
+            bool quoteWithSquareBrackets)
+        {
+            return GetTargetTableName(sourceTableNameWithSchema, tableInfo, quoteWithSquareBrackets, true, out _, out _);
+        }
+
+        /// <summary>
+        /// Get the target table name to use when exporting data
+        /// </summary>
+        /// <param name="sourceTableNameWithSchema">Source table: schema.table_name</param>
         /// <param name="tableInfo">Table info object</param>
         /// <param name="quoteWithSquareBrackets">When true, quote with square brackets; otherwise, quote with double quotes</param>
         /// <param name="alwaysQuoteNames">When true, always returned quoted schema.table_name</param>
+        /// <param name="targetTableSchema">Target table schema, without quotes or square brackets (even if alwaysQuoteNames is true, this is unquoted)</param>
         /// <param name="targetTableName">Target table name, without quotes or square brackets (even if alwaysQuoteNames is true, this is unquoted)</param>
         /// <returns></returns>
         protected string GetTargetTableName(
-            string sourceTableNameAndSchema,
+            string sourceTableNameWithSchema,
             TableDataExportInfo tableInfo,
             bool quoteWithSquareBrackets,
             bool alwaysQuoteNames,
+            out string targetTableSchema,
             out string targetTableName)
         {
-            string targetTableSchema;
 
             if (string.IsNullOrWhiteSpace(tableInfo.TargetTableName))
             {
-                var periodIndex = sourceTableNameAndSchema.IndexOf('.');
+                var periodIndex = sourceTableNameWithSchema.IndexOf('.');
 
                 var defaultSchemaName = mOptions.DefaultSchemaName ?? string.Empty;
 
-                if (periodIndex == 0 && periodIndex < sourceTableNameAndSchema.Length - 1)
+                if (periodIndex == 0 && periodIndex < sourceTableNameWithSchema.Length - 1)
                 {
                     targetTableSchema = defaultSchemaName;
-                    targetTableName = sourceTableNameAndSchema.Substring(2);
+                    targetTableName = sourceTableNameWithSchema.Substring(2);
                 }
-                else if (periodIndex > 0 && periodIndex < sourceTableNameAndSchema.Length - 1)
+                else if (periodIndex > 0 && periodIndex < sourceTableNameWithSchema.Length - 1)
                 {
                     if (string.IsNullOrWhiteSpace(defaultSchemaName))
-                        targetTableSchema = sourceTableNameAndSchema.Substring(0, periodIndex);
+                        targetTableSchema = sourceTableNameWithSchema.Substring(0, periodIndex);
                     else
                         targetTableSchema = defaultSchemaName;
 
-                    targetTableName = sourceTableNameAndSchema.Substring(periodIndex + 1);
+                    targetTableName = sourceTableNameWithSchema.Substring(periodIndex + 1);
                 }
                 else
                 {
                     targetTableSchema = defaultSchemaName;
-                    targetTableName = sourceTableNameAndSchema;
+                    targetTableName = sourceTableNameWithSchema;
                 }
 
                 if (mOptions.TableDataSnakeCase)
