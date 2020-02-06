@@ -1,0 +1,8 @@
+# DMS tables
+T_Analysis_Tool
+
+# pgwatch2 tables
+pgwatch2.metric
+pgwatch2.monitored_db
+pgwatch2.preset_config
+pgwatch2.schema_version
