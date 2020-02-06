@@ -785,7 +785,9 @@ namespace DB_Schema_Export_Tool
                     while (!dataReader.EndOfStream)
                     {
                         var dataLine = dataReader.ReadLine();
-                        if (string.IsNullOrWhiteSpace(dataLine))
+
+                        // Lines that start with # are treated as comment lines
+                        if (string.IsNullOrWhiteSpace(dataLine) || dataLine.StartsWith("#"))
                             continue;
 
                         // Supports the following tab-delimited columns
