@@ -1854,6 +1854,11 @@ namespace DB_Schema_Export_Tool
                     if (dataLine == null)
                         continue;
 
+                    if (dataLine.StartsWith("SQL to find"))
+                    {
+                        Console.WriteLine("Check this code");
+                    }
+
                     if (dataLine.StartsWith("-- PostgreSQL database dump complete"))
                     {
                         // The previous cached line is likely "--"
