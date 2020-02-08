@@ -31,6 +31,17 @@
         }
 
         /// <summary>
+        /// Constructor that accepts name and type
+        /// </summary>
+        public DatabaseObjectInfo(string objectName, string objectType)
+        {
+            Clear();
+            Name = objectName;
+            Type = objectType;
+            Owner = string.Empty;
+        }
+
+        /// <summary>
         /// Reset all properties to empty strings
         /// </summary>
         public void Clear()

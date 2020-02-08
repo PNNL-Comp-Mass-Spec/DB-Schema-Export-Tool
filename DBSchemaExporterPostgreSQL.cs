@@ -1590,7 +1590,7 @@ namespace DB_Schema_Export_Tool
                 out var targetScriptFile,
                 ref unhandledScriptingCommands);
 
-            StoreCachedLinesForObject(scriptInfoByObject, cachedLines, targetScriptFile);
+            StoreCachedLinesForObject(scriptInfoByObject, cachedLines, targetScriptFile, currentObject);
             return targetScriptFile;
         }
 
@@ -1915,7 +1915,11 @@ namespace DB_Schema_Export_Tool
                                     dataLine
                                 };
 
-                                StoreCachedLinesForObject(scriptInfoByObject, setDefaultLine, databaseInfoScriptFile);
+                                StoreCachedLinesForObject(
+                                    scriptInfoByObject,
+                                    setDefaultLine,
+                                    databaseInfoScriptFile,
+                                    new DatabaseObjectInfo(databaseName, "DATABASE"));
                                 continue;
                             }
 
@@ -2032,7 +2036,8 @@ namespace DB_Schema_Export_Tool
         private void StoreCachedLinesForObject(
             IDictionary<string, List<string>> scriptInfoByObject,
             List<string> cachedLines,
-            string targetScriptFile)
+            string targetScriptFile,
+            DatabaseObjectInfo currentObject)
         {
             if (cachedLines.Count == 0)
                 return;
@@ -2043,6 +2048,25 @@ namespace DB_Schema_Export_Tool
             while (cachedLines.Count > 0 && string.IsNullOrWhiteSpace(cachedLines.Last()) || cachedLines.Last().Equals("--"))
             {
                 cachedLines.RemoveAt(cachedLines.Count - 1);
+            }
+
+            switch (currentObject.Type)
+            {
+                case "PROCEDURE":
+                case "FUNCTION":
+                    // Change CREATE PROCEDURE or CREATE FUNCTION
+                    // to CREATE OR REPLACE
+                    for (var i = 0; i < cachedLines.Count; i++)
+                    {
+                        if (cachedLines[i].StartsWith("CREATE PROCEDURE") ||
+                            cachedLines[i].StartsWith("CREATE FUNCTION"))
+                        {
+                            cachedLines[i] = "CREATE OR REPLACE" + cachedLines[i].Substring("CREATE".Length);
+                            break;
+                        }
+                    }
+
+                    break;
             }
 
             if (scriptInfoByObject.TryGetValue(outputFileName, out var scriptInfo))
