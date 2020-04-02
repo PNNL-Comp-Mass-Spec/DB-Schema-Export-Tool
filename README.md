@@ -293,7 +293,8 @@ Note that on Windows the .sql file created by pg_dump.exe includes extra carriag
 
 Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) \
 E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov\
-Website: https://omics.pnl.gov/ or https://www.pnnl.gov/sysbio/ or https://panomics.pnnl.gov/
+Website: https://omics.pnl.gov/ or https://panomics.pnnl.gov/ \
+Source code: https://github.com/PNNL-Comp-Mass-Spec/DB-Schema-Export-Tool
 
 ## License
 
