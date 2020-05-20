@@ -1778,16 +1778,17 @@ namespace DB_Schema_Export_Tool
                     {
                         Regex createIndexMatcher;
 
+                        // These RegEx specs includes ONLY as an optional group to allow for CREATE INDEX statements on partitioned tables
                         if (i == 1)
                         {
                             createIndexMatcher = new Regex(string.Format(
-                                    @"CREATE.+INDEX {0} ON {1}\.(?<TargetTable>.+) USING", indexName, currentObject.Schema),
+                                    @"CREATE.+INDEX {0} ON (ONLY )?{1}\.(?<TargetTable>.+) USING", indexName, currentObject.Schema),
                                 RegexOptions.Compiled | RegexOptions.IgnoreCase);
                         }
                         else
                         {
                             createIndexMatcher = new Regex(string.Format(
-                                    @"CREATE.+INDEX {0} ON (?<TargetTable>.+) USING", indexName),
+                                    @"CREATE.+INDEX {0} ON (ONLY )?(?<TargetTable>.+) USING", indexName),
                                 RegexOptions.Compiled | RegexOptions.IgnoreCase);
                         }
 
