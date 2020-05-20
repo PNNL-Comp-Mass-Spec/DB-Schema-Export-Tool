@@ -1432,6 +1432,27 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
+        /// Check whether mOptions.SchemaNameSkipList contains the schema name
+        /// </summary>
+        /// <param name="schemaName"></param>
+        /// <returns>True if the schema should be ignored</returns>
+        protected bool SkipSchema(string schemaName)
+        {
+            return SkipSchema(mOptions, schemaName);
+        }
+
+        /// <summary>
+        /// Check whether options.SchemaNameSkipList contains the schema name
+        /// </summary>
+        /// <param name="options"></param>
+        /// <param name="schemaName"></param>
+        /// <returns>True if the schema should be ignored</returns>
+        protected static bool SkipSchema(SchemaExportOptions options, string schemaName)
+        {
+            return options.SchemaNameSkipList.Contains(schemaName);
+        }
+
+        /// <summary>
         /// Determine whether this table should be skipped when exporting data
         /// </summary>
         /// <param name="tableInfo"></param>

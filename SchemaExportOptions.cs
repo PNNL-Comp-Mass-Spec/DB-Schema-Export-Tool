@@ -17,7 +17,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "February 7, 2020";
+        public const string PROGRAM_DATE = "May 20, 2020";
 
         public const string DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX = "DBSchema__";
 
@@ -48,6 +48,11 @@ namespace DB_Schema_Export_Tool
         /// (will not export schema for views, procedures, etc.)
         /// </remarks>
         public SortedSet<string> TableNameFilterSet { get; }
+
+        /// <summary>
+        /// List of schema to ignore
+        /// </summary>
+        public SortedSet<string> SchemaNameSkipList { get; }
 
         /// <summary>
         /// Maximum rows of data to export
@@ -249,7 +254,31 @@ namespace DB_Schema_Export_Tool
                     }
                 }
             }
+        }
 
+        [Option("SchemaSkipList", HelpShowsDefault = false,
+            HelpText = "Schema name (or comma separated list of names) of schema to skip. " +
+                       "Useful if using partitioned tables")]
+        public string SchemaSkipList
+        {
+            get => SchemaNameSkipList.Count == 0 ? string.Empty : string.Join(", ", SchemaNameSkipList);
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    SchemaNameSkipList.Clear();
+                    return;
+                }
+
+                foreach (var schemaName in value.Split(','))
+                {
+                    var trimmedName = schemaName.Trim();
+                    if (!SchemaNameSkipList.Contains(trimmedName))
+                    {
+                        SchemaNameSkipList.Add(trimmedName);
+                    }
+                }
+            }
         }
 
         [Option("TableDataDateFilter", "DateFilter", HelpShowsDefault = false, IsInputFilePath = true,
@@ -381,6 +410,7 @@ namespace DB_Schema_Export_Tool
 
             DatabasesToProcess = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
             TableNameFilterSet = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+            SchemaNameSkipList = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
             DatabaseSubdirectoryPrefix = DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX;
 
@@ -590,6 +620,13 @@ namespace DB_Schema_Export_Tool
                 Console.WriteLine(" {0,-48} {1}",
                                   TableNameFilterSet.Count > 1 ? "List of tables to process:" : "Single table to process:",
                                   TableNameFilterList);
+            }
+
+            if (SchemaNameSkipList.Count > 0)
+            {
+                Console.WriteLine(" {0,-48} {1}",
+                    SchemaNameSkipList.Count > 1 ? "List of schemas to skip:" : "Schema name to skip:",
+                    SchemaSkipList);
             }
 
             if (!string.IsNullOrWhiteSpace(TableDataColumnMapFile))

@@ -1129,6 +1129,14 @@ namespace DB_Schema_Export_Tool
                             var tableNameWithSchema = PossiblyQuoteName(schemaName) + "." +
                                                       PossiblyQuoteName(tableName);
 
+                            if (SkipSchema(schemaName))
+                            {
+                                ShowTrace(string.Format(
+                                    "Skipping schema export from table {0}.{1} due to a schema name filter", schemaName, tableName));
+
+                                continue;
+                            }
+
                             databaseTableInfo.Add(new TableDataExportInfo(tableNameWithSchema), 0);
 
                         }
@@ -1588,7 +1596,11 @@ namespace DB_Schema_Export_Tool
                 currentObject,
                 previousTargetScriptFile,
                 out var targetScriptFile,
+                out var skipExportCachedLines,
                 ref unhandledScriptingCommands);
+
+            if (skipExportCachedLines)
+                return targetScriptFile;
 
             StoreCachedLinesForObject(scriptInfoByObject, cachedLines, targetScriptFile, currentObject);
             return targetScriptFile;
@@ -1600,8 +1612,10 @@ namespace DB_Schema_Export_Tool
             DatabaseObjectInfo currentObject,
             string previousTargetScriptFile,
             out string targetScriptFile,
+            out bool skipExportCachedLines,
             ref bool unhandledScriptingCommands)
         {
+            skipExportCachedLines = false;
             if (string.IsNullOrEmpty(currentObject.Name))
             {
                 targetScriptFile = string.Format("DatabaseInfo_{0}.sql", databaseName);
@@ -1610,6 +1624,13 @@ namespace DB_Schema_Export_Tool
 
             var schemaToUse = currentObject.Schema;
             var nameToUse = currentObject.Name;
+
+            if (SkipSchema(schemaToUse))
+            {
+                skipExportCachedLines = true;
+                targetScriptFile = schemaToUse + "." + nameToUse + ".sql";
+                return;
+            }
 
             switch (currentObject.Type)
             {

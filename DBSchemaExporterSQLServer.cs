@@ -159,7 +159,16 @@ namespace DB_Schema_Export_Tool
             IReadOnlyList<TableDataExportInfo> tablesForDataExport)
         {
             var dtTables = currentDatabase.EnumObjects(DatabaseObjectTypes.Table, SortOrder.Name);
-            var tablesInDatabase = (from DataRow item in dtTables.Rows select new TableDataExportInfo(item["Name"].ToString())).ToList();
+
+            var tablesInDatabase = new List<TableDataExportInfo>();
+            foreach (DataRow item in dtTables.Rows)
+            {
+                var schemaName = item["Schema"].ToString();
+                if (SkipSchema(schemaName))
+                    continue;
+
+                tablesInDatabase.Add(new TableDataExportInfo(item["Name"].ToString()));
+            }
 
             var tableText = tablesInDatabase.Count == 1 ? "table" : "tables";
             ShowTrace(string.Format(
@@ -734,6 +743,14 @@ namespace DB_Schema_Export_Tool
 
                         includeTable = false;
                     }
+                }
+
+                if (SkipSchema(databaseTable.Schema))
+                {
+                    ShowTrace(string.Format(
+                        "Skipping schema export from table {0}.{1} due to a schema name filter", databaseTable.Schema, databaseTable.Name));
+
+                    includeTable = false;
                 }
 
                 if (includeTable)
