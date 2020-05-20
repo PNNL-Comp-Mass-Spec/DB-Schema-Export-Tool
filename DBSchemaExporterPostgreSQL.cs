@@ -2165,7 +2165,7 @@ namespace DB_Schema_Export_Tool
         /// Create .sql files in the output directory
         /// </summary>
         /// <param name="outputDirectory">Output directory</param>
-        /// <param name="scriptInfoByObject">Dictionary where strings are the target filename and value are the DDL commands to create the object</param>
+        /// <param name="scriptInfoByObject">Dictionary where keys are the target file names and values are the DDL commands to create the object</param>
         private void WriteCachedLines(
             string outputDirectory,
             Dictionary<string, List<string>> scriptInfoByObject)
