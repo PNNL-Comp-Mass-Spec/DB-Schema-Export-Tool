@@ -246,10 +246,12 @@ namespace DB_Schema_Export_Tool
             const bool INCLUDE_SYSTEM_OBJECTS = false;
             const bool CLEAR_SCHEMA_OUTPUT_DIRS = false;
 
-            var tablesInDatabase = GetPgServerDatabaseTables(databaseName, INCLUDE_TABLE_ROW_COUNTS,
-                                                                 INCLUDE_SYSTEM_OBJECTS,
-                                                                 CLEAR_SCHEMA_OUTPUT_DIRS,
-                                                                 out databaseNotFound);
+            var tablesInDatabase = GetPgServerDatabaseTables(
+                databaseName,
+                INCLUDE_TABLE_ROW_COUNTS,
+                INCLUDE_SYSTEM_OBJECTS,
+                CLEAR_SCHEMA_OUTPUT_DIRS,
+                out databaseNotFound);
 
             if (mCachedDatabaseTableInfo.ContainsKey(databaseName))
             {
