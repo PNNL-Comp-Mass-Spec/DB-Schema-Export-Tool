@@ -1685,6 +1685,7 @@ namespace DB_Schema_Export_Tool
 
                             case "FUNCTION":
                             case "PROCEDURE":
+                            case "TABLE":
                                 nameToUse = targetObjectName;
                                 break;
 
