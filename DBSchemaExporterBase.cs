@@ -969,6 +969,36 @@ namespace DB_Schema_Export_Tool
             return GetTargetTableName(sourceTableNameWithSchema, tableInfo, quoteWithSquareBrackets, true, out _, out _);
         }
 
+        protected string GetSchemaName(string objectNameWithSchema)
+        {
+            return GetSchemaName(objectNameWithSchema, out _);
+        }
+
+        protected string GetSchemaName(string objectNameWithSchema, out string objectName)
+        {
+            string schemaName;
+
+            var periodIndex = objectNameWithSchema.IndexOf('.');
+
+            if (periodIndex == 0 && periodIndex < objectNameWithSchema.Length - 1)
+            {
+                schemaName = string.Empty;
+                objectName = objectNameWithSchema.Substring(2);
+            }
+            else if (periodIndex > 0 && periodIndex < objectNameWithSchema.Length - 1)
+            {
+                schemaName = objectNameWithSchema.Substring(0, periodIndex);
+                objectName = objectNameWithSchema.Substring(periodIndex + 1);
+            }
+            else
+            {
+                schemaName = string.Empty;
+                objectName = objectNameWithSchema;
+            }
+
+            return schemaName;
+        }
+
         /// <summary>
         /// Get the target table name to use when exporting data
         /// </summary>
@@ -990,28 +1020,12 @@ namespace DB_Schema_Export_Tool
 
             if (string.IsNullOrWhiteSpace(tableInfo.TargetTableName))
             {
-                var periodIndex = sourceTableNameWithSchema.IndexOf('.');
+                targetTableSchema = GetSchemaName(sourceTableNameWithSchema, out targetTableName);
 
-                var defaultSchemaName = mOptions.DefaultSchemaName ?? string.Empty;
-
-                if (periodIndex == 0 && periodIndex < sourceTableNameWithSchema.Length - 1)
+                if (!string.IsNullOrWhiteSpace(mOptions.DefaultSchemaName))
                 {
-                    targetTableSchema = defaultSchemaName;
-                    targetTableName = sourceTableNameWithSchema.Substring(2);
-                }
-                else if (periodIndex > 0 && periodIndex < sourceTableNameWithSchema.Length - 1)
-                {
-                    if (string.IsNullOrWhiteSpace(defaultSchemaName))
-                        targetTableSchema = sourceTableNameWithSchema.Substring(0, periodIndex);
-                    else
-                        targetTableSchema = defaultSchemaName;
-
-                    targetTableName = sourceTableNameWithSchema.Substring(periodIndex + 1);
-                }
-                else
-                {
-                    targetTableSchema = defaultSchemaName;
-                    targetTableName = sourceTableNameWithSchema;
+                    // Override the schema name
+                    targetTableSchema = mOptions.DefaultSchemaName;
                 }
 
                 if (mOptions.TableDataSnakeCase)
