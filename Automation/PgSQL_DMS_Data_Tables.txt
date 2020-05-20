@@ -1,7 +1,6 @@
 # DMS tables
 T_Analysis_Tool
 
-# pgwatch2 tables
-pgwatch2.metric
-pgwatch2.preset_config
-pgwatch2.schema_version
+# pgwatch2_metrics tables
+admin.all_distinct_dbname_metrics
+admin.storage_schema_type
