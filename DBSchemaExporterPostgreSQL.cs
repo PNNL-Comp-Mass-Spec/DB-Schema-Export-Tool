@@ -1815,6 +1815,40 @@ namespace DB_Schema_Export_Tool
 
                     break;
 
+                case "INDEX ATTACH":
+
+                    var alterIndexMatcher = new Regex(string.Format(
+                            @"ALTER.+INDEX (?<TargetIndex>) ATTACH PARTITION {0}.{1}", currentObject.Schema, currentObject.Name),
+                        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+                    var alterIndexMatched = false;
+
+                    foreach (var cachedLine in cachedLines)
+                    {
+                        var match = alterIndexMatcher.Match(cachedLine);
+                        if (!match.Success)
+                            continue;
+
+                        var indexNameWithSchema = GetSchemaName(match.Groups["TargetIndex"].Value);
+                        alterIndexMatched = true;
+
+                        schemaToUse = GetSchemaName(indexNameWithSchema, out nameToUse);
+                        if (SkipSchema(schemaToUse))
+                        {
+                            skipExportCachedLines = true;
+                        }
+
+                        break;
+                    }
+
+                    if (!alterIndexMatched)
+                    {
+                        OnWarningEvent("Did not find a valid ALTER INDEX line in the cached lines for index: " + currentObject.Name);
+                        unhandledScriptingCommands = true;
+                    }
+
+                    break;
+
                 case "SCHEMA":
                     nameToUse = "_Schema_" + currentObject.Name;
                     schemaToUse = string.Empty;
