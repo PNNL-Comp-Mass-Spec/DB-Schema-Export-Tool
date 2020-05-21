@@ -1954,7 +1954,7 @@ namespace DB_Schema_Export_Tool
                             previousTargetScriptFile,
                             ref unhandledScriptingCommands);
 
-                        cachedLines.Clear();
+                        cachedLines = new List<string>();
                         break;
                     }
 
