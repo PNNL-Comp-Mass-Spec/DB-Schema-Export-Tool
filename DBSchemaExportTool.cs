@@ -39,6 +39,8 @@ namespace DB_Schema_Export_Tool
 
         private readonly SchemaExportOptions mOptions;
 
+        private readonly Regex mVersionExtractor;
+
         #endregion
 
         #region "Properties"
@@ -73,6 +75,8 @@ namespace DB_Schema_Export_Tool
             mOptions = options;
 
             mDateMatcher = new Regex(@"'\d+/\d+/\d+ \d+:\d+:\d+ [AP]M'", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+            mVersionExtractor = new Regex(@"version (?<Major>\d+)\.(?<Minor>\d+)");
 
             if (mOptions.PostgreSQL)
             {
@@ -264,6 +268,7 @@ namespace DB_Schema_Export_Tool
         /// In DBDefinition files, the database size values are ignored
         /// In T_Process_Step_Control_Data files, in the Insert Into lines, any date values or text after a date value is ignored
         /// In T_Signatures_Data files, in the Insert Into lines, any date values are ignored
+        /// In PostgreSQL database dump files, the database version and pg_dump versions are ignored if they are a minor version difference
         /// </remarks>
         private bool FilesDiffer(FileInfo baseFile, FileInfo comparisonFile, out DifferenceReasonType differenceReason)
         {
@@ -389,6 +394,13 @@ namespace DB_Schema_Export_Tool
                                 linesMatch = StringMatch(dataLine, comparisonLine);
                             }
 
+                        }
+
+                        if (dataLine.StartsWith("-- Dumped from database version") && comparisonLine.StartsWith("-- Dumped from") ||
+                            dataLine.StartsWith("-- Dumped by pg_dump version") && comparisonLine.StartsWith("-- Dumped by"))
+                        {
+                            if (MajorVersionsMatch(dataLine, comparisonLine))
+                                continue;
                         }
 
                         if (!linesMatch)
@@ -888,6 +900,15 @@ namespace DB_Schema_Export_Tool
             }
 
             return tablesForDataExport;
+        }
+
+        private bool MajorVersionsMatch(string line1, string line2)
+        {
+            var match1 = mVersionExtractor.Match(line1);
+            var match2 = mVersionExtractor.Match(line2);
+
+            return match1.Success && match2.Success &&
+                   match1.Groups["Major"].Value.Equals(match2.Groups["Major"].Value);
         }
 
         protected new void OnDebugEvent(string message)
