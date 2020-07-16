@@ -49,9 +49,9 @@ namespace DB_Schema_Export_Tool
         public DateTime MinimumDate { get; private set; }
 
         /// <summary>
-        /// True if DateColumnName is defined; otherwise false
+        /// True if DateColumnName is defined and MinimumDate is greater than DateTime.MinValue; otherwise false
         /// </summary>
-        public bool FilterByDate => !string.IsNullOrWhiteSpace(DateColumnName);
+        public bool FilterByDate => !string.IsNullOrWhiteSpace(DateColumnName) && MinimumDate > DateTime.MinValue;
 
         /// <summary>
         /// Constructor
