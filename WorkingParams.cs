@@ -64,7 +64,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="scriptFileName"></param>
         public void AddDataLoadScriptFile(string scriptFileName)
         {
-            DataLoadScriptFiles.Add(scriptFileName);
+            DataLoadScriptFiles.Add(scriptFileName.Replace('\\', '/'));
         }
 
         /// <summary>
