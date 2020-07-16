@@ -887,12 +887,17 @@ namespace DB_Schema_Export_Tool
 
         private FileInfo FindPgDumpExecutable()
         {
-            return SystemInfo.IsLinux ? FindPgExecutableLinux("pg_dump") : FindPgExecutableWindows("pg_dump.exe");
+            return FindPgExecutable("pg_dump", "pg_dump.exe");
         }
 
         private FileInfo FindPgDumpAllExecutable()
         {
-            return SystemInfo.IsLinux ? FindPgExecutableLinux("pg_dumpall") : FindPgExecutableWindows("pg_dumpall.exe");
+            return FindPgExecutable("pg_dumpall", "pg_dumpall.exe");
+        }
+
+        private FileInfo FindPgExecutable(string executableNameLinux, string executableNameWindows)
+        {
+            return SystemInfo.IsLinux ? FindPgExecutableLinux(executableNameLinux) : FindPgExecutableWindows(executableNameWindows);
         }
 
         private FileInfo FindPgExecutableLinux(string exeName)
