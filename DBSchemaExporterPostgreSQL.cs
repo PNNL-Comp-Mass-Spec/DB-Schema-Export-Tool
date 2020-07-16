@@ -395,6 +395,12 @@ namespace DB_Schema_Export_Tool
                     tablesToExportData = new Dictionary<TableDataExportInfo, long>();
                     foreach (var item in tablesForDataExport)
                     {
+                        if (SkipTableForDataExport(item))
+                        {
+                            ShowTrace("Skipping data export from table " + item.SourceTableName);
+                            continue;
+                        }
+
                         tablesToExportData.Add(item, 0);
                     }
 
@@ -402,7 +408,7 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError,
+                SetLocalError(DBSchemaExportErrorCodes.GeneralError,
                               "Error auto selecting table names for data export from database" + databaseName, ex);
                 databaseNotFound = false;
                 return false;
@@ -515,6 +521,7 @@ namespace DB_Schema_Export_Tool
 
             return false;
         }
+
         /// <summary>
         /// Export data from the specified table (if it exists)
         /// </summary>
@@ -530,6 +537,7 @@ namespace DB_Schema_Export_Tool
             long maxRowsToExport,
             WorkingParams workingParams)
         {
+
             try
             {
                 if (!mCachedDatabaseTableInfo.ContainsKey(databaseName))
@@ -999,8 +1007,8 @@ namespace DB_Schema_Export_Tool
         /// Retrieve a list of tables in the given database
         /// </summary>
         /// <param name="databaseName">Database to query</param>
-        /// <param name="includeTableRowCounts">When true, then determines the row count in each table</param>
-        /// <param name="includeSystemObjects">When true, then also returns system var tables</param>
+        /// <param name="includeTableRowCounts">When true, determines the row count in each table</param>
+        /// <param name="includeSystemObjects">When true, also returns system var tables</param>
         /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
         public override Dictionary<TableDataExportInfo, long> GetDatabaseTables(
             string databaseName,
@@ -1060,8 +1068,8 @@ namespace DB_Schema_Export_Tool
         /// Lookup the tables in the specified database, optionally also determining table row counts
         /// </summary>
         /// <param name="databaseName">Database to query</param>
-        /// <param name="includeTableRowCounts">When true, then determines the row count in each table</param>
-        /// <param name="includeSystemObjects">When true, then also returns system var tables</param>
+        /// <param name="includeTableRowCounts">When true, determines the row count in each table</param>
+        /// <param name="includeSystemObjects">When true, also returns system var tables</param>
         /// <param name="clearSchemaOutputDirectories">When true, remove all items in dictionary SchemaOutputDirectories</param>
         /// <param name="databaseNotFound">Output: true if the database does not exist on the server (or is inaccessible)</param>
         /// <returns>
@@ -1297,6 +1305,10 @@ namespace DB_Schema_Export_Tool
             return databaseNames;
         }
 
+        /// <summary>
+        /// Get the list of databases from the current server
+        /// </summary>
+        /// <returns></returns>
         private IEnumerable<string> GetServerDatabasesWork()
         {
             var databaseNames = new List<string>();
@@ -1401,12 +1413,20 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        /// <summary>
+        /// Look for a .pgpass file (if Linux) or a pgpass.conf file (if Windows)
+        /// If a file is found, parse it to look for the given user and database on the server defined by mOptions.ServerName
+        /// </summary>
+        /// <param name="pgUser"></param>
+        /// <param name="currentDatabase"></param>
+        /// <param name="definedInPgPassFile"></param>
+        /// <returns>An empty string if the password file is in the standard location; otherwise, the password (if found)</returns>
+        /// <remarks>This method will return an empty string if a match is found to an entry in a pgpass file in the standard location for this OS</remarks>
         private string LookupUserPasswordFromDisk(string pgUser, string currentDatabase, out bool definedInPgPassFile)
         {
             try
             {
                 // Keys in this dictionary are file paths, values are true if this is the standard location for a pgpass file
-                // This method will return an empty string if a match is found to an entry in a pgpass file in the standard location for this OS
                 var candidateFilePaths = new Dictionary<string, bool>();
                 string passwordFileName;
 
@@ -1432,6 +1452,9 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var passwordFileExists = false;
+
+                // First look for a matching server, database, and username using a case-sensitive match
+                // If no match, try again with case-insensitive matching
 
                 for (var iteration = 0; iteration < 2; iteration++)
                 {
@@ -1479,6 +1502,17 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        /// <summary>
+        /// Parse the given pgpass file to look for the given user and database on the server defined by mOptions.ServerName
+        /// </summary>
+        /// <param name="passwordFile">Password file info</param>
+        /// <param name="isStandardLocation">True if the password file is in the standard location for this computer</param>
+        /// <param name="pgUser"></param>
+        /// <param name="currentDatabase"></param>
+        /// <param name="caseSensitive"></param>
+        /// <param name="definedInPgPassFile"></param>
+        /// <returns>An empty string if the password file is in the standard location; otherwise, the password (if found)</returns>
+        /// <remarks>Will update mOptions.ServerName and/or mOptions.DBUser if there is a case mismatch</remarks>
         private string LookupUserPasswordFromDisk(
             FileSystemInfo passwordFile,
             bool isStandardLocation,

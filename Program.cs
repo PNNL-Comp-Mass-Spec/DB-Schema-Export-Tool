@@ -95,7 +95,6 @@ namespace DB_Schema_Export_Tool
                 }
 
                 options.OutputSetOptions();
-
             }
             catch (Exception e)
             {

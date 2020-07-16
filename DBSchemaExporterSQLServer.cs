@@ -1109,7 +1109,8 @@ namespace DB_Schema_Export_Tool
                     }
                     catch (Exception ex)
                     {
-                        SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error connecting to database " + databaseName, ex);
+                        SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError,
+                                      "Error connecting to database " + databaseName, ex);
                         return false;
                     }
                 }
@@ -1224,6 +1225,13 @@ namespace DB_Schema_Export_Tool
                 dataExportParams.TargetTableNameWithSchema = GetTargetTableName(
                     dataExportParams, tableInfo,
                     quoteWithSquareBrackets, false);
+
+                if (string.IsNullOrWhiteSpace(dataExportParams.TargetTableNameWithSchema))
+                {
+                    // Skip this table
+                    OnStatusEvent(string.Format("Could not determine the target table name for table {0} in database {1}", dataExportParams.SourceTableNameWithSchema, databaseName));
+                    return false;
+                }
 
                 // Get the table name, with schema, in the form schema.table_name
                 // The schema and table name will always be quoted
@@ -1471,8 +1479,8 @@ namespace DB_Schema_Export_Tool
             {
                 // ReSharper disable once StringLiteralTypo
                 var copyCommand = string.Format("COPY {0} ({1}) from stdin;",
-                                                dataExportParams.TargetTableNameWithSchema,
-                                                dataExportParams.HeaderRowValues);
+                    dataExportParams.TargetTableNameWithSchema, dataExportParams.HeaderRowValues);
+
                 headerRows.Add(copyCommand);
                 dataExportParams.ColSepChar = '\t';
                 insertIntoLine = string.Empty;
@@ -1919,8 +1927,8 @@ namespace DB_Schema_Export_Tool
         /// Retrieve a list of tables in the given database
         /// </summary>
         /// <param name="databaseName">Database to query</param>
-        /// <param name="includeTableRowCounts">When true, then determines the row count in each table</param>
-        /// <param name="includeSystemObjects">When true, then also returns system var tables</param>
+        /// <param name="includeTableRowCounts">When true, determines the row count in each table</param>
+        /// <param name="includeSystemObjects">When true, also returns system var tables</param>
         /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
         public override Dictionary<TableDataExportInfo, long> GetDatabaseTables(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
         {
@@ -2106,8 +2114,8 @@ namespace DB_Schema_Export_Tool
         /// Lookup the table names in the specified database, optionally also determining table row counts
         /// </summary>
         /// <param name="databaseName">Database to query</param>
-        /// <param name="includeTableRowCounts">When true, then determines the row count in each table</param>
-        /// <param name="includeSystemObjects">When true, then also returns system var tables</param>
+        /// <param name="includeTableRowCounts">When true, determines the row count in each table</param>
+        /// <param name="includeSystemObjects">When true, also returns system var tables</param>
         /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
         public Dictionary<TableDataExportInfo, long> GetSqlServerDatabaseTables(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
         {

@@ -9,10 +9,11 @@ namespace DB_Schema_Export_Tool
         /// If true, count the number of objects to script, but don't actually script them
         /// </summary>
         public bool CountObjectsOnly { get; set; }
-
+        
         /// <summary>
-        /// List of script file names for loading data into a PostgreSQL database
+        /// List of script file names (or relative paths) for loading data into a PostgreSQL database
         /// </summary>
+        /// <remarks>We use Linux-style path separators when storing relative paths</remarks>
         public List<string> DataLoadScriptFiles { get; }
 
         /// <summary>

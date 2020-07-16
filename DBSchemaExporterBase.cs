@@ -853,8 +853,8 @@ namespace DB_Schema_Export_Tool
         /// Retrieve a list of tables in the given database
         /// </summary>
         /// <param name="databaseName">Database to query</param>
-        /// <param name="includeTableRowCounts">When true, then determines the row count in each table</param>
-        /// <param name="includeSystemObjects">When true, then also returns system var tables</param>
+        /// <param name="includeTableRowCounts">When true, determines the row count in each table</param>
+        /// <param name="includeSystemObjects">When true, also returns system var tables</param>
         /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
         public abstract Dictionary<TableDataExportInfo, long> GetDatabaseTables(string databaseName, bool includeTableRowCounts, bool includeSystemObjects);
 
@@ -1021,10 +1021,10 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get the target table name to use when exporting data
         /// </summary>
-        /// <param name="sourceTableNameWithSchema">Source table: schema.table_name</param>
+        /// <param name="dataExportParams">Source table: schema.table_name</param>
         /// <param name="tableInfo">Table info object</param>
         /// <param name="quoteWithSquareBrackets">When true, quote with square brackets; otherwise, quote with double quotes</param>
-        /// <returns></returns>
+        /// <returns>Quoted target table name, with schema</returns>
         protected string GetQuotedTargetTableName(
             DataExportWorkingParams dataExportParams,
             TableDataExportInfo tableInfo,
@@ -1066,13 +1066,11 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get the target table name to use when exporting data
         /// </summary>
-        /// <param name="sourceTableNameWithSchema">Source table: schema.table_name</param>
+        /// <param name="dataExportParams">Data export parameters, including source and target table info</param>
         /// <param name="tableInfo">Table info object</param>
         /// <param name="quoteWithSquareBrackets">When true, quote with square brackets; otherwise, quote with double quotes</param>
         /// <param name="alwaysQuoteNames">When true, always returned quoted schema.table_name</param>
-        /// <param name="targetTableSchema">Target table schema, without quotes or square brackets (even if alwaysQuoteNames is true, this is unquoted)</param>
-        /// <param name="targetTableName">Target table name, without quotes or square brackets (even if alwaysQuoteNames is true, this is unquoted)</param>
-        /// <returns></returns>
+        /// <returns>Target table name, with schema</returns>
         protected string GetTargetTableName(
             DataExportWorkingParams dataExportParams,
             TableDataExportInfo tableInfo,
