@@ -549,9 +549,26 @@ namespace DB_Schema_Export_Tool
         /// Create a bash script for loading data into a PostgreSQL database
         /// </summary>
         /// <param name="workingParams"></param>
-        private void CreateDataLoadScriptFile(WorkingParams workingParams)
+        /// <param name="tablesToExportData"></param>
+        private void CreateDataLoadScriptFile(WorkingParams workingParams, IEnumerable<TableDataExportInfo> tablesToExportData)
         {
-            var scriptFilePath = Path.Combine(workingParams.OutputDirectoryPathCurrentDB, "LoadData.sh");
+            var dateFilterApplied = tablesToExportData.Any(item => item.FilterByDate);
+
+            string shellScriptFile;
+            if (mOptions.TableNameFilterSet.Count == 1)
+            {
+                shellScriptFile = string.Format("LoadDataTable_{0}.sh", CleanNameForOS(mOptions.TableNameFilterSet.First()));
+            }
+            else if (dateFilterApplied)
+            {
+                shellScriptFile = "LoadDataAppend.sh";
+            }
+            else
+            {
+                shellScriptFile = "LoadData.sh";
+            }
+
+            var scriptFilePath = Path.Combine(workingParams.OutputDirectoryPathCurrentDB, shellScriptFile);
 
             Console.WriteLine();
             OnStatusEvent("Creating file " + scriptFilePath);
@@ -568,8 +585,24 @@ namespace DB_Schema_Export_Tool
                 writer.WriteLine();
                 writer.WriteLine("mkdir -p Done");
 
+                var subdirectories = new SortedSet<string>();
+
                 foreach (var scriptFileName in workingParams.DataLoadScriptFiles)
                 {
+
+                    var lastSlashIndex = scriptFileName.LastIndexOf('/');
+                    if (lastSlashIndex > 0)
+                    {
+                        var parentDirectory = scriptFileName.Substring(0, lastSlashIndex);
+                        if (!subdirectories.Contains(parentDirectory))
+                        {
+                            writer.WriteLine();
+                            writer.WriteLine("mkdir -p Done/" + parentDirectory);
+
+                            subdirectories.Add(parentDirectory);
+                        }
+                    }
+
                     writer.WriteLine();
                     writer.WriteLine("echo Processing " + scriptFileName);
                     writer.WriteLine("psql -d dms -h localhost -U {0} -f {1}", currentUser, scriptFileName);
@@ -647,7 +680,7 @@ namespace DB_Schema_Export_Tool
 
                 if (mOptions.ScriptPgLoadCommands)
                 {
-                    CreateDataLoadScriptFile(workingParams);
+                    CreateDataLoadScriptFile(workingParams, tablesToExportData.Keys);
                 }
 
                 return true;
