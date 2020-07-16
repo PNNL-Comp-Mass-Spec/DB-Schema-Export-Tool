@@ -639,8 +639,16 @@ namespace DB_Schema_Export_Tool
 
                 var dataExportParams = new DataExportWorkingParams(false, "null")
                 {
-                    TargetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo, out var targetTableSchema, out var targetTableName)
+                    SourceTableNameWithSchema = sourceTableNameWithSchema,
                 };
+
+                dataExportParams.TargetTableNameWithSchema = GetTargetTableName(dataExportParams, tableInfo);
+                if (string.IsNullOrWhiteSpace(dataExportParams.TargetTableNameWithSchema))
+                {
+                    // Skip this table
+                    OnStatusEvent(string.Format("Could not determine the target table name for table {0} in database {1}", dataExportParams.SourceTableNameWithSchema, databaseName));
+                    return false;
+                }
 
                 var headerRows = new List<string>();
 
@@ -680,7 +688,7 @@ namespace DB_Schema_Export_Tool
 
                 const bool quoteWithSquareBrackets = false;
 
-                ConvertDataTableColumnInfo(sourceTableNameWithSchema, quoteWithSquareBrackets, dataExportParams);
+                ConvertDataTableColumnInfo(dataExportParams.SourceTableNameWithSchema, quoteWithSquareBrackets, dataExportParams);
 
                 var insertIntoLine = string.Empty;
 
@@ -707,25 +715,20 @@ namespace DB_Schema_Export_Tool
                     dataExportParams.ColSepChar = '\t';
                 }
 
-                var outFilePath = GetFileNameForTableDataExport(tableInfo, targetTableSchema, targetTableName, dataExportParams, workingParams);
-                if (string.IsNullOrWhiteSpace(outFilePath))
-                {
-                    // Skip this table
-                    OnStatusEvent(string.Format(
-                        "GetFileNameForTableDataExport returned an empty output file name for table {0} in database {1}",
-                        sourceTableNameWithSchema, databaseName));
+                var tableDataOutputFile = GetTableDataOutputFile(tableInfo, dataExportParams, workingParams, out var relativeFilePath);
 
+                if (tableDataOutputFile == null)
+                {
+                    // Skip this table (a warning message should have already been shown)
                     return false;
                 }
 
-                OnDebugEvent("Writing table data to " + outFilePath);
-
                 if (mOptions.ScriptPgLoadCommands)
                 {
-                    workingParams.AddDataLoadScriptFile(Path.GetFileName(outFilePath));
+                    workingParams.AddDataLoadScriptFile(relativeFilePath);
                 }
 
-                using (var writer = new StreamWriter(new FileStream(outFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
+                using (var writer = new StreamWriter(new FileStream(tableDataOutputFile.FullName, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
                 {
                     foreach (var headerRow in headerRows)
                     {
@@ -789,25 +792,27 @@ namespace DB_Schema_Export_Tool
             TableDataExportInfo tableInfo,
             string sourceTableNameWithSchema)
         {
-            var targetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo, out var targetTableSchema, out var targetTableName);
 
             var dataExportParams = new DataExportWorkingParams(false, "null")
             {
-                TargetTableNameWithSchema = targetTableNameWithSchema
+                SourceTableNameWithSchema = sourceTableNameWithSchema,
             };
 
-            var outFilePath = GetFileNameForTableDataExport(tableInfo, targetTableSchema, targetTableName, dataExportParams, workingParams);
-            if (string.IsNullOrWhiteSpace(outFilePath))
+            dataExportParams.TargetTableNameWithSchema = GetTargetTableName(dataExportParams, tableInfo);
+            if (string.IsNullOrWhiteSpace(dataExportParams.TargetTableNameWithSchema))
             {
                 // Skip this table
-                OnStatusEvent(string.Format(
-                    "GetFileNameForTableDataExport returned an empty output file name for table {0} in database {1}",
-                    sourceTableNameWithSchema, databaseName));
-
+                OnStatusEvent(string.Format("Could not determine the target table name for table {0} in database {1}", dataExportParams.SourceTableNameWithSchema, databaseName));
                 return false;
             }
 
-            var tableDataOutputFile = new FileInfo(outFilePath);
+            var tableDataOutputFile = GetTableDataOutputFile(tableInfo, dataExportParams, workingParams, out _);
+
+            if (tableDataOutputFile == null)
+            {
+                // Skip this table (a warning message should have already been shown)
+                return false;
+            }
 
             var existingData = tableDataOutputFile.Exists ? tableDataOutputFile.LastWriteTime : DateTime.MinValue;
 
@@ -815,7 +820,7 @@ namespace DB_Schema_Export_Tool
 
             // pg_dump -h host -p port -U user -W PasswordIfDefined -d database --data-only --table=TableName --format=p --file=OutFilePath
             var cmdArgs = string.Format("{0} -d {1} --data-only --table={2} --format=p --file={3}",
-                                        serverInfoArgs, databaseName, sourceTableNameWithSchema, tableDataOutputFile.FullName);
+                                        serverInfoArgs, databaseName, dataExportParams.SourceTableNameWithSchema, tableDataOutputFile.FullName);
             var maxRuntimeSeconds = 60;
 
             var pgDump = FindPgDumpExecutable();
@@ -1328,18 +1333,13 @@ namespace DB_Schema_Export_Tool
         }
 
         private string GetTargetTableName(
-            string sourceTableNameWithSchema,
-            TableDataExportInfo tableInfo,
-            out string targetTableSchema,
-            out string targetTableName)
+            DataExportWorkingParams dataExportParams,
+            TableDataExportInfo tableInfo)
         {
             const bool quoteWithSquareBrackets = false;
             const bool alwaysQuoteNames = false;
 
-            var targetTableNameWithSchema = GetTargetTableName(sourceTableNameWithSchema, tableInfo,
-                                                               quoteWithSquareBrackets, alwaysQuoteNames,
-                                                               out targetTableSchema, out targetTableName);
-            return targetTableNameWithSchema;
+            return GetTargetTableName(dataExportParams, tableInfo, quoteWithSquareBrackets, alwaysQuoteNames);
         }
 
         /// <summary>

@@ -22,6 +22,11 @@ namespace DB_Schema_Export_Tool
         public char ColSepChar { get; set; }
 
         /// <summary>
+        /// Database name
+        /// </summary>
+        public string DatabaseName { get; set; }
+
+        /// <summary>
         /// Set to true if the footer rows need to be written to the output file
         /// </summary>
         public bool FooterWriteRequired { get; set; }
@@ -47,9 +52,27 @@ namespace DB_Schema_Export_Tool
         public string QuotedTargetTableNameWithSchema { get; set; }
 
         /// <summary>
+        /// Source table name
+        /// </summary>
+        public string SourceTableNameWithSchema { get; set; }
+
+        /// <summary>
         /// Target table schema and name; the name is only quoted if it has non-alphanumeric characters
         /// </summary>
         public string TargetTableNameWithSchema { get; set; }
+
+        /// <summary>
+        /// Target table schema
+        /// </summary>
+        /// <remarks>Will get defined based on TargetTableNameWithSchema</remarks>
+        public string TargetTableSchema { get; set; }
+
+        /// <summary>
+        /// Target table name
+        /// </summary>
+        /// <remarks>Will get defined based on TargetTableNameWithSchema</remarks>
+        public string TargetTableName { get; set; }
+
 
         /// <summary>
         /// SQL to add after the list of values to insert into a table (when PgInsertEnabled is true)
@@ -84,6 +107,8 @@ namespace DB_Schema_Export_Tool
 
             ColSepChar = ',';
 
+            DatabaseName = string.Empty;
+
             HeaderRowValues = new StringBuilder();
 
             IdentityColumnFound = false;
@@ -94,6 +119,14 @@ namespace DB_Schema_Export_Tool
             PgInsertEnabled = pgInsertEnabled;
 
             NullValue = nullValueFlag ?? string.Empty;
+
+            SourceTableNameWithSchema = string.Empty;
+
+            TargetTableNameWithSchema = string.Empty;
+
+            TargetTableSchema = string.Empty;
+
+            TargetTableName = string.Empty;
         }
 
     }

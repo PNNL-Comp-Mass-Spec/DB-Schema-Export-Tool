@@ -1191,11 +1191,11 @@ namespace DB_Schema_Export_Tool
                     sql += " TOP " + maxRowsToExport;
                 }
 
-                var sourceTableNameWithSchema = string.Format("{0}.{1}",
+                dataExportParams.SourceTableNameWithSchema = string.Format("{0}.{1}",
                     PossiblyQuoteName(databaseTable.Schema),
                     PossiblyQuoteName(databaseTable.Name));
 
-                sql += " * FROM " + sourceTableNameWithSchema;
+                sql += " * FROM " + dataExportParams.SourceTableNameWithSchema;
 
                 if (tableInfo.FilterByDate)
                 {
@@ -1211,7 +1211,7 @@ namespace DB_Schema_Export_Tool
                 if (SkipTableForDataExport(tableInfo))
                 {
                     // Skip this table
-                    OnStatusEvent(string.Format("Skipping data export from table {0} in database {1}", sourceTableNameWithSchema, databaseName));
+                    OnStatusEvent(string.Format("Skipping data export from table {0} in database {1}", dataExportParams.SourceTableNameWithSchema, databaseName));
                     return true;
                 }
 
@@ -1222,14 +1222,12 @@ namespace DB_Schema_Export_Tool
                 // Get the table name, with schema, in the form schema.table_name
                 // The schema and table name will be quoted if necessary
                 dataExportParams.TargetTableNameWithSchema = GetTargetTableName(
-                    sourceTableNameWithSchema, tableInfo,
-                    quoteWithSquareBrackets, false,
-                    out var targetTableSchema,
-                    out var targetTableName);
+                    dataExportParams, tableInfo,
+                    quoteWithSquareBrackets, false);
 
                 // Get the table name, with schema, in the form schema.table_name
                 // The schema and table name will always be quoted
-                dataExportParams.QuotedTargetTableNameWithSchema = GetQuotedTargetTableName(sourceTableNameWithSchema, tableInfo, quoteWithSquareBrackets);
+                dataExportParams.QuotedTargetTableNameWithSchema = GetQuotedTargetTableName(dataExportParams, tableInfo, quoteWithSquareBrackets);
 
                 var headerRows = new List<string>();
 
@@ -1269,25 +1267,20 @@ namespace DB_Schema_Export_Tool
 
                 var insertIntoLine = ExportDBTableDataInit(tableInfo, columnMapInfo, dataExportParams, headerRows, workingParams);
 
-                var outFilePath = GetFileNameForTableDataExport(tableInfo, targetTableSchema, targetTableName, dataExportParams, workingParams);
-                if (string.IsNullOrWhiteSpace(outFilePath))
-                {
-                    // Skip this table
-                    OnStatusEvent(string.Format(
-                        "GetFileNameForTableDataExport returned an empty output file name for table {0} in database {1}",
-                        sourceTableNameWithSchema, databaseName));
+                var tableDataOutputFile = GetTableDataOutputFile(tableInfo, dataExportParams, workingParams, out var relativeFilePath);
 
+                if (tableDataOutputFile == null)
+                {
+                    // Skip this table (a warning message should have already been shown)
                     return false;
                 }
 
-                OnDebugEvent("Writing table data to " + PathUtils.CompactPathString(outFilePath, 120));
-
                 if (mOptions.ScriptPgLoadCommands)
                 {
-                    workingParams.AddDataLoadScriptFile(Path.GetFileName(outFilePath));
+                    workingParams.AddDataLoadScriptFile(relativeFilePath);
                 }
 
-                using (var writer = new StreamWriter(new FileStream(outFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
+                using (var writer = new StreamWriter(new FileStream(tableDataOutputFile.FullName, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
                 {
                     if (mOptions.PgDumpTableData)
                     {
@@ -1326,8 +1319,7 @@ namespace DB_Schema_Export_Tool
                             // Make an educated guess of the sequence name, for example
                             // mc.t_mgr_types_mt_type_id_seq
                             var sequenceName = string.Format("{0}_{1}_seq",
-                                                             dataExportParams.TargetTableNameWithSchema.Replace("\"", ""),
-                                                             primaryKeyColumnName);
+                                dataExportParams.TargetTableNameWithSchema.Replace("\"", ""), primaryKeyColumnName);
 
                             writer.WriteLine("-- Set the sequence's current value to the maximum current ID");
                             writer.WriteLine("SELECT setval('{0}', (SELECT MAX({1}) FROM {2}));",

@@ -990,11 +990,11 @@ namespace DB_Schema_Export_Tool
         /// <param name="quoteWithSquareBrackets">When true, quote with square brackets; otherwise, quote with double quotes</param>
         /// <returns></returns>
         protected string GetQuotedTargetTableName(
-            string sourceTableNameWithSchema,
+            DataExportWorkingParams dataExportParams,
             TableDataExportInfo tableInfo,
             bool quoteWithSquareBrackets)
         {
-            return GetTargetTableName(sourceTableNameWithSchema, tableInfo, quoteWithSquareBrackets, true, out _, out _);
+            return GetTargetTableName(dataExportParams, tableInfo, quoteWithSquareBrackets, true);
         }
 
         protected string GetSchemaName(string objectNameWithSchema)
@@ -1038,44 +1038,43 @@ namespace DB_Schema_Export_Tool
         /// <param name="targetTableName">Target table name, without quotes or square brackets (even if alwaysQuoteNames is true, this is unquoted)</param>
         /// <returns></returns>
         protected string GetTargetTableName(
-            string sourceTableNameWithSchema,
+            DataExportWorkingParams dataExportParams,
             TableDataExportInfo tableInfo,
             bool quoteWithSquareBrackets,
-            bool alwaysQuoteNames,
-            out string targetTableSchema,
-            out string targetTableName)
+            bool alwaysQuoteNames)
         {
 
             if (string.IsNullOrWhiteSpace(tableInfo.TargetTableName))
             {
-                targetTableSchema = GetSchemaName(sourceTableNameWithSchema, out targetTableName);
+                dataExportParams.TargetTableSchema = GetSchemaName(dataExportParams.SourceTableNameWithSchema, out var targetTableName);
+                dataExportParams.TargetTableName = targetTableName;
 
                 if (!string.IsNullOrWhiteSpace(mOptions.DefaultSchemaName))
                 {
                     // Override the schema name
-                    targetTableSchema = mOptions.DefaultSchemaName;
+                    dataExportParams.TargetTableSchema = mOptions.DefaultSchemaName;
                 }
 
                 if (mOptions.TableDataSnakeCase)
                 {
-                    targetTableName = ConvertNameToSnakeCase(targetTableName);
+                    dataExportParams.TargetTableName = ConvertNameToSnakeCase(dataExportParams.TargetTableName);
                 }
 
             }
             else
             {
-                targetTableSchema = tableInfo.TargetSchemaName;
-                targetTableName = tableInfo.TargetTableName;
+                dataExportParams.TargetTableSchema = tableInfo.TargetSchemaName;
+                dataExportParams.TargetTableName = tableInfo.TargetTableName;
             }
 
-            if (IsDefaultOwnerSchema(targetTableSchema))
+            if (IsDefaultOwnerSchema(dataExportParams.TargetTableSchema))
             {
-                return PossiblyQuoteName(targetTableName, quoteWithSquareBrackets, alwaysQuoteNames);
+                return PossiblyQuoteName(dataExportParams.TargetTableName, quoteWithSquareBrackets, alwaysQuoteNames);
             }
 
             return string.Format("{0}.{1}",
-                                 PossiblyQuoteName(targetTableSchema, quoteWithSquareBrackets, alwaysQuoteNames),
-                                 PossiblyQuoteName(targetTableName, quoteWithSquareBrackets, alwaysQuoteNames));
+                                 PossiblyQuoteName(dataExportParams.TargetTableSchema, quoteWithSquareBrackets, alwaysQuoteNames),
+                                 PossiblyQuoteName(dataExportParams.TargetTableName, quoteWithSquareBrackets, alwaysQuoteNames));
 
         }
 
@@ -1241,7 +1240,6 @@ namespace DB_Schema_Export_Tool
                 {
                     var currentDB = string.Copy(item);
 
-                    bool databaseNotFound;
                     if (string.IsNullOrWhiteSpace(currentDB))
                     {
                         // DB name is empty; this shouldn't happen
@@ -1267,7 +1265,7 @@ namespace DB_Schema_Export_Tool
                     {
                         currentDB = string.Copy(currentDbName);
                         OnDebugEvent(tasksToPerform + " from database " + currentDbName);
-                        success = ExportDBObjectsAndTableData(currentDbName, tablesForDataExport, out databaseNotFound, out var workingParams);
+                        success = ExportDBObjectsAndTableData(currentDbName, tablesForDataExport, out var databaseNotFound, out var workingParams);
 
                         if (!warningsByDatabase.ContainsKey(currentDB))
                         {
@@ -1285,7 +1283,6 @@ namespace DB_Schema_Export_Tool
                     else
                     {
                         // Database not actually present on the server; skip it
-                        databaseNotFound = true;
                         success = false;
                     }
 
