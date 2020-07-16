@@ -815,9 +815,12 @@ namespace DB_Schema_Export_Tool
                         delimitedRowValues.Append("[Sql_Variant]");
                         break;
 
-                    default:
+                    case DataColumnTypeConstants.SkipColumn:
                         // Ignore this column
                         break;
+
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
 
             }
