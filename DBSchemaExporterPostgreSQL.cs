@@ -1422,10 +1422,10 @@ namespace DB_Schema_Export_Tool
                 else
                 {
                     passwordFileName = "pgpass.conf";
-                    var appdataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                    var appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
                     // Standard location: %APPDATA%\postgresql\pgpass.conf
-                    candidateFilePaths.Add(Path.Combine(appdataDirectory, "postgresql", passwordFileName), true);
+                    candidateFilePaths.Add(Path.Combine(appDataDirectory, "postgresql", passwordFileName), true);
 
                     // pgpass.conf in the current directory
                     candidateFilePaths.Add(passwordFileName, false);
