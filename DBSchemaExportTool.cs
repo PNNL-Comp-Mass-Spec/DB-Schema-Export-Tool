@@ -216,7 +216,9 @@ namespace DB_Schema_Export_Tool
 
                 if (!string.IsNullOrWhiteSpace(mOptions.TableDataDateFilterFile))
                 {
-                    LoadDateFiltersForTableData(mOptions.TableDataDateFilterFile, tablesForDataExport);
+                    var dateFilterSuccess = LoadDateFiltersForTableData(mOptions.TableDataDateFilterFile, tablesForDataExport);
+                    if (!dateFilterSuccess)
+                        return false;
                 }
 
                 var success = ScriptServerAndDBObjectsWork(databaseList, tablesForDataExport);
@@ -678,14 +680,14 @@ namespace DB_Schema_Export_Tool
 
         }
 
-        private void LoadDateFiltersForTableData(string dateFilterFilePath, ICollection<TableDataExportInfo> tablesForDataExport)
+        private bool LoadDateFiltersForTableData(string dateFilterFilePath, ICollection<TableDataExportInfo> tablesForDataExport)
         {
 
             try
             {
                 if (string.IsNullOrWhiteSpace(dateFilterFilePath))
                 {
-                    return;
+                    return true;
                 }
 
                 var dataFile = new FileInfo(dateFilterFilePath);
@@ -694,7 +696,7 @@ namespace DB_Schema_Export_Tool
                     Console.WriteLine();
                     OnStatusEvent("Table Data Date Filter File not found");
                     OnWarningEvent("File not found: " + dataFile.FullName);
-                    return;
+                    return false;
                 }
 
                 ShowTrace(string.Format("Reading date filter information from {0}", dataFile.FullName));
@@ -760,10 +762,13 @@ namespace DB_Schema_Export_Tool
                     "Loaded date filters for {0} {1} from {2}",
                     tableCountWithFilters, tableText, dataFile.Name));
 
+                return true;
+
             }
             catch (Exception ex)
             {
                 OnErrorEvent("Error in LoadDateFiltersForTableData", ex);
+                return false;
             }
         }
 
