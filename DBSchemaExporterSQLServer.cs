@@ -1419,15 +1419,14 @@ namespace DB_Schema_Export_Tool
                 insertIntoLine = string.Empty;
 
                 if (primaryKeyColumnList.Length <= 0)
-                    return insertIntoLine;
+                    return string.Empty;
 
                 if (truncateTableEnabled)
                 {
-                    return insertIntoLine;
+                    return string.Empty;
                 }
 
-                dataExportParams.PgInsertFooters.Add(string.Format("ON CONFLICT ({0})", primaryKeyColumnList));
-                dataExportParams.PgInsertFooters.Add("DO UPDATE SET");
+                var setStatements = new List<string>();
 
                 for (var columnIndex = 0; columnIndex < dataExportParams.ColumnNamesAndTypes.Count; columnIndex++)
                 {
@@ -1449,9 +1448,24 @@ namespace DB_Schema_Export_Tool
 
                     var optionalComma = columnIndex < dataExportParams.ColumnNamesAndTypes.Count - 1 ? "," : string.Empty;
 
-                    dataExportParams.PgInsertFooters.Add(string.Format("  {0} = EXCLUDED.{0}{1}", targetColumnName, optionalComma));
+                    if (setStatements.Count == 0)
+                    {
+                        setStatements.Add(string.Format("ON CONFLICT ({0})", primaryKeyColumnList));
+                        setStatements.Add("DO UPDATE SET");
+                    }
+
+                    setStatements.Add(string.Format("  {0} = EXCLUDED.{0}{1}", targetColumnName, optionalComma));
                 }
 
+                // Assure that the last line in setStatements does not end with a comma
+                // This would be the case if the final column for the table is a <skip> column or an identity column
+                var mostRecentLine = setStatements.LastOrDefault() ?? string.Empty;
+                if (mostRecentLine.EndsWith(","))
+                {
+                    setStatements[setStatements.Count - 1] = mostRecentLine.Substring(0, mostRecentLine.Length - 1);
+                }
+
+                dataExportParams.PgInsertFooters.AddRange(setStatements);
                 dataExportParams.PgInsertFooters.Add(";");
             }
             else if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData)
