@@ -670,6 +670,12 @@ namespace DB_Schema_Export_Tool
                 header += COMMENT_END_TEXT;
                 headerRows.Add(header);
 
+                if (tableInfo.FilterByDate)
+                {
+                    headerRows.Add(string.Format("{0}Date filter: {1} >= '{2:yyyy-MM-dd}'{3}",
+                        COMMENT_START_TEXT, tableInfo.DateColumnName, tableInfo.MinimumDate, COMMENT_END_TEXT));
+                }
+
                 // See if any of the columns in the table is an identity column
 
                 var columnSchema = reader.GetColumnSchema();
