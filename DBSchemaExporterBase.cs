@@ -826,31 +826,24 @@ namespace DB_Schema_Export_Tool
         /// Generate the file name to exporting table data
         /// </summary>
         /// <param name="tableInfo"></param>
-        /// <param name="targetTableSchema"></param>
-        /// <param name="targetTableName"></param>
         /// <param name="dataExportParams"></param>
-        /// <param name="workingParams"></param>
-        /// <returns></returns>
+        /// <returns>Relative path to the output file</returns>
         protected string GetFileNameForTableDataExport(
             TableDataExportInfo tableInfo,
-            string targetTableSchema,
-            string targetTableName,
-            DataExportWorkingParams dataExportParams,
-            WorkingParams workingParams)
+            DataExportWorkingParams dataExportParams)
         {
-            var targetTableNameWithSchema = dataExportParams.TargetTableNameWithSchema;
 
             // Make sure output file name doesn't contain any invalid characters
             string cleanName;
-            var defaultOwnerSchema = IsDefaultOwnerSchema(targetTableSchema);
+            var defaultOwnerSchema = IsDefaultOwnerSchema(dataExportParams.TargetTableSchema);
 
             if (defaultOwnerSchema)
             {
-                cleanName = CleanNameForOS(targetTableName + "_Data");
+                cleanName = CleanNameForOS(dataExportParams.TargetTableName + "_Data");
             }
             else
             {
-                cleanName = CleanNameForOS(targetTableNameWithSchema + "_Data");
+                cleanName = CleanNameForOS(dataExportParams.TargetTableNameWithSchema + "_Data");
             }
 
             var suffix = tableInfo.FilterByDate ?
@@ -859,11 +852,9 @@ namespace DB_Schema_Export_Tool
 
             var fileName = cleanName + suffix + ".sql";
 
-            var fileNamePath = defaultOwnerSchema ? fileName : Path.Combine(targetTableSchema, fileName);
+            var fileNamePath = defaultOwnerSchema ? fileName : Path.Combine(dataExportParams.TargetTableSchema, fileName);
 
-            var outFilePath = Path.Combine(workingParams.OutputDirectory.FullName, fileNamePath);
-
-            return outFilePath;
+            return fileNamePath;
         }
 
         /// <summary>
@@ -907,6 +898,43 @@ namespace DB_Schema_Export_Tool
                 SetLocalError(DBSchemaExportErrorCodes.GeneralError, "Error validating or creating directory " + outputDirectoryPath, ex);
                 return null;
             }
+        }
+
+        protected FileInfo GetTableDataOutputFile(
+            TableDataExportInfo tableInfo,
+            DataExportWorkingParams dataExportParams,
+            WorkingParams workingParams,
+            out string relativeFilePath)
+        {
+            relativeFilePath = GetFileNameForTableDataExport(tableInfo, dataExportParams);
+            var outFilePath = Path.Combine(workingParams.OutputDirectory.FullName, relativeFilePath);
+
+            if (string.IsNullOrWhiteSpace(outFilePath))
+            {
+                // Skip this table
+                OnStatusEvent(string.Format(
+                    "GetFileNameForTableDataExport returned an empty output file name for table {0} in database {1}",
+                    dataExportParams.SourceTableNameWithSchema, dataExportParams.DatabaseName));
+
+                return null;
+            }
+
+            var tableDataOutputFile = new FileInfo(outFilePath);
+
+            if (tableDataOutputFile.Directory == null)
+            {
+                OnWarningEvent("Cannot determine the parent directory of " + outFilePath);
+                return null;
+            }
+
+            if (!mOptions.PreviewExport && !tableDataOutputFile.Directory.Exists)
+            {
+                tableDataOutputFile.Directory.Create();
+            }
+
+            OnDebugEvent("Writing table data to " + PathUtils.CompactPathString(tableDataOutputFile.FullName, 120));
+
+            return tableDataOutputFile;
         }
 
         /// <summary>
