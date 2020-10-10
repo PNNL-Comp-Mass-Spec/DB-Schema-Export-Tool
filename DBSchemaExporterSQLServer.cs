@@ -844,31 +844,31 @@ namespace DB_Schema_Export_Tool
             //            sql &= " AND category = 0"
             //        End If
             //        sql &= " ORDER BY Name"
-            //        dsObjects = currentDatabase.ExecuteWithResults(sql)
+            //        sysObjects = currentDatabase.ExecuteWithResults(sql)
             //        If workingParams.CountObjectsOnly Then
-            //            workingParams.ProcessCount += dsObjects.Tables(0).Rows.Count
+            //            workingParams.ProcessCount += sysObjects.Tables(0).Rows.Count
             //        Else
-            //            For Each currentRow In dsObjects.Tables(0).Rows
+            //            For Each currentRow In sysObjects.Tables(0).Rows
             //                strObjectName = currentRow.Item(0).ToString
             //                mSubtaskProgressStepDescription = strObjectName
             //                UpdateSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected)
             //                Select Case intObjectIterator
             //                    Case 0
             //                        ' Views
-            //                        smoObjectArray = currentDatabase.Views(strObjectName)
+            //                        smoObjects = currentDatabase.Views(strObjectName)
             //                    Case 1
             //                        ' Stored procedures
-            //                        smoObjectArray = currentDatabase.StoredProcedures(strObjectName)
+            //                        smoObjects = currentDatabase.StoredProcedures(strObjectName)
             //                    Case 2
             //                        ' User defined functions
-            //                        smoObjectArray = currentDatabase.UserDefinedFunctions(strObjectName)
+            //                        smoObjects = currentDatabase.UserDefinedFunctions(strObjectName)
             //                    Case Else
             //                        ' Unknown value for intObjectIterator; skip it
-            //                        smoObjectArray = Nothing
+            //                        smoObjects = Nothing
             //                End Select
-            //                If Not smoObjectArray Is Nothing Then
+            //                If Not smoObjects Is Nothing Then
             //                    WriteTextToFile(workingParams.OutputDirectoryPathCurrentDB, strObjectName,
-            //                                      CleanSqlScript(scripter.Script(smoObjectArrayArray), schemaExportOptions)))
+            //                                      CleanSqlScript(scripter.Script(smoObjects), schemaExportOptions)))
             //                End If
             //                workingParams.ProcessCount += 1
             //                CheckPauseStatus()
@@ -883,7 +883,7 @@ namespace DB_Schema_Export_Tool
 
             // Option 4) Query the INFORMATION_SCHEMA views
 
-            // Initialize the scripter and smoObjectArrayArray()
+            // Initialize the scripter and smoObjects
             var scripter = new Scripter(mSqlServer)
             {
                 Options = scriptOptions
@@ -993,31 +993,31 @@ namespace DB_Schema_Export_Tool
 
                         OnProgressUpdate(string.Format("Scripting {0}.{1}.{2}", currentDatabase.Name, objectSchema, objectName), percentComplete);
 
-                        SqlSmoObject smoObjectArray;
+                        SqlSmoObject smoObjects;
                         switch (objectIterator)
                         {
                             case 0:
                                 // Views
-                                smoObjectArray = currentDatabase.Views[objectName, objectSchema];
+                                smoObjects = currentDatabase.Views[objectName, objectSchema];
                                 break;
                             case 1:
                                 // Stored procedures
-                                smoObjectArray = currentDatabase.StoredProcedures[objectName, objectSchema];
+                                smoObjects = currentDatabase.StoredProcedures[objectName, objectSchema];
                                 break;
                             case 2:
                                 // User defined functions
-                                smoObjectArray = currentDatabase.UserDefinedFunctions[objectName, objectSchema];
+                                smoObjects = currentDatabase.UserDefinedFunctions[objectName, objectSchema];
                                 break;
                             case 3:
                                 // Synonyms
-                                smoObjectArray = currentDatabase.Synonyms[objectName, objectSchema];
+                                smoObjects = currentDatabase.Synonyms[objectName, objectSchema];
                                 break;
                             default:
-                                smoObjectArray = null;
+                                smoObjects = null;
                                 break;
                         }
 
-                        if (smoObjectArray != null)
+                        if (smoObjects != null)
                         {
                             if (workingParams.TablesToSkip.Contains(objectName))
                             {
@@ -1026,12 +1026,12 @@ namespace DB_Schema_Export_Tool
                             }
                             else
                             {
-                                var smoObjectArrayArray = new[]
+                                var smoObjectArray = new[]
                                 {
-                                    smoObjectArray
+                                    smoObjects
                                 };
 
-                                var scriptInfo = CleanSqlScript(StringCollectionToList(scripter.Script(smoObjectArrayArray)));
+                                var scriptInfo = CleanSqlScript(StringCollectionToList(scripter.Script(smoObjectArray)));
                                 WriteTextToFile(workingParams.OutputDirectory, objectName, scriptInfo);
                             }
                         }
@@ -1043,7 +1043,6 @@ namespace DB_Schema_Export_Tool
                             OnWarningEvent("Aborted processing");
                             return true;
                         }
-
                     }
 
                     if (mOptions.ShowStats)
