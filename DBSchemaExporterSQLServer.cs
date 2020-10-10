@@ -685,16 +685,19 @@ namespace DB_Schema_Export_Tool
 
         private bool ExportDBTables(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
-            // ReSharper disable once StringLiteralTypo
-            const string SYNC_OBJ_TABLE_PREFIX = "syncobj_0x";
-
             if (workingParams.CountObjectsOnly)
             {
                 ShowTrace("Counting Tables");
 
-                // Note: currentDatabase.Tables includes system tables, so workingParams.ProcessCount will be
-                //       an overestimate if mOptions.ScriptingOptions.IncludeSystemObjects = False
-                workingParams.ProcessCount += currentDatabase.Tables.Count;
+                var tableCountPassingFilters = 0;
+                foreach (Table databaseTable in currentDatabase.Tables)
+                {
+                    var includeTable = TablePassesFilters(workingParams, databaseTable, false);
+                    if (includeTable)
+                        tableCountPassingFilters++;
+                }
+
+                workingParams.ProcessCount += tableCountPassingFilters;
                 return true;
             }
 
@@ -708,67 +711,27 @@ namespace DB_Schema_Export_Tool
                 Options = scriptOptions
             };
 
+            var tableExportCount = 0;
+
             foreach (Table databaseTable in currentDatabase.Tables)
             {
-                var includeTable = true;
-                if (!mOptions.ScriptingOptions.IncludeSystemObjects)
-                {
-                    if (databaseTable.IsSystemObject)
-                    {
-                        includeTable = false;
-                    }
-                    else if (databaseTable.Name.Length >= SYNC_OBJ_TABLE_PREFIX.Length)
-                    {
-                        if (databaseTable.Name.Substring(0, SYNC_OBJ_TABLE_PREFIX.Length)
-                            .Equals(SYNC_OBJ_TABLE_PREFIX, StringComparison.OrdinalIgnoreCase))
-                        {
-                            includeTable = false;
-                        }
-                    }
-                }
+                var includeTable = TablePassesFilters(workingParams, databaseTable, true);
+                if (!includeTable)
+                    continue;
 
-                if (workingParams.TablesToSkip.Contains(databaseTable.Name))
-                {
-                    ShowTrace(string.Format(
-                        "Skipping schema export from table {0} since defined in TablesToSkip", databaseTable.Name));
+                var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
+                var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
 
-                    includeTable = false;
-                }
+                OnProgressUpdate(string.Format("Scripting {0}.{1}.{2}", currentDatabase.Name, databaseTable.Schema, databaseTable.Name), percentComplete);
 
-                if (mOptions.TableNameFilterSet.Count > 0)
-                {
-                    if (!mOptions.TableNameFilterSet.Contains(databaseTable.Name))
-                    {
-                        ShowTrace(string.Format(
-                            "Skipping schema export from table {0} since not in the list specified by TableFilterList", databaseTable.Name));
+                var smoObjectArray = new SqlSmoObject[] {
+                    databaseTable
+                };
 
-                        includeTable = false;
-                    }
-                }
+                var scriptInfo = CleanSqlScript(StringCollectionToList(scripter.Script(smoObjectArray)));
+                WriteTextToFile(workingParams.OutputDirectory, databaseTable.Name, scriptInfo);
 
-                if (SkipSchema(databaseTable.Schema))
-                {
-                    ShowTrace(string.Format(
-                        "Skipping schema export from table {0}.{1} due to a schema name filter", databaseTable.Schema, databaseTable.Name));
-
-                    includeTable = false;
-                }
-
-                if (includeTable)
-                {
-                    var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
-                    var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
-
-                    OnProgressUpdate(string.Format("Scripting {0}.{1}.{2}", currentDatabase.Name, databaseTable.Schema, databaseTable.Name), percentComplete);
-
-                    var smoObjectArray = new SqlSmoObject[] {
-                        databaseTable
-                    };
-
-                    var scriptInfo = CleanSqlScript(StringCollectionToList(scripter.Script(smoObjectArray)));
-                    WriteTextToFile(workingParams.OutputDirectory, databaseTable.Name, scriptInfo);
-                }
-
+                tableExportCount++;
                 workingParams.ProcessCount++;
                 CheckPauseStatus();
                 if (mAbortProcessing)
@@ -778,11 +741,11 @@ namespace DB_Schema_Export_Tool
                 }
             }
 
-            if (mOptions.ShowStats)
+            if (mOptions.ShowStats && tableExportCount > 0)
             {
                 OnDebugEvent(string.Format(
                     "Exported {0} tables in {1:0.0} seconds",
-                    currentDatabase.Tables.Count, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
+                    tableExportCount, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
             }
 
             return true;
@@ -2433,6 +2396,66 @@ namespace DB_Schema_Export_Tool
             }
 
             return scriptInfo;
+        }
+
+
+        private bool TablePassesFilters(WorkingParams workingParams, Table databaseTable, bool showTraceMessages)
+        {
+            // ReSharper disable once StringLiteralTypo
+            const string SYNC_OBJ_TABLE_PREFIX = "syncobj_0x";
+
+            if (!mOptions.ScriptingOptions.IncludeSystemObjects)
+            {
+                if (databaseTable.IsSystemObject)
+                {
+                    return false;
+                }
+
+                if (databaseTable.Name.Length >= SYNC_OBJ_TABLE_PREFIX.Length)
+                {
+                    if (databaseTable.Name.Substring(0, SYNC_OBJ_TABLE_PREFIX.Length)
+                        .Equals(SYNC_OBJ_TABLE_PREFIX, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            if (workingParams.TablesToSkip.Contains(databaseTable.Name))
+            {
+                if (showTraceMessages)
+                {
+                    ShowTrace(string.Format(
+                        "Skipping schema export from table {0} since defined in TablesToSkip", databaseTable.Name));
+                }
+
+                return false;
+            }
+
+            if (mOptions.TableNameFilterSet.Count > 0 && !mOptions.TableNameFilterSet.Contains(databaseTable.Name))
+            {
+                if (showTraceMessages)
+                {
+                    ShowTrace(string.Format(
+                        "Skipping schema export from table {0} since not in the list specified by TableFilterList", databaseTable.Name));
+                }
+
+                return false;
+            }
+
+            if (SkipSchema(databaseTable.Schema))
+            {
+                if (showTraceMessages)
+                {
+                    ShowTrace(string.Format(
+                        "Skipping schema export from table {0}.{1} due to a schema name filter", databaseTable.Schema, databaseTable.Name));
+                }
+
+                return false;
+            }
+
+
+            return true;
         }
 
         /// <summary>
