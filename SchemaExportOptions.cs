@@ -289,6 +289,10 @@ namespace DB_Schema_Export_Tool
                        "SourceTableName  DateColumnName  MinimumDate")]
         public string TableDataDateFilterFile { get; set; }
 
+        [Option("ObjectNameFilter", "NameFilter", HelpShowsDefault = false,
+            HelpText = "Only export objects that contain this text; supports RegEx symbols like ^ and $")]
+        public string ObjectNameFilter { get; set; }
+
         [Option("DefaultSchema", "Schema", HelpShowsDefault = false,
             HelpText = "Default schema for exported tables and data. If undefined, use the original table's schema")]
         public string DefaultSchemaName { get; set; }
@@ -620,6 +624,11 @@ namespace DB_Schema_Export_Tool
             if (!string.IsNullOrWhiteSpace(TableDataDateFilterFile))
             {
                 Console.WriteLine(" {0,-48} {1}", "File with date filter column info:", PathUtils.CompactPathString(TableDataDateFilterFile, 80));
+            }
+
+            if (!string.IsNullOrEmpty(ObjectNameFilter))
+            {
+                Console.WriteLine(" {0,-48} {1}", "Object Name Filter:", ObjectNameFilter);
             }
 
             if (!string.IsNullOrWhiteSpace(ExistingSchemaFileToParse))

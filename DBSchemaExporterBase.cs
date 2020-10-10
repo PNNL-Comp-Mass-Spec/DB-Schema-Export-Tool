@@ -71,6 +71,7 @@ namespace DB_Schema_Export_Tool
 
         private readonly Regex mNonStandardOSChars;
 
+        protected Regex mObjectNameMatcher;
 
         protected ServerConnectionInfo mCurrentServerInfo;
 
@@ -154,6 +155,11 @@ namespace DB_Schema_Export_Tool
             mColumnCharNonStandardMatcher = new Regex("[^a-z0-9_]", regExOptions);
 
             mNonStandardOSChars = new Regex(@"[^a-z0-9_ =+-,.;~!@#$%^&(){}\[\]]", regExOptions);
+
+            // This will get updated later if mOptions.ObjectNameFilter is not empty
+            // We are not instantiating this here since we want to use OnErrorEvent() if there is as problem,
+            // and that event is not subscribed to until after this class is instantiated
+            mObjectNameMatcher = new Regex(".+", regExOptions);
 
             mConnectedToServer = false;
             mCurrentServerInfo = new ServerConnectionInfo(string.Empty, true);
@@ -1535,7 +1541,11 @@ namespace DB_Schema_Export_Tool
         /// <returns>True (meaning to skip the table) if the table has "&lt;skip&gt;" for the TargetTableName</returns>
         public bool SkipTableForDataExport(TableDataExportInfo tableInfo)
         {
-            return SkipTableForDataExport(mOptions, tableInfo);
+            var skipTable = SkipTableForDataExport(mOptions, tableInfo);
+            if (skipTable)
+                return true;
+
+            return !mObjectNameMatcher.IsMatch(tableInfo.SourceTableName);
         }
 
         /// <summary>
@@ -1626,7 +1636,8 @@ namespace DB_Schema_Export_Tool
         /// <returns>True if the filter set is empty, or contains the table name; otherwise false</returns>
         private bool TableNamePassesFilters(string tableName)
         {
-            return TableNamePassesFilters(mOptions, tableName);
+            var passesFilter = TableNamePassesFilters(mOptions, tableName);
+            return passesFilter && mObjectNameMatcher.IsMatch(tableName);
         }
 
         /// <summary>
@@ -1701,6 +1712,25 @@ namespace DB_Schema_Export_Tool
             {
                 SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error validating the Schema Export Options", ex);
                 return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(mOptions.ObjectNameFilter))
+            {
+                mObjectNameMatcher = new Regex(".+", RegexOptions.Compiled);
+            }
+            else
+            {
+                try
+                {
+                    mObjectNameMatcher = new Regex(mOptions.ObjectNameFilter, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                }
+                catch (Exception ex)
+                {
+                    OnErrorEvent(string.Format(
+                        "Invalid text defined for the object name filter, '{0}'; " +
+                        "should be a series of letters or valid RegEx", mOptions.ObjectNameFilter), ex);
+                    return false;
+                }
             }
 
             return ValidateOutputOptions();
