@@ -52,6 +52,7 @@
     <Compile Include="DBSchemaExportTool.cs" />
     <Compile Include="DataExportWorkingParams.cs" />
     <Compile Include="DBSchemaUpdater.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="LoggerBase.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProgramRunner.cs" />
@@ -72,7 +73,7 @@
       <Version>4.1.2</Version>
     </PackageReference>
     <PackageReference Include="PRISM-Library">
-      <Version>2.6.9</Version>
+      <Version>2.6.17</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
