@@ -63,12 +63,14 @@ namespace DB_Schema_Export_Tool
 
         protected bool mAbortProcessing;
 
-        private readonly Regex mAnyLowerRegex;
-        private readonly Regex mCamelCaseRegex;
+        private readonly Regex mAnyLowerMatcher;
 
-        protected readonly Regex mColumnCharNonStandardRegEx;
+        private readonly Regex mCamelCaseMatcher;
 
-        protected readonly Regex mNonStandardOSChars;
+        private readonly Regex mColumnCharNonStandardMatcher;
+
+        private readonly Regex mNonStandardOSChars;
+
 
         protected ServerConnectionInfo mCurrentServerInfo;
 
@@ -92,7 +94,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Current pause status
         /// </summary>
-        public PauseStatusConstants PauseStatus { get; protected set; }
+        public PauseStatusConstants PauseStatus { get; private set; }
 
         /// <summary>
         /// Dictionary mapping database names to the directory where the schema files were saved
@@ -145,17 +147,16 @@ namespace DB_Schema_Export_Tool
 
             var regExOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline;
 
-            mAnyLowerRegex = new Regex("[a-z]", RegexOptions.Compiled | RegexOptions.Singleline);
+            mAnyLowerMatcher = new Regex("[a-z]", RegexOptions.Compiled | RegexOptions.Singleline);
 
-            mCamelCaseRegex = new Regex("(?<Part1>.+?)(?<Part2Start>[A-Z]+)(?<Part3>.*)", RegexOptions.Compiled | RegexOptions.Singleline);
+            mCamelCaseMatcher = new Regex("(?<Part1>.+?)(?<Part2Start>[A-Z]+)(?<Part3>.*)", RegexOptions.Compiled | RegexOptions.Singleline);
 
-            mColumnCharNonStandardRegEx = new Regex("[^a-z0-9_]", regExOptions);
+            mColumnCharNonStandardMatcher = new Regex("[^a-z0-9_]", regExOptions);
 
             mNonStandardOSChars = new Regex(@"[^a-z0-9_ =+-,.;~!@#$%^&(){}\[\]]", regExOptions);
 
             mConnectedToServer = false;
             mCurrentServerInfo = new ServerConnectionInfo(string.Empty, true);
-
         }
 
         /// <summary>
@@ -524,7 +525,7 @@ namespace DB_Schema_Export_Tool
         /// <returns></returns>
         private string ConvertNameToSnakeCase(string objectName)
         {
-            if (!mAnyLowerRegex.IsMatch(objectName))
+            if (!mAnyLowerMatcher.IsMatch(objectName))
             {
                 // objectName contains no lowercase letters; simply change to lowercase and return
                 return objectName.ToLower();
@@ -534,7 +535,7 @@ namespace DB_Schema_Export_Tool
 
             while (true)
             {
-                var match = mCamelCaseRegex.Match(updatedName);
+                var match = mCamelCaseMatcher.Match(updatedName);
                 if (!match.Success)
                     break;
 
@@ -638,7 +639,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="databaseName">Database name</param>
         /// <param name="tablesToExportData">Dictionary with names of tables to export; values are the maximum rows to export from each table</param>
         /// <param name="workingParams">Working parameters</param>
-        /// <returns></returns>
+        /// <returns>True if successful, false if an error</returns>
         protected bool ExportDBTableData(
             string databaseName,
             Dictionary<TableDataExportInfo, long> tablesToExportData,
@@ -867,7 +868,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="tableInfo"></param>
         /// <param name="dataExportParams"></param>
         /// <returns>Relative path to the output file</returns>
-        protected string GetFileNameForTableDataExport(
+        private string GetFileNameForTableDataExport(
             TableDataExportInfo tableInfo,
             DataExportWorkingParams dataExportParams)
         {
@@ -981,7 +982,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="columnMapInfo"></param>
         /// <param name="columnName"></param>
-        /// <returns></returns>
+        /// <returns>Target column name</returns>
         protected string GetTargetColumnName(ColumnMapInfo columnMapInfo, string columnName)
         {
             var unusedDataColumnType = DataColumnTypeConstants.Numeric;
@@ -994,7 +995,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="columnMapInfo"></param>
         /// <param name="currentColumnName"></param>
         /// <param name="dataColumnType"></param>
-        /// <returns></returns>
+        /// <returns>Target column name</returns>
         protected string GetTargetColumnName(ColumnMapInfo columnMapInfo, string currentColumnName, ref DataColumnTypeConstants dataColumnType)
         {
             string targetColumnName;
@@ -1118,7 +1119,6 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Obtain a timestamp in the form: 08/12/2006 23:01:20
         /// </summary>
-        /// <returns></returns>
         protected string GetTimeStamp()
         {
             return DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
@@ -1178,7 +1178,7 @@ namespace DB_Schema_Export_Tool
         /// <returns></returns>
         protected string PossiblyQuoteName(string objectName, bool quoteWithSquareBrackets, bool alwaysQuoteNames = false)
         {
-            if (!alwaysQuoteNames && !mColumnCharNonStandardRegEx.Match(objectName).Success)
+            if (!alwaysQuoteNames && !mColumnCharNonStandardMatcher.Match(objectName).Success)
                 return objectName;
 
             if (quoteWithSquareBrackets)
@@ -1198,7 +1198,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="text"></param>
         /// <returns></returns>
-        protected string PossiblyQuoteText(string text)
+        private string PossiblyQuoteText(string text)
         {
             return string.Format("'{0}'", text.Replace("'", "''"));
         }
@@ -1246,7 +1246,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="databaseListToProcess"></param>
         /// <param name="tablesForDataExport"></param>
         /// <returns></returns>
-        protected bool ScriptDBObjectsAndData(
+        private bool ScriptDBObjectsAndData(
             IReadOnlyCollection<string> databaseListToProcess,
             IReadOnlyList<TableDataExportInfo> tablesForDataExport)
         {
@@ -1523,7 +1523,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="options"></param>
         /// <param name="schemaName"></param>
         /// <returns>True if the schema should be ignored</returns>
-        protected static bool SkipSchema(SchemaExportOptions options, string schemaName)
+        private static bool SkipSchema(SchemaExportOptions options, string schemaName)
         {
             return options.SchemaNameSkipList.Contains(schemaName);
         }
@@ -1559,7 +1559,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="candidateTableSourceTableName"></param>
         /// <param name="tableInfo"></param>
         /// <returns>True (meaning to skip the table) if the table name is defined in tablesForDataExport and has "&lt;skip&gt;" for the TargetTableName</returns>
-        protected bool SkipTableForDataExport(
+        private bool SkipTableForDataExport(
             IReadOnlyCollection<TableDataExportInfo> tablesForDataExport,
             string candidateTableSourceTableName,
             out TableDataExportInfo tableInfo)
@@ -1587,7 +1587,7 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
-        /// Store the Regex specs to use to find tables from which data should be exported
+        /// Store the RegEx specs to use to find tables from which data should be exported
         /// </summary>
         /// <param name="tableNameRegExSpecs"></param>
         public void StoreTableNameRegexToAutoExportData(SortedSet<string> tableNameRegExSpecs)
@@ -1635,7 +1635,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="options"></param>
         /// <param name="tableName"></param>
         /// <returns>True if the filter set is empty, or contains the table name; otherwise false</returns>
-        protected static bool TableNamePassesFilters(SchemaExportOptions options, string tableName)
+        private static bool TableNamePassesFilters(SchemaExportOptions options, string tableName)
         {
             return options.TableNameFilterSet.Count == 0 ||
                    options.TableNameFilterSet.Contains(tableName);
@@ -1663,7 +1663,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseList"></param>
         /// <returns></returns>
-        protected bool ValidateOptionsToScriptServerAndDBObjects(IReadOnlyList<string> databaseList)
+        private bool ValidateOptionsToScriptServerAndDBObjects(IReadOnlyCollection<string> databaseList)
         {
             InitializeLocalVariables(true);
 
@@ -1759,7 +1759,7 @@ namespace DB_Schema_Export_Tool
         /// Validate output options
         /// </summary>
         /// <returns></returns>
-        protected bool ValidateOutputOptions()
+        private bool ValidateOutputOptions()
         {
 
             mOptions.ValidateOutputOptions();
