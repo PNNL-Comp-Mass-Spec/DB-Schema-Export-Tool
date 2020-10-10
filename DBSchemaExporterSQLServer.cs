@@ -1808,7 +1808,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="sqlServer"></param>
         /// <param name="scriptOptions"></param>
         /// <param name="outputDirectoryPathCurrentServer"></param>
-        private void ExportSQLServerLogins(Server sqlServer, ScriptingOptions scriptOptions, DirectoryInfo outputDirectoryPathCurrentServer)
+        private void ExportSQLServerLogins(Server sqlServer, ScriptingOptions scriptOptions, FileSystemInfo outputDirectoryPathCurrentServer)
         {
             // Do not include a Try block in this Function; let the calling function handle errors
 
@@ -1849,7 +1849,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="sqlServer"></param>
         /// <param name="scriptOptions"></param>
         /// <param name="outputDirectoryPathCurrentServer"></param>
-        private void ExportSQLServerAgentJobs(Server sqlServer, ScriptingOptions scriptOptions, DirectoryInfo outputDirectoryPathCurrentServer)
+        private void ExportSQLServerAgentJobs(Server sqlServer, ScriptingOptions scriptOptions, FileSystemInfo outputDirectoryPathCurrentServer)
         {
             // Do not include a Try block in this Function; let the calling function handle errors
 
@@ -2291,7 +2291,7 @@ namespace DB_Schema_Export_Tool
         private int ScriptCollectionOfObjects(
             IEnumerable schemaCollection,
             ScriptingOptions scriptOptions,
-            DirectoryInfo outputDirectory)
+            FileSystemInfo outputDirectory)
         {
             var processCount = 0;
             foreach (Schema schemaItem in schemaCollection)

@@ -1842,7 +1842,7 @@ namespace DB_Schema_Export_Tool
         }
 
         protected bool WriteTextToFile(
-            DirectoryInfo outputDirectory,
+            FileSystemInfo outputDirectory,
             string objectName,
             IEnumerable<string> scriptInfo,
             bool autoAddGoStatements = true,
