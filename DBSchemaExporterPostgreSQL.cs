@@ -2096,7 +2096,7 @@ namespace DB_Schema_Export_Tool
                 var serverInfoArgs = GetPgDumpServerInfoArgs(string.Empty);
 
                 // pg_dumpall --schema-only --globals-only
-                var cmdArgs = string.Format("{0} --schema-only --globals-ony --format=p --file={1}", serverInfoArgs, outputFile.FullName);
+                var cmdArgs = string.Format("{0} --schema-only --globals-only --format=p --file={1}", serverInfoArgs, outputFile.FullName);
                 var maxRuntimeSeconds = 60;
 
                 var pgDumpAll = FindPgDumpAllExecutable();
