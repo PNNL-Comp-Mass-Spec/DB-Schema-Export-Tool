@@ -5,11 +5,13 @@ namespace DB_Schema_Export_Tool
 {
     public class WorkingParams
     {
+        // Ignore Spelling: PostgreSQL
+
         /// <summary>
         /// If true, count the number of objects to script, but don't actually script them
         /// </summary>
         public bool CountObjectsOnly { get; set; }
-        
+
         /// <summary>
         /// List of script file names (or relative paths) for loading data into a PostgreSQL database
         /// </summary>

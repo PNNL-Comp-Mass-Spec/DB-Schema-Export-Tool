@@ -2,6 +2,8 @@
 {
     public class ServerConnectionInfo
     {
+        // Ignore Spelling: PostgreSQL
+
         /// <summary>
         /// Server name
         /// </summary>

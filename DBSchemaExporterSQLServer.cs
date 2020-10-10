@@ -15,6 +15,7 @@ namespace DB_Schema_Export_Tool
 {
     public sealed class DBSchemaExporterSQLServer : DBSchemaExporterBase
     {
+        // Ignore Spelling: Sql, Scripter, schemas, smo, mtuser, sysobjects, xtype, Inline, dt, dbo, setval, currval, stdin
         #region "Constants and Enums"
 
         // ReSharper disable UnusedMember.Global
@@ -27,7 +28,7 @@ namespace DB_Schema_Export_Tool
 
         #endregion
 
-        #region "Classwide Variables"
+        #region "Class wide Variables"
 
         private Database mCurrentDatabase;
 
@@ -2168,7 +2169,7 @@ namespace DB_Schema_Export_Tool
                 OnDebugEvent(string.Format("Obtaining list of tables in database {0} on server {1}",
                                            databaseName, mCurrentServerInfo.ServerName));
 
-                // Connect to database databaseName
+                // Connect to the database
                 var currentDatabase = mSqlServer.Databases[databaseName];
 
                 var databaseTables = currentDatabase.Tables;
@@ -2313,14 +2314,12 @@ namespace DB_Schema_Export_Tool
         /// <param name="schemaCollection">IEnumerable of type SchemaCollectionBase</param>
         /// <param name="scriptOptions">Script options</param>
         /// <param name="outputDirectory">Output directory</param>
-        /// <returns></returns>
+        /// <returns>The number of objects scripted</returns>
         private int ScriptCollectionOfObjects(
             IEnumerable schemaCollection,
             ScriptingOptions scriptOptions,
             DirectoryInfo outputDirectory)
         {
-            // Scripts the objects in schemaCollection
-            // Returns the number of objects scripted
             var processCount = 0;
             foreach (Schema schemaItem in schemaCollection)
             {

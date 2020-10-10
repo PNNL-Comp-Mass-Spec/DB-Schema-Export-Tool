@@ -6,6 +6,8 @@ namespace DB_Schema_Export_Tool
 {
     public class DataExportWorkingParams
     {
+        // Ignore Spelling: PostgreSQL
+
         /// <summary>
         /// List of column names and column types in the source table
         /// </summary>

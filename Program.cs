@@ -11,6 +11,7 @@ namespace DB_Schema_Export_Tool
 {
     static class Program
     {
+        // Ignore Spelling: PostgreSQL, conf, seqs, dmsreader
 
         private static DateTime mLastProgressTime;
 

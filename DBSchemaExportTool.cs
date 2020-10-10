@@ -12,6 +12,7 @@ namespace DB_Schema_Export_Tool
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public class DBSchemaExportTool : LoggerBase
     {
+        // Ignore Spelling: PostgreSQL, psm, unimod, dba, lcms, Svn, Quantitation, uri, tmp, unpause
 
         #region "Constants and Enums"
 
@@ -31,7 +32,7 @@ namespace DB_Schema_Export_Tool
 
         #endregion
 
-        #region "Classwide Variables"
+        #region "Class wide Variables"
 
         private readonly Regex mDateMatcher;
 
@@ -1289,7 +1290,7 @@ namespace DB_Schema_Export_Tool
 
                     var fileCopyCount = 0;
 
-                    // This list holds the the files that are copied from sourceDirectory to targetDirectory
+                    // This list holds the files that are copied from sourceDirectory to targetDirectory
                     var newFilePaths = new List<string>();
 
                     SyncSchemaFilesRecursive(sourceDirectory, targetDirectory, databaseName, newFilePaths, ref fileCopyCount);
@@ -1600,7 +1601,7 @@ namespace DB_Schema_Export_Tool
                 }
                 else
                 {
-                    OnStatusEvent(string.Format("Commiting changes to {0}: {1}", toolName, commitMessage));
+                    OnStatusEvent(string.Format("Committing changes to {0}: {1}", toolName, commitMessage));
 
                     // Commit the changes
                     cmdArgs = string.Format(" commit \"{0}\" --message \"{1}\"", targetDirectory.FullName, commitMessage);

@@ -51,7 +51,7 @@ namespace DB_Schema_Export_Tool
                     maxRuntimeSeconds = 10;
                 }
 
-                // Loop until program is complete, or until maxRuntimeSeconds seconds elapses
+                // Loop until program is complete, or until maxRuntimeSeconds elapses
                 while (programRunner.State != ProgRunner.States.NotMonitoring)
                 {
                     System.Threading.Thread.Sleep(100);

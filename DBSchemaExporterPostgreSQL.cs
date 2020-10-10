@@ -12,6 +12,9 @@ namespace DB_Schema_Export_Tool
 {
     public sealed class DBSchemaExporterPostgreSQL : DBSchemaExporterBase
     {
+        // Ignore Spelling: setval, dumpall, pgsql, mc, PostgreSQL, usr, udf, hostname, schemaname, tablename, tableowner
+        // Ignore Spelling: relname, reltuples, bigint, oid, Npgsql, regclass, pgpass, tablespace, schemas
+
         #region "Constants and Enums"
 
         public const int DEFAULT_PORT = 5432;
@@ -20,7 +23,7 @@ namespace DB_Schema_Export_Tool
 
         #endregion
 
-        #region "Classwide Variables"
+        #region "Class wide Variables"
 
         /// <summary>
         /// Dictionary tracking tables by database
@@ -455,6 +458,7 @@ namespace DB_Schema_Export_Tool
 
             // pg_dump -h host -p port -U user -W PasswordIfDefined -d database --schema-only --format=p --file=OutFilePath
             var cmdArgs = string.Format("{0} -d {1} --schema-only --format=p --file={2}", serverInfoArgs, databaseName, pgDumpOutputFile.FullName);
+
             var maxRuntimeSeconds = 60;
 
             var pgDump = FindPgDumpExecutable();
@@ -797,7 +801,6 @@ namespace DB_Schema_Export_Tool
 
                 ExportDBTableDataRow(writer, dataExportParams, delimitedRowValues, columnCount, columnValues);
             }
-
         }
 
         private bool ExportDBTableDataUsingPgDump(
@@ -1758,7 +1761,7 @@ namespace DB_Schema_Export_Tool
                 case "DEFAULT":
                     // Parse out the target table name from the Alter Table DDL
 
-                    // The regex will match lines like this:
+                    // The RegEx will match lines like this:
                     // ALTER TABLE mc.t_event_log
                     // ALTER TABLE ONLY mc.t_event_log
 

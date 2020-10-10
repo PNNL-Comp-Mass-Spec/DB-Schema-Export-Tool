@@ -12,6 +12,9 @@ namespace DB_Schema_Export_Tool
 {
     public abstract class DBSchemaExporterBase : EventNotifier
     {
+        // Ignore Spelling: unpause, sysdiagrams, dtproperties, sql, PostgreSQL, mkdir, psql, localhost, dbo, unpaused
+        // Ignore Spelling: dd, yyyy, HH:mm:ss
+
         #region "Constants and Enums"
 
         // Note: this value defines the maximum number of data rows that will be exported
@@ -56,7 +59,7 @@ namespace DB_Schema_Export_Tool
 
         #endregion
 
-        #region "Classwide Variables"
+        #region "Class wide Variables"
 
         protected bool mAbortProcessing;
 
@@ -102,7 +105,7 @@ namespace DB_Schema_Export_Tool
         public SortedSet<string> TableNamesToAutoExportData { get; }
 
         /// <summary>
-        /// Regex strings to use to select table names to auto-select for data export
+        /// RegEx strings to use to select table names to auto-select for data export
         /// </summary>
         public SortedSet<string> TableNameRegexToAutoExportData { get; }
 

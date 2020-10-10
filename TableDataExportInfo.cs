@@ -5,6 +5,8 @@ namespace DB_Schema_Export_Tool
 {
     public class TableDataExportInfo
     {
+        // Ignore Spelling: PostgreSQL
+
         /// <summary>
         /// Source table name
         /// </summary>

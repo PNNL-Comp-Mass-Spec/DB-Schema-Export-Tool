@@ -12,12 +12,14 @@ namespace DB_Schema_Export_Tool
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public class SchemaExportOptions
     {
+        // Ignore Spelling: PostgreSQL, Svn, Npgsql, schemas, psql
+
         #region "Constants and Enums"
 
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "July 9, 2020";
+        public const string PROGRAM_DATE = "October 10, 2020";
 
         public const string DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX = "DBSchema__";
 
