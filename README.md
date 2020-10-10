@@ -47,6 +47,7 @@ DB_Schema_Export_Tool.exe
  [/DirectoryPrefix:PrefixText] [/NoSubdirectory] [/CreateDBDirectories]
  [/DataTables:TableDataToExport.txt] [/Map:ColumnMapping.txt]
  [/DateFilter:MinimumDate] [/TableFilterList]
+ [/NameFilter:FilterSpec]
  [/Schema:SchemaName] [/ExistingDDL:SchemaFileName]
  [/NoAutoData] [/ExportAllData] [/MaxRows:1000] [/NoData]
  [/SnakeCase] [/PgDump] [/KeepPgDumpFile]
@@ -160,6 +161,14 @@ Use `/DateFilter` or `/TableDataDateFilter` to define a tab-delimited text file 
 | T_Log_Entries            | posting_time     | 2020-01-01   |
 | T_ParamValue             | last_affected    | 2020-01-01   |
 | T_ParamValue_OldManagers | last_affected    | 2016-01-07   |
+
+Use `/NameFilter` to define a filter to apply to exported tables, views, procedures, etc.
+* Will only export objects that contain this text in the name
+  * This is only applicable when exporting objects from SQL Server
+* Use `^` to indicate the object names must start with the text, for example `^Auto` to start with Auto
+  * This only works if using a parameter file, since the Windows command line parser removes ^
+* Use `$` to indicate the object names must end with the text, for example `Report$` to end with Report
+* Other RegEx qualifiers are supported; matches are case insensitive
 
 Use `/Schema` or `/DefaultSchema` to define the default schema name to use when exporting data from tables
 * Entries in the `/DataTables` file will override this default schema
