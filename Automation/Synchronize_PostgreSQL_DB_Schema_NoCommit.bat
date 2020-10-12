@@ -5,8 +5,10 @@ rem DB_Schema_Export_Tool.exe can be found at https://ci.appveyor.com/project/PN
 rem PgSQL_ExportOptions_Prismweb3.conf can be found at https://github.com/PNNL-Comp-Mass-Spec/DB-Schema-Export-Tool/blob/master/Automation/PgSQL_ExportOptions_Prismweb3.conf
 
 F:
-cd "F:\Documents\Projects\DataMining\Database_Tools\DB_Schema_Export_Tool\Automation"
+pushd "F:\Documents\Projects\DataMining\Database_Tools\DB_Schema_Export_Tool\Automation"
 
 @echo on
 ..\bin\DB_Schema_Export_Tool.exe /conf:PgSQL_ExportOptions_Prismweb3.conf
 ..\bin\DB_Schema_Export_Tool.exe /conf:PgSQL_ExportOptions_PrismDB1.conf
+
+popd
