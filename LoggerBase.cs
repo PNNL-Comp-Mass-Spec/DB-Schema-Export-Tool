@@ -9,11 +9,16 @@ namespace DB_Schema_Export_Tool
     /// </summary>
     public abstract class LoggerBase : EventNotifier
     {
+        private readonly SchemaExportOptions mOptions;
+
         /// <summary>
         /// Constructor
         /// </summary>
-        protected LoggerBase()
+        /// <param name="options"></param>
+        protected LoggerBase(SchemaExportOptions options)
         {
+            mOptions = options;
+
             // The LogTools class displays messages at the console; we don't need the EventNotifier class also doing this
             WriteToConsoleIfNoListener = false;
         }
@@ -27,7 +32,8 @@ namespace DB_Schema_Export_Tool
         protected void LogDebug(string statusMessage, bool writeToLog = true)
         {
             OnDebugEvent(statusMessage);
-            LogTools.LogDebug(statusMessage, writeToLog);
+            if (mOptions.LogMessagesToFile && mOptions.Trace)
+                LogTools.LogDebug(statusMessage, writeToLog);
         }
 
         /// <summary>
@@ -38,7 +44,8 @@ namespace DB_Schema_Export_Tool
         protected void LogError(string errorMessage, bool logToDb = false)
         {
             OnErrorEvent(errorMessage);
-            LogTools.LogError(errorMessage, null, logToDb);
+            if (mOptions.LogMessagesToFile)
+                LogTools.LogError(errorMessage, null, logToDb);
         }
 
         /// <summary>
@@ -49,7 +56,8 @@ namespace DB_Schema_Export_Tool
         protected void LogError(string errorMessage, Exception ex)
         {
             OnErrorEvent(errorMessage, ex);
-            LogTools.LogError(errorMessage, ex);
+            if (mOptions.LogMessagesToFile)
+                LogTools.LogError(errorMessage, ex);
         }
 
         /// <summary>
@@ -61,7 +69,8 @@ namespace DB_Schema_Export_Tool
         public void LogMessage(string statusMessage, bool isError = false, bool writeToLog = true)
         {
             OnStatusEvent(statusMessage);
-            LogTools.LogMessage(statusMessage, isError, writeToLog);
+            if (mOptions.LogMessagesToFile)
+                LogTools.LogMessage(statusMessage, isError, writeToLog);
         }
 
         /// <summary>
@@ -72,7 +81,8 @@ namespace DB_Schema_Export_Tool
         protected void LogWarning(string warningMessage, bool logToDb = false)
         {
             OnWarningEvent(warningMessage);
-            LogTools.LogWarning(warningMessage, logToDb);
+            if (mOptions.LogMessagesToFile)
+                LogTools.LogWarning(warningMessage, logToDb);
         }
 
         #region "EventNotifier events"

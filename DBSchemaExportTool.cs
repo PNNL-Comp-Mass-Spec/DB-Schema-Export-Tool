@@ -87,7 +87,7 @@ namespace DB_Schema_Export_Tool
         /// Constructor
         /// </summary>
         /// <param name="options"></param>
-        public DBSchemaExportTool(SchemaExportOptions options)
+        public DBSchemaExportTool(SchemaExportOptions options) : base(options)
         {
             mOptions = options;
 
@@ -103,6 +103,7 @@ namespace DB_Schema_Export_Tool
             {
                 mDBSchemaExporter = new DBSchemaExporterSQLServer(mOptions);
             }
+
             RegisterEvents(mDBSchemaExporter);
 
             InitializeLogFile(options);
@@ -219,7 +220,7 @@ namespace DB_Schema_Export_Tool
 
                 if (!string.IsNullOrWhiteSpace(mOptions.ExistingSchemaFileToParse))
                 {
-                    var schemaUpdater = new DBSchemaUpdater(mOptions.Trace);
+                    var schemaUpdater = new DBSchemaUpdater(mOptions);
                     RegisterEvents(schemaUpdater);
 
                     var successUpdatingNames = schemaUpdater.UpdateColumnNamesInExistingSchemaFile(

@@ -10,20 +10,22 @@ namespace DB_Schema_Export_Tool
 {
     internal class DBSchemaUpdater : EventNotifier
     {
+        // Ignore Spelling: dbo
+
         private readonly Regex mColumnNameMatcher;
 
         /// <summary>
-        /// Show additional debug messages
+        /// Options
         /// </summary>
-        private bool ShowTraceMessages { get; }
+        private readonly SchemaExportOptions mOptions;
 
         /// <summary>
         /// Constructor
         /// </summary>
-        public DBSchemaUpdater(bool showTraceMessages)
+        public DBSchemaUpdater(SchemaExportOptions options)
         {
             mColumnNameMatcher = new Regex(@"\[(?<ColumnName>[^]]+)\]|(?<ColumnName>[^\s]+)", RegexOptions.Compiled);
-            ShowTraceMessages = showTraceMessages;
+            mOptions = options;
         }
 
         /// <summary>
@@ -35,7 +37,8 @@ namespace DB_Schema_Export_Tool
         public void LogMessage(string statusMessage, bool isError = false, bool writeToLog = true)
         {
             OnStatusEvent(statusMessage);
-            LogTools.LogMessage(statusMessage, isError, writeToLog);
+            if (mOptions.LogMessagesToFile)
+                LogTools.LogMessage(statusMessage, isError, writeToLog);
         }
 
         /// <summary>
@@ -46,12 +49,13 @@ namespace DB_Schema_Export_Tool
         protected void LogWarning(string warningMessage, bool logToDb = false)
         {
             OnWarningEvent(warningMessage);
-            LogTools.LogWarning(warningMessage, logToDb);
+            if (mOptions.LogMessagesToFile)
+                LogTools.LogWarning(warningMessage, logToDb);
         }
 
         private void ShowTrace(string message)
         {
-            if (ShowTraceMessages)
+            if (mOptions.Trace)
             {
                 OnDebugEvent(message);
             }
