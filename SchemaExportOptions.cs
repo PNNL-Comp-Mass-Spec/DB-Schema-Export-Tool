@@ -20,7 +20,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "January 4, 2021";
+        public const string PROGRAM_DATE = "January 5, 2021";
 
         /// <summary>
         /// Default output directory name prefix
@@ -86,7 +86,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Output directory
         /// </summary>
-        [Option("OutputDir", "O", ArgPosition = 1, Required = true, HelpShowsDefault = false, HelpText = "Directory to save the schema files")]
+        [Option("OutputDir", "O", ArgPosition = 1, Required = true, HelpShowsDefault = false,
+            HelpText = "Directory to save the schema files")]
         public string OutputDirectoryPath { get; set; }
 
         /// <summary>
@@ -112,9 +113,9 @@ namespace DB_Schema_Export_Tool
         /// Password for the database user
         /// </summary>
         [Option("DBPass", HelpShowsDefault = false,
-            HelpText = "Password for the database user; ignored if connecting to SQL Server with integrated authentication. " +
+            HelpText = "Password for the database user; ignored if connecting to SQL Server with integrated authentication\n" +
                        // ReSharper disable StringLiteralTypo
-                       @"For PostgreSQL, you can create a file named pgpass.conf at %APPDATA%\postgresql (or ~/.pgpass on Linux) to track passwords for PostgreSQL users. " +
+                       @"For PostgreSQL, you can create a file named pgpass.conf at %APPDATA%\postgresql (or ~/.pgpass on Linux) to track passwords for PostgreSQL users\n" +
                        // ReSharper restore StringLiteralTypo
                        "List one entry per line, using the format server:port:database:username:password (see README.md for more info)")]
         public string DBUserPassword { get; set; }
@@ -124,7 +125,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         [Option("ExistingDDL", "ExistingSchema", HelpShowsDefault = false, IsInputFilePath = true,
             HelpText = "Existing schema (DDL) file to parse to rename columns based on information in the ColumnMap file\n" +
-                       "Will also skip any tables or views with <skip> in the DataTables file.\n" +
+                       "Will also skip any tables or views with <skip> in the DataTables file\n" +
                        "The updated DDL file will end with _UpdatedColumnNames.sql")]
         public string ExistingSchemaFileToParse { get; set; }
 
@@ -145,17 +146,17 @@ namespace DB_Schema_Export_Tool
         /// </para>
         /// </summary>
         [Option("PgDump", "PgDumpData", HelpShowsDefault = false,
-            HelpText = "With SQL Server databases, dump table data using COPY commands instead of INSERT INTO statements. " +
-                       "With PostgreSQL data, dump table data using pg_dump.exe and COPY commands.")]
+            HelpText = "With SQL Server databases, dump table data using COPY commands instead of INSERT INTO statements\n" +
+                       "With PostgreSQL data, dump table data using pg_dump.exe and COPY commands")]
         public bool PgDumpTableData { get; set; }
 
         /// <summary>
         /// When true, do not delete the PgDump output file (_AllObjects_.sql)
         /// </summary>
-        [Option("KeepPgDumpFile", "KeepPgDump", HelpShowsDefault = false,
-            HelpText = "By default, the PgDump output file (_AllObjects_.sql) is deleted after it has been processed. " +
-                       "Set this to True to skip the deletion. " +
-                       "If any unhandled scripting commands are encountered, the _AllObjects_.sql file will not be deleted, even if KeepPgDumpFile is false.")]
+        [Option("KeepPgDumpFile", "KeepPgDump", HelpShowsDefault = false, SecondaryArg = true,
+            HelpText = "By default, the PgDump output file (_AllObjects_.sql) is deleted after it has been processed\n" +
+                       "Set this to True to skip the deletion\n" +
+                       "If any unhandled scripting commands are encountered, the _AllObjects_.sql file will not be deleted, even if KeepPgDumpFile is false")]
         public bool KeepPgDumpFile { get; set; }
 
         /// <summary>
@@ -171,7 +172,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         [Option("PgInsert", HelpShowsDefault = false,
             HelpText = "With SQL Server databases, while reading the TableDataToExport.txt file, default the PgInsert column to true, " +
-                       "meaning table data will be exported via INSERT INTO statements using the syntax \"ON CONFLICT (key_column) DO UPDATE SET\". " +
+                       "meaning table data will be exported via INSERT INTO statements using the syntax \"ON CONFLICT (key_column) DO UPDATE SET\"\n" +
                        "Ignored for PostgreSQL data")]
         public bool PgInsertTableData { get; set; }
 
@@ -207,7 +208,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// PostgreSQL port
         /// </summary>
-        [Option("PgPort", HelpShowsDefault = false,
+        [Option("PgPort", HelpShowsDefault = false, SecondaryArg = true,
             HelpText = "Port to use for a PostgreSQL database")]
         public int PgPort { get; set; }
 
@@ -217,7 +218,8 @@ namespace DB_Schema_Export_Tool
         /// <remarks>
         /// If processing multiple databases, returns a comma separated list of database names
         /// </remarks>
-        [Option("DB", HelpShowsDefault = false, HelpText = "Database name")]
+        [Option("DB", HelpShowsDefault = false,
+            HelpText = "Database name (alternatively, use DBList for a list of databases)")]
         public string Database
         {
             get
@@ -301,7 +303,7 @@ namespace DB_Schema_Export_Tool
         /// Text file with table names (one name per line) for which table data should be exported
         /// </summary>
         [Option("DataTables", "Data", HelpShowsDefault = false, IsInputFilePath = true,
-            HelpText = "Text file with table names (one name per line) for which table data should be exported. " +
+            HelpText = "Text file with table names (one name per line) for which table data should be exported\n" +
                        "Also supports a multi-column, tab-delimited format:\n" +
                        "SourceTableName  TargetSchemaName  TargetTableName  PgInsert  KeyColumn(s)")]
         public string TableDataToExportFile { get; set; }
@@ -320,7 +322,7 @@ namespace DB_Schema_Export_Tool
         /// Table name (or comma separated list of names) to restrict table export operations
         /// </summary>
         [Option("TableFilterList", "TableNameFilter", HelpShowsDefault = false,
-            HelpText = "Table name (or comma separated list of names) to restrict table export operations. " +
+            HelpText = "Table name (or comma separated list of names) to restrict table export operations\n" +
                        "This is useful for exporting the data from just a single table")]
         public string TableNameFilterList
         {
@@ -347,7 +349,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Schema name (or comma separated list of names) of schema to skip
         /// </summary>
-        [Option("SchemaSkipList", HelpShowsDefault = false,
+        [Option("SchemaSkipList", HelpShowsDefault = false, SecondaryArg = true,
             HelpText = "Schema name (or comma separated list of names) of schema to skip. " +
                        "Useful if using partitioned tables")]
         public string SchemaSkipList
@@ -402,7 +404,7 @@ namespace DB_Schema_Export_Tool
         /// When true, disable auto-selecting tables for exporting data
         /// </summary>
         [Option("NoAutoData", HelpShowsDefault = false,
-            HelpText = "In addition to table names defined in /Data, there are default tables which will have their data exported.\n" +
+            HelpText = "In addition to table names defined by DataTables (or /Data), there are default tables which will have their data exported\n" +
                        "Disable the defaults using NoAutoData=True (or /NoAutoData)")]
         public bool DisableAutoDataExport { get; set; }
 
@@ -418,7 +420,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Maximum number of rows of data to export
         /// </summary>
-        [Option("MaxRows", HelpShowsDefault = false,
+        [Option("MaxRows", HelpShowsDefault = false, SecondaryArg = true,
             HelpText = "Maximum number of rows of data to export; defaults to 1000\n" +
                        "Use 0 to export all rows")]
         public int MaxRows
@@ -494,43 +496,43 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Copy new/changed files from the output directory to an alternative directory
         /// </summary>
-        [Option("Sync", HelpShowsDefault = false,
-            HelpText = "Copy new/changed files from the output directory to an alternative directory. " +
-                       "This is advantageous to prevent file timestamps from getting updated every time the schema is exported.")]
+        [Option("Sync", HelpShowsDefault = false, SecondaryArg = true,
+            HelpText = "Copy new/changed files from the output directory to an alternative directory\n" +
+                       "This is advantageous to prevent file timestamps from getting updated every time the schema is exported")]
         public string SyncDirectoryPath { get; set; }
 
         /// <summary>
         /// Auto-update any new or changed files using Git
         /// </summary>
-        [Option("Git", HelpShowsDefault = false,
+        [Option("Git", HelpShowsDefault = false, SecondaryArg = true,
             HelpText = "Auto-update any new or changed files using Git")]
         public bool GitUpdate { get; set; }
 
         /// <summary>
         /// Auto-update any new or changed files using Subversion
         /// </summary>
-        [Option("Svn", HelpShowsDefault = false,
+        [Option("Svn", HelpShowsDefault = false, SecondaryArg = true,
             HelpText = "Auto-update any new or changed files using Subversion")]
         public bool SvnUpdate { get; set; }
 
         /// <summary>
         /// Auto-update any new or changed files using Mercurial
         /// </summary>
-        [Option("Hg", HelpShowsDefault = false,
+        [Option("Hg", HelpShowsDefault = false, SecondaryArg = true,
             HelpText = "Auto-update any new or changed files using Mercurial")]
         public bool HgUpdate { get; set; }
 
         /// <summary>
         /// Commit any updates to the repository
         /// </summary>
-        [Option("Commit", HelpShowsDefault = false,
+        [Option("Commit", HelpShowsDefault = false, SecondaryArg = true,
             HelpText = "Commit any updates to the repository")]
         public bool CommitUpdates { get; set; }
 
         /// <summary>
         /// When true, log messages to a file
         /// </summary>
-        [Option("CreateLogFile", "L", HelpShowsDefault = false,
+        [Option("CreateLogFile", "L", HelpShowsDefault = false, SecondaryArg = true,
             HelpText = "Log messages to a file; specify a base log file name using /LogFile:LogFileName")]
         public bool LogMessagesToFile { get; set; }
 
@@ -540,7 +542,7 @@ namespace DB_Schema_Export_Tool
         /// <remarks>
         /// The actual name will include today's date
         /// </remarks>
-        [Option("BaseLogFileName", "LogFile", HelpShowsDefault = false,
+        [Option("BaseLogFileName", "LogFile", HelpShowsDefault = false, SecondaryArg = true,
             HelpText = "Base log file name (the actual name will include today's date); defaults to DB_Schema_Export_Tool")]
         public string LogFileBaseName { get; set; }
 
@@ -548,27 +550,30 @@ namespace DB_Schema_Export_Tool
         /// Directory path for the log file
         /// </summary>
         [Option("LogDir", "LogDirectory",
-            HelpShowsDefault = false,
+            HelpShowsDefault = false, SecondaryArg = true,
             HelpText = "Specify the directory to save the log file in\n" +
-                        "By default, the log file is created in the current working directory")]
+                       "By default, the log file is created in the current working directory")]
         public string LogDirectoryPath { get; set; }
 
         /// <summary>
         /// When true, display a count of the number of database objects that would be exported
         /// </summary>
-        [Option("Preview", HelpShowsDefault = false, HelpText = "Count the number of database objects that would be exported")]
+        [Option("Preview", HelpShowsDefault = false,
+            HelpText = "Count the number of database objects that would be exported")]
         public bool PreviewExport { get; set; }
 
         /// <summary>
         /// Show (but do not log) export stats
         /// </summary>
-        [Option("Stats", HelpShowsDefault = false, HelpText = "Show (but do not log) export stats")]
+        [Option("Stats", HelpShowsDefault = false, SecondaryArg = true,
+            HelpText = "Show (but do not log) export stats")]
         public bool ShowStats { get; set; }
 
         /// <summary>
         /// Show additional debug messages
         /// </summary>
-        [Option("Trace", HelpShowsDefault = false, HelpText = "Show additional debug messages")]
+        [Option("Trace", HelpShowsDefault = false, SecondaryArg = true,
+            HelpText = "Show additional debug messages")]
         public bool Trace { get; set; }
 
         /// <summary>
