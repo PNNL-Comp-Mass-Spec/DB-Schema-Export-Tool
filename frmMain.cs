@@ -59,32 +59,32 @@ namespace DB_Schema_Export_Tool
 
         #region "Classwide variables"
 
-        string mXmlSettingsFilePath;
+        private string mXmlSettingsFilePath;
 
-        SchemaExportOptions mSchemaExportOptions;
-        List<string> mDatabaseListToProcess;
-        List<TableDataExportInfo> mTablesForDataExport;
+        private SchemaExportOptions mSchemaExportOptions;
+        private List<string> mDatabaseListToProcess;
+        private List<TableDataExportInfo> mTablesForDataExport;
 
         // Keys are table names; values are row counts, though row counts will be 0 if mCachedTableListIncludesRowCounts = False
-        Dictionary<TableDataExportInfo, long> mCachedTableList;
+        private Dictionary<TableDataExportInfo, long> mCachedTableList;
 
-        bool mCachedTableListIncludesRowCounts;
+        private bool mCachedTableListIncludesRowCounts;
 
-        SortedSet<string> mTableNamesToAutoSelect;
+        private SortedSet<string> mTableNamesToAutoSelect;
 
         // Note: Must contain valid RegEx statements (tested case-insensitive)
-        SortedSet<string> mTableNameAutoSelectRegEx;
+        private SortedSet<string> mTableNameAutoSelectRegEx;
 
-        List<string> mDefaultDMSDatabaseList;
-        List<string> mDefaultMTSDatabaseList;
+        private List<string> mDefaultDMSDatabaseList;
+        private List<string> mDefaultMTSDatabaseList;
 
-        bool mWorking;
+        private bool mWorking;
 
-        Thread mThread;
+        private Thread mThread;
 
         private DBSchemaExportTool mDBSchemaExporter;
 
-        bool mSchemaExportSuccess;
+        private bool mSchemaExportSuccess;
 
         #endregion
 
@@ -462,7 +462,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Prompts the user to select a file to load the options from
         /// </summary>
-        void IniFileSaveOptions()
+        private void IniFileSaveOptions()
         {
 
             var fileDialog = new SaveFileDialog

@@ -1,6 +1,6 @@
 ﻿namespace DB_Schema_Export_Tool
 {
-    class DatabaseObjectInfo
+    internal class DatabaseObjectInfo
     {
         /// <summary>
         /// Object Schema

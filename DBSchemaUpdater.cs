@@ -8,7 +8,7 @@ using PRISM.Logging;
 
 namespace DB_Schema_Export_Tool
 {
-    class DBSchemaUpdater : EventNotifier
+    internal class DBSchemaUpdater : EventNotifier
     {
 
         private readonly Regex mColumnNameMatcher;

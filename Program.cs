@@ -9,7 +9,7 @@ using PRISM;
 
 namespace DB_Schema_Export_Tool
 {
-    static class Program
+    internal static class Program
     {
         // Ignore Spelling: PostgreSQL, conf, seqs, dmsreader
 
@@ -19,7 +19,7 @@ namespace DB_Schema_Export_Tool
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static int Main(string[] args)
+        private static int Main(string[] args)
         {
             mLastProgressTime = DateTime.UtcNow;
 
