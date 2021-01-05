@@ -1568,7 +1568,7 @@ namespace DB_Schema_Export_Tool
                     Console.WriteLine();
                 }
 
-                if (modifiedFileCount <= 0 && newFilePaths.Count <= 0)
+                if (modifiedFileCount <= 0 && newFilePaths.Count == 0)
                     return;
 
                 if (modifiedFileCount > 0)

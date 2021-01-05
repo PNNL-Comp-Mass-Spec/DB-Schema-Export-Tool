@@ -453,7 +453,7 @@ namespace DB_Schema_Export_Tool
             // pg_dump -h host -p port -U user -W PasswordIfDefined -d database --schema-only --format=p --file=OutFilePath
             var cmdArgs = string.Format("{0} -d {1} --schema-only --format=p --file={2}", serverInfoArgs, databaseName, pgDumpOutputFile.FullName);
 
-            var maxRuntimeSeconds = 60;
+            const int maxRuntimeSeconds = 60;
 
             var pgDump = FindPgDumpExecutable();
             if (pgDump == null)
@@ -679,11 +679,11 @@ namespace DB_Schema_Export_Tool
                 var columnSchema = reader.GetColumnSchema();
                 foreach (var dbColumn in columnSchema)
                 {
-                    if (dbColumn.IsIdentity.HasValue && dbColumn.IsIdentity.Value)
+                    if (dbColumn.IsIdentity == true)
                     {
                         dataExportParams.IdentityColumnFound = true;
                     }
-                    else if (dbColumn.IsAutoIncrement.HasValue && dbColumn.IsAutoIncrement.Value)
+                    else if (dbColumn.IsAutoIncrement == true)
                     {
                         dataExportParams.IdentityColumnFound = true;
                     }
@@ -832,7 +832,7 @@ namespace DB_Schema_Export_Tool
             // pg_dump -h host -p port -U user -W PasswordIfDefined -d database --data-only --table=TableName --format=p --file=OutFilePath
             var cmdArgs = string.Format("{0} -d {1} --data-only --table={2} --format=p --file={3}",
                                         serverInfoArgs, databaseName, dataExportParams.SourceTableNameWithSchema, tableDataOutputFile.FullName);
-            var maxRuntimeSeconds = 60;
+            const int maxRuntimeSeconds = 60;
 
             var pgDump = FindPgDumpExecutable();
             if (pgDump == null)
@@ -1832,7 +1832,7 @@ namespace DB_Schema_Export_Tool
                         else
                         {
                             createIndexMatcher = new Regex(string.Format(
-                                    @"CREATE.+INDEX {0} ON (ONLY )?(?<TargetTable>.+) USING", indexName),
+                                    "CREATE.+INDEX {0} ON (ONLY )?(?<TargetTable>.+) USING", indexName),
                                 RegexOptions.Compiled | RegexOptions.IgnoreCase);
                         }
 
@@ -1862,7 +1862,7 @@ namespace DB_Schema_Export_Tool
                 case "INDEX ATTACH":
 
                     var alterIndexMatcher = new Regex(string.Format(
-                            @"ALTER.+INDEX (?<TargetIndex>) ATTACH PARTITION {0}.{1}", currentObject.Schema, currentObject.Name),
+                            "ALTER.+INDEX (?<TargetIndex>) ATTACH PARTITION {0}.{1}", currentObject.Schema, currentObject.Name),
                         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
                     var alterIndexMatched = false;
@@ -2091,7 +2091,7 @@ namespace DB_Schema_Export_Tool
 
                 // pg_dumpall --schema-only --globals-only
                 var cmdArgs = string.Format("{0} --schema-only --globals-only --format=p --file={1}", serverInfoArgs, outputFile.FullName);
-                var maxRuntimeSeconds = 60;
+                const int maxRuntimeSeconds = 60;
 
                 var pgDumpAll = FindPgDumpAllExecutable();
                 if (pgDumpAll == null)

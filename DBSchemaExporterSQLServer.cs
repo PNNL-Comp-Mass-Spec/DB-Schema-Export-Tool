@@ -227,7 +227,7 @@ namespace DB_Schema_Export_Tool
                             indexStart = objectCommentStartIndex;
                         }
 
-                        while (true)
+                        do
                         {
                             finalSearchIndex = currentLine.IndexOf("\r\n", indexStart, StringComparison.Ordinal);
 
@@ -235,10 +235,8 @@ namespace DB_Schema_Export_Tool
                             {
                                 indexStart += 2;
                             }
-
-                            if (!(finalSearchIndex >= 0 && finalSearchIndex < indexStart && indexStart < currentLine.Length))
-                                break;
                         }
+                        while (finalSearchIndex >= 0 && finalSearchIndex < indexStart && indexStart < currentLine.Length);
 
                         if (finalSearchIndex < 0)
                         {
@@ -1392,7 +1390,7 @@ namespace DB_Schema_Export_Tool
                 dataExportParams.ColSepChar = ',';
                 insertIntoLine = string.Empty;
 
-                if (primaryKeyColumnList.Length <= 0)
+                if (primaryKeyColumnList.Length == 0)
                     return string.Empty;
 
                 if (truncateTableEnabled)
@@ -1563,15 +1561,19 @@ namespace DB_Schema_Export_Tool
 
             if (commandAndLfRequired)
             {
-                // Add linefeed (but no comma)
+                // Add a linefeed (but no comma)
                 writer.WriteLine();
                 dataExportParams.FooterWriteRequired = true;
             }
 
             if (mOptions.PgDumpTableData && !usingPgInsert)
             {
+                // Append a line with just backslash-period (\.)
+                // This represents "End of data"
                 writer.WriteLine(@"\.");
-                writer.WriteLine(@";");
+
+                // Append a semicolon to finalize the DDL
+                writer.WriteLine(";");
             }
 
             // // Read method #2: Use a SqlDataReader to read row-by-row
@@ -2365,21 +2367,10 @@ namespace DB_Schema_Export_Tool
                 {
                     ExportSQLServerAgentJobs(sqlServer, scriptOptions, serverInfoOutputDirectory);
                 }
-                catch (Exception ex2)
+                catch (Exception ex2) when (ex2.InnerException?.Message.Contains("permission was denied") == true)
                 {
-                    if (ex2.InnerException != null &&
-                        ex2.InnerException.Message.Contains("permission was denied"))
-                    {
-                        OnWarningEvent("Error scripting the SQL Server Agent jobs; most likely the user is not a server administrator");
-                        OnWarningEvent(ex2.InnerException.Message);
-                    }
-                    else
-                        throw;
-                }
-
-                if (mAbortProcessing)
-                {
-                    return true;
+                    OnWarningEvent("Error scripting the SQL Server Agent jobs; most likely the user is not a server administrator");
+                    OnWarningEvent(ex2.InnerException.Message);
                 }
 
                 return true;
@@ -2490,7 +2481,7 @@ namespace DB_Schema_Export_Tool
         /// <returns></returns>
         protected override bool ValidServerConnection()
         {
-            return mConnectedToServer && mSqlServer != null && mSqlServer.State == SqlSmoState.Existing;
+            return mConnectedToServer && mSqlServer?.State == SqlSmoState.Existing;
         }
     }
 }

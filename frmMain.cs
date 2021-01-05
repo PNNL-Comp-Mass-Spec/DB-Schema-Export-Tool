@@ -575,7 +575,7 @@ namespace DB_Schema_Export_Tool
         {
             try
             {
-                if (mCachedTableList.Count <= 0)
+                if (mCachedTableList.Count == 0)
                 {
                     lstTableNamesToExportData.Items.Clear();
                     return;
@@ -855,7 +855,7 @@ namespace DB_Schema_Export_Tool
 
                 if (cancelExport)
                 {
-                    MessageBox.Show("Operation cancelled", "Nothing To Do", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("Operation canceled", "Nothing To Do", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
@@ -1138,7 +1138,7 @@ namespace DB_Schema_Export_Tool
                 var folderBrowser = new FolderBrowser();
                 bool success;
 
-                if ((txtOutputDirectoryPath.TextLength > 0))
+                if (txtOutputDirectoryPath.TextLength > 0)
                 {
                     success = folderBrowser.BrowseForFolder(txtOutputDirectoryPath.Text);
                 }
@@ -1155,7 +1155,7 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                MessageBox.Show(("Error in SelectOutputDirectory: " + ex.Message), "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                MessageBox.Show("Error in SelectOutputDirectory: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
 
         }
@@ -1170,7 +1170,7 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                MessageBox.Show(("Error in SetToolTips: " + ex.Message), "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                MessageBox.Show("Error in SetToolTips: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
 
         }
@@ -1181,7 +1181,7 @@ namespace DB_Schema_Export_Tool
             message.AppendLine("Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in August 2006");
             message.AppendLine("Copyright 2006, Battelle Memorial Institute.  All Rights Reserved.");
             message.AppendLine();
-            message.AppendLine("This is version " + Application.ProductVersion + " (" + SchemaExportOptions.PROGRAM_DATE + "). ");
+            message.AppendFormat("This is version {0} ({1})\n", Application.ProductVersion, SchemaExportOptions.PROGRAM_DATE);
             message.AppendLine();
 
             message.AppendLine("E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov");
@@ -1502,10 +1502,9 @@ namespace DB_Schema_Export_Tool
 
                 if (txtServerName.TextLength == 0)
                 {
-                    var message = "Please enter the server name";
                     if (informUserOnFailure)
                     {
-                        MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                        MessageBox.Show("Please enter the server name", "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                     }
 
                     return false;
@@ -1612,63 +1611,51 @@ namespace DB_Schema_Export_Tool
 
         private void lstDatabasesToProcess_KeyPress(object sender, KeyPressEventArgs e)
         {
-            // Always mark e as handled to allow Ctrl+A to be used to select all the entries in the listbox
+            // Set Handled to true to allow Ctrl+A to be used to select all the entries in the list box
             e.Handled = true;
         }
 
         private void lstDatabasesToProcess_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Control)
+            if (e.Control && e.KeyCode == Keys.A)
             {
-                if (e.KeyCode == Keys.A)
-                {
-                    // Ctrl+A - Select All
-                    SelectAllListboxItems(lstDatabasesToProcess);
-                    e.Handled = true;
-                }
-
+                // Ctrl+A - Select All
+                SelectAllListboxItems(lstDatabasesToProcess);
+                e.Handled = true;
             }
 
         }
 
         private void lstObjectTypesToScript_KeyPress(object sender, KeyPressEventArgs e)
         {
-            // Always mark e as handled to allow Ctrl+A to be used to select all the entries in the listbox
+            // Set Handled to true to allow Ctrl+A to be used to select all the entries in the list box
             e.Handled = true;
         }
 
         private void lstObjectTypesToScript_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Control)
+            if (e.Control && e.KeyCode == Keys.A)
             {
-                if (e.KeyCode == Keys.A)
-                {
-                    // Ctrl+A - Select All
-                    SelectAllListboxItems(lstObjectTypesToScript);
-                    e.Handled = true;
-                }
-
+                // Ctrl+A - Select All
+                SelectAllListboxItems(lstObjectTypesToScript);
+                e.Handled = true;
             }
 
         }
 
         private void lstTableNamesToExportData_KeyPress(object sender, KeyPressEventArgs e)
         {
-            // Always mark e as handled to allow Ctrl+A to be used to select all the entries in the listbox
+            // Set Handled to true to allow Ctrl+A to be used to select all the entries in the list box
             e.Handled = true;
         }
 
         private void lstTableNamesToExportData_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Control)
+            if (e.Control && e.KeyCode == Keys.A)
             {
-                if (e.KeyCode == Keys.A)
-                {
-                    // Ctrl+A - Select All
-                    SelectAllListboxItems(lstTableNamesToExportData);
-                    e.Handled = true;
-                }
-
+                // Ctrl+A - Select All
+                SelectAllListboxItems(lstTableNamesToExportData);
+                e.Handled = true;
             }
 
         }

@@ -16,7 +16,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Show additional debug messages
         /// </summary>
-        private bool ShowTraceMessages { get; set; }
+        private bool ShowTraceMessages { get; }
 
         /// <summary>
         /// Constructor

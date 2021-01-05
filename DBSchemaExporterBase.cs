@@ -146,20 +146,18 @@ namespace DB_Schema_Export_Tool
             TableNamesToAutoExportData = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
             TableNameRegexToAutoExportData = new SortedSet<string>();
 
-            var regExOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline;
-
             mAnyLowerMatcher = new Regex("[a-z]", RegexOptions.Compiled | RegexOptions.Singleline);
 
             mCamelCaseMatcher = new Regex("(?<Part1>.+?)(?<Part2Start>[A-Z]+)(?<Part3>.*)", RegexOptions.Compiled | RegexOptions.Singleline);
 
-            mColumnCharNonStandardMatcher = new Regex("[^a-z0-9_]", regExOptions);
+            mColumnCharNonStandardMatcher = new Regex("[^a-z0-9_]", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
-            mNonStandardOSChars = new Regex(@"[^a-z0-9_ =+-,.;~!@#$%^&(){}\[\]]", regExOptions);
+            mNonStandardOSChars = new Regex(@"[^a-z0-9_ =+-,.;~!@#$%^&(){}\[\]]", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
             // This will get updated later if mOptions.ObjectNameFilter is not empty
             // We are not instantiating this here since we want to use OnErrorEvent() if there is as problem,
             // and that event is not subscribed to until after this class is instantiated
-            mObjectNameMatcher = new Regex(".+", regExOptions);
+            mObjectNameMatcher = new Regex(".+", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
             mConnectedToServer = false;
             mCurrentServerInfo = new ServerConnectionInfo(string.Empty, true);
@@ -230,7 +228,7 @@ namespace DB_Schema_Export_Tool
                 var userDefinedTableNames = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 // Copy the table names from tablesForDataExport to tablesToExportData
-                if (tablesForDataExport != null && tablesForDataExport.Count > 0)
+                if (tablesForDataExport?.Count > 0)
                 {
                     foreach (var item in tablesForDataExport)
                     {
@@ -250,7 +248,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 // Copy the table names from TableNamesToAutoExportData to tablesToExportData (if not yet present)
-                if (TableNamesToAutoExportData != null && TableNamesToAutoExportData.Count > 0)
+                if (TableNamesToAutoExportData?.Count > 0)
                 {
                     foreach (var tableName in TableNamesToAutoExportData)
                     {
@@ -804,7 +802,7 @@ namespace DB_Schema_Export_Tool
                     case DataColumnTypeConstants.BinaryByte:
                         try
                         {
-                            delimitedRowValues.Append("0x" + Convert.ToByte(columnValues[columnIndex]).ToString("X2"));
+                            delimitedRowValues.AppendFormat("0x{0:X2}", Convert.ToByte(columnValues[columnIndex]));
                         }
                         catch (Exception)
                         {
@@ -1007,7 +1005,7 @@ namespace DB_Schema_Export_Tool
             string targetColumnName;
 
             // Rename the column if defined in mOptions.ColumnMapForDataExport or if mOptions.TableDataSnakeCase is true
-            if (columnMapInfo != null && columnMapInfo.IsColumnDefined(currentColumnName))
+            if (columnMapInfo?.IsColumnDefined(currentColumnName) == true)
             {
                 targetColumnName = columnMapInfo.GetTargetColumnName(currentColumnName);
                 if (targetColumnName.Equals("<skip>", StringComparison.OrdinalIgnoreCase))
@@ -1416,7 +1414,7 @@ namespace DB_Schema_Export_Tool
                 }
             }
 
-            if (databaseList != null && databaseList.Count > 0)
+            if (databaseList?.Count > 0)
             {
                 var success = ScriptDBObjectsAndData(databaseList, tablesForDataExport);
                 if (!success)
@@ -1485,7 +1483,7 @@ namespace DB_Schema_Export_Tool
             {
                 var warningMessages = warningsByDatabase[databaseName];
 
-                if (warningMessages.Count <= 0)
+                if (warningMessages.Count == 0)
                     continue;
 
                 Console.WriteLine();
@@ -1559,7 +1557,7 @@ namespace DB_Schema_Export_Tool
             if (!TableNamePassesFilters(options, tableInfo.SourceTableName))
                 return true;
 
-            return tableInfo.TargetTableName != null && tableInfo.TargetTableName.Equals("<skip>", StringComparison.OrdinalIgnoreCase);
+            return tableInfo.TargetTableName?.Equals("<skip>", StringComparison.OrdinalIgnoreCase) == true;
         }
 
         /// <summary>

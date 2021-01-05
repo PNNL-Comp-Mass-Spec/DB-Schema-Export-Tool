@@ -9,7 +9,6 @@ using PRISM.Logging;
 
 namespace DB_Schema_Export_Tool
 {
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public class SchemaExportOptions
     {
         // Ignore Spelling: PostgreSQL, Svn, Npgsql, schemas, psql
@@ -19,7 +18,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "October 10, 2020";
+        public const string PROGRAM_DATE = "January 4, 2021";
 
         public const string DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX = "DBSchema__";
 
@@ -91,7 +90,7 @@ namespace DB_Schema_Export_Tool
         public string DBUser { get; set; }
 
         [Option("DBPass", HelpShowsDefault = false,
-            HelpText = @"Password for the database user; ignored if connecting to SQL Server with integrated authentication. " +
+            HelpText = "Password for the database user; ignored if connecting to SQL Server with integrated authentication. " +
                        // ReSharper disable StringLiteralTypo
                        @"For PostgreSQL, you can create a file named pgpass.conf at %APPDATA%\postgresql (or ~/.pgpass on Linux) to track passwords for PostgreSQL users. " +
                        // ReSharper restore StringLiteralTypo
