@@ -243,7 +243,7 @@ Use `/Stats` to show (but not log) export stats
 
 Use `/Trace` to show additional debug messages at the console
 
-The processing options can be specified in a parameter file using `/ParamFile:Options.conf` or `/Conf:Options.conf`
+The processing options can be specified in a parameter file using `/ParamFile:Options.conf` or `/Conf:Options.conf` or `/P:Options.conf`
 * Define options using the format `ArgumentName=Value`
 * Lines starting with `#` or `;` will be treated as comments
 * Additional arguments on the command line can supplement or override the arguments in the parameter file
