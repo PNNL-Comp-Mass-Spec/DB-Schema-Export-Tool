@@ -702,7 +702,6 @@ namespace DB_Schema_Export_Tool
             }
             else
             {
-
                 Console.WriteLine(" {0,-48} {1}", "Export server settings, logins, and jobs:", BoolToEnabledDisabled(ScriptingOptions.ExportServerSettingsLoginsAndJobs));
 
                 if (Sync)
@@ -802,7 +801,6 @@ namespace DB_Schema_Export_Tool
             {
                 try
                 {
-
                     // Make sure the user didn't specify a text file
                     var candidateFile = new FileInfo(TableNameFilterSet.First());
                     if (candidateFile.Exists)

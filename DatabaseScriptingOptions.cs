@@ -1,6 +1,5 @@
 ﻿namespace DB_Schema_Export_Tool
 {
-
     public class DatabaseScriptingOptions
     {
         public bool IncludeSystemObjects { get; set; }

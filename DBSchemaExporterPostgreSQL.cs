@@ -199,7 +199,6 @@ namespace DB_Schema_Export_Tool
             {
                 cachedLines.Add(updatedLine);
             }
-
         }
 
         /// <summary>
@@ -258,7 +257,6 @@ namespace DB_Schema_Export_Tool
 
             // Add/update the dictionary
             mCachedDatabaseTableInfo[databaseName] = tablesInDatabase;
-
         }
 
         /// <summary>
@@ -322,7 +320,6 @@ namespace DB_Schema_Export_Tool
                     {
                         // Ignore errors here
                     }
-
                 }
 
                 // Connect to server mOptions.ServerName
@@ -344,7 +341,6 @@ namespace DB_Schema_Export_Tool
                 mPgConnection = null;
                 return false;
             }
-
         }
 
         /// <summary>
@@ -400,7 +396,6 @@ namespace DB_Schema_Export_Tool
 
                         tablesToExportData.Add(item, 0);
                     }
-
                 }
             }
             catch (Exception ex)
@@ -485,7 +480,6 @@ namespace DB_Schema_Export_Tool
 
             if (pgDumpOutputFile.LastWriteTime > existingData)
             {
-
                 // Parse the pgDump output file and create separate files for each object
                 ProcessPgDumpSchemaFile(databaseName, pgDumpOutputFile, out var unhandledScriptingCommands);
 
@@ -535,7 +529,6 @@ namespace DB_Schema_Export_Tool
             long maxRowsToExport,
             WorkingParams workingParams)
         {
-
             try
             {
                 if (!mCachedDatabaseTableInfo.ContainsKey(databaseName))
@@ -639,7 +632,6 @@ namespace DB_Schema_Export_Tool
             var tableListCommand = new NpgsqlCommand(sql, mPgConnection);
             using (var reader = tableListCommand.ExecuteReader())
             {
-
                 if (!reader.HasRows)
                     return true;
 
@@ -762,7 +754,6 @@ namespace DB_Schema_Export_Tool
                         writer.WriteLine("-- select setval('my_sequence_name', (select max(my_serial_column) from {0});", dataExportParams.TargetTableNameWithSchema);
                     }
                 }
-
             }
 
             return true;
@@ -803,7 +794,6 @@ namespace DB_Schema_Export_Tool
             TableDataExportInfo tableInfo,
             string sourceTableNameWithSchema)
         {
-
             var dataExportParams = new DataExportWorkingParams(false, "null")
             {
                 SourceTableNameWithSchema = sourceTableNameWithSchema,
@@ -952,8 +942,6 @@ namespace DB_Schema_Export_Tool
                 OnWarningEvent(string.Format("Could not find {0} in {1}, below {2}, or below the working directory",
                                              exeName, alternativesDir.FullName, userDirectory.FullName));
                 return null;
-
-
             }
             catch (Exception ex)
             {
@@ -962,7 +950,6 @@ namespace DB_Schema_Export_Tool
 
                 return null;
             }
-
         }
 
         private FileInfo FindPgExecutableWindows(string exeName)
@@ -1003,7 +990,6 @@ namespace DB_Schema_Export_Tool
 
                 return null;
             }
-
         }
 
         /// <summary>
@@ -1161,7 +1147,6 @@ namespace DB_Schema_Export_Tool
                             }
 
                             databaseTableInfo.Add(new TableDataExportInfo(tableNameWithSchema), 0);
-
                         }
                     }
                 }
@@ -1173,7 +1158,6 @@ namespace DB_Schema_Export_Tool
 
                     foreach (var item in databaseTables)
                     {
-
                         // ReSharper disable StringLiteralTypo
                         var rowCountSql = string.Format("SELECT relname, reltuples::bigint as ApproximateRowCount " +
                                                         "FROM pg_class " +
@@ -1234,7 +1218,6 @@ namespace DB_Schema_Export_Tool
                             break;
                         }
                     }
-
                 }
 
                 OnProgressComplete();
@@ -1288,7 +1271,6 @@ namespace DB_Schema_Export_Tool
                 }
 
                 return databaseNames;
-
             }
             catch (Exception ex)
             {
@@ -1340,7 +1322,6 @@ namespace DB_Schema_Export_Tool
             string objectDescription,
             ref bool unhandledScriptingCommands)
         {
-
             var nameMatch = mFunctionOrProcedureNameMatcher.Match(currentObject.Name);
             if (nameMatch.Success)
             {
@@ -1524,7 +1505,6 @@ namespace DB_Schema_Export_Tool
             bool caseSensitive,
             out bool definedInPgPassFile)
         {
-
             using (var reader = new StreamReader(new FileStream(passwordFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
             {
                 var comparisonType = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
@@ -1595,7 +1575,6 @@ namespace DB_Schema_Export_Tool
                         {
                             mOptions.DBUser = username;
                         }
-
                     }
 
                     OnDebugEvent(string.Format("Determined password for user {0} using {1}", pgUser, passwordFile.FullName));
@@ -1739,8 +1718,6 @@ namespace DB_Schema_Export_Tool
                                 unhandledScriptingCommands = true;
                                 break;
                         }
-
-
                     }
                     else
                     {
@@ -1948,7 +1925,6 @@ namespace DB_Schema_Export_Tool
         /// </remarks>
         private void ProcessPgDumpSchemaFile(string databaseName, FileInfo pgDumpOutputFile, out bool unhandledScriptingCommands)
         {
-
             unhandledScriptingCommands = false;
 
             if (pgDumpOutputFile.Directory == null)
@@ -2003,7 +1979,6 @@ namespace DB_Schema_Export_Tool
                     var match = mNameTypeSchemaMatcher.Match(dataLine);
                     try
                     {
-
                         if (!match.Success)
                         {
                             if (dataLine.Equals("SET default_tablespace = '';") ||
@@ -2043,13 +2018,11 @@ namespace DB_Schema_Export_Tool
                             "--",
                             dataLine
                         };
-
                     }
                     catch (Exception ex)
                     {
                         OnWarningEvent("Error in ProcessPgDumpFile: " + ex.Message);
                     }
-
                 }
 
                 ProcessAndStoreCachedLinesTargetScriptFile(
@@ -2063,7 +2036,6 @@ namespace DB_Schema_Export_Tool
                 var outputDirectory = pgDumpOutputFile.Directory.FullName;
                 WriteCachedLines(outputDirectory, scriptInfoByObject);
             }
-
         }
 
         /// <summary>
@@ -2072,7 +2044,6 @@ namespace DB_Schema_Export_Tool
         /// <returns></returns>
         protected override bool ScriptServerObjects()
         {
-
             try
             {
                 var serverInfoOutputDirectory = GetServerInfoOutputDirectory(mOptions.ServerName);
@@ -2124,14 +2095,12 @@ namespace DB_Schema_Export_Tool
                     OnWarningEvent(string.Format("{0} did not create {1}", pgDumpAll.Name, outputFile.FullName));
 
                 return false;
-
             }
             catch (Exception ex)
             {
                 SetLocalError(DBSchemaExportErrorCodes.GeneralError, "Error scripting objects for server " + mOptions.ServerName, ex);
                 return false;
             }
-
         }
 
         private void StoreCachedLinesForObject(
@@ -2179,7 +2148,6 @@ namespace DB_Schema_Export_Tool
             {
                 scriptInfoByObject.Add(outputFileName, cachedLines);
             }
-
         }
 
         private void UpdateCachedObjectInfo(
@@ -2276,12 +2244,8 @@ namespace DB_Schema_Export_Tool
                     {
                         writer.WriteLine(string.Empty);
                     }
-
                 }
-
             }
-
         }
-
     }
 }

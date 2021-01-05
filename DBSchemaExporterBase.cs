@@ -419,7 +419,6 @@ namespace DB_Schema_Export_Tool
             bool quoteWithSquareBrackets,
             DataExportWorkingParams dataExportParams)
         {
-
             var columnIndex = 0;
 
             mOptions.ColumnMapForDataExport.TryGetValue(sourceTableName, out var columnMapInfo);
@@ -597,7 +596,6 @@ namespace DB_Schema_Export_Tool
 
                 foreach (var scriptFileName in workingParams.DataLoadScriptFiles)
                 {
-
                     var lastSlashIndex = scriptFileName.LastIndexOf('/');
                     if (lastSlashIndex > 0)
                     {
@@ -683,7 +681,6 @@ namespace DB_Schema_Export_Tool
                         OnWarningEvent("Aborted processing");
                         return true;
                     }
-
                 }
 
                 if (mOptions.ScriptPgLoadCommands)
@@ -791,7 +788,6 @@ namespace DB_Schema_Export_Tool
                             {
                                 delimitedRowValues.Append("00");
                             }
-
                         }
                         catch (Exception)
                         {
@@ -830,7 +826,6 @@ namespace DB_Schema_Export_Tool
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
-
             }
 
             if (dataExportParams.PgInsertEnabled)
@@ -876,7 +871,6 @@ namespace DB_Schema_Export_Tool
             TableDataExportInfo tableInfo,
             DataExportWorkingParams dataExportParams)
         {
-
             // Make sure output file name doesn't contain any invalid characters
             string cleanName;
             var defaultOwnerSchema = IsDefaultOwnerSchema(dataExportParams.TargetTableSchema);
@@ -1085,7 +1079,6 @@ namespace DB_Schema_Export_Tool
             bool quoteWithSquareBrackets,
             bool alwaysQuoteNames)
         {
-
             if (string.IsNullOrWhiteSpace(tableInfo.TargetTableName))
             {
                 dataExportParams.TargetTableSchema = GetSchemaName(dataExportParams.SourceTableNameWithSchema, out var targetTableName);
@@ -1101,7 +1094,6 @@ namespace DB_Schema_Export_Tool
                 {
                     dataExportParams.TargetTableName = ConvertNameToSnakeCase(dataExportParams.TargetTableName);
                 }
-
             }
             else
             {
@@ -1117,7 +1109,6 @@ namespace DB_Schema_Export_Tool
             return string.Format("{0}.{1}",
                                  PossiblyQuoteName(dataExportParams.TargetTableSchema, quoteWithSquareBrackets, alwaysQuoteNames),
                                  PossiblyQuoteName(dataExportParams.TargetTableName, quoteWithSquareBrackets, alwaysQuoteNames));
-
         }
 
         /// <summary>
@@ -1193,7 +1184,6 @@ namespace DB_Schema_Export_Tool
 
             // PostgreSQL quotes names with double quotes
             return '"' + objectName + '"';
-
         }
 
         /// <summary>
@@ -1217,7 +1207,6 @@ namespace DB_Schema_Export_Tool
             {
                 SetPauseStatus(PauseStatusConstants.PauseRequested);
             }
-
         }
 
         /// <summary>
@@ -1230,7 +1219,6 @@ namespace DB_Schema_Export_Tool
             {
                 SetPauseStatus(PauseStatusConstants.UnpauseRequested);
             }
-
         }
 
         /// <summary>
@@ -1344,7 +1332,6 @@ namespace DB_Schema_Export_Tool
                         SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError,
                                       string.Format("Database {0} not found on server {1}", currentDB, mOptions.ServerName));
                     }
-
                 }
 
                 ShowDatabaseWarnings(warningsByDatabase);
@@ -1466,7 +1453,6 @@ namespace DB_Schema_Export_Tool
             {
                 // Ignore errors here
             }
-
         }
 
         private void SetPauseStatus(PauseStatusConstants newPauseStatus)
@@ -1591,7 +1577,6 @@ namespace DB_Schema_Export_Tool
 
             tableInfo = new TableDataExportInfo(candidateTableSourceTableName);
             return false;
-
         }
 
         /// <summary>
@@ -1664,7 +1649,6 @@ namespace DB_Schema_Export_Tool
             {
                 SetPauseStatus(PauseStatusConstants.UnpauseRequested);
             }
-
         }
 
         /// <summary>
@@ -1704,7 +1688,6 @@ namespace DB_Schema_Export_Tool
                         mOptions.CreateDirectoryForEachDB = true;
                     }
                 }
-
             }
             catch (Exception ex)
             {
@@ -1774,7 +1757,6 @@ namespace DB_Schema_Export_Tool
                               "Error validating or creating directory " + workingParams.OutputDirectoryPathCurrentDB);
                 return false;
             }
-
         }
 
         /// <summary>
@@ -1783,12 +1765,10 @@ namespace DB_Schema_Export_Tool
         /// <returns></returns>
         private bool ValidateOutputOptions()
         {
-
             mOptions.ValidateOutputOptions();
 
             try
             {
-
                 // Confirm that the output directory exists
                 var outputDirectory = new DirectoryInfo(mOptions.OutputDirectoryPath);
 
@@ -1808,7 +1788,6 @@ namespace DB_Schema_Export_Tool
                               "Output directory could not be created: " + mOptions.OutputDirectoryPath, ex);
                 return false;
             }
-
         }
 
         /// <summary>
@@ -1822,7 +1801,6 @@ namespace DB_Schema_Export_Tool
             IEnumerable<string> scriptInfo,
             bool autoAddGoStatements = true)
         {
-
             var result = WriteTextToFile(
                 outputFile.Directory,
                 Path.GetFileNameWithoutExtension(outputFile.Name),

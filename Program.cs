@@ -125,7 +125,6 @@ namespace DB_Schema_Export_Tool
                 ConsoleMsgUtils.ShowWarning("Processing error");
                 Thread.Sleep(2000);
                 return -1;
-
             }
             catch (Exception ex)
             {
@@ -133,7 +132,6 @@ namespace DB_Schema_Export_Tool
                 Thread.Sleep(2000);
                 return -1;
             }
-
         }
 
         private static void Processor_DebugEvent(string message)
@@ -150,6 +148,5 @@ namespace DB_Schema_Export_Tool
             mLastProgressTime = DateTime.UtcNow;
             Processor_DebugEvent(percentComplete.ToString("0.0") + "%, " + progressMessage);
         }
-
     }
 }

@@ -6,7 +6,6 @@ namespace DB_Schema_Export_Tool
 {
     public abstract class LoggerBase : EventNotifier
     {
-
         /// <summary>
         /// Constructor
         /// </summary>

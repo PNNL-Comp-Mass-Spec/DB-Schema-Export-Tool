@@ -75,7 +75,6 @@ namespace DB_Schema_Export_Tool
         /// <remarks>Will get defined based on TargetTableNameWithSchema</remarks>
         public string TargetTableName { get; set; }
 
-
         /// <summary>
         /// SQL to add after the list of values to insert into a table (when PgInsertEnabled is true)
         /// </summary>
@@ -130,6 +129,5 @@ namespace DB_Schema_Export_Tool
 
             TargetTableName = string.Empty;
         }
-
     }
 }

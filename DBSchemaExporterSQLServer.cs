@@ -242,7 +242,6 @@ namespace DB_Schema_Export_Tool
                         {
                             finalSearchIndex = currentLine.Length - 1;
                         }
-
                     }
 
                     while (true)
@@ -281,18 +280,15 @@ namespace DB_Schema_Export_Tool
                     }
 
                     cleanScriptInfo.Add(currentLine);
-
                 }
 
                 return cleanScriptInfo;
-
             }
             catch (Exception ex)
             {
                 OnWarningEvent("Error in CleanSqlScript: " + ex.Message);
                 return cleanScriptInfo;
             }
-
         }
 
         /// <summary>
@@ -340,7 +336,6 @@ namespace DB_Schema_Export_Tool
                 mCurrentDatabase = null;
                 return false;
             }
-
         }
 
         /// <summary>
@@ -504,7 +499,6 @@ namespace DB_Schema_Export_Tool
                 SetLocalError(DBSchemaExportErrorCodes.GeneralError, "Error scripting objects in database " + databaseName, ex);
                 return false;
             }
-
         }
 
         /// <summary>
@@ -1070,7 +1064,6 @@ namespace DB_Schema_Export_Tool
             long maxRowsToExport,
             WorkingParams workingParams)
         {
-
             try
             {
                 if (mCurrentDatabase == null || !mCurrentDatabase.Name.Equals(databaseName))
@@ -1354,7 +1347,6 @@ namespace DB_Schema_Export_Tool
                     OnStatusEvent(message);
 
                     workingParams.AddWarningMessage(message);
-
                 }
                 else if (tableInfo.PrimaryKeyColumns.Count == 0)
                 {
@@ -1512,7 +1504,6 @@ namespace DB_Schema_Export_Tool
 
             foreach (DataRow currentRow in queryResults.Tables[0].Rows)
             {
-
                 delimitedRowValues.Clear();
                 if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData && !usingPgInsert)
                 {
@@ -1618,7 +1609,6 @@ namespace DB_Schema_Export_Tool
             {
                 return false;
             }
-
         }
 
         private bool ExportSchema(NamedSmoObject databaseSchema)
@@ -1631,7 +1621,6 @@ namespace DB_Schema_Export_Tool
             {
                 return false;
             }
-
         }
 
         private void ExportSQLServerConfiguration(Server sqlServer, ScriptingOptions scriptOptions, FileSystemInfo outputDirectoryPathCurrentServer)
@@ -1650,7 +1639,6 @@ namespace DB_Schema_Export_Tool
             {
                 try
                 {
-
                     var outputFile = new FileInfo(Path.Combine(
                         outputDirectoryPathCurrentServer.FullName, "ServerMail.sql"));
 
@@ -1686,7 +1674,6 @@ namespace DB_Schema_Export_Tool
             {
                 OnWarningEvent("Error scripting the SQL Server registry settings; most likely the user is not a server admin: " + ex.Message);
             }
-
         }
 
         private void ExportSQLServerInfoToIni(Server sqlServer, FileSystemInfo outputDirectoryPathCurrentServer)
@@ -1840,9 +1827,7 @@ namespace DB_Schema_Export_Tool
                     SetLocalError(DBSchemaExportErrorCodes.GeneralError,
                                   string.Format("Processing failed for server {0}; login {1}", mOptions.ServerName, currentLogin));
                 }
-
             }
-
         }
 
         /// <summary>
@@ -1881,9 +1866,7 @@ namespace DB_Schema_Export_Tool
                     SetLocalError(DBSchemaExportErrorCodes.GeneralError,
                                   string.Format("Processing failed for server {0}; job {1}", mOptions.ServerName, currentJob));
                 }
-
             }
-
         }
 
         /// <summary>
@@ -1932,7 +1915,6 @@ namespace DB_Schema_Export_Tool
         /// <returns>Comma separated list of primary key columns</returns>
         private SortedSet<string> GetPrimaryKeysForTableViaScripter(TableDataExportInfo tableInfo)
         {
-
             if (!mCurrentDatabase.Tables.Contains(tableInfo.SourceTableName))
                 return new SortedSet<string>();
 
@@ -2049,14 +2031,12 @@ namespace DB_Schema_Export_Tool
                 }
 
                 return databaseNames;
-
             }
             catch (Exception ex)
             {
                 SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error obtaining list of databases on current server", ex);
                 return new List<string>();
             }
-
         }
 
         /// <summary>
@@ -2139,7 +2119,6 @@ namespace DB_Schema_Export_Tool
                     return databaseTableInfo;
                 }
 
-
                 // Get the list of tables in this database
                 OnDebugEvent(string.Format("Obtaining list of tables in database {0} on server {1}",
                                            databaseName, mCurrentServerInfo.ServerName));
@@ -2168,7 +2147,6 @@ namespace DB_Schema_Export_Tool
                         OnWarningEvent("Aborted processing");
                         break;
                     }
-
                 }
 
                 OnProgressComplete();
@@ -2251,7 +2229,6 @@ namespace DB_Schema_Export_Tool
 
         private string ResolvePrimaryKeys(DataExportWorkingParams dataExportParams, TableDataExportInfo tableInfo, ColumnMapInfo columnMapInfo)
         {
-
             // Comma separated list of primary key columns
             string primaryKeyColumnList;
 
@@ -2314,7 +2291,6 @@ namespace DB_Schema_Export_Tool
                     OnWarningEvent("Aborted processing");
                     return processCount;
                 }
-
             }
 
             return processCount;
@@ -2336,7 +2312,6 @@ namespace DB_Schema_Export_Tool
         /// <returns></returns>
         private bool ScriptServerObjects(Server sqlServer)
         {
-
             try
             {
                 var serverInfoOutputDirectory = GetServerInfoOutputDirectory(sqlServer.Name);
@@ -2380,7 +2355,6 @@ namespace DB_Schema_Export_Tool
                 SetLocalError(DBSchemaExportErrorCodes.GeneralError, "Error scripting objects for server " + sqlServer.Name, ex);
                 return false;
             }
-
         }
 
         private bool SqlServer2005OrNewer(Database currentDatabase)
@@ -2403,7 +2377,6 @@ namespace DB_Schema_Export_Tool
 
             return scriptInfo;
         }
-
 
         private bool TablePassesFilters(WorkingParams workingParams, Table databaseTable, bool showTraceMessages)
         {

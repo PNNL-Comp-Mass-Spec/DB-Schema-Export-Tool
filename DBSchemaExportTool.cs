@@ -136,7 +136,6 @@ namespace DB_Schema_Export_Tool
         /// </remarks>
         public bool ExportSchema(string outputDirectoryPath, ref Dictionary<string, string> databaseNamesAndOutputPaths)
         {
-
             try
             {
                 if (string.IsNullOrWhiteSpace(outputDirectoryPath))
@@ -157,7 +156,6 @@ namespace DB_Schema_Export_Tool
                 {
                     mOptions.CreateDirectoryForEachDB = true;
                 }
-
             }
             catch (Exception ex)
             {
@@ -255,7 +253,6 @@ namespace DB_Schema_Export_Tool
                 OnErrorEvent("Error in ExportSchema configuring dbSchemaExporter", ex);
                 return false;
             }
-
         }
 
         /// <summary>
@@ -376,11 +373,8 @@ namespace DB_Schema_Export_Tool
                                         linesMatch = false;
                                         break;
                                     }
-
                                 }
-
                             }
-
                         }
 
                         if (ignoreInsertIntoDates && dataLine.StartsWith("INSERT INTO ") && comparisonLine.StartsWith("INSERT INTO "))
@@ -395,7 +389,6 @@ namespace DB_Schema_Export_Tool
                                 comparisonLine = comparisonLine.Substring(0, matchComparisonFile.Index);
                                 linesMatch = StringMatch(dataLine, comparisonLine);
                             }
-
                         }
 
                         if (dataLine.StartsWith("-- Dumped from database version") && comparisonLine.StartsWith("-- Dumped from") ||
@@ -411,12 +404,10 @@ namespace DB_Schema_Export_Tool
                             differenceReason = DifferenceReasonType.Changed;
                             return true;
                         }
-
                     }
                 }
 
                 return false;
-
             }
             catch (Exception ex)
             {
@@ -424,7 +415,6 @@ namespace DB_Schema_Export_Tool
                 differenceReason = DifferenceReasonType.Changed;
                 return true;
             }
-
         }
 
         /// <summary>
@@ -457,7 +447,6 @@ namespace DB_Schema_Export_Tool
         /// <returns>True if found, otherwise false</returns>
         public static bool GetTableByName(IEnumerable<TableDataExportInfo> tablesForDataExport, string sourceTableName, out TableDataExportInfo tableInfo)
         {
-
             foreach (var candidateTable in tablesForDataExport)
             {
                 if (!candidateTable.SourceTableName.Equals(sourceTableName, StringComparison.OrdinalIgnoreCase))
@@ -677,7 +666,6 @@ namespace DB_Schema_Export_Tool
             {
                 OnErrorEvent("Error in LoadColumnMapInfo", ex);
             }
-
         }
 
         /// <summary>
@@ -688,7 +676,6 @@ namespace DB_Schema_Export_Tool
         /// <returns>True if success (or if dateFilterFilePath is an empty string); false if an error</returns>
         private bool LoadDateFiltersForTableData(string dateFilterFilePath, ICollection<TableDataExportInfo> tablesForDataExport)
         {
-
             try
             {
                 if (string.IsNullOrWhiteSpace(dateFilterFilePath))
@@ -762,14 +749,12 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
-
                 var tableText = tableCountWithFilters == 1 ? "table" : "tables";
                 ShowTrace(string.Format(
                     "Loaded date filters for {0} {1} from {2}",
                     tableCountWithFilters, tableText, dataFile.Name));
 
                 return true;
-
             }
             catch (Exception ex)
             {
@@ -896,7 +881,6 @@ namespace DB_Schema_Export_Tool
                             tableNames.Add(sourceTableName);
                             tablesForDataExport.Add(tableInfo);
                         }
-
                     }
                 }
 
@@ -1015,7 +999,6 @@ namespace DB_Schema_Export_Tool
                     {
                         modifiedFileCount++;
                     }
-
                 }
             }
 
@@ -1095,7 +1078,6 @@ namespace DB_Schema_Export_Tool
                     {
                         // New file; added by the calling function
                     }
-
                 }
             }
 
@@ -1331,7 +1313,6 @@ namespace DB_Schema_Export_Tool
                 OnErrorEvent("Error in SyncSchemaFiles", ex);
                 return false;
             }
-
         }
 
         private void SyncSchemaFilesRecursive(
@@ -1341,7 +1322,6 @@ namespace DB_Schema_Export_Tool
             ICollection<string> newFilePaths,
             ref int fileCopyCount)
         {
-
             if (!targetDirectory.Exists)
             {
                 OnStatusEvent("Creating target directory for synchronization: " + targetDirectory.FullName);
@@ -1393,7 +1373,6 @@ namespace DB_Schema_Export_Tool
                 var targetSubdirectory = new DirectoryInfo(Path.Combine(targetDirectory.FullName, subdirectory.Name));
                 SyncSchemaFilesRecursive(subdirectory, targetSubdirectory, databaseName, newFilePaths, ref fileCopyCount);
             }
-
         }
 
         /// <summary>
@@ -1507,7 +1486,6 @@ namespace DB_Schema_Export_Tool
                                 return;
                             }
                         }
-
                     }
 
                     Console.WriteLine();
@@ -1591,7 +1569,6 @@ namespace DB_Schema_Export_Tool
                     {
                         commitMessage += " " + commitMessageAppend;
                     }
-
                 }
 
                 if (!mOptions.CommitUpdates)
@@ -1647,7 +1624,6 @@ namespace DB_Schema_Export_Tool
                                 {
                                     cmdArgs = " push GitHub";
                                 }
-
                             }
 
                             maxRuntimeSeconds = 300;
@@ -1664,20 +1640,16 @@ namespace DB_Schema_Export_Tool
                             {
                                 break;
                             }
-
                         }
-
                     }
 
                     Console.WriteLine();
                 }
-
             }
             catch (Exception ex)
             {
                 OnErrorEvent("Error in UpdateRepoChanges for tool " + toolName, ex);
             }
-
         }
 
         private bool ValidateSchemaExporter()
@@ -1713,6 +1685,5 @@ namespace DB_Schema_Export_Tool
                 return false;
             }
         }
-
     }
 }

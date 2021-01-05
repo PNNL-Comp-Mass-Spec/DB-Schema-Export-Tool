@@ -6,7 +6,6 @@ namespace DB_Schema_Export_Tool
 {
     public class ProgramRunner : EventNotifier
     {
-
         public bool RunCommand(
             string exePath,
             string cmdArgs,
@@ -70,7 +69,6 @@ namespace DB_Schema_Export_Tool
                         OnDebugEvent(string.Format("Waiting for {0}, {1:0} seconds elapsed",
                                                    Path.GetFileName(exePath), elapsedSeconds));
                     }
-
                 }
 
                 if (executionAborted)
@@ -82,14 +80,12 @@ namespace DB_Schema_Export_Tool
                 consoleOutput = programRunner.CachedConsoleOutput;
                 errorOutput = programRunner.CachedConsoleError;
                 return true;
-
             }
             catch (Exception ex)
             {
                 OnErrorEvent("Error in RunCommand", ex);
                 return false;
             }
-
         }
     }
 }

@@ -10,7 +10,6 @@ namespace DB_Schema_Export_Tool
 {
     internal class DBSchemaUpdater : EventNotifier
     {
-
         private readonly Regex mColumnNameMatcher;
 
         /// <summary>
@@ -506,7 +505,6 @@ namespace DB_Schema_Export_Tool
             {
                 writer.WriteLine(outputLine);
             }
-
         }
     }
 }

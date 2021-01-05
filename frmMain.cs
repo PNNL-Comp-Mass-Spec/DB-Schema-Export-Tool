@@ -149,7 +149,6 @@ namespace DB_Schema_Export_Tool
             }
 
             Application.DoEvents();
-
         }
 
         private void EnableDisableControls()
@@ -172,7 +171,6 @@ namespace DB_Schema_Export_Tool
             {
                 MessageBox.Show("Error in EnableDisableControls: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
-
         }
 
         private string GetAppDirectoryPath()
@@ -192,7 +190,6 @@ namespace DB_Schema_Export_Tool
                 {
                     return appDirectoryPath.Substring(0, appDirectoryPath.Length - DEBUG_DIRECTORY_NAME.Length);
                 }
-
             }
 
             return appDirectoryPath;
@@ -323,13 +320,11 @@ namespace DB_Schema_Export_Tool
                 {
                     mDBSchemaExporter.RequestPause();
                 }
-
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error in HandleDBExportStartingEvent: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
-
         }
 
         private void InitializeProgressBars()
@@ -369,7 +364,6 @@ namespace DB_Schema_Export_Tool
                 {
                     fileDialog.InitialDirectory = GetAppDirectoryPath();
                 }
-
             }
             else
             {
@@ -385,7 +379,6 @@ namespace DB_Schema_Export_Tool
                 mXmlSettingsFilePath = fileDialog.FileName;
                 IniFileLoadOptions(mXmlSettingsFilePath, true, true);
             }
-
         }
 
         private void IniFileLoadOptions(string filePath, bool resetToDefaultsPriorToLoad, bool connectToServer)
@@ -443,9 +436,7 @@ namespace DB_Schema_Export_Tool
                         {
                             UpdateDatabaseList();
                         }
-
                     }
-
                 }
                 catch (Exception)
                 {
@@ -458,7 +449,6 @@ namespace DB_Schema_Export_Tool
                 var msg = "Error loading settings from file: " + filePath;
                 MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
-
         }
 
         /// <summary>
@@ -466,7 +456,6 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         private void IniFileSaveOptions()
         {
-
             var fileDialog = new SaveFileDialog
             {
                 AddExtension = true,
@@ -515,7 +504,6 @@ namespace DB_Schema_Export_Tool
                 IniFileSaveOptions(mXmlSettingsFilePath);
             }
         }
-
 
         private void IniFileSaveOptions(string filePath, bool saveWindowDimensionsOnly = false)
         {
@@ -628,7 +616,6 @@ namespace DB_Schema_Export_Tool
                     {
                         regExSpecs.Add(new Regex(regexItem, regexOptions));
                     }
-
                 }
                 else
                 {
@@ -663,7 +650,6 @@ namespace DB_Schema_Export_Tool
                         {
                             textForRow += " rows)";
                         }
-
                     }
                     else
                     {
@@ -688,7 +674,6 @@ namespace DB_Schema_Export_Tool
                                 highlightCurrentRow = true;
                                 break;
                             }
-
                         }
 
                         if (!highlightCurrentRow)
@@ -698,9 +683,7 @@ namespace DB_Schema_Export_Tool
                             {
                                 highlightCurrentRow = true;
                             }
-
                         }
-
                     }
 
                     if (highlightCurrentRow)
@@ -708,15 +691,12 @@ namespace DB_Schema_Export_Tool
                         // Highlight this table name
                         lstTableNamesToExportData.SetSelected(itemIndex, true);
                     }
-
                 }
-
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error in PopulateTableNamesToExport: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
-
         }
 
         private void InitializeControls()
@@ -742,7 +722,6 @@ namespace DB_Schema_Export_Tool
                 {
                     IniFileSaveOptions(mXmlSettingsFilePath);
                 }
-
             }
             catch (Exception)
             {
@@ -795,13 +774,11 @@ namespace DB_Schema_Export_Tool
                 {
                     lstObjectTypesToScript.SetSelected(index, true);
                 }
-
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error in PopulateComboBoxes: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
-
         }
 
         private void ProgressUpdate(string taskDescription, float percentComplete)
@@ -839,7 +816,6 @@ namespace DB_Schema_Export_Tool
                 }
 
                 UpdateSchemaExportOptions();
-
             }
             catch (Exception ex)
             {
@@ -864,7 +840,6 @@ namespace DB_Schema_Export_Tool
                     MessageBox.Show("No databases or tables were selected; unable to continue", "Nothing To Do", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
-
             }
             catch (Exception ex)
             {
@@ -888,7 +863,6 @@ namespace DB_Schema_Export_Tool
                 {
                     mDBSchemaExporter.StoreTableNameRegexToAutoExportData(mTableNameAutoSelectRegEx);
                 }
-
             }
             catch (Exception ex)
             {
@@ -942,7 +916,6 @@ namespace DB_Schema_Export_Tool
 
                         Application.DoEvents();
                     }
-
                 }
 
                 Application.DoEvents();
@@ -952,7 +925,6 @@ namespace DB_Schema_Export_Tool
                                             mDBSchemaExporter.ErrorCode, mDBSchemaExporter.StatusMessage);
                     MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                 }
-
             }
             catch (Exception ex)
             {
@@ -969,13 +941,11 @@ namespace DB_Schema_Export_Tool
                     {
                         mThread.Abort();
                     }
-
                 }
                 catch (Exception)
                 {
                     // Ignore errors here
                 }
-
             }
 
             try
@@ -986,7 +956,6 @@ namespace DB_Schema_Export_Tool
             {
                 MessageBox.Show("Error finalizing results in ScriptDBSchemaObjects: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
-
         }
 
         private void ScriptDBSchemaObjectsThread()
@@ -1000,12 +969,11 @@ namespace DB_Schema_Export_Tool
             {
                 MessageBox.Show("Error in ScriptDBSchemaObjectsThread: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
-
         }
 
         private void SelectDefaultDBs(IReadOnlyCollection<string> defaultDBs)
         {
-            if (defaultDBs == null) 
+            if (defaultDBs == null)
                 return;
 
             var sortedDBs = (from item in defaultDBs select item.ToLower()).ToList();
@@ -1022,9 +990,7 @@ namespace DB_Schema_Export_Tool
                     lstDatabasesToProcess.SetSelected(index, true);
                 }
             }
-
         }
-
 
         private void ResetToDefaults(bool confirm)
         {
@@ -1110,7 +1076,6 @@ namespace DB_Schema_Export_Tool
             {
                 MessageBox.Show("Error in ResetToDefaults: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
-
         }
 
         private void SelectAllListboxItems(ListBox listBox)
@@ -1121,13 +1086,11 @@ namespace DB_Schema_Export_Tool
                 {
                     listBox.SetSelected(index, true);
                 }
-
             }
             catch (Exception)
             {
                 // Ignore errors here
             }
-
         }
 
         private void SelectOutputDirectory()
@@ -1151,13 +1114,11 @@ namespace DB_Schema_Export_Tool
                 {
                     txtOutputDirectoryPath.Text = folderBrowser.FolderPath;
                 }
-
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error in SelectOutputDirectory: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
-
         }
         private void SetToolTips()
         {
@@ -1172,7 +1133,6 @@ namespace DB_Schema_Export_Tool
             {
                 MessageBox.Show("Error in SetToolTips: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
-
         }
 
         private void ShowAboutBox()
@@ -1207,7 +1167,6 @@ namespace DB_Schema_Export_Tool
             {
                 tableNames[index] = StripRowCountFromTableName(tableNames[index]);
             }
-
         }
 
         private string StripRowCountFromTableName(string tableName)
@@ -1225,7 +1184,6 @@ namespace DB_Schema_Export_Tool
 
             return tableName;
         }
-
 
         private void UpdateDatabaseList()
         {
@@ -1273,7 +1231,6 @@ namespace DB_Schema_Export_Tool
                 }
 
                 AppendNewMessage(string.Format("Found {0} databases on {1}", lstDatabasesToProcess.Items.Count, txtServerName.Text), MessageTypeConstants.Normal);
-
             }
             catch (Exception ex)
             {
@@ -1284,7 +1241,6 @@ namespace DB_Schema_Export_Tool
                 mWorking = false;
                 EnableDisableControls();
             }
-
         }
 
         private void UpdatePauseUnpauseCaption(DBSchemaExporterBase.PauseStatusConstants ePauseStatus)
@@ -1314,7 +1270,6 @@ namespace DB_Schema_Export_Tool
             {
                 // Ignore errors here
             }
-
         }
 
         private void UpdateProgressBar(ProgressBar targetBar, float percentComplete)
@@ -1459,7 +1414,6 @@ namespace DB_Schema_Export_Tool
                     mCachedTableListIncludesRowCounts = includeTableRowCounts;
                     PopulateTableNamesToExport(true);
                 }
-
             }
             catch (Exception ex)
             {
@@ -1470,7 +1424,6 @@ namespace DB_Schema_Export_Tool
                 mWorking = false;
                 EnableDisableControls();
             }
-
         }
 
         private string ValueToTextEstimate(long value)
@@ -1499,7 +1452,6 @@ namespace DB_Schema_Export_Tool
         {
             try
             {
-
                 if (txtServerName.TextLength == 0)
                 {
                     if (informUserOnFailure)
@@ -1508,7 +1460,6 @@ namespace DB_Schema_Export_Tool
                     }
 
                     return false;
-
                 }
 
                 UpdateSchemaExportOptions();
@@ -1539,7 +1490,6 @@ namespace DB_Schema_Export_Tool
                 MessageBox.Show("Error in VerifyOrUpdateServerConnection: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                 return false;
             }
-
         }
 
         #region "Control Handlers"
@@ -1557,11 +1507,8 @@ namespace DB_Schema_Export_Tool
                 if (mDBSchemaExporter.PauseStatus == DBSchemaExporterBase.PauseStatusConstants.UnpauseRequested
                     || mDBSchemaExporter.PauseStatus == DBSchemaExporterBase.PauseStatusConstants.Unpaused)
                 {
-
                 }
-
             }
-
         }
 
         private void chkPostgreSQL_CheckedChanged(object sender, EventArgs e)
@@ -1623,7 +1570,6 @@ namespace DB_Schema_Export_Tool
                 SelectAllListboxItems(lstDatabasesToProcess);
                 e.Handled = true;
             }
-
         }
 
         private void lstObjectTypesToScript_KeyPress(object sender, KeyPressEventArgs e)
@@ -1640,7 +1586,6 @@ namespace DB_Schema_Export_Tool
                 SelectAllListboxItems(lstObjectTypesToScript);
                 e.Handled = true;
             }
-
         }
 
         private void lstTableNamesToExportData_KeyPress(object sender, KeyPressEventArgs e)
@@ -1657,7 +1602,6 @@ namespace DB_Schema_Export_Tool
                 SelectAllListboxItems(lstTableNamesToExportData);
                 e.Handled = true;
             }
-
         }
 
         #endregion

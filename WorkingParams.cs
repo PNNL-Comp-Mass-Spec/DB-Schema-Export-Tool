@@ -94,6 +94,5 @@ namespace DB_Schema_Export_Tool
             ProcessCount = 0;
             ProcessCountExpected = 0;
         }
-
     }
 }
