@@ -573,7 +573,7 @@ namespace DB_Schema_Export_Tool
         /// Show additional debug messages
         /// </summary>
         [Option("Trace", HelpShowsDefault = false, SecondaryArg = true,
-            HelpText = "Show additional debug messages")]
+            HelpText = "Show additional debug messages, both at the console and in the log file")]
         public bool Trace { get; set; }
 
         /// <summary>
