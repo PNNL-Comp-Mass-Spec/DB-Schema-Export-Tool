@@ -58,6 +58,8 @@ namespace DB_Schema_Export_Tool
             parser.AddParamFileKey("Conf");
             parser.AddParamFileKey("P");
 
+            parser.ParamKeysFieldWidth = 20;
+            parser.ParamDescriptionFieldWidth = 70;
 
             if (args.Length == 0)
             {
