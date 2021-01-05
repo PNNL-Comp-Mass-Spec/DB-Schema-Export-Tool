@@ -14,6 +14,8 @@ namespace DB_Schema_Export_Tool
 {
     public partial class frmMain : Form
     {
+        // Ignore Spelling: PostgreSQL, unpause, Schemas, mts, Ctrl, Un&pause, Un&pausing
+
         public frmMain()
         {
             InitializeComponent();
@@ -57,7 +59,7 @@ namespace DB_Schema_Export_Tool
 
         #endregion
 
-        #region "Classwide variables"
+        #region "Class wide variables"
 
         private string mXmlSettingsFilePath;
 

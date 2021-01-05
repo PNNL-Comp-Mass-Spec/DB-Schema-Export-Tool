@@ -12,7 +12,7 @@ namespace DB_Schema_Export_Tool
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public class DBSchemaExportTool : LoggerBase
     {
-        // Ignore Spelling: PostgreSQL, psm, unimod, dba, lcms, Svn, Quantitation, uri, tmp, unpause
+        // Ignore Spelling: PostgreSQL, psm, unimod, dba, lcms, Svn, Quantitation, uri, tmp, unpause, unpaused, myemsl
 
         #region "Constants and Enums"
 

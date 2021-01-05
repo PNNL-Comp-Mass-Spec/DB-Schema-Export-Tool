@@ -5,7 +5,7 @@ namespace DB_Schema_Export_Tool
 {
     public class TableDataExportInfo
     {
-        // Ignore Spelling: PostgreSQL
+        // Ignore Spelling: PostgreSQL, stdin
 
         /// <summary>
         /// Source table name
@@ -24,8 +24,13 @@ namespace DB_Schema_Export_Tool
         public string TargetTableName { get; set; }
 
         /// <summary>
+        /// <para>
         /// When true, export data from SQL Server using insert commands formatted as PostgreSQL compatible
-        /// INSERT INTO statements using the ON CONFLICT(key_column) DO UPDATE SET syntax
+        /// INSERT INTO statements using the syntax "ON CONFLICT(key_column) DO UPDATE SET"
+        /// </para>
+        /// <para>
+        /// When false, use the syntax "COPY from stdin"
+        /// </para>
         /// </summary>
         public bool UsePgInsert { get; set; }
 

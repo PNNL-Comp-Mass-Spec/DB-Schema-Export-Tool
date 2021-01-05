@@ -12,7 +12,7 @@ namespace DB_Schema_Export_Tool
 {
     public abstract class DBSchemaExporterBase : EventNotifier
     {
-        // Ignore Spelling: unpause, sysdiagrams, dtproperties, sql, PostgreSQL, mkdir, psql, localhost, dbo, unpaused
+        // Ignore Spelling: unpause, sysdiagrams, dtproperties, sql, PostgreSQL, mkdir, psql, localhost, dbo, unpaused, mv
         // Ignore Spelling: dd, yyyy, HH:mm:ss
 
         #region "Constants and Enums"
