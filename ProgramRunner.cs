@@ -4,8 +4,21 @@ using PRISM;
 
 namespace DB_Schema_Export_Tool
 {
+    /// <summary>
+    /// Class for running an external program and monitoring its progress
+    /// </summary>
     public class ProgramRunner : EventNotifier
     {
+        /// <summary>
+        /// Run the specified external program (.exe)
+        /// </summary>
+        /// <param name="exePath"></param>
+        /// <param name="cmdArgs"></param>
+        /// <param name="workDirPath"></param>
+        /// <param name="consoleOutput"></param>
+        /// <param name="errorOutput"></param>
+        /// <param name="maxRuntimeSeconds"></param>
+        /// <returns>True if successful, false if an error</returns>
         public bool RunCommand(
             string exePath,
             string cmdArgs,

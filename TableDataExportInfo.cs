@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace DB_Schema_Export_Tool
 {
+    /// <summary>
+    /// Table data exoort info
+    /// </summary>
     public class TableDataExportInfo
     {
         // Ignore Spelling: PostgreSQL, stdin
@@ -94,7 +97,6 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// ToString text
         /// </summary>
-        /// <returns></returns>
         public override string ToString()
         {
             return SourceTableName;

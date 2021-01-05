@@ -204,7 +204,6 @@ namespace DB_Schema_Export_Tool
         /// <param name="schemaFileToParse"></param>
         /// <param name="options"></param>
         /// <param name="tablesForDataExport"></param>
-        /// <returns></returns>
         public bool UpdateColumnNamesInExistingSchemaFile(
             string schemaFileToParse,
             SchemaExportOptions options,
@@ -314,7 +313,6 @@ namespace DB_Schema_Export_Tool
         /// <param name="tableName"></param>
         /// <param name="createTableDDL"></param>
         /// <param name="primaryKeyColumns"></param>
-        /// <returns></returns>
         public List<string> UpdateCreateTablePrimaryKeyPosition(
             string tableName,
             List<string> createTableDDL,

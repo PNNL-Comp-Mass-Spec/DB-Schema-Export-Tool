@@ -3,6 +3,9 @@ using System.IO;
 
 namespace DB_Schema_Export_Tool
 {
+    /// <summary>
+    /// Working parameters
+    /// </summary>
     public class WorkingParams
     {
         // Ignore Spelling: PostgreSQL

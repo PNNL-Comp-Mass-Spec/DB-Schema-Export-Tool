@@ -4,6 +4,9 @@ using PRISM.Logging;
 
 namespace DB_Schema_Export_Tool
 {
+    /// <summary>
+    /// Base class for logging
+    /// </summary>
     public abstract class LoggerBase : EventNotifier
     {
         /// <summary>
@@ -125,26 +128,47 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        /// <summary>
+        /// Show a debug event at the console, but do not log
+        /// </summary>
+        /// <param name="statusMessage"></param>
         protected void DebugEventHandlerConsoleOnly(string statusMessage)
         {
             LogDebug(statusMessage, writeToLog: false);
         }
 
+        /// <summary>
+        /// Show a debug event at the console (and log if enabled)
+        /// </summary>
+        /// <param name="statusMessage"></param>
         protected void DebugEventHandler(string statusMessage)
         {
             LogDebug(statusMessage);
         }
 
+        /// <summary>
+        /// Show a status event at the console (and log if enabled)
+        /// </summary>
+        /// <param name="statusMessage"></param>
         protected void StatusEventHandler(string statusMessage)
         {
             LogMessage(statusMessage);
         }
 
+        /// <summary>
+        /// Show an error event at the console (and log if enabled)
+        /// </summary>
+        /// <param name="errorMessage"></param>
+        /// <param name="ex"></param>
         protected void ErrorEventHandler(string errorMessage, Exception ex)
         {
             LogError(errorMessage, ex);
         }
 
+        /// <summary>
+        /// Show a warning event at the console (and log if enabled)
+        /// </summary>
+        /// <param name="warningMessage"></param>
         protected void WarningEventHandler(string warningMessage)
         {
             LogWarning(warningMessage);

@@ -4,6 +4,9 @@ using PRISM;
 
 namespace DB_Schema_Export_Tool
 {
+    /// <summary>
+    /// Database column map info
+    /// </summary>
     public class ColumnMapInfo
     {
         /// <summary>
@@ -62,7 +65,6 @@ namespace DB_Schema_Export_Tool
         /// Return true if the column is defined in Column Name Map
         /// </summary>
         /// <param name="sourceColumnName">Source column name</param>
-        /// <returns></returns>
         public bool IsColumnDefined(string sourceColumnName)
         {
             return mColumnNameMap.ContainsKey(sourceColumnName);

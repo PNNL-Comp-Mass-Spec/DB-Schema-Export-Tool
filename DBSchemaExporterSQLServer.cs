@@ -13,17 +13,38 @@ using PRISM;
 
 namespace DB_Schema_Export_Tool
 {
+    /// <summary>
+    /// SQL Server schema and data exporter
+    /// </summary>
     public sealed class DBSchemaExporterSQLServer : DBSchemaExporterBase
     {
         // Ignore Spelling: Sql, Scripter, schemas, smo, mtuser, sysobjects, xtype, Inline, dt, dbo, setval, currval, stdin
+        // Ignore Spelling: CrLf
+
         #region "Constants and Enums"
 
         // ReSharper disable UnusedMember.Global
+
+        /// <summary>
+        /// Pogo server
+        /// </summary>
         public const string SQL_SERVER_NAME_DEFAULT = "Pogo";
+
+        /// <summary>
+        /// User for connecting to Pogo
+        /// </summary>
         public const string SQL_SERVER_USERNAME_DEFAULT = "mtuser";
+
+        /// <summary>
+        /// Username for connecting to pogo
+        /// </summary>
         public const string SQL_SERVER_PASSWORD_DEFAULT = "mt4fun";
+
         // ReSharper restore UnusedMember.Global
 
+        /// <summary>
+        /// Database definition file prefix
+        /// </summary>
         public const string DB_DEFINITION_FILE_PREFIX = "DBDefinition_";
 
         #endregion
@@ -1872,7 +1893,6 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get default SQL Server scripting options
         /// </summary>
-        /// <returns></returns>
         private ScriptingOptions GetDefaultScriptOptions()
         {
             var scriptOptions = new ScriptingOptions
@@ -2003,7 +2023,6 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Retrieve a list of database names on the server defined in mOptions
         /// </summary>
-        /// <returns></returns>
         public override IEnumerable<string> GetServerDatabases()
         {
             try
@@ -2042,7 +2061,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get the list of databases from the current server
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Enumerable list of database names</returns>
         /// <remarks>Assumes we already have an active server connection</remarks>
         protected override IEnumerable<string> GetServerDatabasesCurrentConnection()
         {
@@ -2053,7 +2072,6 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get the list of databases from the current server
         /// </summary>
-        /// <returns></returns>
         private IEnumerable<string> GetSqlServerDatabasesWork()
         {
             var databaseNames = new List<string>();
@@ -2221,7 +2239,6 @@ namespace DB_Schema_Export_Tool
         /// If objectName contains characters other than A-Z, a-z, 0-9, or an underscore, surround the name with square brackets
         /// </summary>
         /// <param name="objectName"></param>
-        /// <returns></returns>
         private string PossiblyQuoteName(string objectName)
         {
             return PossiblyQuoteName(objectName, true);
@@ -2299,7 +2316,6 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Export SQL Server settings and SQL Server Agent jobs
         /// </summary>
-        /// <returns></returns>
         protected override bool ScriptServerObjects()
         {
             return ScriptServerObjects(mSqlServer);
@@ -2309,7 +2325,6 @@ namespace DB_Schema_Export_Tool
         /// Export SQL Server settings and SQL Server Agent jobs
         /// </summary>
         /// <param name="sqlServer"></param>
-        /// <returns></returns>
         private bool ScriptServerObjects(Server sqlServer)
         {
             try
@@ -2451,7 +2466,6 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Return true if we have a valid server connection
         /// </summary>
-        /// <returns></returns>
         protected override bool ValidServerConnection()
         {
             return mConnectedToServer && mSqlServer?.State == SqlSmoState.Existing;

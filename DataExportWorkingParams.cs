@@ -4,6 +4,9 @@ using System.Text;
 
 namespace DB_Schema_Export_Tool
 {
+    /// <summary>
+    /// Data export working parameters
+    /// </summary>
     public class DataExportWorkingParams
     {
         // Ignore Spelling: PostgreSQL

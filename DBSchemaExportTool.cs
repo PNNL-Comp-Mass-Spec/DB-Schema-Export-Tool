@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -9,6 +8,9 @@ using PRISM.Logging;
 
 namespace DB_Schema_Export_Tool
 {
+    /// <summary>
+    /// Database schema export tool
+    /// </summary>
     public class DBSchemaExportTool : LoggerBase
     {
         // Ignore Spelling: PostgreSQL, psm, unimod, dba, lcms, Svn, Quantitation, uri, tmp, unpause, unpaused, myemsl
@@ -45,8 +47,14 @@ namespace DB_Schema_Export_Tool
 
         #region "Properties"
 
+        /// <summary>
+        /// Error code
+        /// </summary>
         public DBSchemaExporterBase.DBSchemaExportErrorCodes ErrorCode => mDBSchemaExporter?.ErrorCode ?? DBSchemaExporterBase.DBSchemaExportErrorCodes.NoError;
 
+        /// <summary>
+        /// Pause status
+        /// </summary>
         public DBSchemaExporterBase.PauseStatusConstants PauseStatus => mDBSchemaExporter?.PauseStatus ?? DBSchemaExporterBase.PauseStatusConstants.Unpaused;
 
         /// <summary>
@@ -58,10 +66,19 @@ namespace DB_Schema_Export_Tool
 
         #region "Events"
 
+        /// <summary>
+        /// Database export starting event
+        /// </summary>
         public event DBSchemaExporterBase.DBExportStartingHandler DBExportStarting;
 
+        /// <summary>
+        /// Pause status changed event
+        /// </summary>
         public event DBSchemaExporterBase.PauseStatusChangeHandler PauseStatusChange;
 
+        /// <summary>
+        /// Processing complete event
+        /// </summary>
         public event DBSchemaExporterBase.ProgressCompleteHandler ProgressComplete;
 
         #endregion
@@ -432,7 +449,6 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Retrieve a list of database names for the current server
         /// </summary>
-        /// <returns></returns>
         public IEnumerable<string> GetServerDatabases()
         {
             return mDBSchemaExporter.GetServerDatabases();
@@ -460,6 +476,10 @@ namespace DB_Schema_Export_Tool
             return false;
         }
 
+        /// <summary>
+        /// Get a list of table names to auto-export data
+        /// </summary>
+        /// <param name="postgreSQLNames"></param>
         public static SortedSet<string> GetTableNamesToAutoExportData(bool postgreSQLNames)
         {
             // Keys are table names
@@ -560,6 +580,9 @@ namespace DB_Schema_Export_Tool
             return filteredNames;
         }
 
+        /// <summary>
+        /// Get a list of RegEx expressions for auto-exporting data
+        /// </summary>
         public static SortedSet<string> GetTableRegExToAutoExportData()
         {
             var regExSpecs = new SortedSet<string>
@@ -906,17 +929,30 @@ namespace DB_Schema_Export_Tool
                    match1.Groups["Major"].Value.Equals(match2.Groups["Major"].Value);
         }
 
+        /// <summary>
+        /// Invoke event DebugEvent and show a debug message at the console; log if enabled
+        /// </summary>
+        /// <param name="message"></param>
         protected new void OnDebugEvent(string message)
         {
             LogDebug(message);
         }
 
+        /// <summary>
+        /// Invoke event ErrorEvent and show an error message at the console; log if enabled
+        /// </summary>
+        /// <param name="message"></param>
         protected new void OnErrorEvent(string message)
         {
             LogError(message);
             StatusMessage = message;
         }
 
+        /// <summary>
+        /// Invoke event ErrorEvent and show an error message and stack trace at the console; log if enabled
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="ex"></param>
         protected new void OnErrorEvent(string message, Exception ex)
         {
             LogError(message, ex);
@@ -930,12 +966,20 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        /// <summary>
+        /// Invoke event StatusEvent and show the message at the console; log if enabled
+        /// </summary>
+        /// <param name="message"></param>
         protected new void OnStatusEvent(string message)
         {
             LogMessage(message);
             StatusMessage = message;
         }
 
+        /// <summary>
+        /// Invoke event WarningEvent and show the warning at the console; log if enabled
+        /// </summary>
+        /// <param name="message"></param>
         protected new void OnWarningEvent(string message)
         {
             LogWarning(message);
@@ -1087,7 +1131,6 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Export the schema for the databases defined in databasesToProcess
         /// </summary>
-        /// <returns></returns>
         public bool ProcessDatabases(SchemaExportOptions options)
         {
             return ProcessDatabases(options.OutputDirectoryPath, options.ServerName, options.DatabasesToProcess);
@@ -1096,7 +1139,6 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Export the schema for the databases defined in databaseList
         /// </summary>
-        /// <returns></returns>
         public bool ProcessDatabases(string outputDirectoryPath, string serverName, SortedSet<string> databaseList)
         {
             if (string.IsNullOrWhiteSpace(outputDirectoryPath))
@@ -1171,6 +1213,12 @@ namespace DB_Schema_Export_Tool
             mDBSchemaExporter?.RequestUnpause();
         }
 
+        /// <summary>
+        /// Start scripting server and database objects
+        /// </summary>
+        /// <param name="databaseList"></param>
+        /// <param name="tablesForDataExport"></param>
+        /// <returns>True if successful; false if an error</returns>
         public bool ScriptServerAndDBObjects(
             List<string> databaseList,
             List<TableDataExportInfo> tablesForDataExport)
@@ -1199,11 +1247,19 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        /// <summary>
+        /// Store a list of table name RegEx patterns for auto-exporting table data
+        /// </summary>
+        /// <param name="tableNameRegExSpecs"></param>
         public void StoreTableNameRegexToAutoExportData(SortedSet<string> tableNameRegExSpecs)
         {
             mDBSchemaExporter.StoreTableNameRegexToAutoExportData(tableNameRegExSpecs);
         }
 
+        /// <summary>
+        /// Store a list of table names for auto-exporting table data
+        /// </summary>
+        /// <param name="tableNames"></param>
         public void StoreTableNamesToAutoExportData(SortedSet<string> tableNames)
         {
             mDBSchemaExporter.StoreTableNameRegexToAutoExportData(tableNames);

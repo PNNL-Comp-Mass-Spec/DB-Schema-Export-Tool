@@ -45,16 +45,48 @@ namespace DB_Schema_Export_Tool
             Error = 3
         }
 
+        /// <summary>
+        /// Schema object types
+        /// </summary>
         public enum SchemaObjectTypeConstants
         {
+            /// <summary>
+            /// SchemasAndRoles
+            /// </summary>
             SchemasAndRoles = 0,
+
+            /// <summary>
+            /// Tables
+            /// </summary>
             Tables = 1,
+
+            /// <summary>
+            /// Views
+            /// </summary>
             Views = 2,
+            /// <summary>
+            /// StoredProcedures
+            /// </summary>
             StoredProcedures = 3,
+            /// <summary>
+            /// UserDefinedFunctions
+            /// </summary>
             UserDefinedFunctions = 4,
+
+            /// <summary>
+            /// UserDefinedDataTypes
+            /// </summary>
             UserDefinedDataTypes = 5,
+
+            /// <summary>
+            /// UserDefinedTypes
+            /// </summary>
             UserDefinedTypes = 6,
-            Synonyms = 7,
+
+            /// <summary>
+            /// Synonyms
+            /// </summary>
+            Synonyms = 7
         }
 
         #endregion

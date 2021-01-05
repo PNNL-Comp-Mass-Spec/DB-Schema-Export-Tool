@@ -10,6 +10,9 @@ using PRISM;
 
 namespace DB_Schema_Export_Tool
 {
+    /// <summary>
+    /// Base class for exporting database schema and data
+    /// </summary>
     public abstract class DBSchemaExporterBase : EventNotifier
     {
         // Ignore Spelling: unpause, sysdiagrams, dtproperties, sql, PostgreSQL, mkdir, psql, localhost, dbo, unpaused, mv
@@ -17,50 +20,155 @@ namespace DB_Schema_Export_Tool
 
         #region "Constants and Enums"
 
-        // Note: this value defines the maximum number of data rows that will be exported
-        // from tables that are auto-added to the table list for data export
+        /// <summary>
+        /// Maximum number of rows of data to export
+        /// </summary>
+        /// <remarks>
+        /// This value defines the maximum number of data rows that will be exported
+        /// from tables that are auto-added to the table list for data export
+        /// </remarks>
         public const int MAX_ROWS_DATA_TO_EXPORT = 1000;
 
+        /// <summary>
+        /// Comment start
+        /// </summary>
         public const string COMMENT_START_TEXT = "/****** ";
+
+        /// <summary>
+        /// Comment end
+        /// </summary>
         public const string COMMENT_END_TEXT = " ******/";
+
+        /// <summary>
+        /// Compact comment end
+        /// </summary>
         public const string COMMENT_END_TEXT_SHORT = "*/";
+
+        /// <summary>
+        /// Script date text
+        /// </summary>
         public const string COMMENT_SCRIPT_DATE_TEXT = "Script Date: ";
 
+        /// <summary>
+        /// Data column types
+        /// </summary>
         public enum DataColumnTypeConstants
         {
+            /// <summary>
+            /// Numeric
+            /// </summary>
             Numeric = 0,
+
+            /// <summary>
+            /// Text
+            /// </summary>
             Text = 1,
+
+            /// <summary>
+            /// DateTime
+            /// </summary>
             DateTime = 2,
+
+            /// <summary>
+            /// BinaryArray
+            /// </summary>
             BinaryArray = 3,
+
+            /// <summary>
+            /// BinaryByte
+            /// </summary>
             BinaryByte = 4,
+
+            /// <summary>
+            /// GUID
+            /// </summary>
             GUID = 5,
+
+            /// <summary>
+            /// SqlVariant
+            /// </summary>
             SqlVariant = 6,
+
+            /// <summary>
+            /// ImageObject
+            /// </summary>
             ImageObject = 7,
+
+            /// <summary>
+            /// GeneralObject
+            /// </summary>
             GeneralObject = 8,
+
+            /// <summary>
+            /// SkipColumn
+            /// </summary>
             SkipColumn = 9
         }
 
+        /// <summary>
+        /// Export error codes
+        /// </summary>
         public enum DBSchemaExportErrorCodes
         {
+            /// <summary>
+            /// NoError
+            /// </summary>
             NoError = 0,
+
+            /// <summary>
+            /// GeneralError
+            /// </summary>
             GeneralError = 1,
+
+            /// <summary>
+            /// ConfigurationError
+            /// </summary>
             ConfigurationError = 2,
+
+            /// <summary>
+            /// DatabaseConnectionError
+            /// </summary>
             DatabaseConnectionError = 3,
-            OutputDirectoryAccessError = 4,
+
+            /// <summary>
+            /// OutputDirectoryAccessError
+            /// </summary>
+            OutputDirectoryAccessError = 4
         }
 
+        /// <summary>
+        /// Pause status
+        /// </summary>
         public enum PauseStatusConstants
         {
+            /// <summary>
+            /// Unpaused
+            /// </summary>
             Unpaused = 0,
+
+            /// <summary>
+            /// PauseRequested
+            /// </summary>
             PauseRequested = 1,
+
+            /// <summary>
+            /// Paused
+            /// </summary>
             Paused = 2,
-            UnpauseRequested = 3,
+
+            /// <summary>
+            /// UnpauseRequested
+            /// </summary>
+            UnpauseRequested = 3
         }
 
         #endregion
 
         #region "Class wide Variables"
 
+        /// <summary>
+        /// Set to true to abort processing as soon as possible
+        /// </summary>
         protected bool mAbortProcessing;
 
         private readonly Regex mAnyLowerMatcher;
@@ -71,16 +179,34 @@ namespace DB_Schema_Export_Tool
 
         private readonly Regex mNonStandardOSChars;
 
+        /// <summary>
+        /// Object name Reg Ex
+        /// </summary>
         protected Regex mObjectNameMatcher;
 
+        /// <summary>
+        /// Current server info
+        /// </summary>
         protected ServerConnectionInfo mCurrentServerInfo;
 
+        /// <summary>
+        /// True when connected to a server
+        /// </summary>
         protected bool mConnectedToServer;
 
+        /// <summary>
+        /// Export options
+        /// </summary>
         protected readonly SchemaExportOptions mOptions;
 
+        /// <summary>
+        /// Progress percent complete, starting value for the current operation
+        /// </summary>
         protected float mPercentCompleteStart;
 
+        /// <summary>
+        /// Progress percent complete, ending value for the current operation
+        /// </summary>
         protected float mPercentCompleteEnd;
 
         #endregion
@@ -116,10 +242,19 @@ namespace DB_Schema_Export_Tool
 
         #region "Events"
 
+        /// <summary>
+        /// Database export starting event
+        /// </summary>
         public event DBExportStartingHandler DBExportStarting;
 
+        /// <summary>
+        /// Pause status change event
+        /// </summary>
         public event PauseStatusChangeHandler PauseStatusChange;
 
+        /// <summary>
+        /// Progress complete event
+        /// </summary>
         public event ProgressCompleteHandler ProgressComplete;
 
         /// <summary>
@@ -128,8 +263,14 @@ namespace DB_Schema_Export_Tool
         /// <param name="databaseName">Database name</param>
         public delegate void DBExportStartingHandler(string databaseName);
 
+        /// <summary>
+        /// Pause status change event delegate
+        /// </summary>
         public delegate void PauseStatusChangeHandler();
 
+        /// <summary>
+        /// Progress complete event delegate
+        /// </summary>
         public delegate void ProgressCompleteHandler();
 
         #endregion
@@ -329,7 +470,6 @@ namespace DB_Schema_Export_Tool
         /// Required to write out data in a format compatible with the PostgreSQL COPY command
         /// </summary>
         /// <param name="columnValue"></param>
-        /// <returns></returns>
         private string CleanForCopyCommand(object columnValue)
         {
             if (columnValue == null)
@@ -357,7 +497,7 @@ namespace DB_Schema_Export_Tool
         /// <remarks>
         /// Valid characters are:
         /// a-z, 0-9, underscore, space, equals sign, plus sign, minus sign, comma, period,
-        /// semicolon, tilde, exclamation mark, and the symbols @ # $ % ^ & ( ) { } [ ]
+        /// semicolon, tilde, exclamation mark, and the symbols @ # $ % ^ &amp; ( ) { } [ ]
         ///</remarks>
         protected string CleanNameForOS(string filename)
         {
@@ -392,7 +532,6 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="itemsProcessed"></param>
         /// <param name="totalItems"></param>
-        /// <returns></returns>
         protected float ComputeSubtaskProgress(int itemsProcessed, int totalItems)
         {
             if (totalItems <= 0)
@@ -525,7 +664,6 @@ namespace DB_Schema_Export_Tool
         /// Convert the object name to snake_case
         /// </summary>
         /// <param name="objectName"></param>
-        /// <returns></returns>
         private string ConvertNameToSnakeCase(string objectName)
         {
             if (!mAnyLowerMatcher.IsMatch(objectName))
@@ -898,20 +1036,17 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Retrieve a list of database names for the current server
         /// </summary>
-        /// <returns></returns>
         public abstract IEnumerable<string> GetServerDatabases();
 
         /// <summary>
         /// Get the list of databases from the current server
         /// </summary>
-        /// <returns></returns>
         protected abstract IEnumerable<string> GetServerDatabasesCurrentConnection();
 
         /// <summary>
         /// Get the output directory for the server info files
         /// </summary>
         /// <param name="serverName"></param>
-        /// <returns></returns>
         protected DirectoryInfo GetServerInfoOutputDirectory(string serverName)
         {
             var outputDirectoryPath = "??";
@@ -938,6 +1073,13 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        /// <summary>
+        /// Get a FileInfo object for table data
+        /// </summary>
+        /// <param name="tableInfo"></param>
+        /// <param name="dataExportParams"></param>
+        /// <param name="workingParams"></param>
+        /// <param name="relativeFilePath"></param>
         protected FileInfo GetTableDataOutputFile(
             TableDataExportInfo tableInfo,
             DataExportWorkingParams dataExportParams,
@@ -1035,11 +1177,20 @@ namespace DB_Schema_Export_Tool
             return GetTargetTableName(dataExportParams, tableInfo, quoteWithSquareBrackets, true);
         }
 
+        /// <summary>
+        /// Get the schema name from an object name
+        /// </summary>
+        /// <param name="objectNameWithSchema"></param>
         protected string GetSchemaName(string objectNameWithSchema)
         {
             return GetSchemaName(objectNameWithSchema, out _);
         }
 
+        /// <summary>
+        /// Get the schema name from an object name
+        /// </summary>
+        /// <param name="objectNameWithSchema"></param>
+        /// <param name="objectName"></param>
         protected string GetSchemaName(string objectNameWithSchema, out string objectName)
         {
             string schemaName;
@@ -1141,7 +1292,6 @@ namespace DB_Schema_Export_Tool
         /// Return True if schemaName is "blank", "dbo", or "public"
         /// </summary>
         /// <param name="schemaName"></param>
-        /// <returns></returns>
         private bool IsDefaultOwnerSchema(string schemaName)
         {
             return string.IsNullOrWhiteSpace(schemaName) ||
@@ -1149,16 +1299,26 @@ namespace DB_Schema_Export_Tool
                    schemaName.Equals("public", StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Invoke the DBExportStarting event
+        /// </summary>
+        /// <param name="databaseName"></param>
         protected void OnDBExportStarting(string databaseName)
         {
             DBExportStarting?.Invoke(databaseName);
         }
 
+        /// <summary>
+        /// Invoke the PauseStatusChange event
+        /// </summary>
         private void OnPauseStatusChange()
         {
             PauseStatusChange?.Invoke();
         }
 
+        /// <summary>
+        /// Invoke the ProgressComplete event
+        /// </summary>
         protected void OnProgressComplete()
         {
             ProgressComplete?.Invoke();
@@ -1170,7 +1330,6 @@ namespace DB_Schema_Export_Tool
         /// <param name="objectName"></param>
         /// <param name="quoteWithSquareBrackets"></param>
         /// <param name="alwaysQuoteNames"></param>
-        /// <returns></returns>
         protected string PossiblyQuoteName(string objectName, bool quoteWithSquareBrackets, bool alwaysQuoteNames = false)
         {
             if (!alwaysQuoteNames && !mColumnCharNonStandardMatcher.Match(objectName).Success)
@@ -1191,7 +1350,6 @@ namespace DB_Schema_Export_Tool
         /// Additionally, if text contains single quotes, replace them with two single quotes
         /// </summary>
         /// <param name="text"></param>
-        /// <returns></returns>
         private string PossiblyQuoteText(string text)
         {
             return string.Format("'{0}'", text.Replace("'", "''"));
@@ -1200,7 +1358,9 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Request that scripting be paused
         /// </summary>
-        /// <remarks>Useful when the scripting is running in another thread</remarks>
+        /// <remarks>
+        /// Useful when the scripting is running in another thread
+        /// </remarks>
         public void RequestPause()
         {
             if (!(PauseStatus == PauseStatusConstants.Paused || PauseStatus == PauseStatusConstants.PauseRequested))
@@ -1237,7 +1397,6 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseListToProcess"></param>
         /// <param name="tablesForDataExport"></param>
-        /// <returns></returns>
         private bool ScriptDBObjectsAndData(
             IReadOnlyCollection<string> databaseListToProcess,
             IReadOnlyList<TableDataExportInfo> tablesForDataExport)
@@ -1423,7 +1582,6 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Script server objects
         /// </summary>
-        /// <returns></returns>
         protected abstract bool ScriptServerObjects();
 
         /// <summary>
@@ -1482,6 +1640,10 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        /// <summary>
+        /// When true, show trace messages
+        /// </summary>
+        /// <param name="message"></param>
         protected void ShowTrace(string message)
         {
             if (mOptions.Trace)
@@ -1655,7 +1817,6 @@ namespace DB_Schema_Export_Tool
         /// Validate options
         /// </summary>
         /// <param name="databaseList"></param>
-        /// <returns></returns>
         private bool ValidateOptionsToScriptServerAndDBObjects(IReadOnlyCollection<string> databaseList)
         {
             InitializeLocalVariables(true);
@@ -1722,7 +1883,6 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseName"></param>
         /// <param name="workingParams"></param>
-        /// <returns></returns>
         protected bool ValidateOutputDirectoryForDatabaseExport(string databaseName, WorkingParams workingParams)
         {
             try
@@ -1762,7 +1922,6 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Validate output options
         /// </summary>
-        /// <returns></returns>
         private bool ValidateOutputOptions()
         {
             mOptions.ValidateOutputOptions();
@@ -1793,9 +1952,15 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Return true if we have a valid server connection
         /// </summary>
-        /// <returns></returns>
         protected abstract bool ValidServerConnection();
 
+        /// <summary>
+        /// Write lines text to a file
+        /// </summary>
+        /// <param name="outputFile"></param>
+        /// <param name="scriptInfo"></param>
+        /// <param name="autoAddGoStatements"></param>
+        /// <returns>True if success, false if an error</returns>
         protected bool WriteTextToFile(
             FileInfo outputFile,
             IEnumerable<string> scriptInfo,
@@ -1811,6 +1976,15 @@ namespace DB_Schema_Export_Tool
             return result;
         }
 
+        /// <summary>
+        /// Write lines text to a file
+        /// </summary>
+        /// <param name="outputDirectory"></param>
+        /// <param name="objectName"></param>
+        /// <param name="scriptInfo"></param>
+        /// <param name="autoAddGoStatements"></param>
+        /// <param name="fileExtension"></param>
+        /// <returns>True if success, false if an error</returns>
         protected bool WriteTextToFile(
             FileSystemInfo outputDirectory,
             string objectName,

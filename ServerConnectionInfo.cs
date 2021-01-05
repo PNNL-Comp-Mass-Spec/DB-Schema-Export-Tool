@@ -1,5 +1,8 @@
 ﻿namespace DB_Schema_Export_Tool
 {
+    /// <summary>
+    /// Server connection info
+    /// </summary>
     public class ServerConnectionInfo
     {
         // Ignore Spelling: PostgreSQL

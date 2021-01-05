@@ -10,6 +10,9 @@ using PRISM;
 
 namespace DB_Schema_Export_Tool
 {
+    /// <summary>
+    /// PostgreSQL schema and data exporter
+    /// </summary>
     public sealed class DBSchemaExporterPostgreSQL : DBSchemaExporterBase
     {
         // Ignore Spelling: setval, dumpall, pgsql, mc, PostgreSQL, usr, udf, hostname, schemaname, tablename, tableowner
@@ -17,8 +20,14 @@ namespace DB_Schema_Export_Tool
 
         #region "Constants and Enums"
 
+        /// <summary>
+        /// Default server port
+        /// </summary>
         public const int DEFAULT_PORT = 5432;
 
+        /// <summary>
+        /// postgres database
+        /// </summary>
         public const string POSTGRES_DATABASE = "postgres";
 
         #endregion
@@ -1243,7 +1252,6 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Retrieve a list of database names on the server defined in mOptions
         /// </summary>
-        /// <returns></returns>
         public override IEnumerable<string> GetServerDatabases()
         {
             try
@@ -1282,7 +1290,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get the list of databases from the current server
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Enumerable list of database names</returns>
         /// <remarks>Assumes we already have an active server connection</remarks>
         protected override IEnumerable<string> GetServerDatabasesCurrentConnection()
         {
@@ -1293,7 +1301,6 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get the list of databases from the current server
         /// </summary>
-        /// <returns></returns>
         private IEnumerable<string> GetServerDatabasesWork()
         {
             var databaseNames = new List<string>();
@@ -1598,7 +1605,6 @@ namespace DB_Schema_Export_Tool
         /// If objectName contains characters other than A-Z, a-z, 0-9, or an underscore, surround the name with double quotes
         /// </summary>
         /// <param name="objectName"></param>
-        /// <returns></returns>
         private string PossiblyQuoteName(string objectName)
         {
             return PossiblyQuoteName(objectName, false);
@@ -2041,7 +2047,6 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Export PostgreSQL Server settings
         /// </summary>
-        /// <returns></returns>
         protected override bool ScriptServerObjects()
         {
             try
@@ -2163,7 +2168,6 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Return true if we have a valid server connection
         /// </summary>
-        /// <returns></returns>
         protected override bool ValidServerConnection()
         {
             return mConnectedToServer && mPgConnection != null &&
