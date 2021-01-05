@@ -256,14 +256,8 @@ namespace DB_Schema_Export_Tool
                 CLEAR_SCHEMA_OUTPUT_DIRS,
                 out databaseNotFound);
 
-            if (mCachedDatabaseTableInfo.ContainsKey(databaseName))
-            {
-                mCachedDatabaseTableInfo[databaseName] = tablesInDatabase;
-            }
-            else
-            {
-                mCachedDatabaseTableInfo.Add(databaseName, tablesInDatabase);
-            }
+            // Add/update the dictionary
+            mCachedDatabaseTableInfo[databaseName] = tablesInDatabase;
 
         }
 

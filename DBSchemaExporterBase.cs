@@ -1765,14 +1765,8 @@ namespace DB_Schema_Export_Tool
                     workingParams.OutputDirectory.Create();
                 }
 
-                if (SchemaOutputDirectories.ContainsKey(databaseName))
-                {
-                    SchemaOutputDirectories[databaseName] = workingParams.OutputDirectoryPathCurrentDB;
-                }
-                else
-                {
-                    SchemaOutputDirectories.Add(databaseName, workingParams.OutputDirectoryPathCurrentDB);
-                }
+                // Add/update the dictionary
+                SchemaOutputDirectories[databaseName] = workingParams.OutputDirectoryPathCurrentDB;
 
                 return true;
             }
