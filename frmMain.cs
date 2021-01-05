@@ -294,18 +294,18 @@ namespace DB_Schema_Export_Tool
 
         private List<string> GetSelectedListboxItems(ListBox listBox)
         {
-            var lstItems = new List<string>(listBox.SelectedItems.Count);
+            var items = new List<string>(listBox.SelectedItems.Count);
 
             try
             {
-                lstItems.AddRange(from object item in listBox.SelectedItems select item.ToString());
+                items.AddRange(from object item in listBox.SelectedItems select item.ToString());
             }
             catch (Exception)
             {
                 // Ignore errors here
             }
 
-            return lstItems;
+            return items;
         }
 
         private string GetSettingsFilePath()
@@ -411,7 +411,7 @@ namespace DB_Schema_Export_Tool
                     this.Width = xmlFile.GetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowWidth", this.Width);
                     this.Height = xmlFile.GetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowHeight", this.Height);
 
-                    var strServerNameSaved = txtServerName.Text;
+                    var serverNameSaved = txtServerName.Text;
                     txtServerName.Text = xmlFile.GetParam(XML_SECTION_DATABASE_SETTINGS, "ServerName", txtServerName.Text);
                     chkPostgreSQL.Checked = xmlFile.GetParam(XML_SECTION_DATABASE_SETTINGS, "PostgreSQL", chkPostgreSQL.Checked);
 
@@ -437,7 +437,7 @@ namespace DB_Schema_Export_Tool
                     mnuEditWarnOnHighTableRowCount.Checked = xmlFile.GetParam(XML_SECTION_PROGRAM_OPTIONS, "WarnOnHighTableRowCount", mnuEditWarnOnHighTableRowCount.Checked);
 
                     if (lstDatabasesToProcess.Items.Count == 0 ||
-                        strServerNameSaved != null && !strServerNameSaved.Equals(txtServerName.Text, StringComparison.OrdinalIgnoreCase))
+                        serverNameSaved?.Equals(txtServerName.Text, StringComparison.OrdinalIgnoreCase) == false)
                     {
                         if (connectToServer)
                         {
@@ -591,16 +591,16 @@ namespace DB_Schema_Export_Tool
                     sortOrder = TableNameSortModeConstants.Name;
                 }
 
-                List<KeyValuePair<TableDataExportInfo, long>> lstSortedTables;
+                List<KeyValuePair<TableDataExportInfo, long>> sortedTables;
                 if (sortOrder == TableNameSortModeConstants.RowCount)
                 {
                     // Sort on RowCount
-                    lstSortedTables = (from item in mCachedTableList orderby item.Value select item).ToList();
+                    sortedTables = (from item in mCachedTableList orderby item.Value select item).ToList();
                 }
                 else
                 {
                     // Sort on table name
-                    lstSortedTables = (from item in mCachedTableList orderby item.Key.ToString() select item).ToList();
+                    sortedTables = (from item in mCachedTableList orderby item.Key.ToString() select item).ToList();
                 }
 
                 // Assure that the auto-select table names are not nothing
@@ -614,10 +614,10 @@ namespace DB_Schema_Export_Tool
                     mTableNameAutoSelectRegEx = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
                 }
 
-                // Initialize lstRegExSpecs (we'll fill it below if autoHighlightRows = True)
+                // Initialize regExSpecs (we'll fill it below if autoHighlightRows = True)
                 const RegexOptions regexOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline;
 
-                var lstRegExSpecs = new List<Regex>();
+                var regExSpecs = new List<Regex>();
                 bool autoHighlightRows;
 
                 if (mnuEditAutoSelectDefaultTableNames.Checked && enableAutoSelectDefaultTableNames)
@@ -626,7 +626,7 @@ namespace DB_Schema_Export_Tool
 
                     foreach (var regexItem in mTableNameAutoSelectRegEx)
                     {
-                        lstRegExSpecs.Add(new Regex(regexItem, regexOptions));
+                        regExSpecs.Add(new Regex(regexItem, regexOptions));
                     }
 
                 }
@@ -636,15 +636,15 @@ namespace DB_Schema_Export_Tool
                 }
 
                 // Cache the currently selected names so that we can re-highlight them below
-                var lstSelectedTableNamesSaved = new SortedSet<string>();
+                var selectedTableNamesSaved = new SortedSet<string>();
                 foreach (var item in lstTableNamesToExportData.SelectedItems)
                 {
-                    lstSelectedTableNamesSaved.Add(StripRowCountFromTableName(item.ToString()));
+                    selectedTableNamesSaved.Add(StripRowCountFromTableName(item.ToString()));
                 }
 
                 lstTableNamesToExportData.Items.Clear();
 
-                foreach (var tableItem in lstSortedTables)
+                foreach (var tableItem in sortedTables)
                 {
                     // tableItem.Key is Table Name
                     // tableItem.Value is the number of rows in the table (if mCachedTableListIncludesRowCounts = True)
@@ -673,15 +673,15 @@ namespace DB_Schema_Export_Tool
                     var itemIndex = lstTableNamesToExportData.Items.Add(textForRow);
 
                     var highlightCurrentRow = false;
-                    if (lstSelectedTableNamesSaved.Contains(tableName))
+                    if (selectedTableNamesSaved.Contains(tableName))
                     {
                         // User had previously highlighted this table name; re-highlight it
                         highlightCurrentRow = true;
                     }
                     else if (autoHighlightRows)
                     {
-                        // Test strTableName against the RegEx values from mTableNameAutoSelectRegEx()
-                        foreach (var regexMatcher in lstRegExSpecs)
+                        // Test tableName against the RegEx values from mTableNameAutoSelectRegEx()
+                        foreach (var regexMatcher in regExSpecs)
                         {
                             if (regexMatcher.Match(tableName).Success)
                             {
@@ -1003,26 +1003,24 @@ namespace DB_Schema_Export_Tool
 
         }
 
-        private void SelectDefaultDBs(IReadOnlyCollection<string> lstDefaultDBs)
+        private void SelectDefaultDBs(IReadOnlyCollection<string> defaultDBs)
         {
-            if (lstDefaultDBs != null)
+            if (defaultDBs == null) 
+                return;
+
+            var sortedDBs = (from item in defaultDBs select item.ToLower()).ToList();
+
+            sortedDBs.Sort();
+
+            lstDatabasesToProcess.ClearSelected();
+
+            for (var index = 0; index < lstDatabasesToProcess.Items.Count; index++)
             {
-                var lstSortedDBs = (from item in lstDefaultDBs select item.ToLower()).ToList();
-
-                lstSortedDBs.Sort();
-
-                lstDatabasesToProcess.ClearSelected();
-
-                for (var index = 0; index < lstDatabasesToProcess.Items.Count; index++)
+                var currentDatabase = lstDatabasesToProcess.Items[index].ToString().ToLower();
+                if (sortedDBs.BinarySearch(currentDatabase) >= 0)
                 {
-                    var currentDatabase = lstDatabasesToProcess.Items[index].ToString().ToLower();
-                    if (lstSortedDBs.BinarySearch(currentDatabase) >= 0)
-                    {
-                        lstDatabasesToProcess.SetSelected(index, true);
-                    }
-
+                    lstDatabasesToProcess.SetSelected(index, true);
                 }
-
             }
 
         }
@@ -1219,10 +1217,10 @@ namespace DB_Schema_Export_Tool
                 return string.Empty;
             }
 
-            var intCharIndex = tableName.IndexOf(ROW_COUNT_SEPARATOR, StringComparison.Ordinal);
-            if (intCharIndex > 0)
+            var charIndex = tableName.IndexOf(ROW_COUNT_SEPARATOR, StringComparison.Ordinal);
+            if (charIndex > 0)
             {
-                return tableName.Substring(0, intCharIndex);
+                return tableName.Substring(0, charIndex);
             }
 
             return tableName;
@@ -1481,8 +1479,8 @@ namespace DB_Schema_Export_Tool
             // For data between 10000 and 1 million, rounds to the nearest thousand
             // For data over 1 million, displays as x.x million
 
-            var lngValueAbs = Math.Abs(value);
-            if (lngValueAbs < 100)
+            var valueAbs = Math.Abs(value);
+            if (valueAbs < 100)
             {
                 return value.ToString();
             }
@@ -1492,7 +1490,7 @@ namespace DB_Schema_Export_Tool
                 return Math.Round(value / 1000000.0, 1) + " million";
             }
 
-            var divisor = Math.Pow(10, Math.Floor(Math.Log10(lngValueAbs)) - 1);
+            var divisor = Math.Pow(10, Math.Floor(Math.Log10(valueAbs)) - 1);
 
             return string.Format("{0:#,###,##0}", Math.Round(value / divisor, 0) * divisor);
         }
