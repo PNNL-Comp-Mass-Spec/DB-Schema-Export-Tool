@@ -337,95 +337,94 @@ namespace DB_Schema_Export_Tool
                 }
 
                 // Perform a line-by-line comparison
-                using (var baseFileReader = new StreamReader(new FileStream(baseFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
-                using (var comparisonFileReader = new StreamReader(new FileStream(comparisonFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+                using var baseFileReader = new StreamReader(new FileStream(baseFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+                using var comparisonFileReader = new StreamReader(new FileStream(comparisonFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+
+                while (!baseFileReader.EndOfStream)
                 {
-                    while (!baseFileReader.EndOfStream)
+                    var dataLine = baseFileReader.ReadLine();
+                    if (comparisonFileReader.EndOfStream) continue;
+
+                    var comparisonLine = comparisonFileReader.ReadLine();
+                    var linesMatch = StringMatch(dataLine, comparisonLine);
+                    if (linesMatch)
                     {
-                        var dataLine = baseFileReader.ReadLine();
-                        if (comparisonFileReader.EndOfStream) continue;
+                        continue;
+                    }
 
-                        var comparisonLine = comparisonFileReader.ReadLine();
-                        var linesMatch = StringMatch(dataLine, comparisonLine);
-                        if (linesMatch)
+                    if (dataLine == null && comparisonLine != null)
+                    {
+                        differenceReason = DifferenceReasonType.Changed;
+                        return true;
+                    }
+
+                    if (dataLine != null && comparisonLine == null)
+                    {
+                        differenceReason = DifferenceReasonType.Changed;
+                        return true;
+                    }
+
+                    if (dataLine == null)
+                    {
+                        continue;
+                    }
+
+                    if (dbDefinitionFile && dataLine.StartsWith("( NAME =") && comparisonLine.StartsWith("( NAME ="))
+                    {
+                        // DBDefinition file, example line:
+                        // NAME = N'Protein_Sequences_Data', FILENAME = N'J:\SQLServerData\Protein_Sequences.mdf' , SIZE = 174425088KB , MAXSIZE = UNLIMITED
+
+                        // Split on commas
+                        var sourceCols = dataLine.Split(',').ToList();
+                        var comparisonCols = comparisonLine.Split(',').ToList();
+
+                        if (sourceCols.Count == comparisonCols.Count)
                         {
-                            continue;
-                        }
-
-                        if (dataLine == null && comparisonLine != null)
-                        {
-                            differenceReason = DifferenceReasonType.Changed;
-                            return true;
-                        }
-
-                        if (dataLine != null && comparisonLine == null)
-                        {
-                            differenceReason = DifferenceReasonType.Changed;
-                            return true;
-                        }
-
-                        if (dataLine == null)
-                        {
-                            continue;
-                        }
-
-                        if (dbDefinitionFile && dataLine.StartsWith("( NAME =") && comparisonLine.StartsWith("( NAME ="))
-                        {
-                            // DBDefinition file, example line:
-                            // NAME = N'Protein_Sequences_Data', FILENAME = N'J:\SQLServerData\Protein_Sequences.mdf' , SIZE = 174425088KB , MAXSIZE = UNLIMITED
-
-                            // Split on commas
-                            var sourceCols = dataLine.Split(',').ToList();
-                            var comparisonCols = comparisonLine.Split(',').ToList();
-
-                            if (sourceCols.Count == comparisonCols.Count)
+                            linesMatch = true;
+                            for (var dataColumnIndex = 0; dataColumnIndex < sourceCols.Count; dataColumnIndex++)
                             {
-                                linesMatch = true;
-                                for (var dataColumnIndex = 0; dataColumnIndex < sourceCols.Count; dataColumnIndex++)
+                                var sourceValue = sourceCols[dataColumnIndex].Trim();
+                                var comparisonValue = comparisonCols[dataColumnIndex].Trim();
+                                if (sourceValue.StartsWith("SIZE") && comparisonValue.StartsWith("SIZE"))
                                 {
-                                    var sourceValue = sourceCols[dataColumnIndex].Trim();
-                                    var comparisonValue = comparisonCols[dataColumnIndex].Trim();
-                                    if (sourceValue.StartsWith("SIZE") && comparisonValue.StartsWith("SIZE"))
-                                    {
-                                        // Example: SIZE = 186294784KB  vs.  SIZE = 174425088KB
-                                        // Don't worry if these values differ
-                                    }
-                                    else if (!StringMatch(sourceValue, comparisonValue))
-                                    {
-                                        linesMatch = false;
-                                        break;
-                                    }
+                                    // Example: SIZE = 186294784KB  vs.  SIZE = 174425088KB
+                                    // Don't worry if these values differ
+                                }
+                                else if (!StringMatch(sourceValue, comparisonValue))
+                                {
+                                    linesMatch = false;
+                                    break;
                                 }
                             }
                         }
+                    }
 
-                        if (ignoreInsertIntoDates && dataLine.StartsWith("INSERT INTO ") && comparisonLine.StartsWith("INSERT INTO "))
+                    if (ignoreInsertIntoDates && dataLine.StartsWith("INSERT INTO ") && comparisonLine.StartsWith("INSERT INTO "))
+                    {
+                        // Data file where we're ignoring dates
+                        // Truncate each of the data lines at the first occurrence of a date
+                        var matchBaseFile = mDateMatcher.Match(dataLine);
+                        var matchComparisonFile = mDateMatcher.Match(comparisonLine);
+                        if (matchBaseFile.Success && matchComparisonFile.Success)
                         {
-                            // Data file where we're ignoring dates
-                            // Truncate each of the data lines at the first occurrence of a date
-                            var matchBaseFile = mDateMatcher.Match(dataLine);
-                            var matchComparisonFile = mDateMatcher.Match(comparisonLine);
-                            if (matchBaseFile.Success && matchComparisonFile.Success)
-                            {
-                                dataLine = dataLine.Substring(0, matchBaseFile.Index);
-                                comparisonLine = comparisonLine.Substring(0, matchComparisonFile.Index);
-                                linesMatch = StringMatch(dataLine, comparisonLine);
-                            }
+                            dataLine = dataLine.Substring(0, matchBaseFile.Index);
+                            comparisonLine = comparisonLine.Substring(0, matchComparisonFile.Index);
+                            linesMatch = StringMatch(dataLine, comparisonLine);
                         }
+                    }
 
-                        if (dataLine.StartsWith("-- Dumped from database version") && comparisonLine.StartsWith("-- Dumped from") ||
-                            dataLine.StartsWith("-- Dumped by pg_dump version") && comparisonLine.StartsWith("-- Dumped by"))
-                        {
-                            if (MajorVersionsMatch(dataLine, comparisonLine))
-                                continue;
-                        }
+                    if (dataLine.StartsWith("-- Dumped from database version") && comparisonLine.StartsWith("-- Dumped from") ||
+                        dataLine.StartsWith("-- Dumped by pg_dump version") && comparisonLine.StartsWith("-- Dumped by"))
+                    {
+                        if (MajorVersionsMatch(dataLine, comparisonLine))
+                            continue;
+                    }
 
-                        if (!linesMatch)
-                        {
-                            // Difference found
-                            differenceReason = DifferenceReasonType.Changed;
-                            return true;
-                        }
+                    if (!linesMatch)
+                    {
+                        // Difference found
+                        differenceReason = DifferenceReasonType.Changed;
+                        return true;
                     }
                 }
 
@@ -643,46 +642,45 @@ namespace DB_Schema_Export_Tool
 
                 var headerLineChecked = false;
 
-                using (var dataReader = new StreamReader(new FileStream(dataFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+                using var dataReader = new StreamReader(new FileStream(dataFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+
+                while (!dataReader.EndOfStream)
                 {
-                    while (!dataReader.EndOfStream)
+                    var dataLine = dataReader.ReadLine();
+                    if (string.IsNullOrWhiteSpace(dataLine))
+                        continue;
+
+                    var lineParts = dataLine.Split('\t');
+
+                    if (!headerLineChecked)
                     {
-                        var dataLine = dataReader.ReadLine();
-                        if (string.IsNullOrWhiteSpace(dataLine))
+                        headerLineChecked = true;
+                        if (lineParts[0].Equals("SourceTableName"))
                             continue;
-
-                        var lineParts = dataLine.Split('\t');
-
-                        if (!headerLineChecked)
-                        {
-                            headerLineChecked = true;
-                            if (lineParts[0].Equals("SourceTableName"))
-                                continue;
-                        }
-
-                        if (lineParts.Length < 3)
-                        {
-                            OnDebugEvent("Skipping line with fewer than three columns: " + dataLine);
-                            continue;
-                        }
-
-                        var sourceTableName = lineParts[0].Trim();
-                        var sourceColumnName = lineParts[1].Trim();
-                        var targetColumnName = lineParts[2].Trim();
-
-                        if (!currentTable.Equals(sourceTableName, StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (!mOptions.ColumnMapForDataExport.TryGetValue(sourceTableName, out currentTableColumns))
-                            {
-                                currentTableColumns = new ColumnMapInfo(sourceTableName);
-                                mOptions.ColumnMapForDataExport.Add(sourceTableName, currentTableColumns);
-                            }
-
-                            currentTable = string.Copy(sourceTableName);
-                        }
-
-                        currentTableColumns.AddColumn(sourceColumnName, targetColumnName);
                     }
+
+                    if (lineParts.Length < 3)
+                    {
+                        OnDebugEvent("Skipping line with fewer than three columns: " + dataLine);
+                        continue;
+                    }
+
+                    var sourceTableName = lineParts[0].Trim();
+                    var sourceColumnName = lineParts[1].Trim();
+                    var targetColumnName = lineParts[2].Trim();
+
+                    if (!currentTable.Equals(sourceTableName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (!mOptions.ColumnMapForDataExport.TryGetValue(sourceTableName, out currentTableColumns))
+                        {
+                            currentTableColumns = new ColumnMapInfo(sourceTableName);
+                            mOptions.ColumnMapForDataExport.Add(sourceTableName, currentTableColumns);
+                        }
+
+                        currentTable = string.Copy(sourceTableName);
+                    }
+
+                    currentTableColumns.AddColumn(sourceColumnName, targetColumnName);
                 }
 
                 var tableText = mOptions.ColumnMapForDataExport.Count == 1 ? "table" : "tables";
@@ -725,56 +723,55 @@ namespace DB_Schema_Export_Tool
                 var headerLineChecked = false;
                 var tableCountWithFilters = 0;
 
-                using (var dataReader = new StreamReader(new FileStream(dataFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+                using var dataReader = new StreamReader(new FileStream(dataFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+
+                while (!dataReader.EndOfStream)
                 {
-                    while (!dataReader.EndOfStream)
+                    var dataLine = dataReader.ReadLine();
+                    if (string.IsNullOrWhiteSpace(dataLine))
+                        continue;
+
+                    var lineParts = dataLine.Split('\t');
+
+                    if (!headerLineChecked)
                     {
-                        var dataLine = dataReader.ReadLine();
-                        if (string.IsNullOrWhiteSpace(dataLine))
+                        headerLineChecked = true;
+                        if (lineParts[0].Equals("SourceTableName"))
                             continue;
-
-                        var lineParts = dataLine.Split('\t');
-
-                        if (!headerLineChecked)
-                        {
-                            headerLineChecked = true;
-                            if (lineParts[0].Equals("SourceTableName"))
-                                continue;
-                        }
-
-                        if (lineParts.Length < 3)
-                        {
-                            OnDebugEvent("Skipping line with fewer than three columns: " + dataLine);
-                            continue;
-                        }
-
-                        var sourceTableName = lineParts[0].Trim();
-                        var dateColumnName = lineParts[1].Trim();
-                        var minimumDateText = lineParts[2].Trim();
-
-                        if (!DateTime.TryParse(minimumDateText, out var minimumDate))
-                        {
-                            OnDebugEvent(string.Format(
-                                "Date filter for column {0} in table {1} is not a valid date: {2}",
-                                dateColumnName, sourceTableName, minimumDateText));
-
-                            continue;
-                        }
-
-                        TableDataExportInfo tableInfo;
-                        if (GetTableByName(tablesForDataExport, sourceTableName, out var matchingTableInfo))
-                        {
-                            tableInfo = matchingTableInfo;
-                        }
-                        else
-                        {
-                            tableInfo = new TableDataExportInfo(sourceTableName);
-                            tablesForDataExport.Add(tableInfo);
-                        }
-
-                        tableInfo.DefineDateFilter(dateColumnName, minimumDate);
-                        tableCountWithFilters++;
                     }
+
+                    if (lineParts.Length < 3)
+                    {
+                        OnDebugEvent("Skipping line with fewer than three columns: " + dataLine);
+                        continue;
+                    }
+
+                    var sourceTableName = lineParts[0].Trim();
+                    var dateColumnName = lineParts[1].Trim();
+                    var minimumDateText = lineParts[2].Trim();
+
+                    if (!DateTime.TryParse(minimumDateText, out var minimumDate))
+                    {
+                        OnDebugEvent(string.Format(
+                            "Date filter for column {0} in table {1} is not a valid date: {2}",
+                            dateColumnName, sourceTableName, minimumDateText));
+
+                        continue;
+                    }
+
+                    TableDataExportInfo tableInfo;
+                    if (GetTableByName(tablesForDataExport, sourceTableName, out var matchingTableInfo))
+                    {
+                        tableInfo = matchingTableInfo;
+                    }
+                    else
+                    {
+                        tableInfo = new TableDataExportInfo(sourceTableName);
+                        tablesForDataExport.Add(tableInfo);
+                    }
+
+                    tableInfo.DefineDateFilter(dateColumnName, minimumDate);
+                    tableCountWithFilters++;
                 }
 
                 var tableText = tableCountWithFilters == 1 ? "table" : "tables";
@@ -816,99 +813,98 @@ namespace DB_Schema_Export_Tool
 
                 var headerLineChecked = false;
 
-                using (var dataReader = new StreamReader(new FileStream(dataFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+                using var dataReader = new StreamReader(new FileStream(dataFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+
+                while (!dataReader.EndOfStream)
                 {
-                    while (!dataReader.EndOfStream)
+                    var dataLine = dataReader.ReadLine();
+
+                    // Lines that start with # are treated as comment lines
+                    if (string.IsNullOrWhiteSpace(dataLine) || dataLine.StartsWith("#"))
+                        continue;
+
+                    // Supports the following tab-delimited columns
+
+                    // Option 1:
+                    // SourceTableName
+
+                    // Option 2:
+                    // SourceTableName  TargetTableName
+
+                    // Option 3:
+                    // SourceTableName  TargetSchemaName  TargetTableName
+
+                    // Option 4:
+                    // SourceTableName  TargetSchemaName  TargetTableName  PgInsert
+
+                    // Option 4:
+                    // SourceTableName  TargetSchemaName  TargetTableName  PgInsert  KeyColumn(s)
+
+                    var lineParts = dataLine.Split('\t');
+
+                    if (!headerLineChecked)
                     {
-                        var dataLine = dataReader.ReadLine();
-
-                        // Lines that start with # are treated as comment lines
-                        if (string.IsNullOrWhiteSpace(dataLine) || dataLine.StartsWith("#"))
+                        headerLineChecked = true;
+                        if (lineParts[0].Equals("SourceTableName"))
                             continue;
+                    }
 
-                        // Supports the following tab-delimited columns
+                    var sourceTableName = lineParts[0].Trim();
 
-                        // Option 1:
-                        // SourceTableName
+                    var tableInfo = new TableDataExportInfo(sourceTableName)
+                    {
+                        UsePgInsert = mOptions.PgInsertTableData
+                    };
 
-                        // Option 2:
-                        // SourceTableName  TargetTableName
+                    if (lineParts.Length == 2)
+                    {
+                        tableInfo.TargetTableName = lineParts[1].Trim();
+                    }
+                    else if (lineParts.Length >= 3)
+                    {
+                        tableInfo.TargetSchemaName = lineParts[1].Trim();
+                        tableInfo.TargetTableName = lineParts[2].Trim();
+                    }
 
-                        // Option 3:
-                        // SourceTableName  TargetSchemaName  TargetTableName
+                    // Check for TargetTableName being "true" or "false"
+                    if (tableInfo.TargetTableName != null &&
+                        (tableInfo.TargetTableName.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+                         tableInfo.TargetTableName.Equals("false", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        LogWarning(string.Format(
+                            "Invalid line in the table data file; target table name cannot be {0}; see {1}",
+                            tableInfo.TargetTableName, dataLine));
 
-                        // Option 4:
-                        // SourceTableName  TargetSchemaName  TargetTableName  PgInsert
+                        continue;
+                    }
 
-                        // Option 4:
-                        // SourceTableName  TargetSchemaName  TargetTableName  PgInsert  KeyColumn(s)
-
-                        var lineParts = dataLine.Split('\t');
-
-                        if (!headerLineChecked)
+                    if (lineParts.Length >= 4)
+                    {
+                        // Treat the text "true" or a positive integer as true
+                        if (bool.TryParse(lineParts[3].Trim(), out var parsedValue))
                         {
-                            headerLineChecked = true;
-                            if (lineParts[0].Equals("SourceTableName"))
-                                continue;
+                            tableInfo.UsePgInsert = parsedValue;
                         }
-
-                        var sourceTableName = lineParts[0].Trim();
-
-                        var tableInfo = new TableDataExportInfo(sourceTableName)
+                        else if (int.TryParse(lineParts[3].Trim(), out var parsedNumber))
                         {
-                            UsePgInsert = mOptions.PgInsertTableData
-                        };
-
-                        if (lineParts.Length == 2)
-                        {
-                            tableInfo.TargetTableName = lineParts[1].Trim();
+                            tableInfo.UsePgInsert = parsedNumber > 0;
                         }
-                        else if (lineParts.Length >= 3)
-                        {
-                            tableInfo.TargetSchemaName = lineParts[1].Trim();
-                            tableInfo.TargetTableName = lineParts[2].Trim();
-                        }
+                    }
 
-                        // Check for TargetTableName being "true" or "false"
-                        if (tableInfo.TargetTableName != null &&
-                            (tableInfo.TargetTableName.Equals("true", StringComparison.OrdinalIgnoreCase) ||
-                             tableInfo.TargetTableName.Equals("false", StringComparison.OrdinalIgnoreCase)))
+                    if (lineParts.Length >= 5)
+                    {
+                        // One or more primary key columns
+                        var primaryKeyColumns = lineParts[4].Trim().Split(',');
+                        foreach (var primaryKeyColumn in primaryKeyColumns)
                         {
-                            LogWarning(string.Format(
-                                "Invalid line in the table data file; target table name cannot be {0}; see {1}",
-                                tableInfo.TargetTableName, dataLine));
-
-                            continue;
+                            tableInfo.PrimaryKeyColumns.Add(primaryKeyColumn);
                         }
+                    }
 
-                        if (lineParts.Length >= 4)
-                        {
-                            // Treat the text "true" or a positive integer as true
-                            if (bool.TryParse(lineParts[3].Trim(), out var parsedValue))
-                            {
-                                tableInfo.UsePgInsert = parsedValue;
-                            }
-                            else if (int.TryParse(lineParts[3].Trim(), out var parsedNumber))
-                            {
-                                tableInfo.UsePgInsert = parsedNumber > 0;
-                            }
-                        }
-
-                        if (lineParts.Length >= 5)
-                        {
-                            // One or more primary key columns
-                            var primaryKeyColumns = lineParts[4].Trim().Split(',');
-                            foreach (var primaryKeyColumn in primaryKeyColumns)
-                            {
-                                tableInfo.PrimaryKeyColumns.Add(primaryKeyColumn);
-                            }
-                        }
-
-                        if (!tableNames.Contains(sourceTableName))
-                        {
-                            tableNames.Add(sourceTableName);
-                            tablesForDataExport.Add(tableInfo);
-                        }
+                    if (!tableNames.Contains(sourceTableName))
+                    {
+                        tableNames.Add(sourceTableName);
+                        tablesForDataExport.Add(tableInfo);
                     }
                 }
 
@@ -1021,33 +1017,32 @@ namespace DB_Schema_Export_Tool
             };
 
             modifiedFileCount = 0;
-            using (var gitStatusReader = new StringReader(consoleOutput))
+            using var gitStatusReader = new StringReader(consoleOutput);
+
+            while (gitStatusReader.Peek() > -1)
             {
-                while (gitStatusReader.Peek() > -1)
+                var statusLine = gitStatusReader.ReadLine();
+                if (string.IsNullOrWhiteSpace(statusLine) || statusLine.Length < 4)
                 {
-                    var statusLine = gitStatusReader.ReadLine();
-                    if (string.IsNullOrWhiteSpace(statusLine) || statusLine.Length < 4)
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    if (statusLine.StartsWith("fatal: Not a git repository"))
-                    {
-                        OnErrorEvent("Directory is not tracked by Git: " + targetDirectory.FullName);
-                        return false;
-                    }
+                if (statusLine.StartsWith("fatal: Not a git repository"))
+                {
+                    OnErrorEvent("Directory is not tracked by Git: " + targetDirectory.FullName);
+                    return false;
+                }
 
-                    var fileIndexStatus = statusLine[0];
-                    var fileWorkTreeStatus = statusLine[1];
+                var fileIndexStatus = statusLine[0];
+                var fileWorkTreeStatus = statusLine[1];
 
-                    if (fileIndexStatus == '?')
-                    {
-                        // New file; added by the calling function
-                    }
-                    else if (newOrModifiedStatusSymbols.Contains(fileIndexStatus) || newOrModifiedStatusSymbols.Contains(fileWorkTreeStatus))
-                    {
-                        modifiedFileCount++;
-                    }
+                if (fileIndexStatus == '?')
+                {
+                    // New file; added by the calling function
+                }
+                else if (newOrModifiedStatusSymbols.Contains(fileIndexStatus) || newOrModifiedStatusSymbols.Contains(fileWorkTreeStatus))
+                {
+                    modifiedFileCount++;
                 }
             }
 
@@ -1085,48 +1080,47 @@ namespace DB_Schema_Export_Tool
             }
 
             modifiedFileCount = 0;
-            using (var hgStatusReader = new StringReader(consoleOutput))
+            using var hgStatusReader = new StringReader(consoleOutput);
+
+            while (hgStatusReader.Peek() > -1)
             {
-                while (hgStatusReader.Peek() > -1)
+                var statusLine = hgStatusReader.ReadLine();
+                if (string.IsNullOrWhiteSpace(statusLine) || statusLine.Length < minimumLineLength)
                 {
-                    var statusLine = hgStatusReader.ReadLine();
-                    if (string.IsNullOrWhiteSpace(statusLine) || statusLine.Length < minimumLineLength)
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    if (statusLine.StartsWith("svn: warning") && statusLine.Contains("is not a working copy"))
-                    {
-                        OnErrorEvent("Directory is not tracked by SVN: " + targetDirectory.FullName);
-                        return false;
-                    }
+                if (statusLine.StartsWith("svn: warning") && statusLine.Contains("is not a working copy"))
+                {
+                    OnErrorEvent("Directory is not tracked by SVN: " + targetDirectory.FullName);
+                    return false;
+                }
 
-                    if (statusLine.StartsWith("abort: no repository found in "))
-                    {
-                        OnErrorEvent("Directory is not tracked by Hg: " + targetDirectory.FullName);
-                        return false;
-                    }
+                if (statusLine.StartsWith("abort: no repository found in "))
+                {
+                    OnErrorEvent("Directory is not tracked by Hg: " + targetDirectory.FullName);
+                    return false;
+                }
 
-                    var fileModStatus = statusLine[0];
-                    var filePropertyStatus = ' ';
+                var fileModStatus = statusLine[0];
+                var filePropertyStatus = ' ';
 
-                    if (repoManagerType == RepoManagerType.Svn)
-                    {
-                        filePropertyStatus = statusLine[1];
-                    }
+                if (repoManagerType == RepoManagerType.Svn)
+                {
+                    filePropertyStatus = statusLine[1];
+                }
 
-                    if (newOrModifiedStatusSymbols.Contains(fileModStatus))
-                    {
-                        modifiedFileCount++;
-                    }
-                    else if (filePropertyStatus == 'M')
-                    {
-                        modifiedFileCount++;
-                    }
-                    else if (fileModStatus == '?')
-                    {
-                        // New file; added by the calling function
-                    }
+                if (newOrModifiedStatusSymbols.Contains(fileModStatus))
+                {
+                    modifiedFileCount++;
+                }
+                else if (filePropertyStatus == 'M')
+                {
+                    modifiedFileCount++;
+                }
+                else if (fileModStatus == '?')
+                {
+                    // New file; added by the calling function
                 }
             }
 

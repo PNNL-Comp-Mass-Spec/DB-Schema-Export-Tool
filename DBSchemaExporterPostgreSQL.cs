@@ -57,44 +57,44 @@ namespace DB_Schema_Export_Tool
         /// FUNCTION get_stat_activity(
         /// PROCEDURE post_log_entry(
         /// </summary>
-        private readonly Regex mAclMatcherFunctionOrProcedure = new Regex(
+        private readonly Regex mAclMatcherFunctionOrProcedure = new(
             "(FUNCTION|PROCEDURE) (?<ObjectName>[^(]+)",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         // Match text like:
         // SCHEMA mc
-        private readonly Regex mAclMatcherSchema = new Regex(
+        private readonly Regex mAclMatcherSchema = new(
             "SCHEMA (?<SchemaName>.+)",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         // Match text like:
         // TABLE t_event_log
-        private readonly Regex mAclMatcherTable = new Regex(
+        private readonly Regex mAclMatcherTable = new(
             "TABLE (?<TableName>.+)",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         // Match text like:
         // get_stat_activity()
-        private readonly Regex mFunctionOrProcedureNameMatcher = new Regex(
+        private readonly Regex mFunctionOrProcedureNameMatcher = new(
             "^(?<Name>[^(]+)",
             RegexOptions.Compiled);
 
         // Match lines like:
         // -- Name: t_param_value; Type: TABLE; Schema: mc; Owner: d3l243
         // -- Name: v_manager_type_report; Type: VIEW; Schema: mc; Owner: d3l243
-        private readonly Regex mNameTypeSchemaMatcher = new Regex(
+        private readonly Regex mNameTypeSchemaMatcher = new(
             "^-- Name: (?<Name>.+); Type: (?<Type>.+); Schema: (?<Schema>.+); Owner: ?(?<Owner>.*)",
             RegexOptions.Compiled);
 
         // Match text like:
         // FUNCTION get_stat_activity()
-        private readonly Regex mNameTypeTargetMatcher = new Regex(
+        private readonly Regex mNameTypeTargetMatcher = new(
             "(?<ObjectType>[a-z]+) (?<ObjectName>[^(]+)",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         // Match text like:
         // t_users t_users_trigger_update_persisted
-        private readonly Regex mTriggerTargetTableMatcher = new Regex(
+        private readonly Regex mTriggerTargetTableMatcher = new(
             "[^ ]+",
             RegexOptions.Compiled);
 
@@ -644,130 +644,128 @@ namespace DB_Schema_Export_Tool
             }
 
             var tableListCommand = new NpgsqlCommand(sql, mPgConnection);
-            using (var reader = tableListCommand.ExecuteReader())
+            using var reader = tableListCommand.ExecuteReader();
+
+            if (!reader.HasRows)
+                return true;
+
+            var dataExportParams = new DataExportWorkingParams(false, "null")
             {
-                if (!reader.HasRows)
-                    return true;
+                SourceTableNameWithSchema = sourceTableNameWithSchema,
+            };
 
-                var dataExportParams = new DataExportWorkingParams(false, "null")
-                {
-                    SourceTableNameWithSchema = sourceTableNameWithSchema,
-                };
+            dataExportParams.TargetTableNameWithSchema = GetTargetTableName(dataExportParams, tableInfo);
+            if (string.IsNullOrWhiteSpace(dataExportParams.TargetTableNameWithSchema))
+            {
+                // Skip this table
+                OnStatusEvent(string.Format("Could not determine the target table name for table {0} in database {1}", dataExportParams.SourceTableNameWithSchema, databaseName));
+                return false;
+            }
 
-                dataExportParams.TargetTableNameWithSchema = GetTargetTableName(dataExportParams, tableInfo);
-                if (string.IsNullOrWhiteSpace(dataExportParams.TargetTableNameWithSchema))
+            var headerRows = new List<string>();
+
+            var header = COMMENT_START_TEXT + "Object:  Table " + dataExportParams.TargetTableNameWithSchema;
+
+            if (mOptions.ScriptingOptions.IncludeTimestampInScriptFileHeader)
+            {
+                header += "    " + COMMENT_SCRIPT_DATE_TEXT + GetTimeStamp();
+            }
+
+            header += COMMENT_END_TEXT;
+            headerRows.Add(header);
+
+            if (tableInfo.FilterByDate)
+            {
+                headerRows.Add(string.Format("{0}Date filter: {1} >= '{2:yyyy-MM-dd}'{3}",
+                    COMMENT_START_TEXT, tableInfo.DateColumnName, tableInfo.MinimumDate, COMMENT_END_TEXT));
+            }
+
+            // See if any of the columns in the table is an identity column
+
+            var columnSchema = reader.GetColumnSchema();
+            foreach (var dbColumn in columnSchema)
+            {
+                if (dbColumn.IsIdentity == true)
                 {
-                    // Skip this table
-                    OnStatusEvent(string.Format("Could not determine the target table name for table {0} in database {1}", dataExportParams.SourceTableNameWithSchema, databaseName));
-                    return false;
+                    dataExportParams.IdentityColumnFound = true;
                 }
-
-                var headerRows = new List<string>();
-
-                var header = COMMENT_START_TEXT + "Object:  Table " + dataExportParams.TargetTableNameWithSchema;
-
-                if (mOptions.ScriptingOptions.IncludeTimestampInScriptFileHeader)
+                else if (dbColumn.IsAutoIncrement == true)
                 {
-                    header += "    " + COMMENT_SCRIPT_DATE_TEXT + GetTimeStamp();
+                    dataExportParams.IdentityColumnFound = true;
                 }
+            }
 
-                header += COMMENT_END_TEXT;
-                headerRows.Add(header);
+            var columnCount = reader.FieldCount;
 
-                if (tableInfo.FilterByDate)
-                {
-                    headerRows.Add(string.Format("{0}Date filter: {1} >= '{2:yyyy-MM-dd}'{3}",
-                        COMMENT_START_TEXT, tableInfo.DateColumnName, tableInfo.MinimumDate, COMMENT_END_TEXT));
-                }
+            for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
+            {
+                var currentColumnName = reader.GetName(columnIndex);
+                var currentColumnType = reader.GetFieldType(columnIndex);
+                dataExportParams.ColumnInfoByType.Add(new KeyValuePair<string, Type>(currentColumnName, currentColumnType));
+            }
 
-                // See if any of the columns in the table is an identity column
+            const bool quoteWithSquareBrackets = false;
 
-                var columnSchema = reader.GetColumnSchema();
-                foreach (var dbColumn in columnSchema)
-                {
-                    if (dbColumn.IsIdentity == true)
-                    {
-                        dataExportParams.IdentityColumnFound = true;
-                    }
-                    else if (dbColumn.IsAutoIncrement == true)
-                    {
-                        dataExportParams.IdentityColumnFound = true;
-                    }
-                }
+            ConvertDataTableColumnInfo(dataExportParams.SourceTableNameWithSchema, quoteWithSquareBrackets, dataExportParams);
 
-                var columnCount = reader.FieldCount;
+            var insertIntoLine = string.Empty;
 
-                for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
-                {
-                    var currentColumnName = reader.GetName(columnIndex);
-                    var currentColumnType = reader.GetFieldType(columnIndex);
-                    dataExportParams.ColumnInfoByType.Add(new KeyValuePair<string, Type>(currentColumnName, currentColumnType));
-                }
+            if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+            {
+                // For tables with an identity column that uses "GENERATED BY DEFAULT", we can explicitly set the value of the identity field
 
-                const bool quoteWithSquareBrackets = false;
+                // However, for tables with "GENERATED ALWAYS", we need to use "OVERRIDING SYSTEM VALUE"
+                //
+                // INSERT INTO UserDetail (UserDetailId, UserName, Password)
+                // OVERRIDING SYSTEM VALUE
+                //   VALUES(1,'admin', 'password');
 
-                ConvertDataTableColumnInfo(dataExportParams.SourceTableNameWithSchema, quoteWithSquareBrackets, dataExportParams);
+                insertIntoLine = string.Format("INSERT INTO {0} VALUES (", dataExportParams.TargetTableNameWithSchema);
 
-                var insertIntoLine = string.Empty;
+                headerRows.Add(COMMENT_START_TEXT + "Columns: " + dataExportParams.HeaderRowValues + COMMENT_END_TEXT);
 
-                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
-                {
-                    // For tables with an identity column that uses "GENERATED BY DEFAULT", we can explicitly set the value of the identity field
+                dataExportParams.ColSepChar = ',';
+            }
+            else
+            {
+                // Export data as a tab-delimited table
+                headerRows.Add(dataExportParams.HeaderRowValues.ToString());
+                dataExportParams.ColSepChar = '\t';
+            }
 
-                    // However, for tables with "GENERATED ALWAYS", we need to use "OVERRIDING SYSTEM VALUE"
-                    //
-                    // INSERT INTO UserDetail (UserDetailId, UserName, Password)
-                    // OVERRIDING SYSTEM VALUE
-                    //   VALUES(1,'admin', 'password');
+            var tableDataOutputFile = GetTableDataOutputFile(tableInfo, dataExportParams, workingParams, out var relativeFilePath);
 
-                    insertIntoLine = string.Format("INSERT INTO {0} VALUES (", dataExportParams.TargetTableNameWithSchema);
+            if (tableDataOutputFile == null)
+            {
+                // Skip this table (a warning message should have already been shown)
+                return false;
+            }
 
-                    headerRows.Add(COMMENT_START_TEXT + "Columns: " + dataExportParams.HeaderRowValues + COMMENT_END_TEXT);
+            if (mOptions.ScriptPgLoadCommands)
+            {
+                workingParams.AddDataLoadScriptFile(relativeFilePath);
+            }
 
-                    dataExportParams.ColSepChar = ',';
-                }
-                else
-                {
-                    // Export data as a tab-delimited table
-                    headerRows.Add(dataExportParams.HeaderRowValues.ToString());
-                    dataExportParams.ColSepChar = '\t';
-                }
+            using var writer = new StreamWriter(new FileStream(tableDataOutputFile.FullName, FileMode.Create, FileAccess.Write, FileShare.ReadWrite));
 
-                var tableDataOutputFile = GetTableDataOutputFile(tableInfo, dataExportParams, workingParams, out var relativeFilePath);
+            foreach (var headerRow in headerRows)
+            {
+                writer.WriteLine(headerRow);
+            }
 
-                if (tableDataOutputFile == null)
-                {
-                    // Skip this table (a warning message should have already been shown)
-                    return false;
-                }
+            ExportDBTableDataUsingNpgsql(writer, reader, dataExportParams, insertIntoLine);
 
-                if (mOptions.ScriptPgLoadCommands)
-                {
-                    workingParams.AddDataLoadScriptFile(relativeFilePath);
-                }
-
-                using (var writer = new StreamWriter(new FileStream(tableDataOutputFile.FullName, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
-                {
-                    foreach (var headerRow in headerRows)
-                    {
-                        writer.WriteLine(headerRow);
-                    }
-
-                    ExportDBTableDataUsingNpgsql(writer, reader, dataExportParams, insertIntoLine);
-
-                    if (dataExportParams.IdentityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
-                    {
-                        writer.WriteLine("-- If a table has an identity value, after inserting data with explicit identities,");
-                        writer.WriteLine("-- the sequence will need to be synchronized up with the table");
-                        writer.WriteLine();
-                        writer.WriteLine("-- Option 1, for columns that use a serial for the identity field");
-                        writer.WriteLine("-- select setval(pg_get_serial_sequence('{0}', 'my_serial_column'),", dataExportParams.TargetTableNameWithSchema);
-                        writer.WriteLine("--               (select max(my_serial_column) from {0}) );", dataExportParams.TargetTableNameWithSchema);
-                        writer.WriteLine();
-                        writer.WriteLine("-- Option 2, for columns that get their default value from a sequence");
-                        writer.WriteLine("-- select setval('my_sequence_name', (select max(my_serial_column) from {0});", dataExportParams.TargetTableNameWithSchema);
-                    }
-                }
+            if (dataExportParams.IdentityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+            {
+                writer.WriteLine("-- If a table has an identity value, after inserting data with explicit identities,");
+                writer.WriteLine("-- the sequence will need to be synchronized up with the table");
+                writer.WriteLine();
+                writer.WriteLine("-- Option 1, for columns that use a serial for the identity field");
+                writer.WriteLine("-- select setval(pg_get_serial_sequence('{0}', 'my_serial_column'),", dataExportParams.TargetTableNameWithSchema);
+                writer.WriteLine("--               (select max(my_serial_column) from {0}) );", dataExportParams.TargetTableNameWithSchema);
+                writer.WriteLine();
+                writer.WriteLine("-- Option 2, for columns that get their default value from a sequence");
+                writer.WriteLine("-- select setval('my_sequence_name', (select max(my_serial_column) from {0});", dataExportParams.TargetTableNameWithSchema);
             }
 
             return true;
@@ -1299,8 +1297,7 @@ namespace DB_Schema_Export_Tool
         /// <remarks>Assumes we already have an active server connection</remarks>
         protected override IEnumerable<string> GetServerDatabasesCurrentConnection()
         {
-            var databaseNames = GetServerDatabasesWork();
-            return databaseNames;
+            return GetServerDatabasesWork();
         }
 
         /// <summary>
@@ -1315,14 +1312,13 @@ namespace DB_Schema_Export_Tool
             // ReSharper restore StringLiteralTypo
 
             var cmd = new NpgsqlCommand(sql, mPgConnection);
-            using (var reader = cmd.ExecuteReader())
+            using var reader = cmd.ExecuteReader();
+
+            if (reader.HasRows)
             {
-                if (reader.HasRows)
+                while (reader.Read())
                 {
-                    while (reader.Read())
-                    {
-                        databaseNames.Add(reader.GetString(0));
-                    }
+                    databaseNames.Add(reader.GetString(0));
                 }
             }
 
@@ -1517,89 +1513,88 @@ namespace DB_Schema_Export_Tool
             bool caseSensitive,
             out bool definedInPgPassFile)
         {
-            using (var reader = new StreamReader(new FileStream(passwordFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+            using var reader = new StreamReader(new FileStream(passwordFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+
+            var comparisonType = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+
+            while (!reader.EndOfStream)
             {
-                var comparisonType = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+                var dataLine = reader.ReadLine();
+                if (string.IsNullOrWhiteSpace(dataLine))
+                    continue;
 
-                while (!reader.EndOfStream)
+                // dataLine is of the form
+                // hostname:port:database:username:password
+                // The first four fields can contain a *
+                var lineParts = dataLine.Split(new[] { ':' }, 5);
+
+                if (lineParts.Length < 5)
+                    continue;
+
+                var hostname = lineParts[0];
+                var port = lineParts[1];
+                var database = lineParts[2];
+                var username = lineParts[3];
+
+                // Passwords are allowed to contain a colon; it should be preceded by a backslash in the pgpass file
+                var password = lineParts[4].Replace(@"\:", ":");
+
+                if (!string.Equals(hostname, mOptions.ServerName, comparisonType) && !hostname.Equals("*"))
+                    continue;
+
+                if (!port.Equals("*"))
                 {
-                    var dataLine = reader.ReadLine();
-                    if (string.IsNullOrWhiteSpace(dataLine))
+                    if (!int.TryParse(port, out var portValue))
                         continue;
 
-                    // dataLine is of the form
-                    // hostname:port:database:username:password
-                    // The first four fields can contain a *
-                    var lineParts = dataLine.Split(new[] { ':' }, 5);
-
-                    if (lineParts.Length < 5)
+                    if (portValue != mOptions.PgPort)
                         continue;
-
-                    var hostname = lineParts[0];
-                    var port = lineParts[1];
-                    var database = lineParts[2];
-                    var username = lineParts[3];
-
-                    // Passwords are allowed to contain a colon; it should be preceded by a backslash in the pgpass file
-                    var password = lineParts[4].Replace(@"\:", ":");
-
-                    if (!string.Equals(hostname, mOptions.ServerName, comparisonType) && !hostname.Equals("*"))
-                        continue;
-
-                    if (!port.Equals("*"))
-                    {
-                        if (!int.TryParse(port, out var portValue))
-                            continue;
-
-                        if (portValue != mOptions.PgPort)
-                            continue;
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(currentDatabase))
-                    {
-                        if (!string.Equals(database, currentDatabase, comparisonType) && !database.Equals("*"))
-                            continue;
-                    }
-
-                    if (!string.Equals(username, pgUser, comparisonType) && !username.Equals("*"))
-                        continue;
-
-                    if (string.IsNullOrWhiteSpace(password))
-                    {
-                        OnWarningEvent(string.Format("The {0} file has a blank password for user {1}, server {2}, database {3}; ignoring this entry",
-                                                     passwordFile.Name, username, hostname, database));
-                        continue;
-                    }
-
-                    // If we get here, this password is valid for the current connection
-
-                    if (comparisonType == StringComparison.OrdinalIgnoreCase)
-                    {
-                        // Auto-update server and/or user if a case mismatch
-                        if (string.Equals(hostname, mOptions.ServerName, StringComparison.OrdinalIgnoreCase) &&
-                            !string.Equals(hostname, mOptions.ServerName, StringComparison.Ordinal))
-                        {
-                            mOptions.ServerName = hostname;
-                        }
-
-                        if (string.Equals(username, mOptions.DBUser, StringComparison.OrdinalIgnoreCase) &&
-                            !string.Equals(username, mOptions.DBUser, StringComparison.Ordinal))
-                        {
-                            mOptions.DBUser = username;
-                        }
-                    }
-
-                    OnDebugEvent(string.Format("Determined password for user {0} using {1}", pgUser, passwordFile.FullName));
-
-                    if (isStandardLocation)
-                    {
-                        definedInPgPassFile = true;
-                        return string.Empty;
-                    }
-
-                    definedInPgPassFile = false;
-                    return password;
                 }
+
+                if (!string.IsNullOrWhiteSpace(currentDatabase))
+                {
+                    if (!string.Equals(database, currentDatabase, comparisonType) && !database.Equals("*"))
+                        continue;
+                }
+
+                if (!string.Equals(username, pgUser, comparisonType) && !username.Equals("*"))
+                    continue;
+
+                if (string.IsNullOrWhiteSpace(password))
+                {
+                    OnWarningEvent(string.Format("The {0} file has a blank password for user {1}, server {2}, database {3}; ignoring this entry",
+                        passwordFile.Name, username, hostname, database));
+                    continue;
+                }
+
+                // If we get here, this password is valid for the current connection
+
+                if (comparisonType == StringComparison.OrdinalIgnoreCase)
+                {
+                    // Auto-update server and/or user if a case mismatch
+                    if (string.Equals(hostname, mOptions.ServerName, StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(hostname, mOptions.ServerName, StringComparison.Ordinal))
+                    {
+                        mOptions.ServerName = hostname;
+                    }
+
+                    if (string.Equals(username, mOptions.DBUser, StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(username, mOptions.DBUser, StringComparison.Ordinal))
+                    {
+                        mOptions.DBUser = username;
+                    }
+                }
+
+                OnDebugEvent(string.Format("Determined password for user {0} using {1}", pgUser, passwordFile.FullName));
+
+                if (isStandardLocation)
+                {
+                    definedInPgPassFile = true;
+                    return string.Empty;
+                }
+
+                definedInPgPassFile = false;
+                return password;
             }
 
             definedInPgPassFile = false;
@@ -1948,105 +1943,104 @@ namespace DB_Schema_Export_Tool
             // Values are a list of DDL for creating the object
             var scriptInfoByObject = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
-            using (var reader = new StreamReader(new FileStream(pgDumpOutputFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+            using var reader = new StreamReader(new FileStream(pgDumpOutputFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+
+            var cachedLines = new List<string>();
+            var currentObject = new DatabaseObjectInfo();
+
+            var previousTargetScriptFile = string.Empty;
+
+            while (!reader.EndOfStream)
             {
-                var cachedLines = new List<string>();
-                var currentObject = new DatabaseObjectInfo();
+                var dataLine = reader.ReadLine();
+                if (dataLine == null)
+                    continue;
 
-                var previousTargetScriptFile = string.Empty;
-
-                while (!reader.EndOfStream)
+                if (dataLine.StartsWith("SQL to find"))
                 {
-                    var dataLine = reader.ReadLine();
-                    if (dataLine == null)
-                        continue;
+                    Console.WriteLine("Check this code");
+                }
 
-                    if (dataLine.StartsWith("SQL to find"))
+                if (dataLine.StartsWith("-- PostgreSQL database dump complete"))
+                {
+                    // The previous cached line is likely "--"
+                    // Remove it
+                    if (cachedLines.Count > 0 && cachedLines.Last().Equals("--"))
                     {
-                        Console.WriteLine("Check this code");
+                        cachedLines.RemoveAt(cachedLines.Count - 1);
                     }
 
-                    if (dataLine.StartsWith("-- PostgreSQL database dump complete"))
+                    ProcessAndStoreCachedLinesTargetScriptFile(
+                        scriptInfoByObject,
+                        databaseName,
+                        cachedLines,
+                        currentObject,
+                        previousTargetScriptFile,
+                        ref unhandledScriptingCommands);
+
+                    cachedLines = new List<string>();
+                    break;
+                }
+
+                var match = mNameTypeSchemaMatcher.Match(dataLine);
+                try
+                {
+                    if (!match.Success)
                     {
-                        // The previous cached line is likely "--"
-                        // Remove it
-                        if (cachedLines.Count > 0 && cachedLines.Last().Equals("--"))
+                        if (dataLine.Equals("SET default_tablespace = '';") ||
+                            dataLine.Equals("SET default_table_access_method = heap;"))
                         {
-                            cachedLines.RemoveAt(cachedLines.Count - 1);
-                        }
+                            // Store these lines in the DatabaseInfo file
+                            var databaseInfoScriptFile = string.Format("DatabaseInfo_{0}.sql", databaseName);
 
-                        ProcessAndStoreCachedLinesTargetScriptFile(
-                            scriptInfoByObject,
-                            databaseName,
-                            cachedLines,
-                            currentObject,
-                            previousTargetScriptFile,
-                            ref unhandledScriptingCommands);
+                            var setDefaultLine = new List<string> {
+                                dataLine
+                            };
 
-                        cachedLines = new List<string>();
-                        break;
-                    }
-
-                    var match = mNameTypeSchemaMatcher.Match(dataLine);
-                    try
-                    {
-                        if (!match.Success)
-                        {
-                            if (dataLine.Equals("SET default_tablespace = '';") ||
-                                dataLine.Equals("SET default_table_access_method = heap;"))
-                            {
-                                // Store these lines in the DatabaseInfo file
-                                var databaseInfoScriptFile = string.Format("DatabaseInfo_{0}.sql", databaseName);
-
-                                var setDefaultLine = new List<string> {
-                                    dataLine
-                                };
-
-                                StoreCachedLinesForObject(
-                                    scriptInfoByObject,
-                                    setDefaultLine,
-                                    databaseInfoScriptFile,
-                                    new DatabaseObjectInfo(databaseName, "DATABASE"));
-                                continue;
-                            }
-
-                            cachedLines.Add(dataLine);
+                            StoreCachedLinesForObject(
+                                scriptInfoByObject,
+                                setDefaultLine,
+                                databaseInfoScriptFile,
+                                new DatabaseObjectInfo(databaseName, "DATABASE"));
                             continue;
                         }
 
-                        var targetScriptFile = ProcessAndStoreCachedLinesTargetScriptFile(
-                            scriptInfoByObject,
-                            databaseName,
-                            cachedLines,
-                            currentObject,
-                            previousTargetScriptFile,
-                            ref unhandledScriptingCommands);
-
-                        previousTargetScriptFile = string.Copy(targetScriptFile);
-
-                        UpdateCachedObjectInfo(match, currentObject);
-                        cachedLines = new List<string> {
-                            "--",
-                            dataLine
-                        };
+                        cachedLines.Add(dataLine);
+                        continue;
                     }
-                    catch (Exception ex)
-                    {
-                        OnWarningEvent("Error in ProcessPgDumpFile: " + ex.Message);
-                    }
+
+                    var targetScriptFile = ProcessAndStoreCachedLinesTargetScriptFile(
+                        scriptInfoByObject,
+                        databaseName,
+                        cachedLines,
+                        currentObject,
+                        previousTargetScriptFile,
+                        ref unhandledScriptingCommands);
+
+                    previousTargetScriptFile = string.Copy(targetScriptFile);
+
+                    UpdateCachedObjectInfo(match, currentObject);
+                    cachedLines = new List<string> {
+                        "--",
+                        dataLine
+                    };
                 }
-
-                ProcessAndStoreCachedLinesTargetScriptFile(
-                    scriptInfoByObject,
-                    databaseName,
-                    cachedLines,
-                    currentObject,
-                    previousTargetScriptFile,
-                    ref unhandledScriptingCommands);
-
-                var outputDirectory = pgDumpOutputFile.Directory.FullName;
-                WriteCachedLines(outputDirectory, scriptInfoByObject);
+                catch (Exception ex)
+                {
+                    OnWarningEvent("Error in ProcessPgDumpFile: " + ex.Message);
+                }
             }
+
+            ProcessAndStoreCachedLinesTargetScriptFile(
+                scriptInfoByObject,
+                databaseName,
+                cachedLines,
+                currentObject,
+                previousTargetScriptFile,
+                ref unhandledScriptingCommands);
+
+            var outputDirectory = pgDumpOutputFile.Directory.FullName;
+            WriteCachedLines(outputDirectory, scriptInfoByObject);
         }
 
         /// <summary>
@@ -2241,18 +2235,17 @@ namespace DB_Schema_Export_Tool
 
                 OnDebugEvent("Writing " + outputFilePath);
 
-                using (var writer = new StreamWriter(new FileStream(outputFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
-                {
-                    foreach (var cachedLine in cachedLines)
-                    {
-                        writer.WriteLine(cachedLine);
-                    }
+                using var writer = new StreamWriter(new FileStream(outputFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite));
 
-                    // Add one blank line to the end of the file (provided the previous line was not empty)
-                    if (cachedLines.Count == 0 || !string.IsNullOrWhiteSpace(cachedLines.Last()))
-                    {
-                        writer.WriteLine(string.Empty);
-                    }
+                foreach (var cachedLine in cachedLines)
+                {
+                    writer.WriteLine(cachedLine);
+                }
+
+                // Add one blank line to the end of the file (provided the previous line was not empty)
+                if (cachedLines.Count == 0 || !string.IsNullOrWhiteSpace(cachedLines.Last()))
+                {
+                    writer.WriteLine(string.Empty);
                 }
             }
         }

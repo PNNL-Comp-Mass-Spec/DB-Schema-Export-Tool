@@ -1273,62 +1273,61 @@ namespace DB_Schema_Export_Tool
                     workingParams.AddDataLoadScriptFile(relativeFilePath);
                 }
 
-                using (var writer = new StreamWriter(new FileStream(tableDataOutputFile.FullName, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
+                using var writer = new StreamWriter(new FileStream(tableDataOutputFile.FullName, FileMode.Create, FileAccess.Write, FileShare.ReadWrite));
+
+                if (mOptions.PgDumpTableData)
                 {
-                    if (mOptions.PgDumpTableData)
+                    writer.NewLine = "\n";
+                }
+
+                if (dataExportParams.PgInsertEnabled)
+                {
+                    writer.WriteLine("SET session_replication_role = replica;");
+                    writer.WriteLine();
+                }
+
+                foreach (var headerRow in headerRows)
+                {
+                    writer.WriteLine(headerRow);
+                }
+
+                ExportDBTableDataWork(writer, queryResults, insertIntoLine, dataExportParams);
+
+                if (dataExportParams.PgInsertEnabled)
+                {
+                    AppendPgExportFooters(writer, dataExportParams);
+
+                    if (dataExportParams.IdentityColumnFound)
                     {
-                        writer.NewLine = "\n";
-                    }
-
-                    if (dataExportParams.PgInsertEnabled)
-                    {
-                        writer.WriteLine("SET session_replication_role = replica;");
-                        writer.WriteLine();
-                    }
-
-                    foreach (var headerRow in headerRows)
-                    {
-                        writer.WriteLine(headerRow);
-                    }
-
-                    ExportDBTableDataWork(writer, queryResults, insertIntoLine, dataExportParams);
-
-                    if (dataExportParams.PgInsertEnabled)
-                    {
-                        AppendPgExportFooters(writer, dataExportParams);
-
-                        if (dataExportParams.IdentityColumnFound)
+                        string primaryKeyColumnName;
+                        if (identityColumnIndex >= 0)
                         {
-                            string primaryKeyColumnName;
-                            if (identityColumnIndex >= 0)
-                            {
-                                primaryKeyColumnName = dataExportParams.ColumnNamesAndTypes[identityColumnIndex].Key;
-                            }
-                            else
-                            {
-                                primaryKeyColumnName = dataExportParams.IdentityColumnName;
-                            }
-
-                            // Make an educated guess of the sequence name, for example
-                            // mc.t_mgr_types_mt_type_id_seq
-                            var sequenceName = string.Format("{0}_{1}_seq",
-                                dataExportParams.TargetTableNameWithSchema.Replace("\"", ""), primaryKeyColumnName);
-
-                            writer.WriteLine("-- Set the sequence's current value to the maximum current ID");
-                            writer.WriteLine("SELECT setval('{0}', (SELECT MAX({1}) FROM {2}));",
-                                             sequenceName, primaryKeyColumnName, dataExportParams.TargetTableNameWithSchema);
-                            writer.WriteLine();
-                            writer.WriteLine("-- Preview the ID that will be assigned to the next item");
-                            writer.WriteLine("SELECT currval('{0}');", sequenceName);
+                            primaryKeyColumnName = dataExportParams.ColumnNamesAndTypes[identityColumnIndex].Key;
+                        }
+                        else
+                        {
+                            primaryKeyColumnName = dataExportParams.IdentityColumnName;
                         }
 
+                        // Make an educated guess of the sequence name, for example
+                        // mc.t_mgr_types_mt_type_id_seq
+                        var sequenceName = string.Format("{0}_{1}_seq",
+                            dataExportParams.TargetTableNameWithSchema.Replace("\"", ""), primaryKeyColumnName);
+
+                        writer.WriteLine("-- Set the sequence's current value to the maximum current ID");
+                        writer.WriteLine("SELECT setval('{0}', (SELECT MAX({1}) FROM {2}));",
+                            sequenceName, primaryKeyColumnName, dataExportParams.TargetTableNameWithSchema);
                         writer.WriteLine();
-                        writer.WriteLine("SET session_replication_role = origin;");
+                        writer.WriteLine("-- Preview the ID that will be assigned to the next item");
+                        writer.WriteLine("SELECT currval('{0}');", sequenceName);
                     }
-                    else if (dataExportParams.IdentityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData)
-                    {
-                        writer.WriteLine("SET IDENTITY_INSERT " + dataExportParams.QuotedTargetTableNameWithSchema + " OFF");
-                    }
+
+                    writer.WriteLine();
+                    writer.WriteLine("SET session_replication_role = origin;");
+                }
+                else if (dataExportParams.IdentityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData)
+                {
+                    writer.WriteLine("SET IDENTITY_INSERT " + dataExportParams.QuotedTargetTableNameWithSchema + " OFF");
                 }
 
                 return true;

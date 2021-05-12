@@ -243,60 +243,59 @@ namespace DB_Schema_Export_Tool
 
                 ShowTrace("Opening " + PathUtils.CompactPathString(schemaFileToParse, 120));
 
-                using (var reader = new StreamReader(new FileStream(schemaFileToParse, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
-                using (var writer = new StreamWriter(new FileStream(updatedSchemaFile, FileMode.Create, FileAccess.Write, FileShare.Read)))
+                using var reader = new StreamReader(new FileStream(schemaFileToParse, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+                using var writer = new StreamWriter(new FileStream(updatedSchemaFile, FileMode.Create, FileAccess.Write, FileShare.Read));
+
+                while (!reader.EndOfStream)
                 {
-                    while (!reader.EndOfStream)
+                    var dataLine = reader.ReadLine();
+                    if (string.IsNullOrWhiteSpace(dataLine))
                     {
-                        var dataLine = reader.ReadLine();
-                        if (string.IsNullOrWhiteSpace(dataLine))
-                        {
-                            writer.WriteLine(dataLine);
-                            continue;
-                        }
-
-                        var createTableMatch = tableNameMatcher.Match(dataLine);
-                        if (createTableMatch.Success)
-                        {
-                            UpdateColumnNamesInDDL(reader, writer, options, tablesForDataExport, createTableMatch);
-                            continue;
-                        }
-
-                        var createIndexMatch = indexNameMatcher.Match(dataLine);
-                        if (createIndexMatch.Success)
-                        {
-                            UpdateColumnNamesInDDL(reader, writer, options, tablesForDataExport, createIndexMatch);
-                            continue;
-                        }
-
-                        var createViewMatch = viewNameMatcher.Match(dataLine);
-                        if (createViewMatch.Success)
-                        {
-                            // Note: only check for whether or not to skip the view; do not update column names in the view
-                            // A separate application is used to update column names in views:
-                            // https://github.com/PNNL-Comp-Mass-Spec/PgSQL-View-Creator-Helper
-                            UpdateColumnNamesInDDL(reader, writer, options, tablesForDataExport, createViewMatch, false);
-                            continue;
-                        }
-
-                        var defaultConstraintMatch = defaultConstraintMatcher.Match(dataLine);
-                        if (defaultConstraintMatch.Success)
-                        {
-                            // Note: The target column name for the default constraint is tracked in defaultConstraintMatch as group "ColumnName"
-                            UpdateColumnNamesInDDL(reader, writer, options, tablesForDataExport, defaultConstraintMatch, false);
-                            continue;
-                        }
-
-                        var foreignKeyConstraintMatch = foreignKeyConstraintMatcher.Match(dataLine);
-                        if (foreignKeyConstraintMatch.Success)
-                        {
-                            // Note: The target column name for the foreign key constraint is tracked in foreignKeyConstraintMatch as group "ColumnName"
-                            UpdateColumnNamesInDDL(reader, writer, options, tablesForDataExport, foreignKeyConstraintMatch, false);
-                            continue;
-                        }
-
                         writer.WriteLine(dataLine);
+                        continue;
                     }
+
+                    var createTableMatch = tableNameMatcher.Match(dataLine);
+                    if (createTableMatch.Success)
+                    {
+                        UpdateColumnNamesInDDL(reader, writer, options, tablesForDataExport, createTableMatch);
+                        continue;
+                    }
+
+                    var createIndexMatch = indexNameMatcher.Match(dataLine);
+                    if (createIndexMatch.Success)
+                    {
+                        UpdateColumnNamesInDDL(reader, writer, options, tablesForDataExport, createIndexMatch);
+                        continue;
+                    }
+
+                    var createViewMatch = viewNameMatcher.Match(dataLine);
+                    if (createViewMatch.Success)
+                    {
+                        // Note: only check for whether or not to skip the view; do not update column names in the view
+                        // A separate application is used to update column names in views:
+                        // https://github.com/PNNL-Comp-Mass-Spec/PgSQL-View-Creator-Helper
+                        UpdateColumnNamesInDDL(reader, writer, options, tablesForDataExport, createViewMatch, false);
+                        continue;
+                    }
+
+                    var defaultConstraintMatch = defaultConstraintMatcher.Match(dataLine);
+                    if (defaultConstraintMatch.Success)
+                    {
+                        // Note: The target column name for the default constraint is tracked in defaultConstraintMatch as group "ColumnName"
+                        UpdateColumnNamesInDDL(reader, writer, options, tablesForDataExport, defaultConstraintMatch, false);
+                        continue;
+                    }
+
+                    var foreignKeyConstraintMatch = foreignKeyConstraintMatcher.Match(dataLine);
+                    if (foreignKeyConstraintMatch.Success)
+                    {
+                        // Note: The target column name for the foreign key constraint is tracked in foreignKeyConstraintMatch as group "ColumnName"
+                        UpdateColumnNamesInDDL(reader, writer, options, tablesForDataExport, foreignKeyConstraintMatch, false);
+                        continue;
+                    }
+
+                    writer.WriteLine(dataLine);
                 }
 
                 LogMessage("Created " + PathUtils.CompactPathString(updatedSchemaFile, 120));

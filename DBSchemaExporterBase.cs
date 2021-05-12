@@ -705,42 +705,42 @@ namespace DB_Schema_Export_Tool
 
             var currentUser = Environment.UserName.ToLower();
 
-            using (var writer = new StreamWriter(new FileStream(scriptFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
+            using var writer = new StreamWriter(new FileStream(scriptFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
             {
                 // Use Linux-compatible line feeds
-                writer.NewLine = "\n";
+                NewLine = "\n"
+            };
 
-                writer.WriteLine("#!/bin/sh");
+            writer.WriteLine("#!/bin/sh");
+
+            writer.WriteLine();
+            writer.WriteLine("mkdir -p Done");
+
+            var subdirectories = new SortedSet<string>();
+
+            foreach (var scriptFileName in workingParams.DataLoadScriptFiles)
+            {
+                var lastSlashIndex = scriptFileName.LastIndexOf('/');
+                if (lastSlashIndex > 0)
+                {
+                    var parentDirectory = scriptFileName.Substring(0, lastSlashIndex);
+                    if (!subdirectories.Contains(parentDirectory))
+                    {
+                        writer.WriteLine();
+                        writer.WriteLine("mkdir -p Done/" + parentDirectory);
+
+                        subdirectories.Add(parentDirectory);
+                    }
+                }
 
                 writer.WriteLine();
-                writer.WriteLine("mkdir -p Done");
+                writer.WriteLine("echo Processing " + scriptFileName);
+                writer.WriteLine("psql -d dms -h localhost -U {0} -f {1}", currentUser, scriptFileName);
 
-                var subdirectories = new SortedSet<string>();
+                var targetFilePath = "Done/" + scriptFileName;
 
-                foreach (var scriptFileName in workingParams.DataLoadScriptFiles)
-                {
-                    var lastSlashIndex = scriptFileName.LastIndexOf('/');
-                    if (lastSlashIndex > 0)
-                    {
-                        var parentDirectory = scriptFileName.Substring(0, lastSlashIndex);
-                        if (!subdirectories.Contains(parentDirectory))
-                        {
-                            writer.WriteLine();
-                            writer.WriteLine("mkdir -p Done/" + parentDirectory);
-
-                            subdirectories.Add(parentDirectory);
-                        }
-                    }
-
-                    writer.WriteLine();
-                    writer.WriteLine("echo Processing " + scriptFileName);
-                    writer.WriteLine("psql -d dms -h localhost -U {0} -f {1}", currentUser, scriptFileName);
-
-                    var targetFilePath = "Done/" + scriptFileName;
-
-                    writer.WriteLine("test -f {0} && rm {0}", targetFilePath);
-                    writer.WriteLine("mv {0} {1} && echo '   ... moved to {1}'", scriptFileName, targetFilePath);
-                }
+                writer.WriteLine("test -f {0} && rm {0}", targetFilePath);
+                writer.WriteLine("mv {0} {1} && echo '   ... moved to {1}'", scriptFileName, targetFilePath);
             }
         }
 
@@ -1993,15 +1993,14 @@ namespace DB_Schema_Export_Tool
                 var cleanName = CleanNameForOS(objectName);
                 outFilePath = Path.Combine(outputDirectory.FullName, cleanName + fileExtension);
 
-                using (var writer = new StreamWriter(new FileStream(outFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
+                using var writer = new StreamWriter(new FileStream(outFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite));
+
+                foreach (var item in scriptInfo)
                 {
-                    foreach (var item in scriptInfo)
+                    writer.WriteLine(item);
+                    if (autoAddGoStatements)
                     {
-                        writer.WriteLine(item);
-                        if (autoAddGoStatements)
-                        {
-                            writer.WriteLine("GO");
-                        }
+                        writer.WriteLine("GO");
                     }
                 }
             }
