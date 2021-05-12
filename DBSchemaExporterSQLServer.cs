@@ -123,7 +123,9 @@ namespace DB_Schema_Export_Tool
             else
             {
                 foreach (var line in dataExportParams.PgInsertFooters)
+                {
                     writer.WriteLine(line);
+                }
             }
 
             dataExportParams.FooterWriteRequired = false;
@@ -137,7 +139,9 @@ namespace DB_Schema_Export_Tool
             }
 
             foreach (var line in dataExportParams.PgInsertHeaders)
+            {
                 writer.WriteLine(line);
+            }
         }
 
         private void AppendToList(ICollection<string> serverInfo, string propertyName, string propertyValue)

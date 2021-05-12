@@ -390,7 +390,7 @@ namespace DB_Schema_Export_Tool
             {
                 try
                 {
-                    fileDialog.InitialDirectory = Directory.GetParent(filePath).ToString();
+                    fileDialog.InitialDirectory = Directory.GetParent(filePath)?.ToString();
                 }
                 catch
                 {
@@ -506,7 +506,7 @@ namespace DB_Schema_Export_Tool
             {
                 try
                 {
-                    fileDialog.InitialDirectory = Directory.GetParent(filePath).ToString();
+                    fileDialog.InitialDirectory = Directory.GetParent(filePath)?.ToString();
                 }
                 catch
                 {
@@ -624,15 +624,9 @@ namespace DB_Schema_Export_Tool
                 }
 
                 // Assure that the auto-select table names are not nothing
-                if (mTableNamesToAutoSelect == null)
-                {
-                    mTableNamesToAutoSelect = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
-                }
+                mTableNamesToAutoSelect ??= new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                if (mTableNameAutoSelectRegEx == null)
-                {
-                    mTableNameAutoSelectRegEx = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
-                }
+                mTableNameAutoSelectRegEx ??= new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 // Initialize regExSpecs (we'll fill it below if autoHighlightRows = True)
                 const RegexOptions regexOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline;
@@ -1313,10 +1307,7 @@ namespace DB_Schema_Export_Tool
 
         private void UpdateSchemaExportOptions()
         {
-            if (mSchemaExportOptions == null)
-            {
-                mSchemaExportOptions = new SchemaExportOptions();
-            }
+            mSchemaExportOptions ??= new SchemaExportOptions();
 
             mSchemaExportOptions.OutputDirectoryPath = txtOutputDirectoryPath.Text;
             mSchemaExportOptions.DatabaseSubdirectoryPrefix = txtOutputDirectoryNamePrefix.Text;

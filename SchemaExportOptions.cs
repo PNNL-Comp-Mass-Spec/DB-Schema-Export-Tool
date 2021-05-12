@@ -1000,14 +1000,11 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         public void ValidateOutputOptions()
         {
-            if (OutputDirectoryPath == null)
-                OutputDirectoryPath = string.Empty;
+            OutputDirectoryPath ??= string.Empty;
 
-            if (DatabaseSubdirectoryPrefix == null)
-                DatabaseSubdirectoryPrefix = DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX;
+            DatabaseSubdirectoryPrefix ??= DEFAULT_DB_OUTPUT_DIRECTORY_NAME_PREFIX;
 
-            if (ServerOutputDirectoryNamePrefix == null)
-                ServerOutputDirectoryNamePrefix = DEFAULT_SERVER_OUTPUT_DIRECTORY_NAME_PREFIX;
+            ServerOutputDirectoryNamePrefix ??= DEFAULT_SERVER_OUTPUT_DIRECTORY_NAME_PREFIX;
         }
     }
 }
