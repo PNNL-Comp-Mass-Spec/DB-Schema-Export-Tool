@@ -582,18 +582,12 @@ namespace DB_Schema_Export_Tool
                 }
                 else if (currentColumnType == Type.GetType("System.Byte[]"))
                 {
-                    switch (currentColumnType?.Name)
+                    dataColumnType = currentColumnType?.Name switch
                     {
-                        case "image":
-                            dataColumnType = DataColumnTypeConstants.ImageObject;
-                            break;
-                        case "timestamp":
-                            dataColumnType = DataColumnTypeConstants.BinaryArray;
-                            break;
-                        default:
-                            dataColumnType = DataColumnTypeConstants.BinaryArray;
-                            break;
-                    }
+                        "image" => DataColumnTypeConstants.ImageObject,
+                        "timestamp" => DataColumnTypeConstants.BinaryArray,
+                        _ => DataColumnTypeConstants.BinaryArray
+                    };
                 }
                 else if (currentColumnType == Type.GetType("System.Guid"))
                 {
@@ -601,29 +595,20 @@ namespace DB_Schema_Export_Tool
                 }
                 else if (currentColumnType == Type.GetType("System.Boolean"))
                 {
-                    // This may be a binary column
-                    switch (currentColumnType?.Name)
+                    // This might be a binary column
+                    dataColumnType = currentColumnType?.Name switch
                     {
-                        case "binary":
-                        case "bit":
-                            dataColumnType = DataColumnTypeConstants.BinaryByte;
-                            break;
-                        default:
-                            dataColumnType = DataColumnTypeConstants.Text;
-                            break;
-                    }
+                        "binary" or "bit" => DataColumnTypeConstants.BinaryByte,
+                        _ => DataColumnTypeConstants.Text,
+                    };
                 }
                 else if (currentColumnType == Type.GetType("System.var"))
                 {
-                    switch (currentColumnType?.Name)
+                    dataColumnType = currentColumnType?.Name switch
                     {
-                        case "sql_variant":
-                            dataColumnType = DataColumnTypeConstants.SqlVariant;
-                            break;
-                        default:
-                            dataColumnType = DataColumnTypeConstants.GeneralObject;
-                            break;
-                    }
+                        "sql_variant" => DataColumnTypeConstants.SqlVariant,
+                        _ => DataColumnTypeConstants.GeneralObject
+                    };
                 }
 
                 string delimiter;
@@ -793,12 +778,20 @@ namespace DB_Schema_Export_Tool
                     return true;
                 }
 
-                if (tablesToExportData.Keys.Count == 1)
-                    OnDebugEvent(string.Format("Exporting data from database {0}, table {1}", databaseName, tablesToExportData.First().Key));
-                else if (tablesToExportData.Keys.Count > 1 && tablesToExportData.Keys.Count < 5)
-                    OnDebugEvent(string.Format("Exporting data from database {0}, tables {1} and {2}", databaseName, tablesToExportData.First().Key, tablesToExportData.Last().Key));
-                else
-                    OnDebugEvent(string.Format("Exporting data from database {0}, tables {1}, ...", databaseName, string.Join(", ", tablesToExportData.Keys.Take(5))));
+                switch (tablesToExportData.Keys.Count)
+                {
+                    case 1:
+                        OnDebugEvent(string.Format("Exporting data from database {0}, table {1}", databaseName, tablesToExportData.First().Key));
+                        break;
+
+                    case 2:
+                        OnDebugEvent(string.Format("Exporting data from database {0}, tables {1} and {2}", databaseName, tablesToExportData.First().Key, tablesToExportData.Last().Key));
+                        break;
+
+                    default:
+                        OnDebugEvent(string.Format("Exporting data from database {0}, tables {1}, ...", databaseName, string.Join(", ", tablesToExportData.Keys.Take(5))));
+                        break;
+                }
 
                 foreach (var tableItem in tablesToExportData)
                 {

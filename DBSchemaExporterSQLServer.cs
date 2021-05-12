@@ -1006,29 +1006,22 @@ namespace DB_Schema_Export_Tool
 
                         OnProgressUpdate(string.Format("Scripting {0}.{1}.{2}", currentDatabase.Name, objectSchema, objectName), percentComplete);
 
-                        SqlSmoObject smoObjects;
-                        switch (objectIterator)
+                        SqlSmoObject smoObjects = objectIterator switch
                         {
-                            case 0:
-                                // Views
-                                smoObjects = currentDatabase.Views[objectName, objectSchema];
-                                break;
-                            case 1:
-                                // Stored procedures
-                                smoObjects = currentDatabase.StoredProcedures[objectName, objectSchema];
-                                break;
-                            case 2:
-                                // User defined functions
-                                smoObjects = currentDatabase.UserDefinedFunctions[objectName, objectSchema];
-                                break;
-                            case 3:
-                                // Synonyms
-                                smoObjects = currentDatabase.Synonyms[objectName, objectSchema];
-                                break;
-                            default:
-                                smoObjects = null;
-                                break;
-                        }
+                            // Views
+                            0 => currentDatabase.Views[objectName, objectSchema],
+
+                            // Stored procedures
+                            1 => currentDatabase.StoredProcedures[objectName, objectSchema],
+
+                            // User defined functions
+                            2 => currentDatabase.UserDefinedFunctions[objectName, objectSchema],
+
+                            // Synonyms
+                            3 => currentDatabase.Synonyms[objectName, objectSchema],
+
+                            _ => null
+                        };
 
                         if (smoObjects != null)
                         {

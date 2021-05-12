@@ -224,13 +224,12 @@ namespace DB_Schema_Export_Tool
         {
             get
             {
-                if (DatabasesToProcess.Count == 0)
-                    return string.Empty;
-
-                if (DatabasesToProcess.Count == 1)
-                    return DatabasesToProcess.First();
-
-                return "DB List: " + string.Join(", ", DatabasesToProcess);
+                return DatabasesToProcess.Count switch
+                {
+                    0 => string.Empty,
+                    1 => DatabasesToProcess.First(),
+                    _ => "DB List: " + string.Join(", ", DatabasesToProcess)
+                };
             }
             set
             {

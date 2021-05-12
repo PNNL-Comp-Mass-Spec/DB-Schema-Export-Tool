@@ -967,6 +967,7 @@ namespace DB_Schema_Export_Tool
                 mWorking = false;
                 EnableDisableControls();
                 UpdatePauseUnpauseCaption(DBSchemaExporterBase.PauseStatusConstants.Unpaused);
+
                 try
                 {
                     if (mThread != null && mThread.ThreadState != ThreadState.Stopped)
@@ -1275,28 +1276,18 @@ namespace DB_Schema_Export_Tool
             }
         }
 
-        private void UpdatePauseUnpauseCaption(DBSchemaExporterBase.PauseStatusConstants ePauseStatus)
+        private void UpdatePauseUnpauseCaption(DBSchemaExporterBase.PauseStatusConstants pauseStatus)
         {
             try
             {
-                switch (ePauseStatus)
+                cmdPauseUnpause.Text = pauseStatus switch
                 {
-                    case DBSchemaExporterBase.PauseStatusConstants.Paused:
-                        cmdPauseUnpause.Text = "Un&pause";
-                        break;
-                    case DBSchemaExporterBase.PauseStatusConstants.PauseRequested:
-                        cmdPauseUnpause.Text = "&Pausing";
-                        break;
-                    case DBSchemaExporterBase.PauseStatusConstants.Unpaused:
-                        cmdPauseUnpause.Text = "&Pause";
-                        break;
-                    case DBSchemaExporterBase.PauseStatusConstants.UnpauseRequested:
-                        cmdPauseUnpause.Text = "Un&pausing";
-                        break;
-                    default:
-                        cmdPauseUnpause.Text = "Un&pause";
-                        break;
-                }
+                    DBSchemaExporterBase.PauseStatusConstants.Paused => "Un&pause",
+                    DBSchemaExporterBase.PauseStatusConstants.PauseRequested => "&Pausing",
+                    DBSchemaExporterBase.PauseStatusConstants.Unpaused => "&Pause",
+                    DBSchemaExporterBase.PauseStatusConstants.UnpauseRequested => "Un&pausing",
+                    _ => "Un&pause"
+                };
             }
             catch (Exception)
             {
