@@ -13,14 +13,14 @@ namespace DB_Schema_Export_Tool
     /// </summary>
     public class SchemaExportOptions
     {
-        // Ignore Spelling: PostgreSQL, Svn, Npgsql, schemas, psql
+        // Ignore Spelling: Npgsql, PostgreSQL, psql, schemas, Svn, username
 
         #region "Constants and Enums"
 
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "January 5, 2021";
+        public const string PROGRAM_DATE = "May 12, 2021";
 
         /// <summary>
         /// Default output directory name prefix

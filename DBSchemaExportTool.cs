@@ -13,7 +13,11 @@ namespace DB_Schema_Export_Tool
     /// </summary>
     public class DBSchemaExportTool : LoggerBase
     {
-        // Ignore Spelling: PostgreSQL, psm, unimod, dba, lcms, Svn, Quantitation, uri, tmp, unpause, unpaused, myemsl
+        // ReSharper disable CommentTypo
+
+        // Ignore Spelling: dba, lcms, myemsl, PostgreSQL, psm, Quantitation, Repo, Svn, tmp, unimod, unpause, unpaused, uri
+
+        // ReSharper restore CommentTypo
 
         #region "Constants and Enums"
 

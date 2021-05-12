@@ -5,6 +5,8 @@
     /// </summary>
     public class DatabaseScriptingOptions
     {
+        // Ignore Spelling: Schemas
+
         /// <summary>
         /// IncludeSystemObjects
         /// </summary>

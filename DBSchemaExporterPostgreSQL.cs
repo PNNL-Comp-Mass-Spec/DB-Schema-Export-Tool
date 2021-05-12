@@ -15,8 +15,13 @@ namespace DB_Schema_Export_Tool
     /// </summary>
     public sealed class DBSchemaExporterPostgreSQL : DBSchemaExporterBase
     {
-        // Ignore Spelling: setval, dumpall, pgsql, mc, PostgreSQL, usr, udf, hostname, schemaname, tablename, tableowner
-        // Ignore Spelling: relname, reltuples, bigint, oid, Npgsql, regclass, pgpass, tablespace, schemas
+        // ReSharper disable CommentTypo
+
+        // Ignore Spelling: bigint, dumpall, hostname, mc, Npgsql, oid, pgpass, pgsql, postgres, PostgreSQL
+        // Ignore Spelling: regclass, relname, reltuples, schemaname, schemas, setval
+        // Ignore Spelling: tablename, tableowner, tablespace, tcp, udf, username, usr
+
+        // ReSharper restore CommentTypo
 
         #region "Constants and Enums"
 

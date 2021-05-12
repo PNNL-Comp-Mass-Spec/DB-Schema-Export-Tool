@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace DB_Schema_Export_Tool
 {
     /// <summary>
-    /// Table data exoort info
+    /// Table data export info
     /// </summary>
     public class TableDataExportInfo
     {

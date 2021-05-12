@@ -11,7 +11,11 @@ namespace DB_Schema_Export_Tool
 {
     internal static class Program
     {
-        // Ignore Spelling: PostgreSQL, conf, seqs, dmsreader
+        // ReSharper disable CommentTypo
+
+        // Ignore Spelling: conf, dms, dmsreader, PostgreSQL, Proteinseqs, seqs
+
+        // ReSharper restore CommentTypo
 
         private static DateTime mLastProgressTime;
 

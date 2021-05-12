@@ -18,8 +18,10 @@ namespace DB_Schema_Export_Tool
     /// </summary>
     public sealed class DBSchemaExporterSQLServer : DBSchemaExporterBase
     {
-        // Ignore Spelling: Sql, Scripter, schemas, smo, mtuser, sysobjects, xtype, Inline, dt, dbo, setval, currval, stdin
-        // Ignore Spelling: CrLf
+        // ReSharper disable once CommentTypo
+
+        // Ignore Spelling: accessor, crlf, currval, dbo, dt, Inline, mtuser, schemas
+        // Ignore Spelling: Scripter, setval, smo, Sql, stdin, sysconstraints, sysobjects, syssegments, username, xtype
 
         #region "Constants and Enums"
 

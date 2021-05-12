@@ -14,7 +14,7 @@ namespace DB_Schema_Export_Tool
 {
     public partial class frmMain : Form
     {
-        // Ignore Spelling: PostgreSQL, unpause, Schemas, mts, Ctrl, Un&pause, Un&pausing
+        // Ignore Spelling: Ctrl, dms, mts, PostgreSQL, Schemas, Un&pause, Un&pausing, unpause, username
 
         public frmMain()
         {
