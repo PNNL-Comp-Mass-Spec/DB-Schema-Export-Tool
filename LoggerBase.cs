@@ -124,17 +124,25 @@ namespace DB_Schema_Export_Tool
                     processingClass.DebugEvent -= DebugEventHandler;
                     processingClass.DebugEvent -= DebugEventHandlerConsoleOnly;
                     break;
+
                 case BaseLogger.LogLevels.ERROR:
                     processingClass.ErrorEvent -= ErrorEventHandler;
                     break;
+
                 case BaseLogger.LogLevels.WARN:
                     processingClass.WarningEvent -= WarningEventHandler;
                     break;
+
                 case BaseLogger.LogLevels.INFO:
                     processingClass.StatusEvent -= StatusEventHandler;
                     break;
-                default:
+
+                case BaseLogger.LogLevels.FATAL:
+                case BaseLogger.LogLevels.NOLOGGING:
                     throw new Exception("Log level not supported for unregistering");
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(messageType), messageType, null);
             }
         }
 
