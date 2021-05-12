@@ -308,7 +308,7 @@ Source code: https://github.com/PNNL-Comp-Mass-Spec/DB-Schema-Export-Tool
 ## License
 
 The DB Schema Export Tool is licensed under the 2-Clause BSD License; 
-you may not use this file except in compliance with the License.  You may obtain 
+you may not use this program except in compliance with the License.  You may obtain 
 a copy of the License at https://opensource.org/licenses/BSD-2-Clause
 
 Copyright 2019 Battelle Memorial Institute
