@@ -92,7 +92,6 @@ T_Residues
 T_Sample_Labelling
 T_Sample_Prep_Request_State_Name
 T_Sample_Prep_Request_Type_Name
-T_Sample_Submission
 T_Secondary_Sep
 T_Separation_Group
 T_Seq_Local_Symbols_List
