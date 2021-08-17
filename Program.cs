@@ -33,7 +33,7 @@ namespace DB_Schema_Export_Tool
 
             var parser = new CommandLineParser<SchemaExportOptions>(asmName.Name, version)
             {
-                ProgramInfo = "This program exports SQL Server or PostgreSQL database objects as schema files." +
+                ProgramInfo = "This program exports SQL Server or PostgreSQL database objects as schema files. " +
                               "Exported objects include tables, views, stored procedures, functions, and synonyms, "+
                               "plus also database properties including database roles and logins.",
 
@@ -46,14 +46,14 @@ namespace DB_Schema_Export_Tool
                 // ReSharper disable StringLiteralTypo
                 UsageExamples = {
                         exeName +
-                        " C:\\Cached_DBSchema /Server:Proteinseqs" +
+                        @" C:\Cached_DBSchema /Server:Proteinseqs" +
                         " /DBList:Manager_Control,Protein_Sequences" +
-                        " /sync:\"F:\\Projects\\Database_Schema\\DMS\\\" /Git /Commit" +
+                        @" /sync:""F:\Projects\Database_Schema\DMS\"" /Git /Commit" +
                         " /L /LogDir:Logs /Data:ProteinSeqs_Data_Tables.txt",
                         exeName +
-                        " C:\\Cached_DBSchema /Server:Prismweb3" +
+                        @" C:\Cached_DBSchema /Server:Prismweb3" +
                         " /DB:dms /PgUser:dmsreader" +
-                        " /sync:\"F:\\Projects\\Database_Schema\\PostgreSQL\\\" /Git /Commit" +
+                        @" /sync:""F:\Projects\Database_Schema\PostgreSQL\"" /Git /Commit" +
                         " /L /LogDir:Logs /Data:ProteinSeqs_Data_Tables.txt"
                     }
                 // ReSharper restore StringLiteralTypo

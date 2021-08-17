@@ -18,7 +18,8 @@ namespace DB_Schema_Export_Tool
     {
         // ReSharper disable CommentTypo
 
-        // Ignore Spelling: bigint, dumpall, hostname, mc, Npgsql, oid, pgpass, pgsql, postgres, PostgreSQL
+        // Ignore Spelling: bigint, datallowconn, datistemplate, datname, dumpall, hostname,
+        // Ignore Spelling: mc, Npgsql, oid, pgpass, pgsql, postgres, PostgreSQL
         // Ignore Spelling: regclass, relname, reltuples, schemaname, schemas, setval
         // Ignore Spelling: tablename, tableowner, tablespace, tcp, udf, username, usr
 
