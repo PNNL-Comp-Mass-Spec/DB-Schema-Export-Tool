@@ -2202,6 +2202,7 @@ namespace DB_Schema_Export_Tool
             {
                 var connectionInfo = new SqlConnectionInfo(mOptions.ServerName)
                 {
+                    ApplicationName = "DBSchemaExportTool",
                     ConnectionTimeout = 10
                 };
 

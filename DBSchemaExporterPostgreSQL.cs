@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Npgsql;
 using PRISM;
+using PRISMDatabaseUtils;
 
 namespace DB_Schema_Export_Tool
 {
@@ -1388,7 +1389,9 @@ namespace DB_Schema_Export_Tool
                 var connectionString = string.Format("Host={0};Username={1};Password={2};Database={3}",
                                                      mOptions.ServerName, mOptions.DBUser, userPassword, databaseName);
 
-                pgConnection = new NpgsqlConnection(connectionString);
+                var connectionStringToUse = DbToolsFactory.AddApplicationNameToConnectionString(connectionString, "DBSchemaExportTool");
+
+                pgConnection = new NpgsqlConnection(connectionStringToUse);
                 pgConnection.Open();
 
                 // If no error occurred, set .Connected = True and duplicate the connection info
