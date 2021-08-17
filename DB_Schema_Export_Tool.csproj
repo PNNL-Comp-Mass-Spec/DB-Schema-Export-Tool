@@ -104,13 +104,16 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.SqlServer.SqlManagementObjects">
-      <Version>150.18178.0</Version>
+      <Version>161.46437.65</Version>
     </PackageReference>
     <PackageReference Include="Npgsql">
-      <Version>4.1.1</Version>
+      <Version>5.0.7</Version>
+    </PackageReference>
+    <PackageReference Include="PRISM-DatabaseUtils">
+      <Version>1.1.11</Version>
     </PackageReference>
     <PackageReference Include="PRISM-Library">
-      <Version>2.6.27</Version>
+      <Version>2.6.31</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
