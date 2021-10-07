@@ -51,14 +51,12 @@ T_Filter_Set_Types
 T_Filter_Sets
 T_General_Statistics
 T_Instrument_Class
-T_Instrument_Class_Data
 T_Instrument_Data_Type_Name
 T_Instrument_Group
 T_Instrument_Group_Allocation_Tag
 T_Instrument_Group_Allowed_DS_Type
 T_Instrument_Name
 T_Instrument_Name_Bkup
-T_Instrument_Name_Data
 T_Instrument_Ops_Role
 T_Internal_Standards
 T_Internal_Std_Components
