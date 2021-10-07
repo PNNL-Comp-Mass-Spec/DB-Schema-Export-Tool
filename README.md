@@ -10,7 +10,7 @@ Uses a named user, password, and port to connect to a PostgreSQL database.
 
 ### Continuous Integration
 
-The latest version of the application is available on the [AppVeyor CI server](https://ci.appveyor.com/project/PNNLCompMassSpec/db-schema-export-tool/build/artifacts)
+The latest version of the application is available for six months on the [AppVeyor CI server](https://ci.appveyor.com/project/PNNLCompMassSpec/db-schema-export-tool/build/artifacts)
 
 [![Build status](https://ci.appveyor.com/api/projects/status/sdk00tc0l0seupic?svg=true)](https://ci.appveyor.com/project/PNNLCompMassSpec/db-schema-export-tool)
 
@@ -302,7 +302,7 @@ Note that on Windows the .sql file created by pg_dump.exe includes extra carriag
 
 Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) \
 E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov\
-Website: https://omics.pnl.gov/ or https://panomics.pnnl.gov/ \
+Website: https://github.com/PNNL-Comp-Mass-Spec/ or https://panomics.pnnl.gov/ or https://www.pnnl.gov/integrative-omics\
 Source code: https://github.com/PNNL-Comp-Mass-Spec/DB-Schema-Export-Tool
 
 ## License
