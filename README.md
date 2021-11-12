@@ -231,7 +231,7 @@ Use `/Commit` to commit any updates to the repository
 
 Use `/L` to log messages to a file
 
-Use `/LogFile`' to specify the base name for the log file
+Use `/LogFile` to specify the base name for the log file
 * Log files will be named using the base name, followed by the current date
 
 Use `/LogDir` or `/LogDirectory` to specify the directory to save the log file in
@@ -302,7 +302,7 @@ Note that on Windows the .sql file created by pg_dump.exe includes extra carriag
 
 Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) \
 E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov\
-Website: https://github.com/PNNL-Comp-Mass-Spec/ or https://panomics.pnnl.gov/ or https://www.pnnl.gov/integrative-omics\
+Website: https://github.com/PNNL-Comp-Mass-Spec/ or https://panomics.pnnl.gov/ or https://www.pnnl.gov/integrative-omics/
 Source code: https://github.com/PNNL-Comp-Mass-Spec/DB-Schema-Export-Tool
 
 ## License
