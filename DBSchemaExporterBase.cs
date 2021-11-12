@@ -972,7 +972,7 @@ namespace DB_Schema_Export_Tool
             {
                 if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
                 {
-                    // Include a semi-colon if creating INSERT INTO statements for databases other than SQL Server
+                    // Include a semicolon if creating INSERT INTO statements for databases other than SQL Server
                     if (mOptions.PostgreSQL)
                         delimitedRowValues.Append(");");
                     else
