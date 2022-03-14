@@ -117,8 +117,10 @@ namespace DB_Schema_Export_Tool
                 else
                 {
                     var newColumnName = columnMapInfo.GetTargetColumnName(defaultConstraintColumn);
-                    var updatedLine = createItemMatch.Value.Replace("[" + defaultConstraintColumn + "]",
-                                                                    "[" + newColumnName + "]");
+                    var updatedLine = createItemMatch.Value.Replace(
+                        "[" + defaultConstraintColumn + "]",
+                        "[" + newColumnName + "]");
+
                     outputLines.Add(updatedLine);
                 }
             }
@@ -158,8 +160,10 @@ namespace DB_Schema_Export_Tool
                         if (options.ColumnMapForDataExport.TryGetValue(foreignKeyTableName, out var foreignKeyTableColumnMapInfo))
                         {
                             var newForeignKeyColumnName = foreignKeyTableColumnMapInfo.GetTargetColumnName(foreignKeyColumnName);
-                            var updatedLine = dataLine.Replace("[" + foreignKeyColumnName + "]",
-                                                               "[" + newForeignKeyColumnName + "]");
+                            var updatedLine = dataLine.Replace(
+                                "[" + foreignKeyColumnName + "]",
+                                "[" + newForeignKeyColumnName + "]");
+
                             outputLines.Add(updatedLine);
                             continue;
                         }
