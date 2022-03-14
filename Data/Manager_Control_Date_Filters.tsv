@@ -1,5 +1,5 @@
 SourceTableName	DateColumnName	MinimumDate
-T_Event_Log	Entered	2020-01-01
-T_Log_Entries	posting_time	2020-01-01
-T_ParamValue	last_affected	2020-01-01
-T_ParamValue_OldManagers	last_affected	2016-01-07
+T_Event_Log	Entered	2022-03-13
+T_Log_Entries	posting_time	2022-03-13
+T_ParamValue	last_affected	2022-03-13
+T_ParamValue_OldManagers	last_affected	2022-03-13
