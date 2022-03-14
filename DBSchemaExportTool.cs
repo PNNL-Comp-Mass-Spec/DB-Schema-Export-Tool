@@ -263,9 +263,7 @@ namespace DB_Schema_Export_Tool
                 databaseNamesAndOutputPaths = databaseNameToDirectoryMap;
                 if (mOptions.ShowStats)
                 {
-                    OnStatusEvent(string.Format(
-                        "Exported database schema in {0:0.0} seconds",
-                        DateTime.UtcNow.Subtract(startTime).TotalSeconds));
+                    OnStatusEvent("Exported database schema in {0:0.0} seconds", DateTime.UtcNow.Subtract(startTime).TotalSeconds);
                 }
 
                 return success;
@@ -752,9 +750,7 @@ namespace DB_Schema_Export_Tool
 
                     if (!DateTime.TryParse(minimumDateText, out var minimumDate))
                     {
-                        OnDebugEvent(string.Format(
-                            "Date filter for column {0} in table {1} is not a valid date: {2}",
-                            dateColumnName, sourceTableName, minimumDateText));
+                        OnDebugEvent("Date filter for column {0} in table {1} is not a valid date: {2}", dateColumnName, sourceTableName, minimumDateText);
 
                         continue;
                     }
@@ -1357,8 +1353,7 @@ namespace DB_Schema_Export_Tool
 
                 if (mOptions.ShowStats)
                 {
-                    OnDebugEvent(string.Format(
-                        "Synchronized schema files in {0:0.0} seconds", DateTime.UtcNow.Subtract(startTime).TotalSeconds));
+                    OnDebugEvent("Synchronized schema files in {0:0.0} seconds", DateTime.UtcNow.Subtract(startTime).TotalSeconds);
                 }
 
                 return true;
@@ -1393,7 +1388,7 @@ namespace DB_Schema_Export_Tool
                     sourceFile.Name.StartsWith("t_CandidateSeqWork_", StringComparison.OrdinalIgnoreCase) ||
                     sourceFile.Name.Equals("_AllObjects_.sql", StringComparison.OrdinalIgnoreCase))
                 {
-                    OnStatusEvent(string.Format("Skipping {0} object {1}", databaseName, sourceFile.Name));
+                    OnStatusEvent("Skipping {0} object {1}", databaseName, sourceFile.Name);
                     continue;
                 }
 
@@ -1499,11 +1494,11 @@ namespace DB_Schema_Export_Tool
                 Console.WriteLine();
                 if (newFilePaths.Count > 0)
                 {
-                    OnStatusEvent(string.Format(
+                    OnStatusEvent(
                         "Adding {0} new {1} for tracking by {2}",
                         newFilePaths.Count,
                         CheckPlural(newFilePaths.Count, "file", "files"),
-                        toolName));
+                        toolName);
 
                     // Add each of the new files
                     foreach (var newFilePath in newFilePaths)
@@ -1511,7 +1506,7 @@ namespace DB_Schema_Export_Tool
                         var fileToAdd = new FileInfo(newFilePath);
                         if (fileToAdd.Directory == null)
                         {
-                            OnErrorEvent(string.Format("Cannot determine the parent directory of {0}; skipping", fileToAdd.FullName));
+                            OnErrorEvent("Cannot determine the parent directory of {0}; skipping", fileToAdd.FullName);
                             continue;
                         }
 
@@ -1520,7 +1515,7 @@ namespace DB_Schema_Export_Tool
 
                         if (mOptions.PreviewExport)
                         {
-                            OnStatusEvent(string.Format("Preview running {0} {1}", repoExe.FullName, cmdArgs));
+                            OnStatusEvent("Preview running {0} {1}", repoExe.FullName, cmdArgs);
                             continue;
                         }
 
@@ -1546,7 +1541,7 @@ namespace DB_Schema_Export_Tool
                     Console.WriteLine();
                 }
 
-                OnStatusEvent(string.Format("Looking for modified files tracked by {0} at {1}", toolName, targetDirectory.FullName));
+                OnStatusEvent("Looking for modified files tracked by {0} at {1}", toolName, targetDirectory.FullName);
 
                 // Count the number of new or modified files
                 cmdArgs = string.Format(" status \"{0}\"", targetDirectory.FullName);
@@ -1559,7 +1554,7 @@ namespace DB_Schema_Export_Tool
 
                 if (mOptions.PreviewExport)
                 {
-                    OnStatusEvent(string.Format("Preview running {0} {1}", repoExe.FullName, cmdArgs));
+                    OnStatusEvent("Preview running {0} {1}", repoExe.FullName, cmdArgs);
                     return;
                 }
 
@@ -1606,10 +1601,10 @@ namespace DB_Schema_Export_Tool
 
                 if (modifiedFileCount > 0)
                 {
-                    OnStatusEvent(string.Format(
+                    OnStatusEvent(
                         "Found {0} modified {1}",
                         modifiedFileCount,
-                        CheckPlural(modifiedFileCount, "file", "files")));
+                        CheckPlural(modifiedFileCount, "file", "files"));
                 }
 
                 var commitMessage = string.Format("{0:yyyy-MM-dd} auto-commit", DateTime.Now);
@@ -1632,7 +1627,7 @@ namespace DB_Schema_Export_Tool
                 }
                 else
                 {
-                    OnStatusEvent(string.Format("Committing changes to {0}: {1}", toolName, commitMessage));
+                    OnStatusEvent("Committing changes to {0}: {1}", toolName, commitMessage);
 
                     // Commit the changes
                     cmdArgs = string.Format(" commit \"{0}\" --message \"{1}\"", targetDirectory.FullName, commitMessage);
@@ -1643,7 +1638,7 @@ namespace DB_Schema_Export_Tool
 
                     if (!success)
                     {
-                        OnErrorEvent(string.Format("Commit error:\n{0}", commitConsoleOutput));
+                        OnErrorEvent("Commit error:\n{0}", commitConsoleOutput);
                         return;
                     }
 
@@ -1687,7 +1682,7 @@ namespace DB_Schema_Export_Tool
 
                             if (!success)
                             {
-                                OnErrorEvent(string.Format("Push error:\n{0}", pushConsoleOutput));
+                                OnErrorEvent("Push error:\n{0}", pushConsoleOutput);
                                 return;
                             }
 

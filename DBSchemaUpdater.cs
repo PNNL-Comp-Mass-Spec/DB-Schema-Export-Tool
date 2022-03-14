@@ -407,7 +407,7 @@ namespace DB_Schema_Export_Tool
                 var columnMatch = mColumnNameMatcher.Match(dataLine);
                 if (!columnMatch.Success)
                 {
-                    OnDebugEvent(string.Format("Appending DDL for column {0}: {1}", currentColumnName, dataLine));
+                    OnDebugEvent("Appending DDL for column {0}: {1}", currentColumnName, dataLine);
 
                     var updatedDDL = tableColumnDDL[currentColumnName] + Environment.NewLine + dataLine;
                     tableColumnDDL[currentColumnName] = updatedDDL;
@@ -419,9 +419,7 @@ namespace DB_Schema_Export_Tool
 
                 if (tableColumns.ContainsKey(columnName))
                 {
-                    OnWarningEvent(string.Format(
-                        "Create Table DDL for {0} has column {1} listed more than once",
-                        tableName, columnName));
+                    OnWarningEvent("Create Table DDL for {0} has column {1} listed more than once", tableName, columnName);
                     continue;
                 }
 
@@ -440,31 +438,29 @@ namespace DB_Schema_Export_Tool
 
             if (!tableColumns.TryGetValue(firstPrimaryKeyColumn, out var primaryKeyColumnPosition))
             {
-                OnWarningEvent(string.Format("Table {0} does not have a primary key column", tableName));
+                OnWarningEvent("Table {0} does not have a primary key column", tableName);
                 return createTableDDL;
             }
 
             if (primaryKeyColumnPosition == 1)
             {
-                OnDebugEvent(string.Format(
-                    "Primary key column {0} for table {1} is already at position 1",
-                    firstPrimaryKeyColumn, tableName));
+                OnDebugEvent("Primary key column {0} for table {1} is already at position 1", firstPrimaryKeyColumn, tableName);
 
                 return createTableDDL;
             }
 
             if (!tableColumnDDL.ContainsKey(firstPrimaryKeyColumn))
             {
-                OnWarningEvent(string.Format(
+                OnWarningEvent(
                     "tableColumnDDL dictionary does not have primary key column {0} for table {1}; this is unexpected",
-                    firstPrimaryKeyColumn, tableName));
+                    firstPrimaryKeyColumn, tableName);
 
                 return createTableDDL;
             }
 
-            OnStatusEvent(string.Format(
+            OnStatusEvent(
                 "Moving primary key column {0} from position {1} to position 1 for table {2}",
-                firstPrimaryKeyColumn, primaryKeyColumnPosition, tableName));
+                firstPrimaryKeyColumn, primaryKeyColumnPosition, tableName);
 
             var outputLines = new List<string>();
             outputLines.AddRange(prefixLines);

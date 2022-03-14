@@ -474,7 +474,7 @@ namespace DB_Schema_Export_Tool
 
             if (mOptions.PreviewExport)
             {
-                OnStatusEvent(string.Format("Preview running {0} {1}", pgDump.FullName, cmdArgs));
+                OnStatusEvent("Preview running {0} {1}", pgDump.FullName, cmdArgs);
                 return true;
             }
 
@@ -483,7 +483,7 @@ namespace DB_Schema_Export_Tool
 
             if (!success)
             {
-                OnWarningEvent(string.Format("Error reported for {0}: {1}", pgDump.Name, consoleOutput));
+                OnWarningEvent("Error reported for {0}: {1}", pgDump.Name, consoleOutput);
 
                 var matcher = new Regex("database [^ ]+ does not exist", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
@@ -515,7 +515,7 @@ namespace DB_Schema_Export_Tool
                     }
                     catch (Exception ex)
                     {
-                        OnWarningEvent(string.Format("Unable to delete {0}: {1}", pgDumpOutputFile.FullName, ex.Message));
+                        OnWarningEvent("Unable to delete {0}: {1}", pgDumpOutputFile.FullName, ex.Message);
                     }
                 }
 
@@ -523,9 +523,9 @@ namespace DB_Schema_Export_Tool
             }
 
             if (pgDumpOutputFile.Exists)
-                OnWarningEvent(string.Format("{0} did not replace {1}", pgDump.Name, pgDumpOutputFile.FullName));
+                OnWarningEvent("{0} did not replace {1}", pgDump.Name, pgDumpOutputFile.FullName);
             else
-                OnWarningEvent(string.Format("{0} did not create {1}", pgDump.Name, pgDumpOutputFile.FullName));
+                OnWarningEvent("{0} did not create {1}", pgDump.Name, pgDumpOutputFile.FullName);
 
             return false;
         }
@@ -641,7 +641,7 @@ namespace DB_Schema_Export_Tool
 
             if (mOptions.PreviewExport)
             {
-                OnStatusEvent(string.Format("Preview querying database {0} with {1}", databaseName, sql));
+                OnStatusEvent("Preview querying database {0} with {1}", databaseName, sql);
                 return true;
             }
 
@@ -660,7 +660,7 @@ namespace DB_Schema_Export_Tool
             if (string.IsNullOrWhiteSpace(dataExportParams.TargetTableNameWithSchema))
             {
                 // Skip this table
-                OnStatusEvent(string.Format("Could not determine the target table name for table {0} in database {1}", dataExportParams.SourceTableNameWithSchema, databaseName));
+                OnStatusEvent("Could not determine the target table name for table {0} in database {1}", dataExportParams.SourceTableNameWithSchema, databaseName);
                 return false;
             }
 
@@ -817,7 +817,7 @@ namespace DB_Schema_Export_Tool
             if (string.IsNullOrWhiteSpace(dataExportParams.TargetTableNameWithSchema))
             {
                 // Skip this table
-                OnStatusEvent(string.Format("Could not determine the target table name for table {0} in database {1}", dataExportParams.SourceTableNameWithSchema, databaseName));
+                OnStatusEvent("Could not determine the target table name for table {0} in database {1}", dataExportParams.SourceTableNameWithSchema, databaseName);
                 return false;
             }
 
@@ -846,7 +846,7 @@ namespace DB_Schema_Export_Tool
 
             if (mOptions.PreviewExport)
             {
-                OnStatusEvent(string.Format("Preview running {0} {1}", pgDump.FullName, cmdArgs));
+                OnStatusEvent("Preview running {0} {1}", pgDump.FullName, cmdArgs);
                 return true;
             }
 
@@ -855,7 +855,7 @@ namespace DB_Schema_Export_Tool
 
             if (!success)
             {
-                OnWarningEvent(string.Format("Error reported for {0}: {1}", pgDump.Name, consoleOutput));
+                OnWarningEvent("Error reported for {0}: {1}", pgDump.Name, consoleOutput);
                 return false;
             }
 
@@ -874,9 +874,9 @@ namespace DB_Schema_Export_Tool
             }
 
             if (tableDataOutputFile.Exists)
-                OnWarningEvent(string.Format("{0} did not replace {1}", pgDump.Name, tableDataOutputFile.FullName));
+                OnWarningEvent("{0} did not replace {1}", pgDump.Name, tableDataOutputFile.FullName);
             else
-                OnWarningEvent(string.Format("{0} did not create {1}", pgDump.Name, tableDataOutputFile.FullName));
+                OnWarningEvent("{0} did not create {1}", pgDump.Name, tableDataOutputFile.FullName);
 
             return false;
         }
@@ -953,8 +953,7 @@ namespace DB_Schema_Export_Tool
                     return foundWorkDirFile;
                 }
 
-                OnWarningEvent(string.Format("Could not find {0} in {1}, below {2}, or below the working directory",
-                                             exeName, alternativesDir.FullName, userDirectory.FullName));
+                OnWarningEvent("Could not find {0} in {1}, below {2}, or below the working directory", exeName, alternativesDir.FullName, userDirectory.FullName);
                 return null;
             }
             catch (Exception ex)
@@ -993,8 +992,7 @@ namespace DB_Schema_Export_Tool
                     return foundWorkDirFile;
                 }
 
-                OnWarningEvent(string.Format("Could not find {0} in either a subdirectory of {1} or below the working directory",
-                                             exeName, postgresDirectory.FullName));
+                OnWarningEvent("Could not find {0} in either a subdirectory of {1} or below the working directory", exeName, postgresDirectory.FullName);
                 return null;
             }
             catch (Exception ex)
@@ -1099,7 +1097,7 @@ namespace DB_Schema_Export_Tool
                     var databaseList = GetServerDatabases();
                     if (!databaseList.Contains(databaseName))
                     {
-                        OnWarningEvent(string.Format("Database {0} not found on sever {1}", databaseName, mCurrentServerInfo.ServerName));
+                        OnWarningEvent("Database {0} not found on sever {1}", databaseName, mCurrentServerInfo.ServerName);
                         databaseNotFound = true;
                     }
 
@@ -1128,8 +1126,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 // Get the list of tables in this database
-                OnDebugEvent(string.Format("Obtaining list of tables in database {0} on server {1}",
-                                           databaseName, mCurrentServerInfo.ServerName));
+                OnDebugEvent("Obtaining list of tables in database {0} on server {1}", databaseName, mCurrentServerInfo.ServerName);
 
                 const string sql = "SELECT schemaname, tablename, tableowner FROM pg_tables";
 
@@ -1235,7 +1232,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 OnProgressComplete();
-                OnStatusEvent(string.Format("Found {0} tables in database {1}", databaseTableInfo.Count, databaseName));
+                OnStatusEvent("Found {0} tables in database {1}", databaseTableInfo.Count, databaseName);
 
                 return databaseTableInfo;
             }
@@ -1338,7 +1335,7 @@ namespace DB_Schema_Export_Tool
                 return nameMatch.Value;
             }
 
-            OnWarningEvent(string.Format("Did not find a {0} name in: {1}", objectDescription, currentObject.Name));
+            OnWarningEvent("Did not find a {0} name in: {1}", objectDescription, currentObject.Name);
             unhandledScriptingCommands = true;
             return currentObject.Name;
         }
@@ -1478,13 +1475,12 @@ namespace DB_Schema_Export_Tool
 
                 if (!passwordFileExists)
                 {
-                    OnWarningEvent(string.Format("Could not find the {0} file; unable to determine the password for user {1}",
-                                                 passwordFileName, pgUser));
+                    OnWarningEvent("Could not find the {0} file; unable to determine the password for user {1}", passwordFileName, pgUser);
                     definedInPgPassFile = false;
                     return string.Empty;
                 }
 
-                OnWarningEvent(string.Format("Could not find a valid password for user {0} in file {1}", pgUser, passwordFileName));
+                OnWarningEvent("Could not find a valid password for user {0} in file {1}", pgUser, passwordFileName);
                 definedInPgPassFile = false;
                 return string.Empty;
             }
@@ -1566,8 +1562,10 @@ namespace DB_Schema_Export_Tool
 
                 if (string.IsNullOrWhiteSpace(password))
                 {
-                    OnWarningEvent(string.Format("The {0} file has a blank password for user {1}, server {2}, database {3}; ignoring this entry",
-                        passwordFile.Name, username, hostname, database));
+                    OnWarningEvent(
+                        "The {0} file has a blank password for user {1}, server {2}, database {3}; ignoring this entry",
+                        passwordFile.Name, username, hostname, database);
+
                     continue;
                 }
 
@@ -1589,7 +1587,7 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
-                OnDebugEvent(string.Format("Determined password for user {0} using {1}", pgUser, passwordFile.FullName));
+                OnDebugEvent("Determined password for user {0} using {1}", pgUser, passwordFile.FullName);
 
                 if (isStandardLocation)
                 {
@@ -2078,7 +2076,7 @@ namespace DB_Schema_Export_Tool
 
                 if (mOptions.PreviewExport)
                 {
-                    OnStatusEvent(string.Format("Preview running {0} {1}", pgDumpAll.FullName, cmdArgs));
+                    OnStatusEvent("Preview running {0} {1}", pgDumpAll.FullName, cmdArgs);
                     return true;
                 }
 
@@ -2087,7 +2085,7 @@ namespace DB_Schema_Export_Tool
 
                 if (!success)
                 {
-                    OnWarningEvent(string.Format("Error reported for {0}: {1}", pgDumpAll.Name, consoleOutput));
+                    OnWarningEvent("Error reported for {0}: {1}", pgDumpAll.Name, consoleOutput);
                     return false;
                 }
 
@@ -2098,9 +2096,9 @@ namespace DB_Schema_Export_Tool
                     return true;
 
                 if (outputFile.Exists)
-                    OnWarningEvent(string.Format("{0} did not replace {1}", pgDumpAll.Name, outputFile.FullName));
+                    OnWarningEvent("{0} did not replace {1}", pgDumpAll.Name, outputFile.FullName);
                 else
-                    OnWarningEvent(string.Format("{0} did not create {1}", pgDumpAll.Name, outputFile.FullName));
+                    OnWarningEvent("{0} did not create {1}", pgDumpAll.Name, outputFile.FullName);
 
                 return false;
             }

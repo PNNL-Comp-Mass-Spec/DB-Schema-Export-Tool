@@ -489,11 +489,11 @@ namespace DB_Schema_Export_Tool
                 {
                     Console.WriteLine();
 
-                    OnStatusEvent(string.Format("  Found {0} database objects to export", workingParams.ProcessCountExpected));
+                    OnStatusEvent("  Found {0} database objects to export", workingParams.ProcessCountExpected);
 
                     if (tablesToExportData.Count > 0)
                     {
-                        OnStatusEvent(string.Format("  Would export table data for {0} tables", tablesToExportData.Count));
+                        OnStatusEvent("  Would export table data for {0} tables", tablesToExportData.Count);
                     }
 
                     success = true;
@@ -503,7 +503,7 @@ namespace DB_Schema_Export_Tool
                     workingParams.ProcessCountExpected += Math.Max(tablesForDataExport.Count, tablesToExportData.Count);
 
                     var pluralAddon = workingParams.ProcessCountExpected == 1 ? string.Empty : "s";
-                    OnDebugEvent(string.Format("Scripting {0} object{1}", workingParams.ProcessCountExpected, pluralAddon));
+                    OnDebugEvent("Scripting {0} object{1}", workingParams.ProcessCountExpected, pluralAddon);
 
                     workingParams.CountObjectsOnly = false;
                     if (workingParams.ProcessCount > 0)
@@ -762,9 +762,10 @@ namespace DB_Schema_Export_Tool
 
             if (mOptions.ShowStats && tableExportCount > 0)
             {
-                OnDebugEvent(string.Format(
+                OnDebugEvent(
                     "Exported {0} tables in {1:0.0} seconds",
-                    tableExportCount, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
+                    tableExportCount,
+                    DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds);
             }
 
             return true;
@@ -1034,7 +1035,7 @@ namespace DB_Schema_Export_Tool
                             if (workingParams.TablesToSkip.Contains(objectName))
                             {
                                 // Skip this object
-                                OnDebugEvent(string.Format("Skipping {0} {1} ", objectType, objectName));
+                                OnDebugEvent("Skipping {0} {1} ", objectType, objectName);
                             }
                             else
                             {
@@ -1059,9 +1060,11 @@ namespace DB_Schema_Export_Tool
 
                     if (mOptions.ShowStats)
                     {
-                        OnDebugEvent(string.Format(
+                        OnDebugEvent(
                             "Exported {0} {1}s in {2:0.0} seconds",
-                            queryResults.Tables[0].Rows.Count, objectType, DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds));
+                            queryResults.Tables[0].Rows.Count,
+                            objectType,
+                            DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds);
                     }
                 }
             }
@@ -1190,14 +1193,17 @@ namespace DB_Schema_Export_Tool
 
                 if (mOptions.PreviewExport)
                 {
-                    OnStatusEvent(string.Format("Preview querying database {0} with {1}", databaseName, sql));
+                    OnStatusEvent("Preview querying database {0} with {1}", databaseName, sql);
                     return true;
                 }
 
                 if (SkipTableForDataExport(tableInfo))
                 {
                     // Skip this table
-                    OnStatusEvent(string.Format("Skipping data export from table {0} in database {1}", dataExportParams.SourceTableNameWithSchema, databaseName));
+                    OnStatusEvent(
+                        "Skipping data export from table {0} in database {1}",
+                        dataExportParams.SourceTableNameWithSchema, databaseName);
+
                     return true;
                 }
 
@@ -1214,7 +1220,10 @@ namespace DB_Schema_Export_Tool
                 if (string.IsNullOrWhiteSpace(dataExportParams.TargetTableNameWithSchema))
                 {
                     // Skip this table
-                    OnStatusEvent(string.Format("Could not determine the target table name for table {0} in database {1}", dataExportParams.SourceTableNameWithSchema, databaseName));
+                    OnStatusEvent(
+                        "Could not determine the target table name for table {0} in database {1}",
+                        dataExportParams.SourceTableNameWithSchema, databaseName);
+
                     return false;
                 }
 
@@ -1957,9 +1966,7 @@ namespace DB_Schema_Export_Tool
                 return primaryKeyColumns;
             }
 
-            OnWarningEvent(string.Format(
-                "Table DDL scripted for {0} did not have a line that starts with CREATE TABLE",
-                tableInfo.SourceTableName));
+            OnWarningEvent("Table DDL scripted for {0} did not have a line that starts with CREATE TABLE", tableInfo.SourceTableName);
 
             return new SortedSet<string>();
         }
@@ -2131,13 +2138,12 @@ namespace DB_Schema_Export_Tool
 
                 if (!mSqlServer.Databases.Contains(databaseName))
                 {
-                    OnWarningEvent(string.Format("Database {0} not found on sever {1}", databaseName, mCurrentServerInfo.ServerName));
+                    OnWarningEvent("Database {0} not found on sever {1}", databaseName, mCurrentServerInfo.ServerName);
                     return databaseTableInfo;
                 }
 
                 // Get the list of tables in this database
-                OnDebugEvent(string.Format("Obtaining list of tables in database {0} on server {1}",
-                                           databaseName, mCurrentServerInfo.ServerName));
+                OnDebugEvent("Obtaining list of tables in database {0} on server {1}", databaseName, mCurrentServerInfo.ServerName);
 
                 // Connect to the database
                 var currentDatabase = mSqlServer.Databases[databaseName];
@@ -2166,7 +2172,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 OnProgressComplete();
-                OnStatusEvent(string.Format("Found {0} tables", databaseTableInfo.Count));
+                OnStatusEvent("Found {0} tables", databaseTableInfo.Count);
 
                 return databaseTableInfo;
             }

@@ -781,15 +781,15 @@ namespace DB_Schema_Export_Tool
                 switch (tablesToExportData.Keys.Count)
                 {
                     case 1:
-                        OnDebugEvent(string.Format("Exporting data from database {0}, table {1}", databaseName, tablesToExportData.First().Key));
+                        OnDebugEvent("Exporting data from database {0}, table {1}", databaseName, tablesToExportData.First().Key);
                         break;
 
                     case 2:
-                        OnDebugEvent(string.Format("Exporting data from database {0}, tables {1} and {2}", databaseName, tablesToExportData.First().Key, tablesToExportData.Last().Key));
+                        OnDebugEvent("Exporting data from database {0}, tables {1} and {2}", databaseName, tablesToExportData.First().Key, tablesToExportData.Last().Key);
                         break;
 
                     default:
-                        OnDebugEvent(string.Format("Exporting data from database {0}, tables {1}, ...", databaseName, string.Join(", ", tablesToExportData.Keys.Take(5))));
+                        OnDebugEvent("Exporting data from database {0}, tables {1}, ...", databaseName, string.Join(", ", tablesToExportData.Keys.Take(5)));
                         break;
                 }
 
@@ -1085,9 +1085,9 @@ namespace DB_Schema_Export_Tool
             if (string.IsNullOrWhiteSpace(outFilePath))
             {
                 // Skip this table
-                OnStatusEvent(string.Format(
+                OnStatusEvent(
                     "GetFileNameForTableDataExport returned an empty output file name for table {0} in database {1}",
-                    dataExportParams.SourceTableNameWithSchema, dataExportParams.DatabaseName));
+                    dataExportParams.SourceTableNameWithSchema, dataExportParams.DatabaseName);
 
                 return null;
             }
@@ -1624,7 +1624,7 @@ namespace DB_Schema_Export_Tool
                     continue;
 
                 Console.WriteLine();
-                OnWarningEvent(string.Format("Warning summary for database {0}:", databaseName));
+                OnWarningEvent("Warning summary for database {0}:", databaseName);
 
                 foreach (var message in warningMessages)
                 {

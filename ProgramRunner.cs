@@ -53,7 +53,7 @@ namespace DB_Schema_Export_Tool
                 var dtLastStatus = DateTime.UtcNow;
                 var executionAborted = false;
 
-                OnDebugEvent(string.Format("Running {0} {1}", exePath, cmdArgs));
+                OnDebugEvent("Running {0} {1}", exePath, cmdArgs);
 
                 programRunner.StartAndMonitorProgram();
 
@@ -70,7 +70,7 @@ namespace DB_Schema_Export_Tool
                     var elapsedSeconds = DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds;
                     if (elapsedSeconds > maxRuntimeSeconds)
                     {
-                        OnErrorEvent(string.Format("Program execution has surpassed {0} seconds; aborting {1}", maxRuntimeSeconds, exePath));
+                        OnErrorEvent("Program execution has surpassed {0} seconds; aborting {1}", maxRuntimeSeconds, exePath);
 
                         programRunner.StopMonitoringProgram(true);
                         executionAborted = true;
@@ -79,8 +79,7 @@ namespace DB_Schema_Export_Tool
                     if (DateTime.UtcNow.Subtract(dtLastStatus).TotalSeconds > 15)
                     {
                         dtLastStatus = DateTime.UtcNow;
-                        OnDebugEvent(string.Format("Waiting for {0}, {1:0} seconds elapsed",
-                                                   Path.GetFileName(exePath), elapsedSeconds));
+                        OnDebugEvent("Waiting for {0}, {1:0} seconds elapsed", Path.GetFileName(exePath), elapsedSeconds);
                     }
                 }
 
