@@ -1910,9 +1910,6 @@ namespace DB_Schema_Export_Tool
                     break;
 
                 case "SEQUENCE":
-                    targetScriptFile = previousTargetScriptFile;
-                    return;
-
                 case "SEQUENCE OWNED BY":
                     targetScriptFile = previousTargetScriptFile;
                     return;
