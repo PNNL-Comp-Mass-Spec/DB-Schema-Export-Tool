@@ -150,7 +150,9 @@ namespace DB_Schema_Export_Tool
         /// Export database schema to the specified directory
         /// </summary>
         /// <param name="outputDirectoryPath">Output directory path</param>
-        /// <param name="databaseNamesAndOutputPaths">Dictionary where keys are database names and values will be updated to have the output directory path used</param>
+        /// <param name="databaseNamesAndOutputPaths">
+        /// Dictionary where keys are database names and values will be updated to have the output directory path used
+        /// </param>
         /// <returns>True if success, false if a problem</returns>
         /// <remarks>
         /// If CreatedDirectoryForEachDB is true, or if databaseNamesAndOutputPaths contains more than one entry,
@@ -1519,8 +1521,9 @@ namespace DB_Schema_Export_Tool
                             continue;
                         }
 
-                        success = programRunner.RunCommand(repoExe.FullName, cmdArgs, fileToAdd.Directory.FullName,
-                                                           out var addConsoleOutput, out var addErrorOutput, maxRuntimeSeconds);
+                        success = programRunner.RunCommand(
+                            repoExe.FullName, cmdArgs, fileToAdd.Directory.FullName,
+                            out var addConsoleOutput, out var addErrorOutput, maxRuntimeSeconds);
 
                         if (!success)
                         {
@@ -1558,8 +1561,10 @@ namespace DB_Schema_Export_Tool
                     return;
                 }
 
-                success = programRunner.RunCommand(repoExe.FullName, cmdArgs, targetDirectory.FullName,
-                                                   out var statusConsoleOutput, out var statusErrorOutput, maxRuntimeSeconds);
+                success = programRunner.RunCommand(
+                    repoExe.FullName, cmdArgs, targetDirectory.FullName,
+                    out var statusConsoleOutput, out var statusErrorOutput, maxRuntimeSeconds);
+
                 if (!success)
                 {
                     return;

@@ -319,7 +319,9 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseName">Database name</param>
         /// <param name="tablesInDatabase">Tables in the database</param>
-        /// <param name="tablesForDataExport">Tables that should be auto-selected; also used to track tables that should be skipped if the TargetTableName is &lt;skip&gt;</param>
+        /// <param name="tablesForDataExport">
+        /// Tables that should be auto-selected; also used to track tables that should be skipped if the TargetTableName is &lt;skip&gt;
+        /// </param>
         /// <returns>Dictionary where keys are table names and values are the maximum number of rows to export</returns>
         protected Dictionary<TableDataExportInfo, long> AutoSelectTablesForDataExport(
             string databaseName,
@@ -505,13 +507,13 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
-        /// Computes the incremental progress that has been made beyond currentTaskProgressAtStart, based on the number of items processed and the next overall progress level
+        /// Computes the incremental progress that has been made beyond currentTaskProgressAtStart,
+        /// based on the number of items processed and the next overall progress level
         /// </summary>
         /// <param name="currentTaskProgressAtStart">Progress at the start of the current subtask (value between 0 and 100)</param>
         /// <param name="currentTaskProgressAtEnd">Progress at the start of the current subtask (value between 0 and 100)</param>
         /// <param name="subTaskProgress">Progress of the current subtask (value between 0 and 100)</param>
         /// <returns>Overall progress (value between 0 and 100)</returns>
-        /// <remarks></remarks>
         protected float ComputeIncrementalProgress(float currentTaskProgressAtStart, float currentTaskProgressAtEnd, float subTaskProgress)
         {
             if (subTaskProgress < 0)
@@ -1707,7 +1709,9 @@ namespace DB_Schema_Export_Tool
         /// <param name="tablesForDataExport"></param>
         /// <param name="candidateTableSourceTableName"></param>
         /// <param name="tableInfo"></param>
-        /// <returns>True (meaning to skip the table) if the table name is defined in tablesForDataExport and has "&lt;skip&gt;" for the TargetTableName</returns>
+        /// <returns>
+        /// True (meaning to skip the table) if the table name is defined in tablesForDataExport and has "&lt;skip&gt;" for the TargetTableName
+        /// </returns>
         private bool SkipTableForDataExport(
             IReadOnlyCollection<TableDataExportInfo> tablesForDataExport,
             string candidateTableSourceTableName,
