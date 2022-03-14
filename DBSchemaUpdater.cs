@@ -434,11 +434,7 @@ namespace DB_Schema_Export_Tool
                 tableColumnDDL.Add(columnName, dataLine);
             }
 
-            string firstPrimaryKeyColumn;
-            if (string.IsNullOrWhiteSpace(primaryKeyColumn))
-                firstPrimaryKeyColumn = primaryKeyColumns.First();
-            else
-                firstPrimaryKeyColumn = primaryKeyColumn;
+            var firstPrimaryKeyColumn = string.IsNullOrWhiteSpace(primaryKeyColumn) ? primaryKeyColumns.First() : primaryKeyColumn;
 
             if (!tableColumns.TryGetValue(firstPrimaryKeyColumn, out var primaryKeyColumnPosition))
             {
@@ -471,8 +467,7 @@ namespace DB_Schema_Export_Tool
 
             outputLines.Add(tableColumnDDL[firstPrimaryKeyColumn]);
 
-            var query = from item in tableColumns orderby item.Value select item;
-            foreach (var columnInfo in query)
+            foreach (var columnInfo in from item in tableColumns orderby item.Value select item)
             {
                 if (columnInfo.Value == primaryKeyColumnPosition)
                 {
