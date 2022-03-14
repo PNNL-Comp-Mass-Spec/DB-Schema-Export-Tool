@@ -1715,20 +1715,21 @@ namespace DB_Schema_Export_Tool
             {
                 if (mOptions.PostgreSQL)
                 {
-                    if (!(mDBSchemaExporter is DBSchemaExporterPostgreSQL))
-                    {
-                        mDBSchemaExporter = new DBSchemaExporterPostgreSQL(mOptions);
-                        RegisterEvents(mDBSchemaExporter);
-                    }
+                    if (mDBSchemaExporter is DBSchemaExporterPostgreSQL)
+                        return true;
+
+                    mDBSchemaExporter = new DBSchemaExporterPostgreSQL(mOptions);
+                    RegisterEvents(mDBSchemaExporter);
                 }
                 else
                 {
-                    if (!(mDBSchemaExporter is DBSchemaExporterSQLServer))
-                    {
-                        mDBSchemaExporter = new DBSchemaExporterSQLServer(mOptions);
-                        RegisterEvents(mDBSchemaExporter);
-                    }
+                    if (mDBSchemaExporter is DBSchemaExporterSQLServer)
+                        return true;
+
+                    mDBSchemaExporter = new DBSchemaExporterSQLServer(mOptions);
+                    RegisterEvents(mDBSchemaExporter);
                 }
+
                 return true;
             }
             catch (Exception ex)
