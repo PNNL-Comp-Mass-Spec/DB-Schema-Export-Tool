@@ -153,10 +153,10 @@ namespace DB_Schema_Export_Tool
 
             mDBSchemaExporter.RequestPause();
             Application.DoEvents();
-            var eResponse = MessageBox.Show("Are you sure you want to abort processing?", "Abort", MessageBoxButtons.YesNoCancel,
+            var response = MessageBox.Show("Are you sure you want to abort processing?", "Abort", MessageBoxButtons.YesNoCancel,
                                             MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
 
-            if (eResponse == DialogResult.Yes)
+            if (response == DialogResult.Yes)
             {
                 mDBSchemaExporter.AbortProcessingNow();
 
@@ -269,14 +269,14 @@ namespace DB_Schema_Export_Tool
                                                 tableName, tableRowCount);
                         var caption = "Row Count Over " + DBSchemaExporterBase.MAX_ROWS_DATA_TO_EXPORT;
 
-                        var eResponse = MessageBox.Show(msg, caption, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question,
+                        var response = MessageBox.Show(msg, caption, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question,
                                                         MessageBoxDefaultButton.Button2);
 
-                        if (eResponse == DialogResult.No)
+                        if (response == DialogResult.No)
                         {
                             keepTable = false;
                         }
-                        else if (eResponse == DialogResult.Cancel)
+                        else if (response == DialogResult.Cancel)
                         {
                             cancelExport = true;
                             return new List<TableDataExportInfo>();
@@ -1029,9 +1029,9 @@ namespace DB_Schema_Export_Tool
             {
                 if (confirm)
                 {
-                    var eResponse = MessageBox.Show("Are you sure you want to reset all settings to their default values?", "Reset to Defaults", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
+                    var response = MessageBox.Show("Are you sure you want to reset all settings to their default values?", "Reset to Defaults", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
 
-                    if (eResponse != DialogResult.Yes)
+                    if (response != DialogResult.Yes)
                     {
                         return;
                     }

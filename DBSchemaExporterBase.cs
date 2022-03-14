@@ -1573,24 +1573,24 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Set the local error code
         /// </summary>
-        /// <param name="eErrorCode"></param>
+        /// <param name="errorCode"></param>
         /// <param name="message"></param>
-        protected void SetLocalError(DBSchemaExportErrorCodes eErrorCode, string message)
+        protected void SetLocalError(DBSchemaExportErrorCodes errorCode, string message)
         {
-            SetLocalError(eErrorCode, message, null);
+            SetLocalError(errorCode, message, null);
         }
 
         /// <summary>
         /// Set the local error code; provide an exception instance
         /// </summary>
-        /// <param name="eErrorCode"></param>
+        /// <param name="errorCode"></param>
         /// <param name="message"></param>
         /// <param name="ex"></param>
-        protected void SetLocalError(DBSchemaExportErrorCodes eErrorCode, string message, Exception ex)
+        protected void SetLocalError(DBSchemaExportErrorCodes errorCode, string message, Exception ex)
         {
             try
             {
-                ErrorCode = eErrorCode;
+                ErrorCode = errorCode;
                 OnErrorEvent(message, ex);
             }
             catch (Exception)

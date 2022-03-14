@@ -273,7 +273,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="baseFile">Base file</param>
         /// <param name="comparisonFile">Comparison file</param>
-        /// <param name="differenceReason">Output parameter: reason for the difference, or eDifferenceReasonType.Unchanged if identical</param>
+        /// <param name="differenceReason">Output parameter: reason for the difference, or DifferenceReasonType.Unchanged if identical</param>
         /// <returns>True if the files differ (i.e. if they do not match)</returns>
         /// <remarks>
         /// Several files are treated specially to ignore changing dates or numbers, in particular:
@@ -1409,9 +1409,9 @@ namespace DB_Schema_Export_Tool
                     continue;
                 }
 
-                var fiTargetFile = new FileInfo(Path.Combine(targetDirectory.FullName, sourceFile.Name));
+                var targetFile = new FileInfo(Path.Combine(targetDirectory.FullName, sourceFile.Name));
 
-                if (FilesDiffer(sourceFile, fiTargetFile, out var differenceReason))
+                if (FilesDiffer(sourceFile, targetFile, out var differenceReason))
                 {
                     // var subtaskPercentComplete = fileProcessCount / ((float)filesToCopy.Count * 100);
 
@@ -1419,7 +1419,7 @@ namespace DB_Schema_Export_Tool
                     {
                         case DifferenceReasonType.NewFile:
                             OnDebugEvent("  Copying new file " + sourceFile.Name);
-                            newFilePaths.Add(fiTargetFile.FullName);
+                            newFilePaths.Add(targetFile.FullName);
                             break;
                         case DifferenceReasonType.Changed:
                             OnDebugEvent("  Copying changed file " + sourceFile.Name);
@@ -1429,7 +1429,7 @@ namespace DB_Schema_Export_Tool
                             break;
                     }
 
-                    sourceFile.CopyTo(fiTargetFile.FullName, true);
+                    sourceFile.CopyTo(targetFile.FullName, true);
                     fileCopyCount++;
                 }
             }
