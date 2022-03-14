@@ -624,19 +624,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         public static string GetAppVersion()
         {
-            var version = Assembly.GetExecutingAssembly().GetName().Version + " (" + PROGRAM_DATE + ")";
-
-            return version;
-        }
-
-        /// <summary>
-        /// Get the expected base log file path
-        /// </summary>
-        /// <param name="options"></param>
-        public static string GetLogFilePath(SchemaExportOptions options)
-        {
-            var defaultBaseLogFileName = Path.GetFileNameWithoutExtension(BaseLogger.ExecutableName) + "_log.txt";
-            return GetLogFilePath(options, defaultBaseLogFileName);
+            return Assembly.GetExecutingAssembly().GetName().Version + " (" + PROGRAM_DATE + ")";
         }
 
         /// <summary>
