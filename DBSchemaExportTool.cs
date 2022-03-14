@@ -1074,16 +1074,7 @@ namespace DB_Schema_Export_Tool
                     'R'
                 };
 
-            int minimumLineLength;
-
-            if (repoManagerType == RepoManagerType.Svn)
-            {
-                minimumLineLength = 8;
-            }
-            else
-            {
-                minimumLineLength = 3;
-            }
+            var minimumLineLength = repoManagerType == RepoManagerType.Svn ? 8 : 3;
 
             modifiedFileCount = 0;
             using var hgStatusReader = new StringReader(consoleOutput);

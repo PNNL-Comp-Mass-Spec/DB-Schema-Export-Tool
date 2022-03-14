@@ -93,13 +93,11 @@ namespace DB_Schema_Export_Tool
             // This group will exist for default constraints and foreign key constraints
             var defaultConstraintColumn = createItemMatch.Groups["ColumnName"].ToString();
 
-            if (DBSchemaExportTool.GetTableByName(tablesForDataExport, sourceTableName, out var tableInfo))
+            if (DBSchemaExportTool.GetTableByName(tablesForDataExport, sourceTableName, out var tableInfo) &&
+                DBSchemaExporterBase.SkipTableForDataExport(options, tableInfo))
             {
-                if (DBSchemaExporterBase.SkipTableForDataExport(options, tableInfo))
-                {
-                    // Skip this table
-                    writeOutput = false;
-                }
+                // Skip this table
+                writeOutput = false;
             }
 
             if (!options.ColumnMapForDataExport.TryGetValue(sourceTableName, out var columnMapInfo))

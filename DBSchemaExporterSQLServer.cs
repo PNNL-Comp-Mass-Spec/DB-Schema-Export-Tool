@@ -293,13 +293,11 @@ namespace DB_Schema_Export_Tool
                         {
                             var nextCrLf = currentLine.IndexOf("\r\n", firstCrLf + 1, StringComparison.Ordinal);
 
-                            if (nextCrLf > firstCrLf)
+                            if (nextCrLf > firstCrLf &&
+                                currentLine.Substring(0, firstCrLf) ==
+                                currentLine.Substring(firstCrLf + 2, nextCrLf - (firstCrLf - 2)))
                             {
-                                if (currentLine.Substring(0, firstCrLf) ==
-                                    currentLine.Substring(firstCrLf + 2, nextCrLf - (firstCrLf - 2)))
-                                {
-                                    currentLine = currentLine.Substring(firstCrLf + 2);
-                                }
+                                currentLine = currentLine.Substring(firstCrLf + 2);
                             }
                         }
                     }
@@ -341,12 +339,10 @@ namespace DB_Schema_Export_Tool
 
                 // Connect to server mOptions.ServerName
                 var connected = LoginToServerWork(out mSqlServer);
-                if (!connected)
+
+                if (!connected && ErrorCode == DBSchemaExportErrorCodes.NoError)
                 {
-                    if (ErrorCode == DBSchemaExportErrorCodes.NoError)
-                    {
-                        SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error logging into the server: " + mOptions.ServerName);
-                    }
+                    SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error logging into the server: " + mOptions.ServerName);
                 }
 
                 ShowTrace("Connected to " + mSqlServer.Name);
@@ -1339,15 +1335,9 @@ namespace DB_Schema_Export_Tool
 
                     if (dataExportParams.IdentityColumnFound)
                     {
-                        string primaryKeyColumnName;
-                        if (identityColumnIndex >= 0)
-                        {
-                            primaryKeyColumnName = dataExportParams.ColumnNamesAndTypes[identityColumnIndex].Key;
-                        }
-                        else
-                        {
-                            primaryKeyColumnName = dataExportParams.IdentityColumnName;
-                        }
+                        var primaryKeyColumnName = identityColumnIndex >= 0
+                            ? dataExportParams.ColumnNamesAndTypes[identityColumnIndex].Key
+                            : dataExportParams.IdentityColumnName;
 
                         // Make an educated guess of the sequence name, for example
                         // mc.t_mgr_types_mt_type_id_seq
@@ -2445,13 +2435,10 @@ namespace DB_Schema_Export_Tool
                     return false;
                 }
 
-                if (databaseTable.Name.Length >= SYNC_OBJ_TABLE_PREFIX.Length)
+                if (databaseTable.Name.Length >= SYNC_OBJ_TABLE_PREFIX.Length &&
+                    databaseTable.Name.Substring(0, SYNC_OBJ_TABLE_PREFIX.Length).Equals(SYNC_OBJ_TABLE_PREFIX, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (databaseTable.Name.Substring(0, SYNC_OBJ_TABLE_PREFIX.Length)
-                        .Equals(SYNC_OBJ_TABLE_PREFIX, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return false;
-                    }
+                    return false;
                 }
             }
 

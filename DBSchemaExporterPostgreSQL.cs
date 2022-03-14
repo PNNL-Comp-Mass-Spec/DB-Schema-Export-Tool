@@ -308,14 +308,12 @@ namespace DB_Schema_Export_Tool
                 {
                     var expectedNameAndPort = string.Format("tcp://{0}:{1}", mOptions.ServerName, mOptions.PgPort);
 
-                    if (string.Equals(mPgConnection.DataSource, expectedNameAndPort, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(mPgConnection.DataSource, expectedNameAndPort, StringComparison.OrdinalIgnoreCase) &&
+                        mCurrentServerInfo.DatabaseName.Equals(databaseName) &&
+                        mCurrentServerInfo.UserName.Equals(mOptions.DBUser))
                     {
-                        if (mCurrentServerInfo.DatabaseName.Equals(databaseName) &&
-                            mCurrentServerInfo.UserName.Equals(mOptions.DBUser))
-                        {
-                            // Already connected; no need to re-connect
-                            return true;
-                        }
+                        // Already connected; no need to re-connect
+                        return true;
                     }
 
                     try
@@ -331,12 +329,9 @@ namespace DB_Schema_Export_Tool
                 // Connect to server mOptions.ServerName
                 var connected = LoginToServerWork(databaseName, out mPgConnection);
 
-                if (!connected)
+                if (!connected && ErrorCode == DBSchemaExportErrorCodes.NoError)
                 {
-                    if (ErrorCode == DBSchemaExportErrorCodes.NoError)
-                    {
-                        SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error logging into server " + GetServerConnectionInfo());
-                    }
+                    SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, "Error logging into server " + GetServerConnectionInfo());
                 }
 
                 return connected;
@@ -1565,11 +1560,8 @@ namespace DB_Schema_Export_Tool
                         continue;
                 }
 
-                if (!string.IsNullOrWhiteSpace(currentDatabase))
-                {
-                    if (!string.Equals(database, currentDatabase, comparisonType) && !database.Equals("*"))
-                        continue;
-                }
+                if (!string.IsNullOrWhiteSpace(currentDatabase) && !string.Equals(database, currentDatabase, comparisonType) && !database.Equals("*"))
+                    continue;
 
                 if (!string.Equals(username, pgUser, comparisonType) && !username.Equals("*"))
                     continue;

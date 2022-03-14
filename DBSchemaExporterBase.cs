@@ -1830,13 +1830,10 @@ namespace DB_Schema_Export_Tool
                         return false;
                     }
                 }
-                else
+                else if (databaseList.Count > 1)
                 {
-                    if (databaseList.Count > 1)
-                    {
-                        // Force CreateDirectoryForEachDB to true
-                        mOptions.CreateDirectoryForEachDB = true;
-                    }
+                    // Force CreateDirectoryForEachDB to true
+                    mOptions.CreateDirectoryForEachDB = true;
                 }
             }
             catch (Exception ex)
