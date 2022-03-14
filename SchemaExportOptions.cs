@@ -636,9 +636,7 @@ namespace DB_Schema_Export_Tool
         {
             var logDirectoryPath = string.IsNullOrWhiteSpace(options.LogDirectoryPath) ? "." : options.LogDirectoryPath;
             var baseLogFileName = string.IsNullOrWhiteSpace(options.LogFileBaseName) ? defaultBaseLogFileName : options.LogFileBaseName;
-            var baseLogFilePath = Path.Combine(logDirectoryPath, baseLogFileName);
-
-            return baseLogFilePath;
+            return Path.Combine(logDirectoryPath, baseLogFileName);
         }
 
         /// <summary>

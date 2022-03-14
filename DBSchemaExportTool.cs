@@ -589,15 +589,13 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         public static SortedSet<string> GetTableRegExToAutoExportData()
         {
-            var regExSpecs = new SortedSet<string>
+            return new SortedSet<string>
             {
                 ".*_?Type_?Name",
                 ".*_?State_?Name",
                 ".*_State",
                 ".*_States"
             };
-
-            return regExSpecs;
         }
 
         private void InitializeLogFile(SchemaExportOptions options)
@@ -1224,16 +1222,14 @@ namespace DB_Schema_Export_Tool
             if (!isValid)
                 return false;
 
-            var success = ScriptServerAndDBObjectsWork(databaseList, tablesForDataExport);
-            return success;
+            return ScriptServerAndDBObjectsWork(databaseList, tablesForDataExport);
         }
 
         private bool ScriptServerAndDBObjectsWork(
             IReadOnlyList<string> databaseList,
             IReadOnlyList<TableDataExportInfo> tablesForDataExport)
         {
-            var success = mDBSchemaExporter.ScriptServerAndDBObjects(databaseList, tablesForDataExport);
-            return success;
+            return mDBSchemaExporter.ScriptServerAndDBObjects(databaseList, tablesForDataExport);
         }
 
         private void ShowTrace(string message)

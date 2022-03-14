@@ -203,9 +203,7 @@ namespace DB_Schema_Export_Tool
                 "Found {0} {1} in database {2}",
                 tablesInDatabase.Count, tableText, currentDatabase.Name));
 
-            var tablesToExportData = AutoSelectTablesForDataExport(currentDatabase.Name, tablesInDatabase, tablesForDataExport);
-
-            return tablesToExportData;
+            return AutoSelectTablesForDataExport(currentDatabase.Name, tablesInDatabase, tablesForDataExport);
         }
 
         private IEnumerable<string> CleanSqlScript(IEnumerable<string> scriptInfo)
@@ -1626,12 +1624,7 @@ namespace DB_Schema_Export_Tool
                     return false;
                 }
 
-                if (databaseRole.Name.Equals("public", StringComparison.OrdinalIgnoreCase))
-                {
-                    return false;
-                }
-
-                return true;
+                return !databaseRole.Name.Equals("public", StringComparison.OrdinalIgnoreCase);
             }
             catch
             {
@@ -1902,7 +1895,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         private ScriptingOptions GetDefaultScriptOptions()
         {
-            var scriptOptions = new ScriptingOptions
+            return new ScriptingOptions
             {
                 // scriptOptions.Bindings = True
                 Default = true,
@@ -1919,8 +1912,6 @@ namespace DB_Schema_Export_Tool
                 ToFileOnly = false,
                 WithDependencies = false
             };
-
-            return scriptOptions;
         }
 
         /// <summary>
@@ -1962,8 +1953,7 @@ namespace DB_Schema_Export_Tool
 
                 var createTableDDL = rowSplitter.Split(item).ToList();
 
-                var primaryKeyColumns = GetPrimaryKeysForTableViaDDL(createTableDDL);
-                return primaryKeyColumns;
+                return GetPrimaryKeysForTableViaDDL(createTableDDL);
             }
 
             OnWarningEvent("Table DDL scripted for {0} did not have a line that starts with CREATE TABLE", tableInfo.SourceTableName);
@@ -2070,8 +2060,7 @@ namespace DB_Schema_Export_Tool
         /// <remarks>Assumes we already have an active server connection</remarks>
         protected override IEnumerable<string> GetServerDatabasesCurrentConnection()
         {
-            var databaseNames = GetSqlServerDatabasesWork();
-            return databaseNames;
+            return GetSqlServerDatabasesWork();
         }
 
         /// <summary>

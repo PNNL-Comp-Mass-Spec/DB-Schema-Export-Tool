@@ -248,10 +248,7 @@ namespace DB_Schema_Export_Tool
                 "Found {0} {1} in database {2}",
                 tablesInDatabase.Count, tableText, databaseName));
 
-            var tablesToExportData = AutoSelectTablesForDataExport(
-                databaseName, tablesInDatabase.Keys.ToList(), tablesForDataExport);
-
-            return tablesToExportData;
+            return AutoSelectTablesForDataExport(databaseName, tablesInDatabase.Keys.ToList(), tablesForDataExport);
         }
 
         private void CacheDatabaseTables(string databaseName, out bool databaseNotFound)
@@ -264,15 +261,13 @@ namespace DB_Schema_Export_Tool
             const bool INCLUDE_SYSTEM_OBJECTS = false;
             const bool CLEAR_SCHEMA_OUTPUT_DIRS = false;
 
-            var tablesInDatabase = GetPgServerDatabaseTables(
+            // Add/update the dictionary
+            mCachedDatabaseTableInfo[databaseName] = GetPgServerDatabaseTables(
                 databaseName,
                 INCLUDE_TABLE_ROW_COUNTS,
                 INCLUDE_SYSTEM_OBJECTS,
                 CLEAR_SCHEMA_OUTPUT_DIRS,
                 out databaseNotFound);
-
-            // Add/update the dictionary
-            mCachedDatabaseTableInfo[databaseName] = tablesInDatabase;
         }
 
         /// <summary>
@@ -281,8 +276,7 @@ namespace DB_Schema_Export_Tool
         /// <returns>True if successfully connected, false if a problem</returns>
         public override bool ConnectToServer()
         {
-            var success = ConnectToServer(POSTGRES_DATABASE);
-            return success;
+            return ConnectToServer(POSTGRES_DATABASE);
         }
 
         /// <summary>
@@ -292,8 +286,7 @@ namespace DB_Schema_Export_Tool
         /// <returns>True if successfully connected, false if a problem</returns>
         public bool ConnectToServer(string databaseName)
         {
-            var success = ConnectToPgServer(databaseName);
-            return success;
+            return ConnectToPgServer(databaseName);
         }
 
         /// <summary>
@@ -1058,11 +1051,9 @@ namespace DB_Schema_Export_Tool
             else
                 databaseArgument = "-d " + databaseName;
 
-            var serverInfoArgs = string.Format("-h {0} -p {1} -U {2} {3}{4}",
-                                               mOptions.ServerName, mOptions.PgPort, mOptions.DBUser,
-                                               passwordArgument, databaseArgument);
-
-            return serverInfoArgs;
+            return string.Format(
+                "-h {0} -p {1} -U {2} {3}{4}",
+                mOptions.ServerName, mOptions.PgPort, mOptions.DBUser, passwordArgument, databaseArgument);
         }
 
         /// <summary>

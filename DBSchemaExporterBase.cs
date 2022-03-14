@@ -482,13 +482,11 @@ namespace DB_Schema_Export_Tool
             // Quote the following characters
             // backslash itself, newline, carriage return, and tab
 
-            var cleanedText = columnText.
+            return columnText.
                 Replace("\\", "\\\\").
                 Replace("\r", "\\r").
                 Replace("\n", "\\n").
                 Replace("\t", "\\t");
-
-            return cleanedText;
         }
 
         /// <summary>
@@ -1023,9 +1021,7 @@ namespace DB_Schema_Export_Tool
 
             var fileName = cleanName + suffix + ".sql";
 
-            var fileNamePath = defaultOwnerSchema ? fileName : Path.Combine(dataExportParams.TargetTableSchema, fileName);
-
-            return fileNamePath;
+            return defaultOwnerSchema ? fileName : Path.Combine(dataExportParams.TargetTableSchema, fileName);
         }
 
         /// <summary>
@@ -1963,14 +1959,12 @@ namespace DB_Schema_Export_Tool
             IEnumerable<string> scriptInfo,
             bool autoAddGoStatements = true)
         {
-            var result = WriteTextToFile(
+            return WriteTextToFile(
                 outputFile.Directory,
                 Path.GetFileNameWithoutExtension(outputFile.Name),
                 scriptInfo,
                 autoAddGoStatements,
                 outputFile.Extension);
-
-            return result;
         }
 
         /// <summary>
