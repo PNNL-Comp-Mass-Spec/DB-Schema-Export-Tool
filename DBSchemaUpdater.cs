@@ -424,7 +424,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var columnPosition = tableColumns.Count + 1;
-                currentColumnName = string.Copy(columnName);
+                currentColumnName = columnName;
 
                 tableColumns.Add(columnName, columnPosition);
                 tableColumnDDL.Add(columnName, dataLine);

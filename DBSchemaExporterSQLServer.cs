@@ -234,7 +234,7 @@ namespace DB_Schema_Export_Tool
                 // If removeAllScriptDateOccurrences = False, does not look past the first carriage return of each entry in scriptInfo
                 foreach (var item in scriptInfo)
                 {
-                    var currentLine = string.Copy(item);
+                    var currentLine = item;
 
                     var indexStart = 0;
                     int finalSearchIndex;

@@ -657,7 +657,7 @@ namespace DB_Schema_Export_Tool
                 return objectName.ToLower();
             }
 
-            var updatedName = string.Copy(objectName);
+            var updatedName = objectName;
 
             while (true)
             {
@@ -1417,7 +1417,7 @@ namespace DB_Schema_Export_Tool
 
                 foreach (var item in databaseListToProcess)
                 {
-                    var currentDB = string.Copy(item);
+                    var currentDB = item;
 
                     if (string.IsNullOrWhiteSpace(currentDB))
                     {
@@ -1442,7 +1442,7 @@ namespace DB_Schema_Export_Tool
                     bool success;
                     if (databasesOnServer.TryGetValue(currentDB.ToLower(), out var currentDbName))
                     {
-                        currentDB = string.Copy(currentDbName);
+                        currentDB = currentDbName;
                         OnDebugEvent(tasksToPerform + " from database " + currentDbName);
                         success = ExportDBObjectsAndTableData(currentDbName, tablesForDataExport, out var databaseNotFound, out var workingParams);
 
@@ -1887,7 +1887,7 @@ namespace DB_Schema_Export_Tool
                 }
                 else
                 {
-                    workingParams.OutputDirectoryPathCurrentDB = string.Copy(mOptions.OutputDirectoryPath);
+                    workingParams.OutputDirectoryPathCurrentDB = mOptions.OutputDirectoryPath;
                 }
 
                 workingParams.OutputDirectory = new DirectoryInfo(workingParams.OutputDirectoryPathCurrentDB);

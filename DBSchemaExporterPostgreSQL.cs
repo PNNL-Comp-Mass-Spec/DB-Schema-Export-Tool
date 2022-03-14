@@ -2010,7 +2010,7 @@ namespace DB_Schema_Export_Tool
                         previousTargetScriptFile,
                         ref unhandledScriptingCommands);
 
-                    previousTargetScriptFile = string.Copy(targetScriptFile);
+                    previousTargetScriptFile = targetScriptFile;
 
                     UpdateCachedObjectInfo(match, currentObject);
                     cachedLines = new List<string> {

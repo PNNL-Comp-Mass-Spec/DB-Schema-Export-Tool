@@ -677,7 +677,7 @@ namespace DB_Schema_Export_Tool
                             mOptions.ColumnMapForDataExport.Add(sourceTableName, currentTableColumns);
                         }
 
-                        currentTable = string.Copy(sourceTableName);
+                        currentTable = sourceTableName;
                     }
 
                     currentTableColumns.AddColumn(sourceColumnName, targetColumnName);
@@ -1304,7 +1304,7 @@ namespace DB_Schema_Export_Tool
                     }
                     else
                     {
-                        targetDirectoryPath = string.Copy(directoryPathForSync);
+                        targetDirectoryPath = directoryPathForSync;
                     }
 
                     var targetDirectory = new DirectoryInfo(targetDirectoryPath);

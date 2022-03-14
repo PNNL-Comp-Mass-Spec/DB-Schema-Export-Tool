@@ -385,7 +385,7 @@ namespace DB_Schema_Export_Tool
                 FilterIndex = 1
             };
 
-            var filePath = string.Copy(mXmlSettingsFilePath);
+            var filePath = mXmlSettingsFilePath;
             if (filePath.Length > 0)
             {
                 try
@@ -501,7 +501,7 @@ namespace DB_Schema_Export_Tool
                 FilterIndex = 1
             };
 
-            var filePath = string.Copy(mXmlSettingsFilePath);
+            var filePath = mXmlSettingsFilePath;
             if (filePath.Length > 0)
             {
                 try
@@ -679,7 +679,7 @@ namespace DB_Schema_Export_Tool
                     }
                     else
                     {
-                        textForRow = string.Copy(tableName);
+                        textForRow = tableName;
                     }
 
                     var itemIndex = lstTableNamesToExportData.Items.Add(textForRow);
