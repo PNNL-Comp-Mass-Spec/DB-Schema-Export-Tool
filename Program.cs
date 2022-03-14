@@ -22,6 +22,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
+        /// <param name="args"></param>
+        /// <returns>0 if successful, -1 if an error</returns>
         [STAThread]
         private static int Main(string[] args)
         {

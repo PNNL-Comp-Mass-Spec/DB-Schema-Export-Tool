@@ -57,39 +57,51 @@ namespace DB_Schema_Export_Tool
             "(FUNCTION|PROCEDURE) (?<ObjectName>[^(]+)",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        // Match text like:
-        // SCHEMA mc
+        /// <summary>
+        /// Use this to find text
+        /// SCHEMA mc
+        /// </summary>
         private readonly Regex mAclMatcherSchema = new(
             "SCHEMA (?<SchemaName>.+)",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        // Match text like:
-        // TABLE t_event_log
+        /// <summary>
+        /// Use this to find text
+        /// TABLE t_event_log
+        /// </summary>
         private readonly Regex mAclMatcherTable = new(
             "TABLE (?<TableName>.+)",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        // Match text like:
-        // get_stat_activity()
+        /// <summary>
+        /// Use this to find text
+        /// get_stat_activity()
+        /// </summary>
         private readonly Regex mFunctionOrProcedureNameMatcher = new(
             "^(?<Name>[^(]+)",
             RegexOptions.Compiled);
 
-        // Match lines like:
-        // -- Name: t_param_value; Type: TABLE; Schema: mc; Owner: d3l243
-        // -- Name: v_manager_type_report; Type: VIEW; Schema: mc; Owner: d3l243
+        /// <summary>
+        /// Use this to find lines that match
+        /// -- Name: t_param_value; Type: TABLE; Schema: mc; Owner: d3l243
+        /// -- Name: v_manager_type_report; Type: VIEW; Schema: mc; Owner: d3l243
+        /// </summary>
         private readonly Regex mNameTypeSchemaMatcher = new(
             "^-- Name: (?<Name>.+); Type: (?<Type>.+); Schema: (?<Schema>.+); Owner: ?(?<Owner>.*)",
             RegexOptions.Compiled);
 
-        // Match text like:
-        // FUNCTION get_stat_activity()
+        /// <summary>
+        /// Use this to find text
+        /// FUNCTION get_stat_activity()
+        /// </summary>
         private readonly Regex mNameTypeTargetMatcher = new(
             "(?<ObjectType>[a-z]+) (?<ObjectName>[^(]+)",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        // Match text like:
-        // t_users t_users_trigger_update_persisted
+        /// <summary>
+        /// Use this to find text
+        /// t_users t_users_trigger_update_persisted
+        /// </summary>
         private readonly Regex mTriggerTargetTableMatcher = new(
             "[^ ]+",
             RegexOptions.Compiled);

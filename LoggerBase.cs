@@ -119,6 +119,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="processingClass"></param>
         /// <param name="messageType"></param>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         // ReSharper disable once UnusedMember.Global
         protected void UnregisterEventHandler(EventNotifier processingClass, BaseLogger.LogLevels messageType)
         {

@@ -145,6 +145,7 @@ namespace DB_Schema_Export_Tool
         /// If CreatedDirectoryForEachDB is true, or if databaseNamesAndOutputPaths contains more than one entry,
         /// then each database will be scripted to a subdirectory below the output directory
         /// </remarks>
+        /// <exception cref="ArgumentException"></exception>
         public bool ExportSchema(string outputDirectoryPath, ref Dictionary<string, string> databaseNamesAndOutputPaths)
         {
             try
@@ -1128,6 +1129,9 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Export the schema for the databases defined in databasesToProcess
         /// </summary>
+        /// <param name="options"></param>
+        /// <returns>True if successful, false if an error</returns>
+        /// <exception cref="ArgumentException"></exception>
         public bool ProcessDatabases(SchemaExportOptions options)
         {
             return ProcessDatabases(options.OutputDirectoryPath, options.ServerName, options.DatabasesToProcess);
@@ -1136,6 +1140,11 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Export the schema for the databases defined in databaseList
         /// </summary>
+        /// <param name="outputDirectoryPath"></param>
+        /// <param name="serverName"></param>
+        /// <param name="databaseList"></param>
+        /// <returns>True if successful, false if an error</returns>
+        /// <exception cref="ArgumentException"></exception>
         public bool ProcessDatabases(string outputDirectoryPath, string serverName, SortedSet<string> databaseList)
         {
             if (string.IsNullOrWhiteSpace(outputDirectoryPath))

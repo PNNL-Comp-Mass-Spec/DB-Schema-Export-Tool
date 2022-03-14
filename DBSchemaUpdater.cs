@@ -22,6 +22,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Constructor
         /// </summary>
+        /// <param name="options"></param>
         public DBSchemaUpdater(SchemaExportOptions options)
         {
             mColumnNameMatcher = new Regex(@"\[(?<ColumnName>[^]]+)\]|(?<ColumnName>[^\s]+)", RegexOptions.Compiled);

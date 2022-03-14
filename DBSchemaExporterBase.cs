@@ -838,6 +838,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="delimitedRowValues">Text to write to the current line</param>
         /// <param name="columnCount">Number of columns</param>
         /// <param name="columnValues">Column values</param>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         protected void ExportDBTableDataRow(
             TextWriter writer,
             DataExportWorkingParams dataExportParams,

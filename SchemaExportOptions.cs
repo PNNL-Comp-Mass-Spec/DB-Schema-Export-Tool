@@ -905,6 +905,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Validate the options
         /// </summary>
+        /// <param name="errorMessage"></param>
+        /// <returns>True settings are valid; false if required arguments are missing</returns>
         public bool ValidateArgs(out string errorMessage)
         {
             if (string.IsNullOrWhiteSpace(OutputDirectoryPath))
