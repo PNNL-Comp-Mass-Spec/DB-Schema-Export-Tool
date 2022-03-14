@@ -433,8 +433,8 @@ namespace DB_Schema_Export_Tool
                 xmlFile.LoadSettings(filePath, false);
                 try
                 {
-                    this.Width = xmlFile.GetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowWidth", this.Width);
-                    this.Height = xmlFile.GetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowHeight", this.Height);
+                    Width = xmlFile.GetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowWidth", Width);
+                    Height = xmlFile.GetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowHeight", Height);
 
                     var serverNameSaved = txtServerName.Text;
                     txtServerName.Text = xmlFile.GetParam(XML_SECTION_DATABASE_SETTINGS, "ServerName", txtServerName.Text);
@@ -547,8 +547,8 @@ namespace DB_Schema_Export_Tool
                 xmlFile.LoadSettings(filePath, true);
                 try
                 {
-                    xmlFile.SetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowWidth", this.Width);
-                    xmlFile.SetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowHeight", this.Height - 20);
+                    xmlFile.SetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowWidth", Width);
+                    xmlFile.SetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowHeight", Height - 20);
                     if (!saveWindowDimensionsOnly)
                     {
                         xmlFile.SetParam(XML_SECTION_DATABASE_SETTINGS, "ServerName", txtServerName.Text);
@@ -1032,8 +1032,8 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
-                this.Width = 600;
-                this.Height = 600;
+                Width = 600;
+                Height = 600;
 
                 txtServerName.Text = DBSchemaExporterSQLServer.SQL_SERVER_NAME_DEFAULT;
 
@@ -1567,7 +1567,7 @@ namespace DB_Schema_Export_Tool
 
         private void cmdExit_Click(object eventSender, EventArgs eventArgs)
         {
-            this.Close();
+            Close();
         }
 
         private void lstDatabasesToProcess_KeyPress(object sender, KeyPressEventArgs e)
@@ -1648,7 +1648,7 @@ namespace DB_Schema_Export_Tool
 
         private void mnuFileExit_Click(object sender, EventArgs e)
         {
-            this.Close();
+            Close();
         }
 
         private void mnuEditStart_Click(object sender, EventArgs e)
@@ -1712,9 +1712,9 @@ namespace DB_Schema_Export_Tool
 
         private void mDBSchemaExporter_DebugMessage(string message)
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
-                this.Invoke(new AppendNewMessageHandler(AppendNewMessage), message, true);
+                Invoke(new AppendNewMessageHandler(AppendNewMessage), message, true);
             }
             else
             {
@@ -1726,9 +1726,9 @@ namespace DB_Schema_Export_Tool
 
         private void mDBSchemaExporter_ErrorMessage(string message, Exception ex)
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
-                this.Invoke(new AppendNewMessageHandler(AppendNewMessage), message, true);
+                Invoke(new AppendNewMessageHandler(AppendNewMessage), message, true);
             }
             else
             {
@@ -1750,9 +1750,9 @@ namespace DB_Schema_Export_Tool
 
         private void mDBSchemaExporter_StatusMessage(string message)
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
-                this.Invoke(new AppendNewMessageHandler(AppendNewMessage), message, false);
+                Invoke(new AppendNewMessageHandler(AppendNewMessage), message, false);
             }
             else
             {
@@ -1764,9 +1764,9 @@ namespace DB_Schema_Export_Tool
 
         private void mDBSchemaExporter_WarningMessage(string message)
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
-                this.Invoke(new AppendNewMessageHandler(AppendNewMessage), message, false);
+                Invoke(new AppendNewMessageHandler(AppendNewMessage), message, false);
             }
             else
             {
@@ -1778,9 +1778,9 @@ namespace DB_Schema_Export_Tool
 
         private void mDBSchemaExporter_PauseStatusChange()
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
-                this.Invoke(new UpdatePauseUnpauseCaptionHandler(UpdatePauseUnpauseCaption), mDBSchemaExporter.PauseStatus);
+                Invoke(new UpdatePauseUnpauseCaptionHandler(UpdatePauseUnpauseCaption), mDBSchemaExporter.PauseStatus);
             }
             else
             {
@@ -1792,9 +1792,9 @@ namespace DB_Schema_Export_Tool
 
         private void mDBSchemaExporter_ProgressUpdate(string taskDescription, float percentComplete)
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
-                this.Invoke(new ProgressUpdateHandler(ProgressUpdate), taskDescription, percentComplete);
+                Invoke(new ProgressUpdateHandler(ProgressUpdate), taskDescription, percentComplete);
             }
             else
             {
@@ -1806,9 +1806,9 @@ namespace DB_Schema_Export_Tool
 
         private void mDBSchemaExporter_ProgressComplete()
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
-                this.Invoke(new ProgressCompleteHandler(ProgressComplete), new object[0]);
+                Invoke(new ProgressCompleteHandler(ProgressComplete), Array.Empty<object>());
             }
             else
             {
@@ -1820,9 +1820,9 @@ namespace DB_Schema_Export_Tool
 
         private void mDBSchemaExporter_DBExportStarting(string databaseName)
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
-                this.Invoke(new HandleDBExportStartingEventHandler(HandleDBExportStartingEvent), databaseName);
+                Invoke(new HandleDBExportStartingEventHandler(HandleDBExportStartingEvent), databaseName);
             }
             else
             {
