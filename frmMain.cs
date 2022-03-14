@@ -796,8 +796,7 @@ namespace DB_Schema_Export_Tool
                 lstObjectTypesToScript.Items.Insert((int)SchemaObjectTypeConstants.Synonyms, "Synonyms");
 
                 // Auto-select all of the options
-                int index;
-                for (index = 0; index < lstObjectTypesToScript.Items.Count; index++)
+                for (var index = 0; index < lstObjectTypesToScript.Items.Count; index++)
                 {
                     lstObjectTypesToScript.SetSelected(index, true);
                 }

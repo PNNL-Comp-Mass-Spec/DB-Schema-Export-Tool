@@ -897,9 +897,8 @@ namespace DB_Schema_Export_Tool
                     if (lineParts.Length >= 5)
                     {
                         // One or more primary key columns
-                        var primaryKeyColumns = lineParts[4].Trim().Split(',');
 
-                        foreach (var primaryKeyColumn in primaryKeyColumns)
+                        foreach (var primaryKeyColumn in lineParts[4].Trim().Split(','))
                         {
                             tableInfo.PrimaryKeyColumns.Add(primaryKeyColumn);
                         }
@@ -1395,9 +1394,7 @@ namespace DB_Schema_Export_Tool
                 targetDirectory.Create();
             }
 
-            var filesToCopy = sourceDirectory.GetFiles().ToList();
-
-            foreach (var sourceFile in filesToCopy)
+            foreach (var sourceFile in sourceDirectory.GetFiles())
             {
                 if (sourceFile.Name.StartsWith("x_", StringComparison.OrdinalIgnoreCase) ||
                     sourceFile.Name.StartsWith("t_tmp_", StringComparison.OrdinalIgnoreCase) ||

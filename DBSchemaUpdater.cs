@@ -427,8 +427,7 @@ namespace DB_Schema_Export_Tool
                 {
                     OnDebugEvent("Appending DDL for column {0}: {1}", currentColumnName, dataLine);
 
-                    var updatedDDL = tableColumnDDL[currentColumnName] + Environment.NewLine + dataLine;
-                    tableColumnDDL[currentColumnName] = updatedDDL;
+                    tableColumnDDL[currentColumnName] = tableColumnDDL[currentColumnName] + Environment.NewLine + dataLine;
 
                     continue;
                 }

@@ -1983,9 +1983,7 @@ namespace DB_Schema_Export_Tool
 
             var rowSplitter = new Regex(@"\r\n", RegexOptions.Compiled);
 
-            var scriptInfo = mTableDataScripter.Script(smoObjectArray);
-
-            foreach (var item in scriptInfo)
+            foreach (var item in mTableDataScripter.Script(smoObjectArray))
             {
                 if (!item.StartsWith("CREATE TABLE"))
                     continue;

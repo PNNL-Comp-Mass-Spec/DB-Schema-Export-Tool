@@ -681,9 +681,7 @@ namespace DB_Schema_Export_Tool
 
             // See if any of the columns in the table is an identity column
 
-            var columnSchema = reader.GetColumnSchema();
-
-            foreach (var dbColumn in columnSchema)
+            foreach (var dbColumn in reader.GetColumnSchema())
             {
                 if (dbColumn.IsIdentity == true)
                 {
@@ -1192,10 +1190,8 @@ namespace DB_Schema_Export_Tool
                         {
                             if (reader.HasRows && reader.Read())
                             {
-                                // var tableName = reader.GetString(0);
-                                var approximateRowCount = reader.GetInt64(1);
-
-                                databaseTableInfo[item] = approximateRowCount;
+                                // Read the approximate row count
+                                databaseTableInfo[item] = reader.GetInt64(1);
                             }
                         }
 
@@ -1226,8 +1222,8 @@ namespace DB_Schema_Export_Tool
                         {
                             if (reader.HasRows && reader.Read())
                             {
-                                var rowCount = reader.GetInt64(0);
-                                databaseTableInfo[item] = rowCount;
+                                // Read the row count
+                                databaseTableInfo[item] = reader.GetInt64(0);
                             }
                         }
 
@@ -2039,15 +2035,13 @@ namespace DB_Schema_Export_Tool
                         continue;
                     }
 
-                    var targetScriptFile = ProcessAndStoreCachedLinesTargetScriptFile(
+                    previousTargetScriptFile = ProcessAndStoreCachedLinesTargetScriptFile(
                         scriptInfoByObject,
                         databaseName,
                         cachedLines,
                         currentObject,
                         previousTargetScriptFile,
                         ref unhandledScriptingCommands);
-
-                    previousTargetScriptFile = targetScriptFile;
 
                     UpdateCachedObjectInfo(match, currentObject);
                     cachedLines = new List<string> {

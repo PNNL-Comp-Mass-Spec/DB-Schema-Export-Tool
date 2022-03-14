@@ -1607,9 +1607,7 @@ namespace DB_Schema_Export_Tool
 
         private void ShowDatabaseWarnings(Dictionary<string, SortedSet<string>> warningsByDatabase)
         {
-            var query = from item in warningsByDatabase.Keys orderby item select item;
-
-            foreach (var databaseName in query)
+            foreach (var databaseName in from item in warningsByDatabase.Keys orderby item select item)
             {
                 var warningMessages = warningsByDatabase[databaseName];
 
