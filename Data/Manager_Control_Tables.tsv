@@ -6,6 +6,9 @@ SchemaChangeLog	public	<skip>
 T_Auth_Database_LoginsAndRoles	public	<skip>		
 T_Auth_Database_Permissions	public	<skip>		
 T_Auth_Server_Logins	public	<skip>		
+T_Usage_Log	public	<skip>
+T_Usage_Stats	public	<skip>
+
 V_MgrTypeListByParam	public	<skip>		
 V_Tuning_ExecRequests	public	<skip>		
 V_Tuning_IndexUsage	public	<skip>		
