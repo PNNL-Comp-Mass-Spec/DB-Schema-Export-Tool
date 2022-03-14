@@ -32,6 +32,7 @@ namespace DB_Schema_Export_Tool
         protected void LogDebug(string statusMessage, bool writeToLog = true)
         {
             OnDebugEvent(statusMessage);
+
             if (mOptions.LogMessagesToFile && mOptions.Trace)
                 LogTools.LogDebug(statusMessage, writeToLog);
         }
@@ -44,6 +45,7 @@ namespace DB_Schema_Export_Tool
         protected void LogError(string errorMessage, bool logToDb = false)
         {
             OnErrorEvent(errorMessage);
+
             if (mOptions.LogMessagesToFile)
                 LogTools.LogError(errorMessage, null, logToDb);
         }
@@ -56,6 +58,7 @@ namespace DB_Schema_Export_Tool
         protected void LogError(string errorMessage, Exception ex)
         {
             OnErrorEvent(errorMessage, ex);
+
             if (mOptions.LogMessagesToFile)
                 LogTools.LogError(errorMessage, ex);
         }
@@ -69,6 +72,7 @@ namespace DB_Schema_Export_Tool
         public void LogMessage(string statusMessage, bool isError = false, bool writeToLog = true)
         {
             OnStatusEvent(statusMessage);
+
             if (mOptions.LogMessagesToFile)
                 LogTools.LogMessage(statusMessage, isError, writeToLog);
         }
@@ -81,6 +85,7 @@ namespace DB_Schema_Export_Tool
         protected void LogWarning(string warningMessage, bool logToDb = false)
         {
             OnWarningEvent(warningMessage);
+
             if (mOptions.LogMessagesToFile)
                 LogTools.LogWarning(warningMessage, logToDb);
         }

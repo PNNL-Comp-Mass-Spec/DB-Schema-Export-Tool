@@ -155,6 +155,7 @@ namespace DB_Schema_Export_Tool
             Application.DoEvents();
             var eResponse = MessageBox.Show("Are you sure you want to abort processing?", "Abort", MessageBoxButtons.YesNoCancel,
                                             MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
+
             if (eResponse == DialogResult.Yes)
             {
                 mDBSchemaExporter.AbortProcessingNow();
@@ -225,6 +226,7 @@ namespace DB_Schema_Export_Tool
             var selectedTableNames = GetSelectedListboxItems(lstTableNamesToExportData);
 
             var tablesForDataExport = new List<TableDataExportInfo>();
+
             foreach (var item in selectedTableNames)
             {
                 var tableInfo = new TableDataExportInfo(item) {
@@ -260,6 +262,7 @@ namespace DB_Schema_Export_Tool
                     matchedTableItem = item.Key;
 
                     var tableRowCount = item.Value;
+
                     if (tableRowCount >= DBSchemaExporterBase.MAX_ROWS_DATA_TO_EXPORT)
                     {
                         var msg = string.Format("Warning, table {0} has {1} rows. Are you sure you want to export data from it?",
@@ -374,6 +377,7 @@ namespace DB_Schema_Export_Tool
             };
 
             var filePath = mXmlSettingsFilePath;
+
             if (filePath.Length > 0)
             {
                 try
@@ -394,6 +398,7 @@ namespace DB_Schema_Export_Tool
             fileDialog.Title = "Specify file to load options from";
 
             fileDialog.ShowDialog();
+
             if (fileDialog.FileName.Length > 0)
             {
                 mXmlSettingsFilePath = fileDialog.FileName;
@@ -490,6 +495,7 @@ namespace DB_Schema_Export_Tool
             };
 
             var filePath = mXmlSettingsFilePath;
+
             if (filePath.Length > 0)
             {
                 try
@@ -537,6 +543,7 @@ namespace DB_Schema_Export_Tool
                 {
                     xmlFile.SetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowWidth", Width);
                     xmlFile.SetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowHeight", Height - 20);
+
                     if (!saveWindowDimensionsOnly)
                     {
                         xmlFile.SetParam(XML_SECTION_DATABASE_SETTINGS, "ServerName", txtServerName.Text);
@@ -590,6 +597,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 TableNameSortModeConstants sortOrder;
+
                 if (cboTableNamesToExportSortOrder.SelectedIndex >= 0)
                 {
                     sortOrder = (TableNameSortModeConstants)cboTableNamesToExportSortOrder.SelectedIndex;
@@ -600,6 +608,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 List<KeyValuePair<TableDataExportInfo, long>> sortedTables;
+
                 if (sortOrder == TableNameSortModeConstants.RowCount)
                 {
                     // Sort on RowCount
@@ -638,6 +647,7 @@ namespace DB_Schema_Export_Tool
 
                 // Cache the currently selected names so that we can re-highlight them below
                 var selectedTableNamesSaved = new SortedSet<string>();
+
                 foreach (var item in lstTableNamesToExportData.SelectedItems)
                 {
                     selectedTableNamesSaved.Add(StripRowCountFromTableName(item.ToString()));
@@ -653,9 +663,11 @@ namespace DB_Schema_Export_Tool
                     var tableName = tableItem.Key.SourceTableName;
 
                     string textForRow;
+
                     if (mCachedTableListIncludesRowCounts)
                     {
                         textForRow = tableName + ROW_COUNT_SEPARATOR + ValueToTextEstimate(tableItem.Value);
+
                         if (tableItem.Value == 1)
                         {
                             textForRow += " row)";
@@ -673,6 +685,7 @@ namespace DB_Schema_Export_Tool
                     var itemIndex = lstTableNamesToExportData.Items.Add(textForRow);
 
                     var highlightCurrentRow = false;
+
                     if (selectedTableNamesSaved.Contains(tableName))
                     {
                         // User had previously highlighted this table name; re-highlight it
@@ -809,6 +822,7 @@ namespace DB_Schema_Export_Tool
         private void ScriptDBSchemaObjects()
         {
             string message;
+
             if (mWorking)
             {
                 return;
@@ -903,6 +917,7 @@ namespace DB_Schema_Export_Tool
                     mThread.Start();
 
                     Thread.Sleep(THREAD_WAIT_MSEC);
+
                     while (mThread.ThreadState == ThreadState.Running ||
                            mThread.ThreadState == ThreadState.AbortRequested ||
                            mThread.ThreadState == ThreadState.WaitSleepJoin ||
@@ -918,7 +933,6 @@ namespace DB_Schema_Export_Tool
                             }
                             // else if (mRequestCancel)
                             //    mThread.Abort();
-
                         }
                         catch (Exception)
                         {
@@ -933,6 +947,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 Application.DoEvents();
+
                 if (!mSchemaExportSuccess || mDBSchemaExporter.ErrorCode != DBSchemaExporterBase.DBSchemaExportErrorCodes.NoError)
                 {
                     message = string.Format("Error exporting the schema objects (ErrorCode={0}):\n{1}",
@@ -1000,6 +1015,7 @@ namespace DB_Schema_Export_Tool
             for (var index = 0; index < lstDatabasesToProcess.Items.Count; index++)
             {
                 var currentDatabase = lstDatabasesToProcess.Items[index].ToString().ToLower();
+
                 if (sortedDBs.BinarySearch(currentDatabase) >= 0)
                 {
                     lstDatabasesToProcess.SetSelected(index, true);
@@ -1014,6 +1030,7 @@ namespace DB_Schema_Export_Tool
                 if (confirm)
                 {
                     var eResponse = MessageBox.Show("Are you sure you want to reset all settings to their default values?", "Reset to Defaults", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
+
                     if (eResponse != DialogResult.Yes)
                     {
                         return;
@@ -1173,6 +1190,7 @@ namespace DB_Schema_Export_Tool
         private void StripRowCountsFromTableNames(IList<string> tableNames)
         {
             int index;
+
             if (tableNames == null)
             {
                 return;
@@ -1192,6 +1210,7 @@ namespace DB_Schema_Export_Tool
             }
 
             var charIndex = tableName.IndexOf(ROW_COUNT_SEPARATOR, StringComparison.Ordinal);
+
             if (charIndex > 0)
             {
                 return tableName.Substring(0, charIndex);
@@ -1220,6 +1239,7 @@ namespace DB_Schema_Export_Tool
 
                 // Cache the currently selected names so that we can re-highlight them below
                 var selectedDatabaseNamesSaved = new SortedSet<string>();
+
                 foreach (var item in lstDatabasesToProcess.SelectedItems)
                 {
                     selectedDatabaseNamesSaved.Add(item.ToString());
@@ -1280,6 +1300,7 @@ namespace DB_Schema_Export_Tool
         private void UpdateProgressBar(ProgressBar targetBar, float percentComplete)
         {
             var roundedValue = (int)percentComplete;
+
             if (roundedValue < targetBar.Minimum)
             {
                 roundedValue = targetBar.Minimum;
@@ -1435,6 +1456,7 @@ namespace DB_Schema_Export_Tool
             // For data over 1 million, displays as x.x million
 
             var valueAbs = Math.Abs(value);
+
             if (valueAbs < 100)
             {
                 return value.ToString();
@@ -1465,6 +1487,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 UpdateSchemaExportOptions();
+
                 if (mDBSchemaExporter == null)
                 {
                     InitializeDBSchemaExporter();
@@ -1475,6 +1498,7 @@ namespace DB_Schema_Export_Tool
                 if (!connected && informUserOnFailure)
                 {
                     var message = "Error connecting to server " + mSchemaExportOptions.ServerName;
+
                     if (mDBSchemaExporter.StatusMessage.Length > 0)
                     {
                         MessageBox.Show(message + "; " + mDBSchemaExporter.StatusMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
@@ -1504,6 +1528,7 @@ namespace DB_Schema_Export_Tool
             if (mDBSchemaExporter != null)
             {
                 mDBSchemaExporter.TogglePause();
+
                 if (mDBSchemaExporter.PauseStatus == DBSchemaExporterBase.PauseStatusConstants.UnpauseRequested
                     || mDBSchemaExporter.PauseStatus == DBSchemaExporterBase.PauseStatusConstants.Unpaused)
                 {
@@ -1707,6 +1732,7 @@ namespace DB_Schema_Export_Tool
             else
             {
                 string formattedMessage;
+
                 if (message != null && ex != null && message.IndexOf(ex.Message, StringComparison.OrdinalIgnoreCase) < 0)
                 {
                     formattedMessage = message + ": " + ex.Message;

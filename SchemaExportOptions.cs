@@ -176,6 +176,7 @@ namespace DB_Schema_Export_Tool
             set
             {
                 DBUser = value;
+
                 if (!string.IsNullOrWhiteSpace(value))
                 {
                     PostgreSQL = true;
@@ -327,6 +328,7 @@ namespace DB_Schema_Export_Tool
                 foreach (var tableName in value.Split(','))
                 {
                     var trimmedName = tableName.Trim();
+
                     if (!TableNameFilterSet.Contains(trimmedName))
                     {
                         TableNameFilterSet.Add(trimmedName);
@@ -355,6 +357,7 @@ namespace DB_Schema_Export_Tool
                 foreach (var schemaName in value.Split(','))
                 {
                     var trimmedName = schemaName.Trim();
+
                     if (!SchemaNameSkipList.Contains(trimmedName))
                     {
                         SchemaNameSkipList.Add(trimmedName);
@@ -645,6 +648,7 @@ namespace DB_Schema_Export_Tool
             if (!PostgreSQL)
             {
                 Console.WriteLine(" {0,-48} {1}", "Server type:", "Microsoft SQL Server");
+
                 if (string.IsNullOrWhiteSpace(DBUser))
                 {
                     Console.WriteLine(" {0,-48} {1}", "Database user:", "<integrated authentication>");
@@ -652,6 +656,7 @@ namespace DB_Schema_Export_Tool
                 else
                 {
                     Console.WriteLine(" {0,-48} {1}", "Database user:", DBUser);
+
                     if (string.IsNullOrWhiteSpace(DBUserPassword))
                         Console.WriteLine(" {0,-48} {1}", "Password:", "Error: undefined");
                     else
@@ -723,6 +728,7 @@ namespace DB_Schema_Export_Tool
             if (!string.IsNullOrWhiteSpace(TableDataToExportFile))
             {
                 Console.WriteLine(" {0,-48} {1}", "File with table names for exporting data:", PathUtils.CompactPathString(TableDataToExportFile, 80));
+
                 if (!PostgreSQL)
                 {
                     Console.WriteLine(" {0,-48} {1}", "Default value for the PgInsert column:", PgInsertTableData);
@@ -931,6 +937,7 @@ namespace DB_Schema_Export_Tool
                 {
                     // Make sure the user didn't specify a text file
                     var candidateFile = new FileInfo(TableNameFilterSet.First());
+
                     if (candidateFile.Exists)
                     {
                         errorMessage = "The -TableFilterList parameter must be the name of a table; not a file on disk";

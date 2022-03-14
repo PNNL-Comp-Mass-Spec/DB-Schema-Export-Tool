@@ -401,6 +401,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var regExMatchers = new List<Regex>();
+
                 foreach (var regexItem in TableNameRegexToAutoExportData)
                 {
                     regExMatchers.Add(new Regex(regexItem, regExOptions));
@@ -646,6 +647,7 @@ namespace DB_Schema_Export_Tool
             while (true)
             {
                 var match = mCamelCaseMatcher.Match(updatedName);
+
                 if (!match.Success)
                     break;
 
@@ -669,6 +671,7 @@ namespace DB_Schema_Export_Tool
             var dateFilterApplied = tablesToExportData.Any(item => item.FilterByDate);
 
             string shellScriptFile;
+
             if (mOptions.TableNameFilterSet.Count == 1)
             {
                 shellScriptFile = string.Format("LoadDataTable_{0}.sh", CleanNameForOS(mOptions.TableNameFilterSet.First()));
@@ -705,9 +708,11 @@ namespace DB_Schema_Export_Tool
             foreach (var scriptFileName in workingParams.DataLoadScriptFiles)
             {
                 var lastSlashIndex = scriptFileName.LastIndexOf('/');
+
                 if (lastSlashIndex > 0)
                 {
                     var parentDirectory = scriptFileName.Substring(0, lastSlashIndex);
+
                     if (!subdirectories.Contains(parentDirectory))
                     {
                         writer.WriteLine();
@@ -783,6 +788,7 @@ namespace DB_Schema_Export_Tool
                     var maxRowsToExport = tableItem.Value;
 
                     var success = ExportDBTableData(databaseName, tableInfo, maxRowsToExport, workingParams);
+
                     if (!success)
                     {
                         return false;
@@ -791,6 +797,7 @@ namespace DB_Schema_Export_Tool
                     workingParams.ProcessCount++;
 
                     CheckPauseStatus();
+
                     if (mAbortProcessing)
                     {
                         OnWarningEvent("Aborted processing");
@@ -890,6 +897,7 @@ namespace DB_Schema_Export_Tool
                             var bytData = (byte[])(Array)columnValues[columnIndex];
                             delimitedRowValues.Append("0x");
                             var dataFound = false;
+
                             foreach (var value in bytData)
                             {
                                 if (dataFound || value != 0)
@@ -1119,6 +1127,7 @@ namespace DB_Schema_Export_Tool
             if (columnMapInfo?.IsColumnDefined(currentColumnName) == true)
             {
                 targetColumnName = columnMapInfo.GetTargetColumnName(currentColumnName);
+
                 if (targetColumnName.Equals("<skip>", StringComparison.OrdinalIgnoreCase))
                 {
                     // Do not include this column in the output file
@@ -1424,6 +1433,7 @@ namespace DB_Schema_Export_Tool
 
                     processedDBList.Add(currentDB);
                     bool success;
+
                     if (databasesOnServer.TryGetValue(currentDB.ToLower(), out var currentDbName))
                     {
                         currentDB = currentDbName;
@@ -1447,6 +1457,7 @@ namespace DB_Schema_Export_Tool
                     }
 
                     CheckPauseStatus();
+
                     if (mAbortProcessing)
                     {
                         OnWarningEvent("Aborted processing");
@@ -1495,6 +1506,7 @@ namespace DB_Schema_Export_Tool
             }
 
             var validated = ValidateOptionsToScriptServerAndDBObjects(databaseList);
+
             if (!validated)
                 return false;
 
@@ -1521,6 +1533,7 @@ namespace DB_Schema_Export_Tool
             if (mOptions.ExportServerInfo && !mOptions.NoSchema)
             {
                 var success = ScriptServerObjects();
+
                 if (!success)
                 {
                     return false;
@@ -1535,6 +1548,7 @@ namespace DB_Schema_Export_Tool
             if (databaseList?.Count > 0)
             {
                 var success = ScriptDBObjectsAndData(databaseList, tablesForDataExport);
+
                 if (!success)
                 {
                     return false;
@@ -1660,6 +1674,7 @@ namespace DB_Schema_Export_Tool
         public bool SkipTableForDataExport(TableDataExportInfo tableInfo)
         {
             var skipTable = SkipTableForDataExport(mOptions, tableInfo);
+
             if (skipTable)
                 return true;
 
@@ -1724,6 +1739,7 @@ namespace DB_Schema_Export_Tool
             ShowTrace(string.Format("Storing {0} default RegEx specs for finding tables for data export", tableNameRegExSpecs.Count));
 
             TableNameRegexToAutoExportData.Clear();
+
             foreach (var item in tableNameRegExSpecs)
             {
                 TableNameRegexToAutoExportData.Add(item);
@@ -1739,6 +1755,7 @@ namespace DB_Schema_Export_Tool
             ShowTrace(string.Format("Storing {0} default names for finding tables for data export", tableNames.Count));
 
             TableNamesToAutoExportData.Clear();
+
             foreach (var item in tableNames)
             {
                 if (!TableNamesToAutoExportData.Contains(item))
@@ -1977,6 +1994,7 @@ namespace DB_Schema_Export_Tool
                 foreach (var item in scriptInfo)
                 {
                     writer.WriteLine(item);
+
                     if (autoAddGoStatements)
                     {
                         writer.WriteLine("GO");

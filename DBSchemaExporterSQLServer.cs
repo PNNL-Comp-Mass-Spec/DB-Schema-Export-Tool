@@ -95,6 +95,7 @@ namespace DB_Schema_Export_Tool
                 return;
 
             var success = ConnectToServer();
+
             if (!success)
             {
                 OnWarningEvent("Unable to connect to server " + mOptions.ServerName);
@@ -181,9 +182,11 @@ namespace DB_Schema_Export_Tool
             var dtTables = currentDatabase.EnumObjects(DatabaseObjectTypes.Table, SortOrder.Name);
 
             var tablesInDatabase = new List<TableDataExportInfo>();
+
             foreach (DataRow item in dtTables.Rows)
             {
                 var schemaName = item["Schema"].ToString();
+
                 if (SkipSchema(schemaName))
                     continue;
 
@@ -230,6 +233,7 @@ namespace DB_Schema_Export_Tool
 
                     var indexStart = 0;
                     int finalSearchIndex;
+
                     if (removeAllScriptDateOccurrences)
                     {
                         finalSearchIndex = currentLine.Length - 1;
@@ -239,6 +243,7 @@ namespace DB_Schema_Export_Tool
                         // Find the first CrLf after the first non-blank line in currentLine
                         // However, if the script starts with several SET statements, we need to skip those lines
                         var objectCommentStartIndex = currentLine.IndexOf(COMMENT_START_TEXT + "Object:", StringComparison.Ordinal);
+
                         if (currentLine.Trim().StartsWith("SET") && objectCommentStartIndex > 0)
                         {
                             indexStart = objectCommentStartIndex;
@@ -268,6 +273,7 @@ namespace DB_Schema_Export_Tool
                         if (indexStartCurrent > 0 && indexStartCurrent <= finalSearchIndex)
                         {
                             var indexEndCurrent = currentLine.IndexOf(COMMENT_END_TEXT_SHORT, indexStartCurrent, StringComparison.Ordinal);
+
                             if (indexEndCurrent > indexStartCurrent && indexEndCurrent <= finalSearchIndex)
                             {
                                 currentLine = currentLine.Substring(0, indexStartCurrent).TrimEnd(whitespaceChars) + COMMENT_END_TEXT +
@@ -282,9 +288,11 @@ namespace DB_Schema_Export_Tool
                     if (removeDuplicateHeaderLine)
                     {
                         var firstCrLf = currentLine.IndexOf("\r\n", 0, StringComparison.Ordinal);
+
                         if (firstCrLf > 0 && firstCrLf < currentLine.Length)
                         {
                             var nextCrLf = currentLine.IndexOf("\r\n", firstCrLf + 1, StringComparison.Ordinal);
+
                             if (nextCrLf > firstCrLf)
                             {
                                 if (currentLine.Substring(0, firstCrLf) ==
@@ -414,6 +422,7 @@ namespace DB_Schema_Export_Tool
             }
 
             var isValid = ValidateOutputDirectoryForDatabaseExport(databaseName, workingParams);
+
             if (!isValid)
             {
                 return false;
@@ -442,6 +451,7 @@ namespace DB_Schema_Export_Tool
                 else
                 {
                     tablesToExportData = new Dictionary<TableDataExportInfo, long>();
+
                     foreach (var item in tablesForDataExport)
                     {
                         if (SkipTableForDataExport(item))
@@ -468,13 +478,16 @@ namespace DB_Schema_Export_Tool
 
                 // Count the number of objects that will be exported
                 workingParams.CountObjectsOnly = true;
+
                 var successCounting = ExportDBObjectsWork(mCurrentDatabase, scriptOptions, workingParams);
+
                 if (!successCounting)
                     return false;
 
                 workingParams.ProcessCountExpected = workingParams.ProcessCount;
 
                 bool success;
+
                 if (mOptions.PreviewExport)
                 {
                     Console.WriteLine();
@@ -496,6 +509,7 @@ namespace DB_Schema_Export_Tool
                     OnDebugEvent("Scripting {0} object{1}", workingParams.ProcessCountExpected, pluralAddon);
 
                     workingParams.CountObjectsOnly = false;
+
                     if (workingParams.ProcessCount > 0)
                     {
                         success = ExportDBObjectsWork(mCurrentDatabase, scriptOptions, workingParams);
@@ -538,6 +552,7 @@ namespace DB_Schema_Export_Tool
             if (mOptions.ScriptingOptions.ExportDBSchemasAndRoles && mOptions.TableNameFilterSet.Count == 0)
             {
                 var success = ExportDBSchemasAndRoles(currentDatabase, scriptOptions, workingParams);
+
                 if (!success)
                     return false;
 
@@ -550,6 +565,7 @@ namespace DB_Schema_Export_Tool
             if (mOptions.ScriptingOptions.ExportTables)
             {
                 var success = ExportDBTables(currentDatabase, scriptOptions, workingParams);
+
                 if (!success)
                     return false;
 
@@ -571,6 +587,7 @@ namespace DB_Schema_Export_Tool
                 mOptions.ScriptingOptions.ExportSynonyms)
             {
                 var success = ExportDBViewsProceduresAndUDFs(currentDatabase, scriptOptions, workingParams);
+
                 if (!success)
                     return false;
 
@@ -583,6 +600,7 @@ namespace DB_Schema_Export_Tool
             if (mOptions.ScriptingOptions.ExportUserDefinedDataTypes)
             {
                 var success = ExportDBUserDefinedDataTypes(currentDatabase, scriptOptions, workingParams);
+
                 if (!success)
                     return false;
 
@@ -595,6 +613,7 @@ namespace DB_Schema_Export_Tool
             if (mOptions.ScriptingOptions.ExportUserDefinedTypes)
             {
                 var success = ExportDBUserDefinedTypes(currentDatabase, scriptOptions, workingParams);
+
                 if (!success)
                     return false;
             }
@@ -612,6 +631,7 @@ namespace DB_Schema_Export_Tool
                 ShowTrace("Counting non built-in schemas and roles");
 
                 workingParams.ProcessCount++;
+
                 if (SqlServer2005OrNewer(currentDatabase))
                 {
                     for (var index = 0; index < currentDatabase.Schemas.Count; index++)
@@ -649,6 +669,7 @@ namespace DB_Schema_Export_Tool
             }
 
             workingParams.ProcessCount++;
+
             if (SqlServer2005OrNewer(currentDatabase))
             {
                 for (var index = 0; index < currentDatabase.Schemas.Count; index++)
@@ -665,6 +686,7 @@ namespace DB_Schema_Export_Tool
                     WriteTextToFile(workingParams.OutputDirectory, "Schema_" + currentDatabase.Schemas[index].Name, scriptInfo);
                     workingParams.ProcessCount++;
                     CheckPauseStatus();
+
                     if (mAbortProcessing)
                     {
                         OnWarningEvent("Aborted processing");
@@ -682,6 +704,7 @@ namespace DB_Schema_Export_Tool
                 WriteTextToFile(workingParams.OutputDirectory, "Role_" + currentDatabase.Roles[index].Name, scriptInfo);
                 workingParams.ProcessCount++;
                 CheckPauseStatus();
+
                 if (mAbortProcessing)
                 {
                     OnWarningEvent("Aborted processing");
@@ -699,9 +722,11 @@ namespace DB_Schema_Export_Tool
                 ShowTrace("Counting Tables");
 
                 var tableCountPassingFilters = 0;
+
                 foreach (Table databaseTable in currentDatabase.Tables)
                 {
                     var includeTable = TablePassesFilters(workingParams, databaseTable, false);
+
                     if (includeTable)
                         tableCountPassingFilters++;
                 }
@@ -725,6 +750,7 @@ namespace DB_Schema_Export_Tool
             foreach (Table databaseTable in currentDatabase.Tables)
             {
                 var includeTable = TablePassesFilters(workingParams, databaseTable, true);
+
                 if (!includeTable)
                     continue;
 
@@ -743,6 +769,7 @@ namespace DB_Schema_Export_Tool
                 tableExportCount++;
                 workingParams.ProcessCount++;
                 CheckPauseStatus();
+
                 if (mAbortProcessing)
                 {
                     OnWarningEvent("Aborted processing");
@@ -908,9 +935,11 @@ namespace DB_Schema_Export_Tool
                     case 0:
                         // Views
                         objectType = "View";
+
                         if (mOptions.ScriptingOptions.ExportViews)
                         {
                             sql = "SELECT table_schema, table_name FROM INFORMATION_SCHEMA.tables WHERE table_type = 'view' ";
+
                             if (!mOptions.ScriptingOptions.IncludeSystemObjects)
                             {
                                 sql += " AND table_name NOT IN ('sysconstraints', 'syssegments') ";
@@ -923,9 +952,11 @@ namespace DB_Schema_Export_Tool
                     case 1:
                         // Stored procedures
                         objectType = "Stored procedure";
+
                         if (mOptions.ScriptingOptions.ExportStoredProcedures)
                         {
                             sql = "SELECT routine_schema, routine_name FROM INFORMATION_SCHEMA.routines WHERE routine_type = 'procedure'";
+
                             if (!mOptions.ScriptingOptions.IncludeSystemObjects)
                             {
                                 sql += " AND routine_name NOT LIKE 'dt[_]%' ";
@@ -938,6 +969,7 @@ namespace DB_Schema_Export_Tool
                     case 2:
                         // User defined functions
                         objectType = "User defined function";
+
                         if (mOptions.ScriptingOptions.ExportUserDefinedFunctions)
                         {
                             sql = "SELECT routine_schema, routine_name FROM INFORMATION_SCHEMA.routines " +
@@ -949,6 +981,7 @@ namespace DB_Schema_Export_Tool
                     case 3:
                         // Synonyms
                         objectType = "Synonym";
+
                         if (mOptions.ScriptingOptions.ExportSynonyms)
                         {
                             sql = "SELECT B.name AS SchemaName, A.name FROM sys.synonyms A " +
@@ -961,6 +994,7 @@ namespace DB_Schema_Export_Tool
                 if (string.IsNullOrWhiteSpace(sql))
                     continue;
 
+                // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
                 if (workingParams.CountObjectsOnly)
                 {
                     ShowTrace(string.Format("Counting {0}s", objectType));
@@ -972,6 +1006,7 @@ namespace DB_Schema_Export_Tool
 
                 var dtStartTime = DateTime.UtcNow;
                 var queryResults = currentDatabase.ExecuteWithResults(sql);
+
                 if (workingParams.CountObjectsOnly)
                 {
                     // In queryResults.Tables[0].Rows, the first column is the schema name and the second column is the object name
@@ -1041,6 +1076,7 @@ namespace DB_Schema_Export_Tool
 
                         workingParams.ProcessCount++;
                         CheckPauseStatus();
+
                         if (mAbortProcessing)
                         {
                             OnWarningEvent("Aborted processing");
@@ -1111,6 +1147,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 Table databaseTable;
+
                 if (mCurrentDatabase.Tables.Contains(tableInfo.SourceTableName))
                 {
                     databaseTable = mCurrentDatabase.Tables[tableInfo.SourceTableName];
@@ -1132,6 +1169,7 @@ namespace DB_Schema_Export_Tool
                 OnProgressUpdate("Exporting data from " + tableInfo.SourceTableName, percentComplete);
 
                 string nullValueFlag;
+
                 if (mOptions.PgDumpTableData && !tableInfo.UsePgInsert)
                 {
                     nullValueFlag = @"\N";
@@ -1151,9 +1189,11 @@ namespace DB_Schema_Export_Tool
                 var identityColumnIndex = -1;
 
                 var index = -1;
+
                 foreach (Column currentColumn in databaseTable.Columns)
                 {
                     index++;
+
                     if (!currentColumn.Identity)
                         continue;
 
@@ -1165,6 +1205,7 @@ namespace DB_Schema_Export_Tool
 
                 // Export the data from databaseTable, possibly limiting the number of rows to export
                 var sql = "SELECT";
+
                 if (maxRowsToExport > 0)
                 {
                     sql += " TOP " + maxRowsToExport;
@@ -1442,6 +1483,7 @@ namespace DB_Schema_Export_Tool
                 // Assure that the last line in setStatements does not end with a comma
                 // This would be the case if the final column for the table is a <skip> column or an identity column
                 var mostRecentLine = setStatements.LastOrDefault() ?? string.Empty;
+
                 if (mostRecentLine.EndsWith(","))
                 {
                     setStatements[setStatements.Count - 1] = mostRecentLine.Substring(0, mostRecentLine.Length - 1);
@@ -1523,6 +1565,7 @@ namespace DB_Schema_Export_Tool
             foreach (DataRow currentRow in queryResults.Tables[0].Rows)
             {
                 delimitedRowValues.Clear();
+
                 if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData && !usingPgInsert)
                 {
                     delimitedRowValues.Append(insertIntoLine);
@@ -1553,10 +1596,12 @@ namespace DB_Schema_Export_Tool
                 }
 
                 ExportDBTableDataRow(writer, dataExportParams, delimitedRowValues, columnCount, columnValues);
+
                 if (usingPgInsert)
                     commandAndLfRequired = true;
 
                 rowCountWritten++;
+
                 if (mOptions.PgInsertChunkSize > 0 && rowCountWritten > mOptions.PgInsertChunkSize)
                 {
                     dataExportParams.FooterWriteRequired = true;
@@ -1825,6 +1870,7 @@ namespace DB_Schema_Export_Tool
                 var success = WriteTextToFile(outputDirectoryPathCurrentServer, "Login_" + currentLogin, scriptInfo);
 
                 CheckPauseStatus();
+
                 if (mAbortProcessing)
                 {
                     OnWarningEvent("Aborted processing");
@@ -1864,6 +1910,7 @@ namespace DB_Schema_Export_Tool
                 var success = WriteTextToFile(outputDirectoryPathCurrentServer, "AgentJob_" + currentJob, scriptInfo);
 
                 CheckPauseStatus();
+
                 if (mAbortProcessing)
                 {
                     OnWarningEvent("Aborted processing");
@@ -1998,6 +2045,7 @@ namespace DB_Schema_Export_Tool
 
                 // Extract the column name from the square brackets
                 var columnMatch = columnNameMatcher.Match(currentLine);
+
                 if (columnMatch.Success)
                 {
                     primaryKeyColumns.Add(columnMatch.Groups["ColumnName"].Value);
@@ -2031,6 +2079,7 @@ namespace DB_Schema_Export_Tool
                 OnStatusEvent("Obtaining list of databases on " + mCurrentServerInfo.ServerName);
 
                 var databaseNames = GetServerDatabasesCurrentConnection();
+
                 if (!mAbortProcessing)
                 {
                     OnProgressUpdate("Done", 100);
@@ -2062,6 +2111,7 @@ namespace DB_Schema_Export_Tool
         {
             var databaseNames = new List<string>();
             var databases = mSqlServer.Databases;
+
             if (databases.Count <= 0)
                 return databaseNames;
 
@@ -2130,6 +2180,7 @@ namespace DB_Schema_Export_Tool
                 var currentDatabase = mSqlServer.Databases[databaseName];
 
                 var databaseTables = currentDatabase.Tables;
+
                 if (databaseTables.Count <= 0)
                     return databaseTableInfo;
 
@@ -2169,6 +2220,7 @@ namespace DB_Schema_Export_Tool
         private string GetTargetColumnNames(ColumnMapInfo columnMapInfo, IEnumerable<string> sourceColumnNames, out List<string> targetColumnNames)
         {
             targetColumnNames = new List<string>();
+
             foreach (var columnName in sourceColumnNames)
             {
                 var targetColumnName = GetTargetColumnName(columnMapInfo, columnName);
@@ -2276,6 +2328,7 @@ namespace DB_Schema_Export_Tool
             FileSystemInfo outputDirectory)
         {
             var processCount = 0;
+
             foreach (Schema schemaItem in schemaCollection)
             {
                 if (!mObjectNameMatcher.IsMatch(schemaItem.Name))
@@ -2316,6 +2369,7 @@ namespace DB_Schema_Export_Tool
             try
             {
                 var serverInfoOutputDirectory = GetServerInfoOutputDirectory(sqlServer.Name);
+
                 if (serverInfoOutputDirectory == null)
                 {
                     return false;
@@ -2327,6 +2381,7 @@ namespace DB_Schema_Export_Tool
 
                 // Export the overall server configuration and options (this is quite fast, so we won't increment mProgressStep after this)
                 ExportSQLServerConfiguration(sqlServer, scriptOptions, serverInfoOutputDirectory);
+
                 if (mAbortProcessing)
                 {
                     return true;
@@ -2371,6 +2426,7 @@ namespace DB_Schema_Export_Tool
         private IEnumerable<string> StringCollectionToList(StringCollection items)
         {
             var scriptInfo = new List<string>();
+
             foreach (var item in items)
             {
                 scriptInfo.Add(item);

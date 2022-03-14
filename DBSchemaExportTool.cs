@@ -126,6 +126,7 @@ namespace DB_Schema_Export_Tool
         public bool ConnectToServer()
         {
             var isValid = ValidateSchemaExporter();
+
             if (!isValid)
                 return false;
 
@@ -178,6 +179,7 @@ namespace DB_Schema_Export_Tool
                 var startTime = DateTime.UtcNow;
 
                 var isValid = ValidateSchemaExporter();
+
                 if (!isValid)
                     return false;
 
@@ -225,6 +227,7 @@ namespace DB_Schema_Export_Tool
                 if (!string.IsNullOrWhiteSpace(mOptions.TableDataDateFilterFile))
                 {
                     var dateFilterSuccess = LoadDateFiltersForTableData(mOptions.TableDataDateFilterFile, tablesForDataExport);
+
                     if (!dateFilterSuccess)
                         return false;
                 }
@@ -233,6 +236,7 @@ namespace DB_Schema_Export_Tool
 
                 // Populate a dictionary with the database names (properly capitalized) and the output directory path used for each
                 var databaseNameToDirectoryMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
                 foreach (var exportedDatabase in mDBSchemaExporter.SchemaOutputDirectories)
                 {
                     databaseNameToDirectoryMap.Add(exportedDatabase.Key, exportedDatabase.Value);
@@ -249,6 +253,7 @@ namespace DB_Schema_Export_Tool
 
                 // Now update databaseNamesAndOutputPaths to match databaseNameToDirectoryMap (which has properly capitalized database names)
                 databaseNamesAndOutputPaths = databaseNameToDirectoryMap;
+
                 if (mOptions.ShowStats)
                 {
                     OnStatusEvent("Exported database schema in {0:0.0} seconds", DateTime.UtcNow.Subtract(startTime).TotalSeconds);
@@ -282,6 +287,7 @@ namespace DB_Schema_Export_Tool
             try
             {
                 differenceReason = DifferenceReasonType.Unchanged;
+
                 if (!baseFile.Exists)
                 {
                     return false;
@@ -305,6 +311,7 @@ namespace DB_Schema_Export_Tool
                 };
 
                 var ignoreInsertIntoDates = false;
+
                 if (baseFile.Name.StartsWith(DBSchemaExporterSQLServer.DB_DEFINITION_FILE_PREFIX))
                 {
                     // DB Definition file; don't worry if file lengths differ
@@ -329,10 +336,12 @@ namespace DB_Schema_Export_Tool
                 while (!baseFileReader.EndOfStream)
                 {
                     var dataLine = baseFileReader.ReadLine();
+
                     if (comparisonFileReader.EndOfStream) continue;
 
                     var comparisonLine = comparisonFileReader.ReadLine();
                     var linesMatch = StringMatch(dataLine, comparisonLine);
+
                     if (linesMatch)
                     {
                         continue;
@@ -367,10 +376,12 @@ namespace DB_Schema_Export_Tool
                         if (sourceCols.Count == comparisonCols.Count)
                         {
                             linesMatch = true;
+
                             for (var dataColumnIndex = 0; dataColumnIndex < sourceCols.Count; dataColumnIndex++)
                             {
                                 var sourceValue = sourceCols[dataColumnIndex].Trim();
                                 var comparisonValue = comparisonCols[dataColumnIndex].Trim();
+
                                 if (sourceValue.StartsWith("SIZE") && comparisonValue.StartsWith("SIZE"))
                                 {
                                     // Example: SIZE = 186294784KB  vs.  SIZE = 174425088KB
@@ -391,6 +402,7 @@ namespace DB_Schema_Export_Tool
                         // Truncate each of the data lines at the first occurrence of a date
                         var matchBaseFile = mDateMatcher.Match(dataLine);
                         var matchComparisonFile = mDateMatcher.Match(comparisonLine);
+
                         if (matchBaseFile.Success && matchComparisonFile.Success)
                         {
                             dataLine = dataLine.Substring(0, matchBaseFile.Index);
@@ -614,6 +626,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var dataFile = new FileInfo(columnMapFilePath);
+
                 if (!dataFile.Exists)
                 {
                     Console.WriteLine();
@@ -631,6 +644,7 @@ namespace DB_Schema_Export_Tool
                 while (!dataReader.EndOfStream)
                 {
                     var dataLine = dataReader.ReadLine();
+
                     if (string.IsNullOrWhiteSpace(dataLine))
                         continue;
 
@@ -639,6 +653,7 @@ namespace DB_Schema_Export_Tool
                     if (!headerLineChecked)
                     {
                         headerLineChecked = true;
+
                         if (lineParts[0].Equals("SourceTableName"))
                             continue;
                     }
@@ -694,6 +709,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var dataFile = new FileInfo(dateFilterFilePath);
+
                 if (!dataFile.Exists)
                 {
                     Console.WriteLine();
@@ -712,6 +728,7 @@ namespace DB_Schema_Export_Tool
                 while (!dataReader.EndOfStream)
                 {
                     var dataLine = dataReader.ReadLine();
+
                     if (string.IsNullOrWhiteSpace(dataLine))
                         continue;
 
@@ -720,6 +737,7 @@ namespace DB_Schema_Export_Tool
                     if (!headerLineChecked)
                     {
                         headerLineChecked = true;
+
                         if (lineParts[0].Equals("SourceTableName"))
                             continue;
                     }
@@ -742,6 +760,7 @@ namespace DB_Schema_Export_Tool
                     }
 
                     TableDataExportInfo tableInfo;
+
                     if (GetTableByName(tablesForDataExport, sourceTableName, out var matchingTableInfo))
                     {
                         tableInfo = matchingTableInfo;
@@ -783,6 +802,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var dataFile = new FileInfo(tableDataFilePath);
+
                 if (!dataFile.Exists)
                 {
                     Console.WriteLine();
@@ -827,6 +847,7 @@ namespace DB_Schema_Export_Tool
                     if (!headerLineChecked)
                     {
                         headerLineChecked = true;
+
                         if (lineParts[0].Equals("SourceTableName"))
                             continue;
                     }
@@ -877,6 +898,7 @@ namespace DB_Schema_Export_Tool
                     {
                         // One or more primary key columns
                         var primaryKeyColumns = lineParts[4].Trim().Split(',');
+
                         foreach (var primaryKeyColumn in primaryKeyColumns)
                         {
                             tableInfo.PrimaryKeyColumns.Add(primaryKeyColumn);
@@ -939,6 +961,7 @@ namespace DB_Schema_Export_Tool
         protected new void OnErrorEvent(string message, Exception ex)
         {
             LogError(message, ex);
+
             if (ex != null && !message.Contains(ex.Message))
             {
                 StatusMessage = message + ": " + ex.Message;
@@ -1004,6 +1027,7 @@ namespace DB_Schema_Export_Tool
             while (gitStatusReader.Peek() > -1)
             {
                 var statusLine = gitStatusReader.ReadLine();
+
                 if (string.IsNullOrWhiteSpace(statusLine) || statusLine.Length < 4)
                 {
                     continue;
@@ -1052,6 +1076,7 @@ namespace DB_Schema_Export_Tool
                 };
 
             int minimumLineLength;
+
             if (repoManagerType == RepoManagerType.Svn)
             {
                 minimumLineLength = 8;
@@ -1067,6 +1092,7 @@ namespace DB_Schema_Export_Tool
             while (hgStatusReader.Peek() > -1)
             {
                 var statusLine = hgStatusReader.ReadLine();
+
                 if (string.IsNullOrWhiteSpace(statusLine) || statusLine.Length < minimumLineLength)
                 {
                     continue;
@@ -1142,6 +1168,7 @@ namespace DB_Schema_Export_Tool
                 // Keys in this dictionary are database names
                 // Values are the output directory path used (values will be defined by ExportSchema then used by SyncSchemaFiles)
                 var databaseNamesAndOutputPaths = new Dictionary<string, string>();
+
                 foreach (var databaseName in databaseList)
                 {
                     databaseNamesAndOutputPaths.Add(databaseName, string.Empty);
@@ -1205,6 +1232,7 @@ namespace DB_Schema_Export_Tool
             List<TableDataExportInfo> tablesForDataExport)
         {
             var isValid = ValidateSchemaExporter();
+
             if (!isValid)
                 return false;
 
@@ -1265,10 +1293,12 @@ namespace DB_Schema_Export_Tool
 
                 var dbsProcessed = 0;
                 var includeDbNameInCommitMessage = databaseNamesAndOutputPaths.Count > 1;
+
                 foreach (var dbEntry in databaseNamesAndOutputPaths)
                 {
                     var databaseName = dbEntry.Key;
                     var schemaOutputDirectory = dbEntry.Value;
+
                     if (string.IsNullOrWhiteSpace(schemaOutputDirectory))
                     {
                         OnErrorEvent("Schema output directory was not reported for " + databaseName + "; unable to synchronize");
@@ -1282,6 +1312,7 @@ namespace DB_Schema_Export_Tool
                     var createSubdirectoryOnSync = !mOptions.NoSubdirectoryOnSync;
 
                     string targetDirectoryPath;
+
                     if (databaseNamesAndOutputPaths.Count > 1 || createSubdirectoryOnSync)
                     {
                         targetDirectoryPath = Path.Combine(directoryPathForSync, databaseName);
@@ -1292,6 +1323,7 @@ namespace DB_Schema_Export_Tool
                     }
 
                     var targetDirectory = new DirectoryInfo(targetDirectoryPath);
+
                     if (!sourceDirectory.Exists)
                     {
                         OnErrorEvent("Source directory not found; cannot synchronize: " + sourceDirectory.FullName);
@@ -1312,6 +1344,7 @@ namespace DB_Schema_Export_Tool
                     SyncSchemaFilesRecursive(sourceDirectory, targetDirectory, databaseName, newFilePaths, ref fileCopyCount);
 
                     var commitMessageAppend = string.Empty;
+
                     if (includeDbNameInCommitMessage)
                     {
                         commitMessageAppend = databaseName;
@@ -1476,6 +1509,7 @@ namespace DB_Schema_Export_Tool
 
                 bool success;
                 Console.WriteLine();
+
                 if (newFilePaths.Count > 0)
                 {
                     OnStatusEvent(
@@ -1488,6 +1522,7 @@ namespace DB_Schema_Export_Tool
                     foreach (var newFilePath in newFilePaths)
                     {
                         var fileToAdd = new FileInfo(newFilePath);
+
                         if (fileToAdd.Directory == null)
                         {
                             OnErrorEvent("Cannot determine the parent directory of {0}; skipping", fileToAdd.FullName);
@@ -1516,6 +1551,7 @@ namespace DB_Schema_Export_Tool
                         if (repoManagerType == RepoManagerType.Git && addErrorOutput.StartsWith("fatal", StringComparison.OrdinalIgnoreCase))
                         {
                             LogWarning(string.Format("Error reported for {0}: {1}", toolName, addErrorOutput));
+
                             if (addErrorOutput.Contains("not a git repository"))
                             {
                                 return;
@@ -1559,6 +1595,7 @@ namespace DB_Schema_Export_Tool
 
                 Console.WriteLine();
                 int modifiedFileCount;
+
                 if (repoManagerType == RepoManagerType.Svn || repoManagerType == RepoManagerType.Hg)
                 {
                     success = ParseSvnHgStatus(targetDirectory, statusConsoleOutput, repoManagerType, out modifiedFileCount);

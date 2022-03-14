@@ -37,6 +37,7 @@ namespace DB_Schema_Export_Tool
         public void LogMessage(string statusMessage, bool isError = false, bool writeToLog = true)
         {
             OnStatusEvent(statusMessage);
+
             if (mOptions.LogMessagesToFile)
                 LogTools.LogMessage(statusMessage, isError, writeToLog);
         }
@@ -49,6 +50,7 @@ namespace DB_Schema_Export_Tool
         protected void LogWarning(string warningMessage, bool logToDb = false)
         {
             OnWarningEvent(warningMessage);
+
             if (mOptions.LogMessagesToFile)
                 LogTools.LogWarning(warningMessage, logToDb);
         }
@@ -132,6 +134,7 @@ namespace DB_Schema_Export_Tool
             while (!reader.EndOfStream)
             {
                 var dataLine = reader.ReadLine();
+
                 if (dataLine == null)
                     continue;
 
@@ -171,6 +174,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var columnMatch = columnNameMatcher.Match(dataLine);
+
                 if (!columnMatch.Success || !renameColumns)
                 {
                     outputLines.Add(dataLine);
@@ -178,6 +182,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var columnName = columnMatch.Groups["ColumnName"].Value;
+
                 if (!columnMapInfo.IsColumnDefined(columnName))
                 {
                     outputLines.Add(dataLine);
@@ -220,6 +225,7 @@ namespace DB_Schema_Export_Tool
             try
             {
                 var existingSchemaFile = new FileInfo(schemaFileToParse);
+
                 if (!existingSchemaFile.Exists)
                 {
                     LogWarning("Existing schema file is missing; cannot update names");
@@ -253,6 +259,7 @@ namespace DB_Schema_Export_Tool
                 while (!reader.EndOfStream)
                 {
                     var dataLine = reader.ReadLine();
+
                     if (string.IsNullOrWhiteSpace(dataLine))
                     {
                         writer.WriteLine(dataLine);
@@ -260,6 +267,7 @@ namespace DB_Schema_Export_Tool
                     }
 
                     var createTableMatch = tableNameMatcher.Match(dataLine);
+
                     if (createTableMatch.Success)
                     {
                         UpdateColumnNamesInDDL(reader, writer, options, tablesForDataExport, createTableMatch);
@@ -267,6 +275,7 @@ namespace DB_Schema_Export_Tool
                     }
 
                     var createIndexMatch = indexNameMatcher.Match(dataLine);
+
                     if (createIndexMatch.Success)
                     {
                         UpdateColumnNamesInDDL(reader, writer, options, tablesForDataExport, createIndexMatch);
@@ -274,6 +283,7 @@ namespace DB_Schema_Export_Tool
                     }
 
                     var createViewMatch = viewNameMatcher.Match(dataLine);
+
                     if (createViewMatch.Success)
                     {
                         // Note: only check for whether or not to skip the view; do not update column names in the view
@@ -284,6 +294,7 @@ namespace DB_Schema_Export_Tool
                     }
 
                     var defaultConstraintMatch = defaultConstraintMatcher.Match(dataLine);
+
                     if (defaultConstraintMatch.Success)
                     {
                         // Note: The target column name for the default constraint is tracked in defaultConstraintMatch as group "ColumnName"
@@ -292,6 +303,7 @@ namespace DB_Schema_Export_Tool
                     }
 
                     var foreignKeyConstraintMatch = foreignKeyConstraintMatcher.Match(dataLine);
+
                     if (foreignKeyConstraintMatch.Success)
                     {
                         // Note: The target column name for the foreign key constraint is tracked in foreignKeyConstraintMatch as group "ColumnName"
@@ -396,6 +408,7 @@ namespace DB_Schema_Export_Tool
                                 continue;
 
                             var primaryKeyMatch = mColumnNameMatcher.Match(suffixLine);
+
                             if (primaryKeyMatch.Success)
                             {
                                 primaryKeyColumn = primaryKeyMatch.Groups["ColumnName"].Value;
@@ -409,6 +422,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var columnMatch = mColumnNameMatcher.Match(dataLine);
+
                 if (!columnMatch.Success)
                 {
                     OnDebugEvent("Appending DDL for column {0}: {1}", currentColumnName, dataLine);
@@ -488,6 +502,7 @@ namespace DB_Schema_Export_Tool
             var primaryKeyColumns = DBSchemaExporterSQLServer.GetPrimaryKeysForTableViaDDL(createTableDDL);
 
             List<string> outputLines;
+
             if (primaryKeyColumns.Count == 0)
             {
                 outputLines = createTableDDL;

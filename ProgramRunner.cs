@@ -68,6 +68,7 @@ namespace DB_Schema_Export_Tool
                 {
                     System.Threading.Thread.Sleep(100);
                     var elapsedSeconds = DateTime.UtcNow.Subtract(dtStartTime).TotalSeconds;
+
                     if (elapsedSeconds > maxRuntimeSeconds)
                     {
                         OnErrorEvent("Program execution has surpassed {0} seconds; aborting {1}", maxRuntimeSeconds, exePath);

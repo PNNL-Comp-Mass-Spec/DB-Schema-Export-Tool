@@ -126,6 +126,7 @@ namespace DB_Schema_Export_Tool
             foreach (var cachedLine in cachedLines)
             {
                 var match = mNameTypeSchemaMatcher.Match(cachedLine);
+
                 if (!match.Success)
                     continue;
 
@@ -189,6 +190,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var typeAndName = GetObjectTypeNameCode(match);
+
                 if (!overloadList.TryGetValue(typeAndName, out var matchCount))
                 {
                     continue;
@@ -203,6 +205,7 @@ namespace DB_Schema_Export_Tool
             }
 
             cachedLines.Clear();
+
             foreach (var updatedLine in updatedLines)
             {
                 cachedLines.Add(updatedLine);
@@ -224,6 +227,7 @@ namespace DB_Schema_Export_Tool
             if (!mCachedDatabaseTableInfo.ContainsKey(databaseName))
             {
                 CacheDatabaseTables(databaseName, out databaseNotFound);
+
                 if (databaseNotFound)
                 {
                     SetLocalError(DBSchemaExportErrorCodes.GeneralError,
@@ -303,6 +307,7 @@ namespace DB_Schema_Export_Tool
                 else if (ValidServerConnection())
                 {
                     var expectedNameAndPort = string.Format("tcp://{0}:{1}", mOptions.ServerName, mOptions.PgPort);
+
                     if (string.Equals(mPgConnection.DataSource, expectedNameAndPort, StringComparison.OrdinalIgnoreCase))
                     {
                         if (mCurrentServerInfo.DatabaseName.Equals(databaseName) &&
@@ -325,6 +330,7 @@ namespace DB_Schema_Export_Tool
 
                 // Connect to server mOptions.ServerName
                 var connected = LoginToServerWork(databaseName, out mPgConnection);
+
                 if (!connected)
                 {
                     if (ErrorCode == DBSchemaExportErrorCodes.NoError)
@@ -369,6 +375,7 @@ namespace DB_Schema_Export_Tool
             OnDBExportStarting(databaseName);
 
             var isValid = ValidateOutputDirectoryForDatabaseExport(databaseName, workingParams);
+
             if (!isValid)
             {
                 return false;
@@ -387,6 +394,7 @@ namespace DB_Schema_Export_Tool
                 else
                 {
                     tablesToExportData = new Dictionary<TableDataExportInfo, long>();
+
                     foreach (var item in tablesForDataExport)
                     {
                         if (SkipTableForDataExport(item))
@@ -452,6 +460,7 @@ namespace DB_Schema_Export_Tool
             const int maxRuntimeSeconds = 60;
 
             var pgDump = FindPgDumpExecutable();
+
             if (pgDump == null)
             {
                 return false;
@@ -535,6 +544,7 @@ namespace DB_Schema_Export_Tool
                 if (!mCachedDatabaseTableInfo.ContainsKey(databaseName))
                 {
                     CacheDatabaseTables(databaseName, out var databaseNotFound);
+
                     if (databaseNotFound)
                     {
                         SetLocalError(DBSchemaExportErrorCodes.GeneralError,
@@ -581,6 +591,7 @@ namespace DB_Schema_Export_Tool
                 OnProgressUpdate("Exporting data from " + tableInfo.SourceTableName, percentComplete);
 
                 bool success;
+
                 if (mOptions.PgDumpTableData)
                 {
                     success = ExportDBTableDataUsingPgDump(databaseName, workingParams, tableInfo, sourceTableNameWithSchema);
@@ -642,6 +653,7 @@ namespace DB_Schema_Export_Tool
             };
 
             dataExportParams.TargetTableNameWithSchema = GetTargetTableName(dataExportParams, tableInfo);
+
             if (string.IsNullOrWhiteSpace(dataExportParams.TargetTableNameWithSchema))
             {
                 // Skip this table
@@ -670,6 +682,7 @@ namespace DB_Schema_Export_Tool
             // See if any of the columns in the table is an identity column
 
             var columnSchema = reader.GetColumnSchema();
+
             foreach (var dbColumn in columnSchema)
             {
                 if (dbColumn.IsIdentity == true)
@@ -773,6 +786,7 @@ namespace DB_Schema_Export_Tool
             while (reader.Read())
             {
                 delimitedRowValues.Clear();
+
                 if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
                 {
                     delimitedRowValues.Append(insertIntoLine);
@@ -799,6 +813,7 @@ namespace DB_Schema_Export_Tool
             };
 
             dataExportParams.TargetTableNameWithSchema = GetTargetTableName(dataExportParams, tableInfo);
+
             if (string.IsNullOrWhiteSpace(dataExportParams.TargetTableNameWithSchema))
             {
                 // Skip this table
@@ -824,6 +839,7 @@ namespace DB_Schema_Export_Tool
             const int maxRuntimeSeconds = 60;
 
             var pgDump = FindPgDumpExecutable();
+
             if (pgDump == null)
             {
                 return false;
@@ -869,6 +885,7 @@ namespace DB_Schema_Export_Tool
         private FileInfo FindNewestExecutable(DirectoryInfo baseDirectory, string exeName)
         {
             var foundFiles = baseDirectory.GetFileSystemInfos(exeName, SearchOption.AllDirectories);
+
             if (foundFiles.Length == 0)
                 return null;
 
@@ -908,9 +925,11 @@ namespace DB_Schema_Export_Tool
                     return cachedFileInfo;
 
                 var alternativesDir = new DirectoryInfo("/etc/alternatives");
+
                 if (alternativesDir.Exists)
                 {
                     var symLinkFile = new FileInfo("/etc/alternatives/pgsql-" + exeName);
+
                     if (symLinkFile.Exists)
                     {
                         mCachedExecutables.Add(exeName, symLinkFile);
@@ -919,10 +938,12 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var userDirectory = new DirectoryInfo("/usr");
+
                 if (userDirectory.Exists)
                 {
                     // Find the newest file named exeName
                     var foundFile = FindNewestExecutable(userDirectory, exeName);
+
                     if (foundFile != null)
                     {
                         mCachedExecutables.Add(exeName, foundFile);
@@ -932,6 +953,7 @@ namespace DB_Schema_Export_Tool
 
                 var workingDirectory = new DirectoryInfo(".");
                 var foundWorkDirFile = FindNewestExecutable(workingDirectory, exeName);
+
                 if (foundWorkDirFile != null)
                 {
                     mCachedExecutables.Add(exeName, foundWorkDirFile);
@@ -958,10 +980,12 @@ namespace DB_Schema_Export_Tool
                     return cachedFileInfo;
 
                 var postgresDirectory = new DirectoryInfo(@"C:\Program Files\PostgreSQL");
+
                 if (postgresDirectory.Exists)
                 {
                     // Find the newest file named exeName
                     var foundFile = FindNewestExecutable(postgresDirectory, exeName);
+
                     if (foundFile != null)
                     {
                         mCachedExecutables.Add(exeName, foundFile);
@@ -971,6 +995,7 @@ namespace DB_Schema_Export_Tool
 
                 var workingDirectory = new DirectoryInfo(".");
                 var foundWorkDirFile = FindNewestExecutable(workingDirectory, exeName);
+
                 if (foundWorkDirFile != null)
                 {
                     mCachedExecutables.Add(exeName, foundWorkDirFile);
@@ -1016,6 +1041,7 @@ namespace DB_Schema_Export_Tool
             var objectType = match.Groups["Type"].Value;
 
             var nameMatch = mFunctionOrProcedureNameMatcher.Match(objectNameWithArguments);
+
             if (nameMatch.Success)
             {
                 return objectType + "_" + nameMatch.Groups["Name"];
@@ -1032,12 +1058,14 @@ namespace DB_Schema_Export_Tool
         private string GetPgDumpServerInfoArgs(string databaseName)
         {
             string passwordArgument;
+
             if (string.IsNullOrWhiteSpace(mOptions.DBUserPassword))
                 passwordArgument = string.Empty;
             else
                 passwordArgument = "-W " + mOptions.DBUserPassword;
 
             string databaseArgument;
+
             if (string.IsNullOrWhiteSpace(databaseName))
                 databaseArgument = string.Empty;
             else
@@ -1078,6 +1106,7 @@ namespace DB_Schema_Export_Tool
                 if (!ConnectToServer(databaseName))
                 {
                     var databaseList = GetServerDatabases();
+
                     if (!databaseList.Contains(databaseName))
                     {
                         OnWarningEvent("Database {0} not found on sever {1}", databaseName, mCurrentServerInfo.ServerName);
@@ -1184,6 +1213,7 @@ namespace DB_Schema_Export_Tool
 
                     // Re-query tables with a row count of 0, since they likely were not properly listed in pg_class
                     index = 0;
+
                     foreach (var item in databaseTables)
                     {
                         if (databaseTableInfo[item] > 0)
@@ -1258,6 +1288,7 @@ namespace DB_Schema_Export_Tool
                 OnStatusEvent("Obtaining list of databases on " + mCurrentServerInfo.ServerName);
 
                 var databaseNames = GetServerDatabasesWork();
+
                 if (!mAbortProcessing)
                 {
                     OnProgressUpdate("Done", 100);
@@ -1313,6 +1344,7 @@ namespace DB_Schema_Export_Tool
             ref bool unhandledScriptingCommands)
         {
             var nameMatch = mFunctionOrProcedureNameMatcher.Match(currentObject.Name);
+
             if (nameMatch.Success)
             {
                 return nameMatch.Value;
@@ -1351,9 +1383,11 @@ namespace DB_Schema_Export_Tool
                 }
 
                 string userPassword;
+
                 if (string.IsNullOrWhiteSpace(mOptions.DBUserPassword))
                 {
                     userPassword = LookupUserPasswordFromDisk(mOptions.DBUser, databaseName, out var definedInPgPassFile);
+
                     if (string.IsNullOrWhiteSpace(userPassword) && !definedInPgPassFile)
                     {
                         // A warning or error should have already been logged
@@ -1503,6 +1537,7 @@ namespace DB_Schema_Export_Tool
             while (!reader.EndOfStream)
             {
                 var dataLine = reader.ReadLine();
+
                 if (string.IsNullOrWhiteSpace(dataLine))
                     continue;
 
@@ -1630,6 +1665,7 @@ namespace DB_Schema_Export_Tool
             ref bool unhandledScriptingCommands)
         {
             skipExportCachedLines = false;
+
             if (string.IsNullOrEmpty(currentObject.Name))
             {
                 targetScriptFile = string.Format("DatabaseInfo_{0}.sql", databaseName);
@@ -1686,6 +1722,7 @@ namespace DB_Schema_Export_Tool
 
                 case "COMMENT":
                     var typeMatch = mNameTypeTargetMatcher.Match(currentObject.Name);
+
                     if (typeMatch.Success)
                     {
                         var targetObjectType = typeMatch.Groups["ObjectType"].Value;
@@ -1734,9 +1771,11 @@ namespace DB_Schema_Export_Tool
                                                                  RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
                     var alterTableMatched = false;
+
                     foreach (var cachedLine in cachedLines)
                     {
                         var match = alterTableAlterColumnMatcher.Match(cachedLine);
+
                         if (!match.Success)
                             continue;
 
@@ -1750,6 +1789,7 @@ namespace DB_Schema_Export_Tool
                         foreach (var cachedLine in cachedLines)
                         {
                             var match = alterTableMatcher.Match(cachedLine);
+
                             if (!match.Success)
                                 continue;
 
@@ -1807,6 +1847,7 @@ namespace DB_Schema_Export_Tool
                         foreach (var cachedLine in cachedLines)
                         {
                             var match = createIndexMatcher.Match(cachedLine);
+
                             if (!match.Success)
                                 continue;
 
@@ -1838,6 +1879,7 @@ namespace DB_Schema_Export_Tool
                     foreach (var cachedLine in cachedLines)
                     {
                         var match = alterIndexMatcher.Match(cachedLine);
+
                         if (!match.Success)
                             continue;
 
@@ -1845,6 +1887,7 @@ namespace DB_Schema_Export_Tool
                         alterIndexMatched = true;
 
                         schemaToUse = GetSchemaName(indexNameWithSchema, out nameToUse);
+
                         if (SkipSchema(schemaToUse))
                         {
                             skipExportCachedLines = true;
@@ -1895,6 +1938,7 @@ namespace DB_Schema_Export_Tool
             }
 
             string namePrefix;
+
             if (string.IsNullOrWhiteSpace(schemaToUse) || schemaToUse.Equals("-") || schemaToUse.Equals("public"))
                 namePrefix = string.Empty;
             else if (nameToUse.StartsWith(schemaToUse + "."))
@@ -1938,6 +1982,7 @@ namespace DB_Schema_Export_Tool
             while (!reader.EndOfStream)
             {
                 var dataLine = reader.ReadLine();
+
                 if (dataLine == null)
                     continue;
 
@@ -2036,6 +2081,7 @@ namespace DB_Schema_Export_Tool
             try
             {
                 var serverInfoOutputDirectory = GetServerInfoOutputDirectory(mOptions.ServerName);
+
                 if (serverInfoOutputDirectory == null)
                 {
                     return false;
@@ -2054,6 +2100,7 @@ namespace DB_Schema_Export_Tool
                 const int maxRuntimeSeconds = 60;
 
                 var pgDumpAll = FindPgDumpAllExecutable();
+
                 if (pgDumpAll == null)
                     return false;
 
@@ -2198,9 +2245,11 @@ namespace DB_Schema_Export_Tool
                     outputFileNameToUse = schemaName + baseName.Substring(periodIndex) + Path.GetExtension(outputFileName);
 
                     var targetDirectoryPath = Path.Combine(outputDirectory, schemaName);
+
                     if (!previousDirectoryPath.Equals(targetDirectoryPath))
                     {
                         var targetDirectory = new DirectoryInfo(targetDirectoryPath);
+
                         if (!targetDirectory.Exists)
                         {
                             OnStatusEvent("Creating output directory, " + targetDirectory.FullName);
