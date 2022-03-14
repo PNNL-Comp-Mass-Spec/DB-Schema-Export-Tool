@@ -21,8 +21,6 @@ namespace DB_Schema_Export_Tool
 
         // ReSharper restore CommentTypo
 
-        #region "Constants and Enums"
-
         private enum DifferenceReasonType
         {
             Unchanged = 0,
@@ -37,10 +35,6 @@ namespace DB_Schema_Export_Tool
             Git = 2
         }
 
-        #endregion
-
-        #region "Class wide Variables"
-
         private readonly Regex mDateMatcher;
 
         private DBSchemaExporterBase mDBSchemaExporter;
@@ -48,10 +42,6 @@ namespace DB_Schema_Export_Tool
         private readonly SchemaExportOptions mOptions;
 
         private readonly Regex mVersionExtractor;
-
-        #endregion
-
-        #region "Properties"
 
         /// <summary>
         /// Error code
@@ -68,10 +58,6 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         public string StatusMessage { get; private set; }
 
-        #endregion
-
-        #region "Events"
-
         /// <summary>
         /// Database export starting event
         /// </summary>
@@ -86,8 +72,6 @@ namespace DB_Schema_Export_Tool
         /// Processing complete event
         /// </summary>
         public event DBSchemaExporterBase.ProgressCompleteHandler ProgressComplete;
-
-        #endregion
 
         /// <summary>
         /// Constructor

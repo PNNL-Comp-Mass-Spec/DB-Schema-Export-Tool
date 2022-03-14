@@ -23,8 +23,6 @@ namespace DB_Schema_Export_Tool
             InitializeControls();
         }
 
-        #region "Constants and Enums"
-
         private const string XML_SETTINGS_FILE_NAME = "DB_Schema_Export_Tool_Settings.xml";
         private const string XML_SECTION_DATABASE_SETTINGS = "DBSchemaExportDatabaseSettings";
         private const string XML_SECTION_PROGRAM_OPTIONS = "DBSchemaExportOptions";
@@ -89,10 +87,6 @@ namespace DB_Schema_Export_Tool
             Synonyms = 7
         }
 
-        #endregion
-
-        #region "Class wide variables"
-
         private string mXmlSettingsFilePath;
 
         private SchemaExportOptions mSchemaExportOptions;
@@ -120,10 +114,6 @@ namespace DB_Schema_Export_Tool
 
         private bool mSchemaExportSuccess;
 
-        #endregion
-
-        #region "Delegates"
-
         private delegate void AppendNewMessageHandler(string message, MessageTypeConstants msgType);
 
         private delegate void UpdatePauseUnpauseCaptionHandler(DBSchemaExporterBase.PauseStatusConstants pauseStatus);
@@ -132,8 +122,6 @@ namespace DB_Schema_Export_Tool
         private delegate void ProgressCompleteHandler();
 
         private delegate void HandleDBExportStartingEventHandler(string databaseName);
-
-        #endregion
 
         private void AppendNewMessage(string message, MessageTypeConstants msgType)
         {
@@ -1506,8 +1494,6 @@ namespace DB_Schema_Export_Tool
             }
         }
 
-        #region "Control Handlers"
-
         private void cboTableNamesToExportSortOrder_SelectedIndexChanged(object sender, EventArgs e)
         {
             PopulateTableNamesToExport(false);
@@ -1618,18 +1604,10 @@ namespace DB_Schema_Export_Tool
             }
         }
 
-        #endregion
-
-        #region "Form Handlers"
-
         private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
         {
             mDBSchemaExporter?.AbortProcessingNow();
         }
-
-        #endregion
-
-        #region "Menu Handlers"
 
         private void mnuFileSelectOutputDirectory_Click(object sender, EventArgs e)
         {
@@ -1705,10 +1683,6 @@ namespace DB_Schema_Export_Tool
         {
             ShowAboutBox();
         }
-
-        #endregion
-
-        #region "DB Schema Export Events"
 
         private void mDBSchemaExporter_DebugMessage(string message)
         {
@@ -1831,8 +1805,5 @@ namespace DB_Schema_Export_Tool
 
             Application.DoEvents();
         }
-
-        #endregion
-
     }
 }

@@ -18,8 +18,6 @@ namespace DB_Schema_Export_Tool
         // Ignore Spelling: dbo, dms, dtproperties, localhost, mkdir, mv, PostgreSQL, psql, sql, sysdiagrams, unpause, unpaused
         // Ignore Spelling: dd, yyyy, HH:mm:ss
 
-        #region "Constants and Enums"
-
         /// <summary>
         /// Maximum number of rows of data to export
         /// </summary>
@@ -162,10 +160,6 @@ namespace DB_Schema_Export_Tool
             UnpauseRequested = 3
         }
 
-        #endregion
-
-        #region "Class wide Variables"
-
         /// <summary>
         /// Set to true to abort processing as soon as possible
         /// </summary>
@@ -209,10 +203,6 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         protected float mPercentCompleteEnd;
 
-        #endregion
-
-        #region "Properties"
-
         /// <summary>
         /// Error code
         /// </summary>
@@ -237,10 +227,6 @@ namespace DB_Schema_Export_Tool
         /// RegEx strings to use to select table names to auto-select for data export
         /// </summary>
         public SortedSet<string> TableNameRegexToAutoExportData { get; }
-
-        #endregion
-
-        #region "Events"
 
         /// <summary>
         /// Database export starting event
@@ -272,8 +258,6 @@ namespace DB_Schema_Export_Tool
         /// Progress complete event delegate
         /// </summary>
         public delegate void ProgressCompleteHandler();
-
-        #endregion
 
         /// <summary>
         /// Constructor
@@ -1451,12 +1435,9 @@ namespace DB_Schema_Export_Tool
                             warningsByDatabase.Add(currentDB, workingParams.WarningMessages);
                         }
 
-                        if (!databaseNotFound)
+                        if (!databaseNotFound && !success)
                         {
-                            if (!success)
-                            {
-                                break;
-                            }
+                            break;
                         }
                     }
                     else

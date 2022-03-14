@@ -25,8 +25,6 @@ namespace DB_Schema_Export_Tool
 
         // ReSharper restore CommentTypo
 
-        #region "Constants and Enums"
-
         /// <summary>
         /// Default server port
         /// </summary>
@@ -36,10 +34,6 @@ namespace DB_Schema_Export_Tool
         /// postgres database
         /// </summary>
         public const string POSTGRES_DATABASE = "postgres";
-
-        #endregion
-
-        #region "Class wide Variables"
 
         /// <summary>
         /// Dictionary tracking tables by database
@@ -103,8 +97,6 @@ namespace DB_Schema_Export_Tool
         private readonly ProgramRunner mProgramRunner;
 
         private NpgsqlConnection mPgConnection;
-
-        #endregion
 
         /// <summary>
         /// Constructor

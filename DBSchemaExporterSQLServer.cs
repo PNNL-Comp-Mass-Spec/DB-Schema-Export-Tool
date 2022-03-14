@@ -23,8 +23,6 @@ namespace DB_Schema_Export_Tool
         // Ignore Spelling: accessor, crlf, currval, dbo, dt, Inline, mtuser, schemas
         // Ignore Spelling: Scripter, setval, smo, Sql, stdin, sysconstraints, sysobjects, syssegments, username, xtype
 
-        #region "Constants and Enums"
-
         // ReSharper disable UnusedMember.Global
 
         /// <summary>
@@ -49,10 +47,6 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         public const string DB_DEFINITION_FILE_PREFIX = "DBDefinition_";
 
-        #endregion
-
-        #region "Class wide Variables"
-
         private Database mCurrentDatabase;
 
         private readonly SortedSet<string> mSchemaToIgnore;
@@ -65,8 +59,6 @@ namespace DB_Schema_Export_Tool
         private Scripter mTableDataScripter;
 
         private bool mTableDataScripterInitialized;
-
-        #endregion
 
         /// <summary>
         /// Constructor

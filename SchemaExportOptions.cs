@@ -14,8 +14,6 @@ namespace DB_Schema_Export_Tool
     {
         // Ignore Spelling: Npgsql, PostgreSQL, psql, schemas, Svn, username
 
-        #region "Constants and Enums"
-
         /// <summary>
         /// Program date
         /// </summary>
@@ -30,10 +28,6 @@ namespace DB_Schema_Export_Tool
         /// Default server schema output directory name prefix
         /// </summary>
         public const string DEFAULT_SERVER_OUTPUT_DIRECTORY_NAME_PREFIX = "ServerSchema__";
-
-        #endregion
-
-        #region "Properties"
 
         /// <summary>
         /// Column name mapping
@@ -77,10 +71,6 @@ namespace DB_Schema_Export_Tool
         /// Options defining what to script
         /// </summary>
         public DatabaseScriptingOptions ScriptingOptions { get; }
-
-        #endregion
-
-        #region "Command Line Argument Properties "
 
         /// <summary>
         /// Output directory
@@ -562,8 +552,6 @@ namespace DB_Schema_Export_Tool
         /// This returns true if DBUser is empty; or false if a username is defined
         /// </summary>
         public bool UseIntegratedAuthentication => !string.IsNullOrWhiteSpace(DBUser);
-
-        #endregion
 
         /// <summary>
         /// Constructor

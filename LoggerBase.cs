@@ -85,8 +85,6 @@ namespace DB_Schema_Export_Tool
                 LogTools.LogWarning(warningMessage, logToDb);
         }
 
-        #region "EventNotifier events"
-
         /// <summary>
         /// Register event handlers
         /// However, does not subscribe to .ProgressUpdate
@@ -192,7 +190,5 @@ namespace DB_Schema_Export_Tool
         {
             LogWarning(warningMessage);
         }
-
-        #endregion
     }
 }
