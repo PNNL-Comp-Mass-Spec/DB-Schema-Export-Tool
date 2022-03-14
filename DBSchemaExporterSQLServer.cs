@@ -1960,7 +1960,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="tableInfo"></param>
         /// <returns>Comma separated list of primary key columns</returns>
-        private SortedSet<string> GetPrimaryKeysForTableViaScripter(TableDataExportInfo tableInfo)
+        private IEnumerable<string> GetPrimaryKeysForTableViaScripter(TableDataExportInfo tableInfo)
         {
             if (!mCurrentDatabase.Tables.Contains(tableInfo.SourceTableName))
                 return new SortedSet<string>();
