@@ -1399,27 +1399,27 @@ namespace DB_Schema_Export_Tool
 
                 var targetFile = new FileInfo(Path.Combine(targetDirectory.FullName, sourceFile.Name));
 
-                if (FilesDiffer(sourceFile, targetFile, out var differenceReason))
+                if (!FilesDiffer(sourceFile, targetFile, out var differenceReason))
+                    continue;
+
+                // var subtaskPercentComplete = fileProcessCount / ((float)filesToCopy.Count * 100);
+
+                switch (differenceReason)
                 {
-                    // var subtaskPercentComplete = fileProcessCount / ((float)filesToCopy.Count * 100);
-
-                    switch (differenceReason)
-                    {
-                        case DifferenceReasonType.NewFile:
-                            OnDebugEvent("  Copying new file " + sourceFile.Name);
-                            newFilePaths.Add(targetFile.FullName);
-                            break;
-                        case DifferenceReasonType.Changed:
-                            OnDebugEvent("  Copying changed file " + sourceFile.Name);
-                            break;
-                        default:
-                            OnDebugEvent("  Copying file " + sourceFile.Name);
-                            break;
-                    }
-
-                    sourceFile.CopyTo(targetFile.FullName, true);
-                    fileCopyCount++;
+                    case DifferenceReasonType.NewFile:
+                        OnDebugEvent("  Copying new file " + sourceFile.Name);
+                        newFilePaths.Add(targetFile.FullName);
+                        break;
+                    case DifferenceReasonType.Changed:
+                        OnDebugEvent("  Copying changed file " + sourceFile.Name);
+                        break;
+                    default:
+                        OnDebugEvent("  Copying file " + sourceFile.Name);
+                        break;
                 }
+
+                sourceFile.CopyTo(targetFile.FullName, true);
+                fileCopyCount++;
             }
 
             // Recursively call this method for each subdirectory

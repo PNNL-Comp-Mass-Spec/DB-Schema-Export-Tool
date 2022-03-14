@@ -803,19 +803,19 @@ namespace DB_Schema_Export_Tool
 
         private bool ExportDBUserDefinedTypes(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
-            if (SqlServer2005OrNewer(currentDatabase))
+            if (!SqlServer2005OrNewer(currentDatabase))
+                return true;
+
+            if (workingParams.CountObjectsOnly)
             {
-                if (workingParams.CountObjectsOnly)
-                {
-                    var processCount = currentDatabase.UserDefinedTypes.Cast<Schema>().Count(schemaItem => mObjectNameMatcher.IsMatch(schemaItem.Name));
-                    workingParams.ProcessCount += processCount;
-                }
-                else
-                {
-                    ShowTrace("Scripting User Defined Types");
-                    var itemCount = ScriptCollectionOfObjects(currentDatabase.UserDefinedTypes, scriptOptions, workingParams.OutputDirectory);
-                    workingParams.ProcessCount += itemCount;
-                }
+                var processCount = currentDatabase.UserDefinedTypes.Cast<Schema>().Count(schemaItem => mObjectNameMatcher.IsMatch(schemaItem.Name));
+                workingParams.ProcessCount += processCount;
+            }
+            else
+            {
+                ShowTrace("Scripting User Defined Types");
+                var itemCount = ScriptCollectionOfObjects(currentDatabase.UserDefinedTypes, scriptOptions, workingParams.OutputDirectory);
+                workingParams.ProcessCount += itemCount;
             }
 
             return true;
