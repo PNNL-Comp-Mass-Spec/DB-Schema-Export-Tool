@@ -461,24 +461,6 @@ namespace DB_Schema_Export_Tool
         public bool TableDataSnakeCase { get; set; }
 
         /// <summary>
-        /// When true, script system objects
-        /// </summary>
-        public bool IncludeSystemObjects
-        {
-            get => ScriptingOptions.IncludeSystemObjects;
-            set => ScriptingOptions.IncludeSystemObjects = value;
-        }
-
-        /// <summary>
-        /// When true, include timestamps in the script file header
-        /// </summary>
-        public bool IncludeTimestampInScriptFileHeader
-        {
-            get => ScriptingOptions.IncludeTimestampInScriptFileHeader;
-            set => ScriptingOptions.IncludeTimestampInScriptFileHeader = value;
-        }
-
-        /// <summary>
         /// When true, export server settings, logins, and SQL Server Agent jobs
         /// </summary>
         public bool ExportServerSettingsLoginsAndJobs
