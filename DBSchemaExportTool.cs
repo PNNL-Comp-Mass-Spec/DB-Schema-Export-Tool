@@ -6,6 +6,8 @@ using System.Text.RegularExpressions;
 using PRISM;
 using PRISM.Logging;
 
+// ReSharper disable UnusedMember.Global
+
 namespace DB_Schema_Export_Tool
 {
     /// <summary>

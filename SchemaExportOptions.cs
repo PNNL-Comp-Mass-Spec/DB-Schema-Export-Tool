@@ -220,6 +220,7 @@ namespace DB_Schema_Export_Tool
         /// </remarks>
         [Option("DB", HelpShowsDefault = false,
             HelpText = "Database name (alternatively, use DBList for a list of databases)")]
+        // ReSharper disable once UnusedMember.Global
         public string Database
         {
             get
@@ -463,6 +464,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// When true, export server settings, logins, and SQL Server Agent jobs
         /// </summary>
+        // ReSharper disable once UnusedMember.Global
         public bool ExportServerSettingsLoginsAndJobs
         {
             get => ScriptingOptions.ExportServerSettingsLoginsAndJobs;
