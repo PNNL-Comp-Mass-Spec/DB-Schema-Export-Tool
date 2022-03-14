@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using PRISM;
-using PRISM.Logging;
 
 namespace DB_Schema_Export_Tool
 {
