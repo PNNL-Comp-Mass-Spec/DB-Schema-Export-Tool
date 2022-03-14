@@ -1319,7 +1319,7 @@ namespace DB_Schema_Export_Tool
                         // Make an educated guess of the sequence name, for example
                         // mc.t_mgr_types_mt_type_id_seq
                         var sequenceName = string.Format("{0}_{1}_seq",
-                            dataExportParams.TargetTableNameWithSchema.Replace("\"", ""), primaryKeyColumnName);
+                            dataExportParams.TargetTableNameWithSchema.Replace("\"", string.Empty), primaryKeyColumnName);
 
                         writer.WriteLine("-- Set the sequence's current value to the maximum current ID");
                         writer.WriteLine("SELECT setval('{0}', (SELECT MAX({1}) FROM {2}));",

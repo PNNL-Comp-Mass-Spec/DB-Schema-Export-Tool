@@ -495,35 +495,35 @@ namespace DB_Schema_Export_Tool
                 // ReSharper disable StringLiteralTypo
 
                 // MT_Main
-                {"T_Folder_Paths", ""},
+                {"T_Folder_Paths", string.Empty},
 
                 // MT DBs
-                {"T_Peak_Matching_Defaults", ""},
-                {"T_Process_Config", ""},
-                {"T_Process_Config_Parameters", ""},
+                {"T_Peak_Matching_Defaults", string.Empty},
+                {"T_Process_Config", string.Empty},
+                {"T_Process_Config_Parameters", string.Empty},
 
                 // MTS_Master
-                {"T_Quantitation_Defaults", ""},
-                {"T_MTS_DB_Types", ""},
-                {"T_MTS_MT_DBs", ""},
-                {"T_MTS_Peptide_DBs", ""},
-                {"T_MTS_Servers", ""},
-                {"T_MyEMSL_Cache_Paths", ""},
+                {"T_Quantitation_Defaults", string.Empty},
+                {"T_MTS_DB_Types", string.Empty},
+                {"T_MTS_MT_DBs", string.Empty},
+                {"T_MTS_Peptide_DBs", string.Empty},
+                {"T_MTS_Servers", string.Empty},
+                {"T_MyEMSL_Cache_Paths", string.Empty},
 
                 // Peptide DB
-                {"T_Dataset_Scan_Type_Name", ""},
+                {"T_Dataset_Scan_Type_Name", string.Empty},
 
                 // Prism_IFC
-                {"T_Match_Methods", ""},
-                {"T_SP_Categories", ""},
-                {"T_SP_Column_Direction_Types", ""},
-                {"T_SP_Glossary", ""},
-                {"T_SP_List", ""},
+                {"T_Match_Methods", string.Empty},
+                {"T_SP_Categories", string.Empty},
+                {"T_SP_Column_Direction_Types", string.Empty},
+                {"T_SP_Glossary", string.Empty},
+                {"T_SP_List", string.Empty},
 
                 // Prism_RPT
-                {"T_Analysis_Job_Processor_Tools", ""},
-                {"T_Analysis_Job_Processors", ""},
-                {"T_Status", ""},
+                {"T_Analysis_Job_Processor_Tools", string.Empty},
+                {"T_Analysis_Job_Processors", string.Empty},
+                {"T_Status", string.Empty},
 
                 // DMS5
                 {"T_Dataset_Rating_Name", "t_dataset_rating_name"},
@@ -570,8 +570,8 @@ namespace DB_Schema_Export_Tool
                 {"T_Protein_Collection_Types", "t_protein_collection_types"},
 
                 // dba
-                {"AlertContacts", ""},
-                {"AlertSettings", ""}
+                {"AlertContacts", string.Empty},
+                {"AlertSettings", string.Empty}
 
                 // ReSharper restore StringLiteralTypo
             };
