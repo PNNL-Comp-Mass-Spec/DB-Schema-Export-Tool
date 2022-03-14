@@ -8,27 +8,27 @@
         // Ignore Spelling: Schemas
 
         /// <summary>
-        /// IncludeSystemObjects
+        /// When true, script system objects
         /// </summary>
         public bool IncludeSystemObjects { get; set; }
 
         /// <summary>
-        /// IncludeTimestampInScriptFileHeader
+        /// When true, include timestamps in the script file header
         /// </summary>
         public bool IncludeTimestampInScriptFileHeader { get; set; }
 
         /// <summary>
-        /// ExportServerSettingsLoginsAndJobs
+        ///  When true, export server settings, logins, and SQL Server Agent jobs
         /// </summary>
         public bool ExportServerSettingsLoginsAndJobs { get; set; }
 
         /// <summary>
-        /// SaveDataAsInsertIntoStatements
+        /// Save data as insert into statements
         /// </summary>
         public bool SaveDataAsInsertIntoStatements { get; set; }
 
         /// <summary>
-        /// AutoSelectTablesForDataExport
+        /// Auto select tables for data export
         /// </summary>
         public bool AutoSelectTablesForDataExport { get; set; }
 
