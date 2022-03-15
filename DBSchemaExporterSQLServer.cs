@@ -1294,7 +1294,9 @@ namespace DB_Schema_Export_Tool
 
                 var columnMapInfo = ConvertDataTableColumnInfo(databaseTable.Name, quoteWithSquareBrackets, dataExportParams);
 
-                var insertIntoLine = ExportDBTableDataInit(tableInfo, columnMapInfo, dataExportParams, headerRows, workingParams);
+                var dataRowCount = queryResults.Tables[0].Rows.Count;
+
+                var insertIntoLine = ExportDBTableDataInit(tableInfo, columnMapInfo, dataExportParams, headerRows, workingParams, dataRowCount);
 
                 var tableDataOutputFile = GetTableDataOutputFile(tableInfo, dataExportParams, workingParams, out var relativeFilePath);
 
@@ -1374,7 +1376,8 @@ namespace DB_Schema_Export_Tool
             ColumnMapInfo columnMapInfo,
             DataExportWorkingParams dataExportParams,
             List<string> headerRows,
-            WorkingParams workingParams)
+            WorkingParams workingParams,
+            int dataRowCount)
         {
             string insertIntoLine;
 
@@ -1389,9 +1392,9 @@ namespace DB_Schema_Export_Tool
                     truncateTableEnabled = true;
                     Console.WriteLine();
 
-                    var message = string.Format("Every column in table {0} is part of the primary key; " +
-                                                "will use TRUNCATE TABLE instead of ON CONFLICT ... DO UPDATE",
-                                                dataExportParams.QuotedTargetTableNameWithSchema);
+                    var message = string.Format(
+                        "Every column in table {0} is part of the primary key; will use TRUNCATE TABLE instead of ON CONFLICT ... DO UPDATE",
+                        dataExportParams.QuotedTargetTableNameWithSchema);
 
                     OnStatusEvent(message);
 
@@ -1400,9 +1403,10 @@ namespace DB_Schema_Export_Tool
                 else if (tableInfo.PrimaryKeyColumns.Count == 0)
                 {
                     truncateTableEnabled = true;
-                    var warningMessage = string.Format("Table {0} does not have a primary key; " +
-                                                       "will use TRUNCATE TABLE since ON CONFLICT ... DO UPDATE is not possible",
-                                                       dataExportParams.QuotedTargetTableNameWithSchema);
+                    var warningMessage = string.Format(
+                        "Table {0} does not have a primary key; will use TRUNCATE TABLE since ON CONFLICT ... DO UPDATE is not possible",
+                        dataExportParams.QuotedTargetTableNameWithSchema);
+
                     OnWarningEvent(warningMessage);
 
                     workingParams.AddWarningMessage(warningMessage);
@@ -1414,13 +1418,37 @@ namespace DB_Schema_Export_Tool
 
                 if (truncateTableEnabled)
                 {
-                    dataExportParams.PgInsertHeaders.Add(string.Format("TRUNCATE TABLE {0};", dataExportParams.QuotedTargetTableNameWithSchema));
+                    var truncateTableCommand = string.Format("TRUNCATE TABLE {0};", dataExportParams.QuotedTargetTableNameWithSchema);
+
+                    if (dataRowCount > 0)
+                    {
+                        dataExportParams.PgInsertHeaders.Add(truncateTableCommand);
+                    }
+                    else
+                    {
+                        dataExportParams.PgInsertHeaders.Add(string.Empty);
+                        dataExportParams.PgInsertHeaders.Add(
+                            "-- The following is commented out because the source table is empty (or all rows were filtered out by a date filter)");
+                        dataExportParams.PgInsertHeaders.Add("-- " + truncateTableCommand);
+                    }
+
                     dataExportParams.PgInsertHeaders.Add(string.Empty);
                 }
 
                 var insertCommand = string.Format("INSERT INTO {0} ({1})",
-                                                  dataExportParams.QuotedTargetTableNameWithSchema,
-                                                  dataExportParams.HeaderRowValues);
+                    dataExportParams.QuotedTargetTableNameWithSchema,
+                    dataExportParams.HeaderRowValues);
+
+                if (dataRowCount == 0)
+                {
+                    dataExportParams.PgInsertHeaders.Add(string.Empty);
+                    dataExportParams.PgInsertHeaders.Add(
+                        "-- The following is commented out because the source table is empty (or all rows were filtered out by a date filter)");
+                    dataExportParams.PgInsertHeaders.Add("-- " + insertCommand);
+
+                    headerRows.AddRange(dataExportParams.PgInsertHeaders);
+                    return string.Empty;
+                }
 
                 dataExportParams.PgInsertHeaders.Add(insertCommand);
                 dataExportParams.PgInsertHeaders.Add("OVERRIDING SYSTEM VALUE");
