@@ -1249,9 +1249,7 @@ namespace DB_Schema_Export_Tool
 
                 lstDatabasesToProcess.Items.Clear();
 
-                var databaseList = mDBSchemaExporter.GetServerDatabases();
-
-                foreach (var databaseName in databaseList)
+                foreach (var databaseName in mDBSchemaExporter.GetServerDatabases())
                 {
                     if (string.IsNullOrWhiteSpace(databaseName))
                     {
