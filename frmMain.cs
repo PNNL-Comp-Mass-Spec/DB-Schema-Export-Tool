@@ -618,18 +618,9 @@ namespace DB_Schema_Export_Tool
                     sortOrder = TableNameSortModeConstants.Name;
                 }
 
-                List<KeyValuePair<TableDataExportInfo, long>> sortedTables;
-
-                if (sortOrder == TableNameSortModeConstants.RowCount)
-                {
-                    // Sort on RowCount
-                    sortedTables = (from item in mCachedTableList orderby item.Value select item).ToList();
-                }
-                else
-                {
-                    // Sort on table name
-                    sortedTables = (from item in mCachedTableList orderby item.Key.ToString() select item).ToList();
-                }
+                var sortedTables = sortOrder == TableNameSortModeConstants.RowCount
+                    ? (from item in mCachedTableList orderby item.Value select item).ToList()
+                    : (from item in mCachedTableList orderby item.Key.ToString() select item).ToList();
 
                 // Assure that the auto-select table names are not nothing
                 mTableNamesToAutoSelect ??= new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
