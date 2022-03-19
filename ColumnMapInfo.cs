@@ -34,9 +34,9 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Add a column
         /// </summary>
+        /// <remarks>If the Column Name Map, already has this column, will update the target name</remarks>
         /// <param name="sourceColumnName">Source column name</param>
         /// <param name="targetColumnName">Name of the column in the target table</param>
-        /// <remarks>If the Column Name Map, already has this column, will update the target name</remarks>
         public void AddColumn(string sourceColumnName, string targetColumnName)
         {
             if (!mColumnNameMap.TryGetValue(sourceColumnName, out var existingTargetName))

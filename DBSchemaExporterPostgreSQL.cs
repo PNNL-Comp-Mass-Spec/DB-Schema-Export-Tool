@@ -442,12 +442,12 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Script the tables, views, function, etc. in the specified database
         /// </summary>
-        /// <param name="databaseName">Database name</param>
-        /// <param name="workingParams">Working parameters</param>
-        /// <param name="databaseNotFound">Output: true if the database does not exist on the server (or is inaccessible)</param>
         /// <remarks>
         /// Do not include a Try block in this Function; let the calling function handle errors
         /// </remarks>
+        /// <param name="databaseName">Database name</param>
+        /// <param name="workingParams">Working parameters</param>
+        /// <param name="databaseNotFound">Output: true if the database does not exist on the server (or is inaccessible)</param>
         private bool ExportDBObjectsWork(string databaseName, WorkingParams workingParams, out bool databaseNotFound)
         {
             databaseNotFound = false;
@@ -534,12 +534,12 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Export data from the specified table (if it exists)
         /// </summary>
+        /// <remarks>If the table does not exist, will still return true</remarks>
         /// <param name="databaseName">Database name</param>
         /// <param name="tableInfo">Table info</param>
         /// <param name="maxRowsToExport">Maximum rows to export</param>
         /// <param name="workingParams">Working parameters</param>
         /// <returns>True if success, false if an error</returns>
-        /// <remarks>If the table does not exist, will still return true</remarks>
         protected override bool ExportDBTableData(
             string databaseName,
             TableDataExportInfo tableInfo,
@@ -1309,8 +1309,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get the list of databases from the current server
         /// </summary>
-        /// <returns>Enumerable list of database names</returns>
         /// <remarks>Assumes we already have an active server connection</remarks>
+        /// <returns>Enumerable list of database names</returns>
         protected override IEnumerable<string> GetServerDatabasesCurrentConnection()
         {
             return GetServerDatabasesWork();
@@ -1430,11 +1430,11 @@ namespace DB_Schema_Export_Tool
         /// Look for a .pgpass file (if Linux) or a pgpass.conf file (if Windows)
         /// If a file is found, parse it to look for the given user and database on the server defined by mOptions.ServerName
         /// </summary>
+        /// <remarks>This method will return an empty string if a match is found to an entry in a pgpass file in the standard location for this OS</remarks>
         /// <param name="pgUser"></param>
         /// <param name="currentDatabase"></param>
         /// <param name="definedInPgPassFile"></param>
         /// <returns>An empty string if the password file is in the standard location; otherwise, the password (if found)</returns>
-        /// <remarks>This method will return an empty string if a match is found to an entry in a pgpass file in the standard location for this OS</remarks>
         private string LookupUserPasswordFromDisk(string pgUser, string currentDatabase, out bool definedInPgPassFile)
         {
             try
@@ -1517,6 +1517,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Parse the given pgpass file to look for the given user and database on the server defined by mOptions.ServerName
         /// </summary>
+        /// <remarks>Will update mOptions.ServerName and/or mOptions.DBUser if there is a case mismatch</remarks>
         /// <param name="passwordFile">Password file info</param>
         /// <param name="isStandardLocation">True if the password file is in the standard location for this computer</param>
         /// <param name="pgUser"></param>
@@ -1524,7 +1525,6 @@ namespace DB_Schema_Export_Tool
         /// <param name="caseSensitive"></param>
         /// <param name="definedInPgPassFile"></param>
         /// <returns>An empty string if the password file is in the standard location; otherwise, the password (if found)</returns>
-        /// <remarks>Will update mOptions.ServerName and/or mOptions.DBUser if there is a case mismatch</remarks>
         private string LookupUserPasswordFromDisk(
             FileSystemInfo passwordFile,
             bool isStandardLocation,
@@ -1949,12 +1949,12 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Process the database dump file created by pgDump
         /// </summary>
-        /// <param name="databaseName"></param>
-        /// <param name="pgDumpOutputFile"></param>
-        /// <param name="unhandledScriptingCommands"></param>
         /// <remarks>
         /// This file will have DDL for schemas, roles, permissions, extensions, functions, tables, and views
         /// </remarks>
+        /// <param name="databaseName"></param>
+        /// <param name="pgDumpOutputFile"></param>
+        /// <param name="unhandledScriptingCommands"></param>
         private void ProcessPgDumpSchemaFile(string databaseName, FileInfo pgDumpOutputFile, out bool unhandledScriptingCommands)
         {
             unhandledScriptingCommands = false;

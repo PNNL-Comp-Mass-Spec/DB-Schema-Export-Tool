@@ -78,9 +78,9 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Update the date column and minimum date
         /// </summary>
+        /// <remarks>To remove a filter, send an empty string for dateColumnName</remarks>
         /// <param name="dateColumnName"></param>
         /// <param name="minimumDate"></param>
-        /// <remarks>To remove a filter, send an empty string for dateColumnName</remarks>
         public void DefineDateFilter(string dateColumnName, DateTime minimumDate)
         {
             if (string.IsNullOrWhiteSpace(dateColumnName))

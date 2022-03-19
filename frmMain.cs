@@ -49,7 +49,7 @@ namespace DB_Schema_Export_Tool
         public enum SchemaObjectTypeConstants
         {
             /// <summary>
-            /// SchemasAndRoles
+            /// Schemas and roles
             /// </summary>
             SchemasAndRoles = 0,
 
@@ -63,21 +63,22 @@ namespace DB_Schema_Export_Tool
             /// </summary>
             Views = 2,
             /// <summary>
-            /// StoredProcedures
+            /// Stored procedures
             /// </summary>
             StoredProcedures = 3,
+
             /// <summary>
-            /// UserDefinedFunctions
+            /// User defined functions
             /// </summary>
             UserDefinedFunctions = 4,
 
             /// <summary>
-            /// UserDefinedDataTypes
+            /// User defined data types
             /// </summary>
             UserDefinedDataTypes = 5,
 
             /// <summary>
-            /// UserDefinedTypes
+            /// User defined types
             /// </summary>
             UserDefinedTypes = 6,
 
@@ -93,17 +94,28 @@ namespace DB_Schema_Export_Tool
         private List<string> mDatabaseListToProcess;
         private List<TableDataExportInfo> mTablesForDataExport;
 
-        // Keys are table names; values are row counts, though row counts will be 0 if mCachedTableListIncludesRowCounts = False
+        /// <summary>
+        /// Cached table info
+        /// </summary>
+        /// <remarks>
+        /// Keys are table names, values are row counts; row counts will be 0 if mCachedTableListIncludesRowCounts = False
+        /// </remarks>
         private Dictionary<TableDataExportInfo, long> mCachedTableList;
 
         private bool mCachedTableListIncludesRowCounts;
 
         private SortedSet<string> mTableNamesToAutoSelect;
 
-        // Note: Must contain valid RegEx statements (tested case-insensitive)
+        /// <summary>
+        /// Regular expressions for auto-selecting table names
+        /// </summary>
+        /// <remarks>
+        /// Must contain valid RegEx statements (will use case-insensitive comparisons)
+        /// </remarks>
         private SortedSet<string> mTableNameAutoSelectRegEx;
 
         private List<string> mDefaultDMSDatabaseList;
+
         private List<string> mDefaultMTSDatabaseList;
 
         private bool mWorking;

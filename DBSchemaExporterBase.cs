@@ -477,13 +477,13 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Replace any invalid characters in filename with underscores
         /// </summary>
-        /// <param name="filename"></param>
-        /// <returns>Updated filename</returns>
         /// <remarks>
         /// Valid characters are:
         /// a-z, 0-9, underscore, space, equals sign, plus sign, minus sign, comma, period,
         /// semicolon, tilde, exclamation mark, and the symbols @ # $ % ^ &amp; ( ) { } [ ]
         ///</remarks>
+        /// <param name="filename"></param>
+        /// <returns>Updated filename</returns>
         protected string CleanNameForOS(string filename)
         {
             return mNonStandardOSChars.Replace(filename, "_");
@@ -822,12 +822,12 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Export data from the specified table (if it exists)
         /// </summary>
+        /// <remarks>If the table does not exist, will still return true</remarks>
         /// <param name="databaseName">Database name</param>
         /// <param name="tableInfo">Table info</param>
         /// <param name="maxRowsToExport">Maximum rows to export</param>
         /// <param name="workingParams">Working parameters</param>
         /// <returns>True if success, false if an error</returns>
-        /// <remarks>If the table does not exist, will still return true</remarks>
         protected abstract bool ExportDBTableData(string databaseName, TableDataExportInfo tableInfo, long maxRowsToExport, WorkingParams workingParams);
 
         /// <summary>

@@ -136,15 +136,15 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Export database schema to the specified directory
         /// </summary>
+        /// <remarks>
+        /// If CreatedDirectoryForEachDB is true, or if databaseNamesAndOutputPaths contains more than one entry,
+        /// then each database will be scripted to a subdirectory below the output directory
+        /// </remarks>
         /// <param name="outputDirectoryPath">Output directory path</param>
         /// <param name="databaseNamesAndOutputPaths">
         /// Dictionary where keys are database names and values will be updated to have the output directory path used
         /// </param>
         /// <returns>True if success, false if a problem</returns>
-        /// <remarks>
-        /// If CreatedDirectoryForEachDB is true, or if databaseNamesAndOutputPaths contains more than one entry,
-        /// then each database will be scripted to a subdirectory below the output directory
-        /// </remarks>
         /// <exception cref="ArgumentException"></exception>
         public bool ExportSchema(string outputDirectoryPath, ref Dictionary<string, string> databaseNamesAndOutputPaths)
         {
@@ -272,10 +272,6 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Compare the contents of the two files using a line-by-line comparison
         /// </summary>
-        /// <param name="baseFile">Base file</param>
-        /// <param name="comparisonFile">Comparison file</param>
-        /// <param name="differenceReason">Output parameter: reason for the difference, or DifferenceReasonType.Unchanged if identical</param>
-        /// <returns>True if the files differ (i.e. if they do not match)</returns>
         /// <remarks>
         /// Several files are treated specially to ignore changing dates or numbers, in particular:
         /// In DBDefinition files, the database size values are ignored
@@ -283,6 +279,10 @@ namespace DB_Schema_Export_Tool
         /// In T_Signatures_Data files, in the Insert Into lines, any date values are ignored
         /// In PostgreSQL database dump files, the database version and pg_dump versions are ignored if they are a minor version difference
         /// </remarks>
+        /// <param name="baseFile">Base file</param>
+        /// <param name="comparisonFile">Comparison file</param>
+        /// <param name="differenceReason">Output parameter: reason for the difference, or DifferenceReasonType.Unchanged if identical</param>
+        /// <returns>True if the files differ (i.e. if they do not match)</returns>
         private bool FilesDiffer(FileInfo baseFile, FileInfo comparisonFile, out DifferenceReasonType differenceReason)
         {
             try
@@ -1274,10 +1274,10 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Compare two strings
         /// </summary>
+        /// <remarks>Case sensitive comparison</remarks>
         /// <param name="text1"></param>
         /// <param name="text2"></param>
         /// <returns>True if the strings match, otherwise false</returns>
-        /// <remarks>Case sensitive comparison</remarks>
         private static bool StringMatch(string text1, string text2)
         {
             return text1.Equals(text2, StringComparison.Ordinal);

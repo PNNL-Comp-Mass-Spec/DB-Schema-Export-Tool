@@ -63,11 +63,11 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="options"></param>
         /// <remarks>
         /// Will auto-connect to the server if options contains a server name
         /// Otherwise, explicitly call ConnectToServer
         /// </remarks>
+        /// <param name="options"></param>
         public DBSchemaExporterSQLServer(SchemaExportOptions options) : base(options)
         {
             mSchemaToIgnore = new SortedSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -531,12 +531,12 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Script the tables, views, function, etc. in the specified database
         /// </summary>
-        /// <param name="currentDatabase">Database object</param>
-        /// <param name="scriptOptions">Scripting options</param>
-        /// <param name="workingParams">Working parameters</param>
         /// <remarks>
         /// Do not include a Try block in this Function; let the calling function handle errors
         /// </remarks>
+        /// <param name="currentDatabase">Database object</param>
+        /// <param name="scriptOptions">Scripting options</param>
+        /// <param name="workingParams">Working parameters</param>
         private bool ExportDBObjectsWork(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
             // Reset ProcessCount
@@ -1097,12 +1097,12 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Export data from the specified table (if it exists)
         /// </summary>
+        /// <remarks>If the table does not exist, will still return true</remarks>
         /// <param name="databaseName">Database name</param>
         /// <param name="tableInfo">Table info</param>
         /// <param name="maxRowsToExport">Maximum rows to export</param>
         /// <param name="workingParams">Working parameters</param>
         /// <returns>True if success, false if an error</returns>
-        /// <remarks>If the table does not exist, will still return true</remarks>
         protected override bool ExportDBTableData(
             string databaseName,
             TableDataExportInfo tableInfo,
@@ -2113,8 +2113,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get the list of databases from the current server
         /// </summary>
-        /// <returns>Enumerable list of database names</returns>
         /// <remarks>Assumes we already have an active server connection</remarks>
+        /// <returns>Enumerable list of database names</returns>
         protected override IEnumerable<string> GetServerDatabasesCurrentConnection()
         {
             return GetSqlServerDatabasesWork();
