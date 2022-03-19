@@ -1593,7 +1593,7 @@ namespace DB_Schema_Export_Tool
                 Console.WriteLine();
                 int modifiedFileCount;
 
-                if (repoManagerType == RepoManagerType.Svn || repoManagerType == RepoManagerType.Hg)
+                if (repoManagerType is RepoManagerType.Svn or RepoManagerType.Hg)
                 {
                     success = ParseSvnHgStatus(targetDirectory, statusConsoleOutput, repoManagerType, out modifiedFileCount);
                 }
@@ -1675,7 +1675,7 @@ namespace DB_Schema_Export_Tool
                         return;
                     }
 
-                    if (repoManagerType == RepoManagerType.Hg || repoManagerType == RepoManagerType.Git)
+                    if (repoManagerType is RepoManagerType.Hg or RepoManagerType.Git)
                     {
                         for (var iteration = 1; iteration <= 2; iteration++)
                         {

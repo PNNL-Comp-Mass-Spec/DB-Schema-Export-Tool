@@ -163,8 +163,7 @@ namespace DB_Schema_Export_Tool
                 // Note that AbortProcessingNow should have called RequestUnpause, but we'll call it here just in case
                 mDBSchemaExporter.RequestUnpause();
             }
-            else if (pauseStatusSaved == DBSchemaExporterBase.PauseStatusConstants.Unpaused
-                     || pauseStatusSaved == DBSchemaExporterBase.PauseStatusConstants.UnpauseRequested)
+            else if (pauseStatusSaved is DBSchemaExporterBase.PauseStatusConstants.Unpaused or DBSchemaExporterBase.PauseStatusConstants.UnpauseRequested)
             {
                 mDBSchemaExporter.RequestUnpause();
             }
@@ -917,11 +916,12 @@ namespace DB_Schema_Export_Tool
 
                     Thread.Sleep(THREAD_WAIT_MSEC);
 
-                    while (mThread.ThreadState == ThreadState.Running ||
-                           mThread.ThreadState == ThreadState.AbortRequested ||
-                           mThread.ThreadState == ThreadState.WaitSleepJoin ||
-                           mThread.ThreadState == ThreadState.Suspended ||
-                           mThread.ThreadState == ThreadState.SuspendRequested)
+                    while (mThread.ThreadState is
+                           ThreadState.Running or
+                           ThreadState.AbortRequested or
+                           ThreadState.WaitSleepJoin or
+                           ThreadState.Suspended or
+                           ThreadState.SuspendRequested)
                     {
                         try
                         {

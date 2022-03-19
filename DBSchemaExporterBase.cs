@@ -1348,7 +1348,7 @@ namespace DB_Schema_Export_Tool
         /// </remarks>
         public void RequestPause()
         {
-            if (!(PauseStatus == PauseStatusConstants.Paused || PauseStatus == PauseStatusConstants.PauseRequested))
+            if (!(PauseStatus is PauseStatusConstants.Paused or PauseStatusConstants.PauseRequested))
             {
                 SetPauseStatus(PauseStatusConstants.PauseRequested);
             }
@@ -1360,7 +1360,7 @@ namespace DB_Schema_Export_Tool
         /// <remarks>Useful when the scripting is running in another thread</remarks>
         public void RequestUnpause()
         {
-            if (!(PauseStatus == PauseStatusConstants.Unpaused || PauseStatus == PauseStatusConstants.UnpauseRequested))
+            if (!(PauseStatus is PauseStatusConstants.Unpaused or PauseStatusConstants.UnpauseRequested))
             {
                 SetPauseStatus(PauseStatusConstants.UnpauseRequested);
             }
