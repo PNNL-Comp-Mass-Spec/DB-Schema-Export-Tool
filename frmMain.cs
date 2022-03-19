@@ -216,12 +216,9 @@ namespace DB_Schema_Export_Tool
 
             var appDirectoryPath = ProcessFilesOrDirectoriesBase.GetAppDirectoryPath();
 
-            if (returnParentIfDirectoryNamedDebug)
+            if (returnParentIfDirectoryNamedDebug && appDirectoryPath.ToLower().EndsWith(DEBUG_DIRECTORY_NAME))
             {
-                if (appDirectoryPath.ToLower().EndsWith(DEBUG_DIRECTORY_NAME))
-                {
-                    return appDirectoryPath.Substring(0, appDirectoryPath.Length - DEBUG_DIRECTORY_NAME.Length);
-                }
+                return appDirectoryPath.Substring(0, appDirectoryPath.Length - DEBUG_DIRECTORY_NAME.Length);
             }
 
             return appDirectoryPath;
