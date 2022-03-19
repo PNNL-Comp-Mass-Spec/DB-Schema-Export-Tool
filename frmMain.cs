@@ -634,7 +634,6 @@ namespace DB_Schema_Export_Tool
 
                 mTableNameAutoSelectRegEx ??= new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                // Initialize regExSpecs (we'll fill it below if autoHighlightRows = True)
                 const RegexOptions regexOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline;
 
                 var regExSpecs = new List<Regex>();
