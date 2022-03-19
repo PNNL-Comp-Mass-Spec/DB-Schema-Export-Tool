@@ -17,7 +17,7 @@
     <item key="WarnOnHighTableRowCount" value="True" />
   </section>
   <section name="DBSchemaExportDatabaseSettings">
-    <item key="ServerName" value="prismweb3" />
+    <item key="ServerName" value="prismdb1" />
     <item key="UseIntegratedAuthentication" value="True" />
     <item key="Username" value="d3l243" />
     <item key="Password" value="" />
