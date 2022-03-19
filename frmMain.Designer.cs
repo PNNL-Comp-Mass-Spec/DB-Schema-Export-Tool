@@ -212,7 +212,7 @@ namespace DB_Schema_Export_Tool
             this.lblSelectDefaultDBs.Cursor = System.Windows.Forms.Cursors.Default;
             this.lblSelectDefaultDBs.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblSelectDefaultDBs.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.lblSelectDefaultDBs.Location = new System.Drawing.Point(10, 188);
+            this.lblSelectDefaultDBs.Location = new System.Drawing.Point(10, 176);
             this.lblSelectDefaultDBs.Name = "lblSelectDefaultDBs";
             this.lblSelectDefaultDBs.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.lblSelectDefaultDBs.Size = new System.Drawing.Size(81, 19);
@@ -226,7 +226,7 @@ namespace DB_Schema_Export_Tool
             this.cmdSelectDefaultDMSDBs.Cursor = System.Windows.Forms.Cursors.Default;
             this.cmdSelectDefaultDMSDBs.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.cmdSelectDefaultDMSDBs.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.cmdSelectDefaultDMSDBs.Location = new System.Drawing.Point(93, 185);
+            this.cmdSelectDefaultDMSDBs.Location = new System.Drawing.Point(93, 173);
             this.cmdSelectDefaultDMSDBs.Name = "cmdSelectDefaultDMSDBs";
             this.cmdSelectDefaultDMSDBs.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.cmdSelectDefaultDMSDBs.Size = new System.Drawing.Size(75, 25);
@@ -242,7 +242,7 @@ namespace DB_Schema_Export_Tool
             this.cmdSelectDefaultMTSDBs.Cursor = System.Windows.Forms.Cursors.Default;
             this.cmdSelectDefaultMTSDBs.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.cmdSelectDefaultMTSDBs.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.cmdSelectDefaultMTSDBs.Location = new System.Drawing.Point(176, 185);
+            this.cmdSelectDefaultMTSDBs.Location = new System.Drawing.Point(176, 173);
             this.cmdSelectDefaultMTSDBs.Name = "cmdSelectDefaultMTSDBs";
             this.cmdSelectDefaultMTSDBs.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.cmdSelectDefaultMTSDBs.Size = new System.Drawing.Size(75, 25);
@@ -286,7 +286,7 @@ namespace DB_Schema_Export_Tool
             this.cboTableNamesToExportSortOrder.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.cboTableNamesToExportSortOrder.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboTableNamesToExportSortOrder.FormattingEnabled = true;
-            this.cboTableNamesToExportSortOrder.Location = new System.Drawing.Point(265, 185);
+            this.cboTableNamesToExportSortOrder.Location = new System.Drawing.Point(265, 173);
             this.cboTableNamesToExportSortOrder.Name = "cboTableNamesToExportSortOrder";
             this.cboTableNamesToExportSortOrder.Size = new System.Drawing.Size(159, 24);
             this.cboTableNamesToExportSortOrder.TabIndex = 6;
@@ -694,10 +694,10 @@ namespace DB_Schema_Export_Tool
             this.chkSkipSchemaExport.Cursor = System.Windows.Forms.Cursors.Default;
             this.chkSkipSchemaExport.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.chkSkipSchemaExport.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.chkSkipSchemaExport.Location = new System.Drawing.Point(552, 180);
+            this.chkSkipSchemaExport.Location = new System.Drawing.Point(552, 168);
             this.chkSkipSchemaExport.Name = "chkSkipSchemaExport";
             this.chkSkipSchemaExport.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.chkSkipSchemaExport.Size = new System.Drawing.Size(130, 16);
+            this.chkSkipSchemaExport.Size = new System.Drawing.Size(130, 20);
             this.chkSkipSchemaExport.TabIndex = 21;
             this.chkSkipSchemaExport.Text = "Skip schema export";
             this.chkSkipSchemaExport.UseVisualStyleBackColor = false;
@@ -709,10 +709,10 @@ namespace DB_Schema_Export_Tool
             this.chkUsePgInsert.Cursor = System.Windows.Forms.Cursors.Default;
             this.chkUsePgInsert.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.chkUsePgInsert.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.chkUsePgInsert.Location = new System.Drawing.Point(457, 201);
+            this.chkUsePgInsert.Location = new System.Drawing.Point(457, 194);
             this.chkUsePgInsert.Name = "chkUsePgInsert";
             this.chkUsePgInsert.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.chkUsePgInsert.Size = new System.Drawing.Size(89, 16);
+            this.chkUsePgInsert.Size = new System.Drawing.Size(89, 20);
             this.chkUsePgInsert.TabIndex = 20;
             this.chkUsePgInsert.Text = "Use PgInsert";
             this.chkUsePgInsert.UseVisualStyleBackColor = false;
@@ -724,10 +724,10 @@ namespace DB_Schema_Export_Tool
             this.chkUsePgDump.Cursor = System.Windows.Forms.Cursors.Default;
             this.chkUsePgDump.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.chkUsePgDump.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.chkUsePgDump.Location = new System.Drawing.Point(457, 180);
+            this.chkUsePgDump.Location = new System.Drawing.Point(457, 168);
             this.chkUsePgDump.Name = "chkUsePgDump";
             this.chkUsePgDump.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.chkUsePgDump.Size = new System.Drawing.Size(89, 16);
+            this.chkUsePgDump.Size = new System.Drawing.Size(89, 20);
             this.chkUsePgDump.TabIndex = 19;
             this.chkUsePgDump.Text = "Use pg_dump";
             this.chkUsePgDump.UseVisualStyleBackColor = false;
@@ -794,7 +794,7 @@ namespace DB_Schema_Export_Tool
             this.chkPostgreSQL.Location = new System.Drawing.Point(9, 36);
             this.chkPostgreSQL.Name = "chkPostgreSQL";
             this.chkPostgreSQL.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.chkPostgreSQL.Size = new System.Drawing.Size(136, 16);
+            this.chkPostgreSQL.Size = new System.Drawing.Size(136, 20);
             this.chkPostgreSQL.TabIndex = 7;
             this.chkPostgreSQL.Text = "PostgreSQL";
             this.chkPostgreSQL.UseVisualStyleBackColor = false;
@@ -824,7 +824,7 @@ namespace DB_Schema_Export_Tool
             this.chkUseIntegratedAuthentication.Location = new System.Drawing.Point(6, 102);
             this.chkUseIntegratedAuthentication.Name = "chkUseIntegratedAuthentication";
             this.chkUseIntegratedAuthentication.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.chkUseIntegratedAuthentication.Size = new System.Drawing.Size(216, 16);
+            this.chkUseIntegratedAuthentication.Size = new System.Drawing.Size(216, 20);
             this.chkUseIntegratedAuthentication.TabIndex = 2;
             this.chkUseIntegratedAuthentication.Text = "Integrated authentication";
             this.chkUseIntegratedAuthentication.UseVisualStyleBackColor = false;
@@ -912,7 +912,7 @@ namespace DB_Schema_Export_Tool
             this.Controls.Add(this.fraObjectTypesToScript);
             this.Controls.Add(this.fraOutputOptions);
             this.Controls.Add(this.fraConnectionSettings);
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.Menu = this.MainMenuControl;
             this.Name = "frmMain";
             this.Text = "DB Schema Export Tool";
