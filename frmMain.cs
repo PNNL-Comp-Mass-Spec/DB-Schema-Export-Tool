@@ -90,9 +90,11 @@ namespace DB_Schema_Export_Tool
 
         private string mXmlSettingsFilePath;
 
-        private SchemaExportOptions mSchemaExportOptions;
-        private List<string> mDatabaseListToProcess;
-        private List<TableDataExportInfo> mTablesForDataExport;
+        private readonly SchemaExportOptions mSchemaExportOptions = new();
+
+        private readonly List<string> mDatabaseListToProcess = new();
+
+        private readonly List<TableDataExportInfo> mTablesForDataExport = new();
 
         /// <summary>
         /// Cached table info
@@ -100,11 +102,11 @@ namespace DB_Schema_Export_Tool
         /// <remarks>
         /// Keys are table names, values are row counts; row counts will be 0 if mCachedTableListIncludesRowCounts = False
         /// </remarks>
-        private Dictionary<TableDataExportInfo, long> mCachedTableList;
+        private readonly Dictionary<TableDataExportInfo, long> mCachedTableList = new ();
 
         private bool mCachedTableListIncludesRowCounts;
 
-        private SortedSet<string> mTableNamesToAutoSelect;
+        private readonly SortedSet<string> mTableNamesToAutoSelect = new (StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Regular expressions for auto-selecting table names
@@ -112,11 +114,11 @@ namespace DB_Schema_Export_Tool
         /// <remarks>
         /// Must contain valid RegEx statements (will use case-insensitive comparisons)
         /// </remarks>
-        private SortedSet<string> mTableNameAutoSelectRegEx;
+        private readonly SortedSet<string> mTableNameAutoSelectRegEx = new (StringComparer.OrdinalIgnoreCase);
 
-        private List<string> mDefaultDMSDatabaseList;
+        private readonly List<string> mDefaultDMSDatabaseList = new();
 
-        private List<string> mDefaultMTSDatabaseList;
+        private readonly List<string> mDefaultMTSDatabaseList = new();
 
         private bool mWorking;
 
@@ -629,11 +631,6 @@ namespace DB_Schema_Export_Tool
                     ? (from item in mCachedTableList orderby item.Value select item).ToList()
                     : (from item in mCachedTableList orderby item.Key.ToString() select item).ToList();
 
-                // Assure that the auto-select table names are not nothing
-                mTableNamesToAutoSelect ??= new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                mTableNameAutoSelectRegEx ??= new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
-
                 const RegexOptions regexOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline;
 
                 var regExSpecs = new List<Regex>();
@@ -736,10 +733,10 @@ namespace DB_Schema_Export_Tool
 
         private void InitializeControls()
         {
-            mCachedTableList = new Dictionary<TableDataExportInfo, long>();
+            mCachedTableList.Clear();
 
-            mDefaultDMSDatabaseList = new List<string>();
-            mDefaultMTSDatabaseList = new List<string>();
+            mDefaultDMSDatabaseList.Clear();
+            mDefaultMTSDatabaseList.Clear();
 
             InitializeProgressBars();
 
@@ -861,8 +858,19 @@ namespace DB_Schema_Export_Tool
             try
             {
                 // Populate mDatabaseListToProcess and mTablesForDataExport
-                mDatabaseListToProcess = GetSelectedDatabases();
-                mTablesForDataExport = GetSelectedTableNamesForDataExport(mnuEditWarnOnHighTableRowCount.Checked, out var cancelExport);
+                mDatabaseListToProcess.Clear();
+                foreach (var item in GetSelectedDatabases())
+                {
+                    mDatabaseListToProcess.Add(item);
+                }
+
+                var selectedTables = GetSelectedTableNamesForDataExport(mnuEditWarnOnHighTableRowCount.Checked, out var cancelExport);
+
+                mTablesForDataExport.Clear();
+                foreach (var item in selectedTables)
+                {
+                    mTablesForDataExport.Add(item);
+                }
 
                 if (cancelExport)
                 {
@@ -1081,17 +1089,21 @@ namespace DB_Schema_Export_Tool
                 chkExportServerSettingsLoginsAndJobs.Checked = false;
                 txtServerOutputDirectoryNamePrefix.Text = SchemaExportOptions.DEFAULT_SERVER_OUTPUT_DIRECTORY_NAME_PREFIX;
 
-                mTableNamesToAutoSelect = DBSchemaExportTool.GetTableNamesToAutoExportData(chkPostgreSQL.Checked);
-                mTableNameAutoSelectRegEx = DBSchemaExportTool.GetTableRegExToAutoExportData();
 
                 mDefaultDMSDatabaseList.Clear();
 
                 if (chkPostgreSQL.Checked)
+                mTableNamesToAutoSelect.Clear();
+                foreach (var item in DBSchemaExportTool.GetTableNamesToAutoExportData(chkPostgreSQL.Checked))
                 {
                     mDefaultDMSDatabaseList.Add("dms");
                     mDefaultDMSDatabaseList.Add("mts");
+                    mTableNamesToAutoSelect.Add(item);
                 }
                 else
+
+                mTableNameAutoSelectRegEx.Clear();
+                foreach (var item in DBSchemaExportTool.GetTableRegExToAutoExportData())
                 {
                     mDefaultDMSDatabaseList.Add("DMS5");
                     mDefaultDMSDatabaseList.Add("DMS_Capture");
@@ -1112,6 +1124,7 @@ namespace DB_Schema_Export_Tool
                     mDefaultMTSDatabaseList.Add("Master_Sequences");
                     mDefaultMTSDatabaseList.Add("MT_Historic_Log");
                     mDefaultMTSDatabaseList.Add("MT_HistoricLog");
+                    mTableNameAutoSelectRegEx.Add(item);
                 }
 
                 EnableDisableControls();
@@ -1328,8 +1341,6 @@ namespace DB_Schema_Export_Tool
 
         private void UpdateSchemaExportOptions()
         {
-            mSchemaExportOptions ??= new SchemaExportOptions();
-
             mSchemaExportOptions.OutputDirectoryPath = txtOutputDirectoryPath.Text;
             mSchemaExportOptions.DatabaseSubdirectoryPrefix = txtOutputDirectoryNamePrefix.Text;
             mSchemaExportOptions.CreateDirectoryForEachDB = chkCreateDirectoryForEachDB.Checked;
@@ -1453,8 +1464,13 @@ namespace DB_Schema_Export_Tool
 
                 var includeTableRowCounts = mnuEditIncludeTableRowCounts.Checked;
 
-                mCachedTableList = mDBSchemaExporter.GetDatabaseTables(databaseName, includeTableRowCounts, mnuEditIncludeSystemObjects.Checked);
+                mCachedTableList.Clear();
 
+                foreach (var item in mDBSchemaExporter.GetDatabaseTables(databaseName, includeTableRowCounts, mnuEditIncludeSystemObjects.Checked))
+                {
+                    mCachedTableList.Add(item.Key, item.Value);
+                }
+                
                 if (mCachedTableList.Count > 0)
                 {
                     mCachedTableListIncludesRowCounts = includeTableRowCounts;
