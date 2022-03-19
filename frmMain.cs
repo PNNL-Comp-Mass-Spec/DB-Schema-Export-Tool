@@ -1380,6 +1380,9 @@ namespace DB_Schema_Export_Tool
                     case SchemaObjectTypeConstants.Synonyms:
                         mSchemaExportOptions.ScriptingOptions.ExportSynonyms = selected;
                         break;
+
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
             }
 
