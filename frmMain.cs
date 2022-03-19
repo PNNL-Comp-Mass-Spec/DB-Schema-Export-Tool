@@ -290,20 +290,21 @@ namespace DB_Schema_Export_Tool
                     // Table not found; keep it anyway
                 }
 
-                if (keepTable)
+                if (!keepTable)
+                    continue;
+
+                if (matchedTableItem == null)
                 {
-                    if (matchedTableItem == null)
+                    var tableInfo = new TableDataExportInfo(tableName)
                     {
-                        var tableInfo = new TableDataExportInfo(tableName) {
-                            UsePgInsert = chkUsePgInsert.Checked
-                        };
-                        validTables.Add(tableInfo);
-                    }
-                    else
-                    {
-                        matchedTableItem.UsePgInsert = chkUsePgInsert.Checked;
-                        validTables.Add(matchedTableItem);
-                    }
+                        UsePgInsert = chkUsePgInsert.Checked
+                    };
+                    validTables.Add(tableInfo);
+                }
+                else
+                {
+                    matchedTableItem.UsePgInsert = chkUsePgInsert.Checked;
+                    validTables.Add(matchedTableItem);
                 }
             }
 
@@ -453,13 +454,15 @@ namespace DB_Schema_Export_Tool
                     mnuEditSaveDataAsInsertIntoStatements.Checked = xmlFile.GetParam(XML_SECTION_PROGRAM_OPTIONS, "SaveDataAsInsertIntoStatements", mnuEditSaveDataAsInsertIntoStatements.Checked);
                     mnuEditWarnOnHighTableRowCount.Checked = xmlFile.GetParam(XML_SECTION_PROGRAM_OPTIONS, "WarnOnHighTableRowCount", mnuEditWarnOnHighTableRowCount.Checked);
 
-                    if (lstDatabasesToProcess.Items.Count == 0 ||
-                        serverNameSaved?.Equals(txtServerName.Text, StringComparison.OrdinalIgnoreCase) == false)
+                    if (lstDatabasesToProcess.Items.Count > 0 &&
+                        serverNameSaved.Equals(txtServerName.Text, StringComparison.OrdinalIgnoreCase))
                     {
-                        if (connectToServer)
-                        {
-                            UpdateDatabaseList();
-                        }
+                        return;
+                    }
+
+                    if (connectToServer)
+                    {
+                        UpdateDatabaseList();
                     }
                 }
                 catch (Exception)
@@ -1524,14 +1527,13 @@ namespace DB_Schema_Export_Tool
 
         private void cmdPauseUnpause_Click(object sender, EventArgs e)
         {
-            if (mDBSchemaExporter != null)
-            {
-                mDBSchemaExporter.TogglePause();
+            if (mDBSchemaExporter == null)
+                return;
 
-                if (mDBSchemaExporter.PauseStatus == DBSchemaExporterBase.PauseStatusConstants.UnpauseRequested
-                    || mDBSchemaExporter.PauseStatus == DBSchemaExporterBase.PauseStatusConstants.Unpaused)
-                {
-                }
+            mDBSchemaExporter.TogglePause();
+
+            if (mDBSchemaExporter.PauseStatus is DBSchemaExporterBase.PauseStatusConstants.UnpauseRequested or DBSchemaExporterBase.PauseStatusConstants.Unpaused)
+            {
             }
         }
 
