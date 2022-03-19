@@ -1032,7 +1032,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseName">Database to query</param>
         /// <param name="includeTableRowCounts">When true, determines the row count in each table</param>
-        /// <param name="includeSystemObjects">When true, also returns system var tables</param>
+        /// <param name="includeSystemObjects">When true, also returns system tables</param>
         /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
         public override Dictionary<TableDataExportInfo, long> GetDatabaseTables(
             string databaseName,
@@ -1094,7 +1094,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseName">Database to query</param>
         /// <param name="includeTableRowCounts">When true, determines the row count in each table</param>
-        /// <param name="includeSystemObjects">When true, also returns system var tables</param>
+        /// <param name="includeSystemObjects">When true, also returns system tables</param>
         /// <param name="clearSchemaOutputDirectories">When true, remove all items in dictionary SchemaOutputDirectories</param>
         /// <param name="databaseNotFound">Output: true if the database does not exist on the server (or is inaccessible)</param>
         /// <returns>

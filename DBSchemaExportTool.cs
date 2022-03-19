@@ -442,7 +442,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseName">Database to query</param>
         /// <param name="includeTableRowCounts">When true, determines the row count in each table</param>
-        /// <param name="includeSystemObjects">When true, also returns system var tables</param>
+        /// <param name="includeSystemObjects">When true, also returns system tables</param>
         /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
         public Dictionary<TableDataExportInfo, long> GetDatabaseTables(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
         {

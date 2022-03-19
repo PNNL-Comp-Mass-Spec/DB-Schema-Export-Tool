@@ -826,7 +826,7 @@ namespace DB_Schema_Export_Tool
         private bool ExportDBViewsProceduresAndUDFs(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
             // Option 1) obtain the list of views, stored procedures, and UDFs is to use currentDatabase.EnumObjects
-            // However, this only returns the var name, type, and URN, not whether or not it is a system var
+            // However, this only returns the var name, type, and URN, not whether or not it is a system object
             //
             // Option 2) use currentDatabase.Views, currentDatabase.StoredProcedures, etc.
             // However, on Sql Server 2005 this returns many system views and system procedures that we typically don't want to export
@@ -1982,7 +1982,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseName">Database to query</param>
         /// <param name="includeTableRowCounts">When true, determines the row count in each table</param>
-        /// <param name="includeSystemObjects">When true, also returns system var tables</param>
+        /// <param name="includeSystemObjects">When true, also returns system tables</param>
         /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
         public override Dictionary<TableDataExportInfo, long> GetDatabaseTables(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
         {
@@ -2161,7 +2161,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseName">Database to query</param>
         /// <param name="includeTableRowCounts">When true, determines the row count in each table</param>
-        /// <param name="includeSystemObjects">When true, also returns system var tables</param>
+        /// <param name="includeSystemObjects">When true, also returns system tables</param>
         /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
         public Dictionary<TableDataExportInfo, long> GetSqlServerDatabaseTables(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
         {
