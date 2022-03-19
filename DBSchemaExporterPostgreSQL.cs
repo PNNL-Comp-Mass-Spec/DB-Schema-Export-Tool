@@ -242,8 +242,10 @@ namespace DB_Schema_Export_Tool
 
                 if (databaseNotFound)
                 {
-                    SetLocalError(DBSchemaExportErrorCodes.GeneralError,
-                                  string.Format("Error in AutoSelectTablesForDataExport; database not found: " + databaseName));
+                    SetLocalError(
+                        DBSchemaExportErrorCodes.GeneralError,
+                        string.Format("Error in AutoSelectTablesForDataExport; database not found: " + databaseName));
+
                     return new Dictionary<TableDataExportInfo, long>();
                 }
             }
@@ -416,8 +418,10 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.GeneralError,
-                              "Error auto selecting table names for data export from database" + databaseName, ex);
+                SetLocalError(
+                    DBSchemaExportErrorCodes.GeneralError,
+                    "Error auto selecting table names for data export from database" + databaseName, ex);
+
                 databaseNotFound = false;
                 return false;
             }
@@ -554,8 +558,10 @@ namespace DB_Schema_Export_Tool
 
                     if (databaseNotFound)
                     {
-                        SetLocalError(DBSchemaExportErrorCodes.GeneralError,
-                                      string.Format("Error in ExportDBTableData; database not found: " + databaseName));
+                        SetLocalError(
+                            DBSchemaExportErrorCodes.GeneralError,
+                            string.Format("Error in ExportDBTableData; database not found: " + databaseName));
+
                         return false;
                     }
                 }
@@ -970,8 +976,9 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.GeneralError,
-                              string.Format("Error in FindPgExecutableLinux finding {0}", exeName), ex);
+                SetLocalError(
+                    DBSchemaExportErrorCodes.GeneralError,
+                    string.Format("Error in FindPgExecutableLinux finding {0}", exeName), ex);
 
                 return null;
             }
@@ -1012,8 +1019,9 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.GeneralError,
-                              string.Format("Error in FindPgExecutableWindows finding {0}", exeName), ex);
+                SetLocalError(
+                    DBSchemaExportErrorCodes.GeneralError,
+                    string.Format("Error in FindPgExecutableWindows finding {0}", exeName), ex);
 
                 return null;
             }
@@ -1129,8 +1137,7 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError,
-                              string.Format("Error connecting to server {0}", mCurrentServerInfo.ServerName), ex);
+                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError, string.Format("Error connecting to server {0}", mCurrentServerInfo.ServerName), ex);
                 return new Dictionary<TableDataExportInfo, long>();
             }
 
@@ -1254,9 +1261,9 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.GeneralError,
-                              string.Format("Error obtaining list of tables in database {0} on server {1}",
-                                            databaseName, mCurrentServerInfo.ServerName), ex);
+                SetLocalError(
+                    DBSchemaExportErrorCodes.GeneralError,
+                    string.Format("Error obtaining list of tables in database {0} on server {1}", databaseName, mCurrentServerInfo.ServerName), ex);
 
                 return new Dictionary<TableDataExportInfo, long>();
             }
@@ -1506,9 +1513,10 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError,
-                              string.Format("Error looking up the password for user {0} on server {1}",
-                                            pgUser, GetServerConnectionInfo()), ex);
+                SetLocalError(
+                    DBSchemaExportErrorCodes.DatabaseConnectionError,
+                    string.Format("Error looking up the password for user {0} on server {1}", pgUser, GetServerConnectionInfo()), ex);
+
                 definedInPgPassFile = false;
                 return string.Empty;
             }

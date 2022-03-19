@@ -462,8 +462,10 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.GeneralError,
-                              "Error auto selecting table names for data export from database" + databaseName, ex);
+                SetLocalError(
+                    DBSchemaExportErrorCodes.GeneralError,
+                    "Error auto selecting table names for data export from database" + databaseName, ex);
+
                 databaseNotFound = false;
                 return false;
             }
@@ -1119,8 +1121,10 @@ namespace DB_Schema_Export_Tool
                     }
                     catch (Exception ex)
                     {
-                        SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError,
-                                      "Error connecting to database " + databaseName, ex);
+                        SetLocalError(
+                            DBSchemaExportErrorCodes.DatabaseConnectionError,
+                            "Error connecting to database " + databaseName, ex);
+
                         return false;
                     }
                 }
@@ -1901,8 +1905,9 @@ namespace DB_Schema_Export_Tool
                 }
                 else
                 {
-                    SetLocalError(DBSchemaExportErrorCodes.GeneralError,
-                                  string.Format("Processing failed for server {0}; login {1}", mOptions.ServerName, currentLogin));
+                    SetLocalError(
+                        DBSchemaExportErrorCodes.GeneralError,
+                        string.Format("Processing failed for server {0}; login {1}", mOptions.ServerName, currentLogin));
                 }
             }
         }
@@ -1941,8 +1946,9 @@ namespace DB_Schema_Export_Tool
                 }
                 else
                 {
-                    SetLocalError(DBSchemaExportErrorCodes.GeneralError,
-                                  string.Format("Processing failed for server {0}; job {1}", mOptions.ServerName, currentJob));
+                    SetLocalError(
+                        DBSchemaExportErrorCodes.GeneralError,
+                        string.Format("Processing failed for server {0}; job {1}", mOptions.ServerName, currentJob));
                 }
             }
         }
@@ -2226,8 +2232,9 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError,
-                              string.Format("Error obtaining list of tables in database {0} on the current server", databaseName), ex);
+                SetLocalError(
+                    DBSchemaExportErrorCodes.DatabaseConnectionError,
+                    string.Format("Error obtaining list of tables in database {0} on the current server", databaseName), ex);
 
                 return new Dictionary<TableDataExportInfo, long>();
             }

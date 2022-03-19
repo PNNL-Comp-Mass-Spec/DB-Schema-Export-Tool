@@ -1472,8 +1472,9 @@ namespace DB_Schema_Export_Tool
                     }
                     else
                     {
-                        SetLocalError(DBSchemaExportErrorCodes.DatabaseConnectionError,
-                                      string.Format("Database {0} not found on server {1}", currentDB, mOptions.ServerName));
+                        SetLocalError(
+                            DBSchemaExportErrorCodes.DatabaseConnectionError,
+                            string.Format("Database {0} not found on server {1}", currentDB, mOptions.ServerName));
                     }
                 }
 
@@ -1483,8 +1484,9 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.GeneralError,
-                              "Error exporting DB schema objects: " + mOptions.OutputDirectoryPath, ex);
+                SetLocalError(
+                    DBSchemaExportErrorCodes.GeneralError,
+                    "Error exporting DB schema objects: " + mOptions.OutputDirectoryPath, ex);
             }
 
             return false;
@@ -1900,8 +1902,10 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception)
             {
-                SetLocalError(DBSchemaExportErrorCodes.GeneralError,
-                              "Error validating or creating directory " + workingParams.OutputDirectoryPathCurrentDB);
+                SetLocalError(
+                    DBSchemaExportErrorCodes.GeneralError,
+                    "Error validating or creating directory " + workingParams.OutputDirectoryPathCurrentDB);
+
                 return false;
             }
         }
@@ -1930,8 +1934,10 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.OutputDirectoryAccessError,
-                              "Output directory could not be created: " + mOptions.OutputDirectoryPath, ex);
+                SetLocalError(
+                    DBSchemaExportErrorCodes.OutputDirectoryAccessError,
+                    "Output directory could not be created: " + mOptions.OutputDirectoryPath, ex);
+
                 return false;
             }
         }

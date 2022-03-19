@@ -131,6 +131,7 @@ namespace DB_Schema_Export_Tool
         private delegate void UpdatePauseUnpauseCaptionHandler(DBSchemaExporterBase.PauseStatusConstants pauseStatus);
 
         private delegate void ProgressUpdateHandler(string taskDescription, float percentComplete);
+
         private delegate void ProgressCompleteHandler();
 
         private delegate void HandleDBExportStartingEventHandler(string databaseName);
@@ -165,8 +166,10 @@ namespace DB_Schema_Export_Tool
 
             mDBSchemaExporter.RequestPause();
             Application.DoEvents();
-            var response = MessageBox.Show("Are you sure you want to abort processing?", "Abort", MessageBoxButtons.YesNoCancel,
-                                            MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
+
+            var response = MessageBox.Show(
+                "Are you sure you want to abort processing?", "Abort",
+                MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
 
             if (response == DialogResult.Yes)
             {
@@ -237,7 +240,8 @@ namespace DB_Schema_Export_Tool
 
             foreach (var item in selectedTableNames)
             {
-                var tableInfo = new TableDataExportInfo(item) {
+                var tableInfo = new TableDataExportInfo(item)
+                {
                     UsePgInsert = chkUsePgInsert.Checked
                 };
 
@@ -277,8 +281,9 @@ namespace DB_Schema_Export_Tool
                                                 tableName, tableRowCount);
                         var caption = "Row Count Over " + DBSchemaExporterBase.MAX_ROWS_DATA_TO_EXPORT;
 
-                        var response = MessageBox.Show(msg, caption, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question,
-                                                        MessageBoxDefaultButton.Button2);
+                        var response = MessageBox.Show(
+                            msg, caption,
+                            MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
 
                         if (response == DialogResult.No)
                         {
@@ -433,6 +438,7 @@ namespace DB_Schema_Export_Tool
                 // Read the settings from the XML file
                 // Pass True to .LoadSettings() to turn off case sensitive matching
                 xmlFile.LoadSettings(filePath, false);
+
                 try
                 {
                     Width = xmlFile.GetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowWidth", Width);
@@ -550,6 +556,7 @@ namespace DB_Schema_Export_Tool
             {
                 // Pass True to .LoadSettings() here so that newly made Xml files will have the correct capitalization
                 xmlFile.LoadSettings(filePath, true);
+
                 try
                 {
                     xmlFile.SetParam(XML_SECTION_PROGRAM_OPTIONS, "WindowWidth", Width);
@@ -954,6 +961,7 @@ namespace DB_Schema_Export_Tool
                 {
                     message = string.Format("Error exporting the schema objects (ErrorCode={0}):\n{1}",
                                             mDBSchemaExporter.ErrorCode, mDBSchemaExporter.StatusMessage);
+
                     MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                 }
             }
@@ -1031,7 +1039,10 @@ namespace DB_Schema_Export_Tool
             {
                 if (confirm)
                 {
-                    var response = MessageBox.Show("Are you sure you want to reset all settings to their default values?", "Reset to Defaults", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
+                    var response = MessageBox.Show(
+                        "Are you sure you want to reset all settings to their default values?",
+                        "Reset to Defaults",
+                        MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
 
                     if (response != DialogResult.Yes)
                     {
@@ -1159,6 +1170,7 @@ namespace DB_Schema_Export_Tool
             try
             {
                 var toolTipControl = new ToolTip();
+
                 toolTipControl.SetToolTip(chkCreateDirectoryForEachDB, "This will be automatically enabled if multiple databases are chosen above");
                 toolTipControl.SetToolTip(txtOutputDirectoryNamePrefix, "The output directory for each database will be named with this prefix followed by the database name");
                 toolTipControl.SetToolTip(txtServerOutputDirectoryNamePrefix, "Server settings will be saved in a directory with this prefix followed by the server name");
@@ -1172,6 +1184,7 @@ namespace DB_Schema_Export_Tool
         private void ShowAboutBox()
         {
             var message = new StringBuilder();
+
             message.AppendLine("Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in August 2006");
             message.AppendLine("Copyright 2006, Battelle Memorial Institute.  All Rights Reserved.");
             message.AppendLine();
@@ -1333,29 +1346,37 @@ namespace DB_Schema_Export_Tool
             for (var index = 0; index < lstObjectTypesToScript.Items.Count; index++)
             {
                 var selected = lstObjectTypesToScript.GetSelected(index);
+
                 switch ((SchemaObjectTypeConstants)index)
                 {
                     case SchemaObjectTypeConstants.SchemasAndRoles:
                         mSchemaExportOptions.ScriptingOptions.ExportDBSchemasAndRoles = selected;
                         break;
+
                     case SchemaObjectTypeConstants.Tables:
                         mSchemaExportOptions.ScriptingOptions.ExportTables = selected;
                         break;
+
                     case SchemaObjectTypeConstants.Views:
                         mSchemaExportOptions.ScriptingOptions.ExportViews = selected;
                         break;
+
                     case SchemaObjectTypeConstants.StoredProcedures:
                         mSchemaExportOptions.ScriptingOptions.ExportStoredProcedures = selected;
                         break;
+
                     case SchemaObjectTypeConstants.UserDefinedFunctions:
                         mSchemaExportOptions.ScriptingOptions.ExportUserDefinedFunctions = selected;
                         break;
+
                     case SchemaObjectTypeConstants.UserDefinedDataTypes:
                         mSchemaExportOptions.ScriptingOptions.ExportUserDefinedDataTypes = selected;
                         break;
+
                     case SchemaObjectTypeConstants.UserDefinedTypes:
                         mSchemaExportOptions.ScriptingOptions.ExportUserDefinedTypes = selected;
                         break;
+
                     case SchemaObjectTypeConstants.Synonyms:
                         mSchemaExportOptions.ScriptingOptions.ExportSynonyms = selected;
                         break;
