@@ -1089,43 +1089,45 @@ namespace DB_Schema_Export_Tool
                 chkExportServerSettingsLoginsAndJobs.Checked = false;
                 txtServerOutputDirectoryNamePrefix.Text = SchemaExportOptions.DEFAULT_SERVER_OUTPUT_DIRECTORY_NAME_PREFIX;
 
-
-                mDefaultDMSDatabaseList.Clear();
-
-                if (chkPostgreSQL.Checked)
                 mTableNamesToAutoSelect.Clear();
                 foreach (var item in DBSchemaExportTool.GetTableNamesToAutoExportData(chkPostgreSQL.Checked))
                 {
-                    mDefaultDMSDatabaseList.Add("dms");
-                    mDefaultDMSDatabaseList.Add("mts");
                     mTableNamesToAutoSelect.Add(item);
                 }
-                else
 
                 mTableNameAutoSelectRegEx.Clear();
                 foreach (var item in DBSchemaExportTool.GetTableRegExToAutoExportData())
                 {
-                    mDefaultDMSDatabaseList.Add("DMS5");
-                    mDefaultDMSDatabaseList.Add("DMS_Capture");
-                    mDefaultDMSDatabaseList.Add("DMS_Data_Package");
-                    mDefaultDMSDatabaseList.Add("DMS_Pipeline");
-                    mDefaultDMSDatabaseList.Add("Ontology_Lookup");
-                    mDefaultDMSDatabaseList.Add("Protein_Sequences");
-                    mDefaultDMSDatabaseList.Add("DMSHistoricLog1");
-
-                    mDefaultMTSDatabaseList.Clear();
-                    mDefaultMTSDatabaseList.Add("MT_Template_01");
-                    mDefaultMTSDatabaseList.Add("PT_Template_01");
-                    mDefaultMTSDatabaseList.Add("MT_Main");
-                    mDefaultMTSDatabaseList.Add("MTS_Master");
-                    mDefaultMTSDatabaseList.Add("Prism_IFC");
-                    mDefaultMTSDatabaseList.Add("Prism_RPT");
-                    mDefaultMTSDatabaseList.Add("PAST_BB");
-                    mDefaultMTSDatabaseList.Add("Master_Sequences");
-                    mDefaultMTSDatabaseList.Add("MT_Historic_Log");
-                    mDefaultMTSDatabaseList.Add("MT_HistoricLog");
                     mTableNameAutoSelectRegEx.Add(item);
                 }
+
+                mDefaultDMSDatabaseList.Clear();
+                mDefaultMTSDatabaseList.Clear();
+
+                // PostgreSQL database names
+                mDefaultDMSDatabaseList.Add("dms");
+                mDefaultDMSDatabaseList.Add("dmsdev");
+
+                // SQL Server database names
+                mDefaultDMSDatabaseList.Add("DMS5");
+                mDefaultDMSDatabaseList.Add("DMS_Capture");
+                mDefaultDMSDatabaseList.Add("DMS_Data_Package");
+                mDefaultDMSDatabaseList.Add("DMS_Pipeline");
+                mDefaultDMSDatabaseList.Add("Ontology_Lookup");
+                mDefaultDMSDatabaseList.Add("Protein_Sequences");
+                mDefaultDMSDatabaseList.Add("DMSHistoricLog1");
+
+                mDefaultMTSDatabaseList.Add("mts");
+                mDefaultMTSDatabaseList.Add("MT_Template_01");
+                mDefaultMTSDatabaseList.Add("PT_Template_01");
+                mDefaultMTSDatabaseList.Add("MT_Main");
+                mDefaultMTSDatabaseList.Add("MTS_Master");
+                mDefaultMTSDatabaseList.Add("Prism_IFC");
+                mDefaultMTSDatabaseList.Add("Prism_RPT");
+                mDefaultMTSDatabaseList.Add("PAST_BB");
+                mDefaultMTSDatabaseList.Add("Master_Sequences");
+                mDefaultMTSDatabaseList.Add("MT_Historic_Log");
+                mDefaultMTSDatabaseList.Add("MT_HistoricLog");
 
                 EnableDisableControls();
             }
@@ -1470,7 +1472,7 @@ namespace DB_Schema_Export_Tool
                 {
                     mCachedTableList.Add(item.Key, item.Value);
                 }
-                
+
                 if (mCachedTableList.Count > 0)
                 {
                     mCachedTableListIncludesRowCounts = includeTableRowCounts;
