@@ -35,6 +35,16 @@ namespace DB_Schema_Export_Tool
             Git = 2
         }
 
+        private enum TableInfoFileColumns
+        {
+            Undefined = 0,
+            SourceTableName = 1,
+            TargetTableName = 2,
+            TargetSchemaName = 3,
+            PgInsert = 4,
+            KeyColumns = 5
+        }
+
         private readonly Regex mDateMatcher;
 
         private DBSchemaExporterBase mDBSchemaExporter;
@@ -814,7 +824,28 @@ namespace DB_Schema_Export_Tool
 
                 ShowTrace(string.Format("Reading table information from table data file {0}", dataFile.FullName));
 
-                var headerLineChecked = false;
+                // If the file does not have a header line, will assume the following, based on the number of columns found for a given row
+
+                // Option 1:
+                // SourceTableName
+
+                // Option 2:
+                // SourceTableName  TargetTableName
+
+                // Option 3:
+                // SourceTableName  TargetSchemaName  TargetTableName
+
+                // Option 4:
+                // SourceTableName  TargetSchemaName  TargetTableName  PgInsert
+
+                // Option 5:
+                // SourceTableName  TargetSchemaName  TargetTableName  PgInsert  KeyColumn(s)
+
+                // If a header line is found, this dictionary is used to track the column positions
+                // The first column must be named SourceTableName
+                var columnMap = new Dictionary<TableInfoFileColumns, int>();
+
+                var invalidLineCount = 0;
 
                 using var dataReader = new StreamReader(new FileStream(dataFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
 
@@ -823,34 +854,75 @@ namespace DB_Schema_Export_Tool
                     var dataLine = dataReader.ReadLine();
 
                     // Lines that start with # are treated as comment lines
-                    if (string.IsNullOrWhiteSpace(dataLine) || dataLine.StartsWith("#"))
+                    if (string.IsNullOrWhiteSpace(dataLine) || dataLine.Trim().StartsWith("#"))
                         continue;
-
-                    // Supports the following tab-delimited columns
-
-                    // Option 1:
-                    // SourceTableName
-
-                    // Option 2:
-                    // SourceTableName  TargetTableName
-
-                    // Option 3:
-                    // SourceTableName  TargetSchemaName  TargetTableName
-
-                    // Option 4:
-                    // SourceTableName  TargetSchemaName  TargetTableName  PgInsert
-
-                    // Option 4:
-                    // SourceTableName  TargetSchemaName  TargetTableName  PgInsert  KeyColumn(s)
 
                     var lineParts = dataLine.Split('\t');
 
-                    if (!headerLineChecked)
+                    if (columnMap.Count == 0)
                     {
-                        headerLineChecked = true;
+                        if (!lineParts[0].Equals("SourceTableName", StringComparison.OrdinalIgnoreCase))
+                        {
+                            columnMap.Add(TableInfoFileColumns.Undefined, 0);
+                        }
+                        else
+                        {
+                            columnMap.Add(TableInfoFileColumns.SourceTableName, 0);
 
-                        if (lineParts[0].Equals("SourceTableName"))
+                            for (var i = 1; i < lineParts.Length; i++)
+                            {
+                                if (lineParts[i].Equals("TargetTableName", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    columnMap.Add(TableInfoFileColumns.TargetTableName, i);
+                                }
+                                else if (lineParts[i].Equals("TargetSchemaName", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    columnMap.Add(TableInfoFileColumns.TargetSchemaName, i);
+                                }
+                                else if (lineParts[i].Equals("PgInsert", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    columnMap.Add(TableInfoFileColumns.PgInsert, i);
+                                }
+                                else if (lineParts[i].StartsWith("KeyColumn", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    columnMap.Add(TableInfoFileColumns.KeyColumns, i);
+                                }
+                                else
+                                {
+                                    LogWarning("Unrecognized header column in the Table Data File: " + lineParts[i]);
+                                    OnStatusEvent("See file " + dataFile.FullName);
+                                    return tablesForDataExport;
+                                }
+                            }
+
                             continue;
+                        }
+                    }
+
+                    Dictionary<TableInfoFileColumns, int> columnMapCurrentLine;
+
+                    if (!columnMap.ContainsKey(TableInfoFileColumns.Undefined))
+                    {
+                        columnMapCurrentLine = columnMap;
+                    }
+                    else
+                    {
+                        columnMapCurrentLine = new Dictionary<TableInfoFileColumns, int>
+                        {
+                            { TableInfoFileColumns.SourceTableName, 0 }
+                        };
+
+                        switch (lineParts.Length)
+                        {
+                            case 2:
+                                columnMapCurrentLine.Add(TableInfoFileColumns.TargetTableName, 1);
+                                break;
+
+                            case >= 3:
+                                columnMapCurrentLine.Add(TableInfoFileColumns.TargetSchemaName, 1);
+                                columnMapCurrentLine.Add(TableInfoFileColumns.TargetTableName, 2);
+                                break;
+                        }
                     }
 
                     var sourceTableName = lineParts[0].Trim();
@@ -860,14 +932,14 @@ namespace DB_Schema_Export_Tool
                         UsePgInsert = mOptions.PgInsertTableData
                     };
 
-                    if (lineParts.Length == 2)
+                    if (TryGetColumnValue(lineParts, columnMapCurrentLine, TableInfoFileColumns.TargetSchemaName, out var targetSchemaName))
                     {
-                        tableInfo.TargetTableName = lineParts[1].Trim();
+                        tableInfo.TargetSchemaName = targetSchemaName;
                     }
-                    else if (lineParts.Length >= 3)
+
+                    if (TryGetColumnValue(lineParts, columnMapCurrentLine, TableInfoFileColumns.TargetTableName, out var targetTableName))
                     {
-                        tableInfo.TargetSchemaName = lineParts[1].Trim();
-                        tableInfo.TargetTableName = lineParts[2].Trim();
+                        tableInfo.TargetTableName = targetTableName;
                     }
 
                     // Check for TargetTableName being "true" or "false"
@@ -882,24 +954,23 @@ namespace DB_Schema_Export_Tool
                         continue;
                     }
 
-                    if (lineParts.Length >= 4)
+                    if (TryGetColumnValue(lineParts, columnMapCurrentLine, TableInfoFileColumns.PgInsert, out var pgInsertValue))
                     {
                         // Treat the text "true" or a positive integer as true
-                        if (bool.TryParse(lineParts[3].Trim(), out var parsedValue))
+                        if (bool.TryParse(pgInsertValue, out var parsedValue))
                         {
                             tableInfo.UsePgInsert = parsedValue;
                         }
-                        else if (int.TryParse(lineParts[3].Trim(), out var parsedNumber))
+                        else if (int.TryParse(pgInsertValue, out var parsedNumber))
                         {
                             tableInfo.UsePgInsert = parsedNumber > 0;
                         }
                     }
 
-                    if (lineParts.Length >= 5)
+                    if (TryGetColumnValue(lineParts, columnMapCurrentLine, TableInfoFileColumns.KeyColumns, out var keyColumns))
                     {
                         // One or more primary key columns
-
-                        foreach (var primaryKeyColumn in lineParts[4].Trim().Split(','))
+                        foreach (var primaryKeyColumn in keyColumns.Split(','))
                         {
                             tableInfo.PrimaryKeyColumns.Add(primaryKeyColumn);
                         }
@@ -1446,6 +1517,22 @@ namespace DB_Schema_Export_Tool
         public void TogglePause()
         {
             mDBSchemaExporter?.TogglePause();
+        }
+
+        private bool TryGetColumnValue(
+            IReadOnlyList<string> lineParts,
+            IReadOnlyDictionary<TableInfoFileColumns, int> columnMapCurrentLine,
+            TableInfoFileColumns column,
+            out string value)
+        {
+            if (columnMapCurrentLine.TryGetValue(column, out var columnIndex) && columnIndex < lineParts.Count)
+            {
+                value = lineParts[columnIndex].Trim();
+                return true;
+            }
+
+            value = null;
+            return false;
         }
 
         private void UpdateRepoChanges(
