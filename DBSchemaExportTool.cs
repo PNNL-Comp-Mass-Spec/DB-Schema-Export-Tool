@@ -215,7 +215,10 @@ namespace DB_Schema_Export_Tool
                 }
                 else
                 {
-                    tablesForDataExport = LoadTablesForDataExport(mOptions.TableDataToExportFile);
+                    tablesForDataExport = LoadTablesForDataExport(mOptions.TableDataToExportFile, out var abortProcessing);
+
+                    if (abortProcessing)
+                        return false;
                 }
 
                 if (!string.IsNullOrWhiteSpace(mOptions.TableDataColumnMapFile))
@@ -800,10 +803,11 @@ namespace DB_Schema_Export_Tool
             }
         }
 
-        private List<TableDataExportInfo> LoadTablesForDataExport(string tableDataFilePath)
+        private List<TableDataExportInfo> LoadTablesForDataExport(string tableDataFilePath, out bool abortProcessing)
         {
             var tableNames = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
             var tablesForDataExport = new List<TableDataExportInfo>();
+            abortProcessing = false;
 
             try
             {
@@ -816,9 +820,8 @@ namespace DB_Schema_Export_Tool
 
                 if (!dataFile.Exists)
                 {
-                    Console.WriteLine();
-                    OnStatusEvent("Table Data File not found; default tables will be used");
-                    LogWarning("File not found: " + dataFile.FullName);
+                    LogWarning("Table Data File not found: " + dataFile.FullName);
+                    abortProcessing = true;
                     return tablesForDataExport;
                 }
 
@@ -891,6 +894,7 @@ namespace DB_Schema_Export_Tool
                                 {
                                     LogWarning("Unrecognized header column in the Table Data File: " + lineParts[i]);
                                     OnStatusEvent("See file " + dataFile.FullName);
+                                    abortProcessing = true;
                                     return tablesForDataExport;
                                 }
                             }
@@ -951,6 +955,14 @@ namespace DB_Schema_Export_Tool
                             "Invalid line in the table data file; target table name cannot be {0}; see {1}",
                             tableInfo.TargetTableName, dataLine));
 
+                        // Set this to true, but keep processing, showing up to 5 warnings
+                        abortProcessing = true;
+
+                        invalidLineCount++;
+
+                        if (invalidLineCount >= 5)
+                            break;
+
                         continue;
                     }
 
@@ -984,6 +996,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var tableText = tablesForDataExport.Count == 1 ? "table" : "tables";
+
                 ShowTrace(string.Format(
                     "Loaded information for {0} {1} from {2}",
                     tablesForDataExport.Count, tableText, dataFile.Name));
