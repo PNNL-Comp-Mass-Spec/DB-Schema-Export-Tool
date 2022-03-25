@@ -142,7 +142,11 @@ namespace DB_Schema_Export_Tool
                     // End of block
 
                     if (!writeOutput)
+                    {
+                        writer.WriteLine("-- Skipping table: {0}", sourceTableName);
+                        writer.WriteLine();
                         return;
+                    }
 
                     outputLines.Add(dataLine);
 
@@ -239,9 +243,10 @@ namespace DB_Schema_Export_Tool
                     return false;
                 }
 
-                var updatedSchemaFile = Path.Combine(existingSchemaFile.Directory.FullName,
-                                                     Path.GetFileNameWithoutExtension(existingSchemaFile.Name) + "_UpdatedColumnNames" +
-                                                     existingSchemaFile.Extension);
+                var updatedSchemaFile = Path.Combine(
+                    existingSchemaFile.Directory.FullName,
+                    Path.GetFileNameWithoutExtension(existingSchemaFile.Name) + "_UpdatedColumnNames" +
+                    existingSchemaFile.Extension);
 
                 var tableNameMatcher = new Regex(@"^CREATE TABLE[^[]+\[(?<SchemaName>[^[]+)\]\.\[(?<TableName>[^[]+)\].*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
                 var indexNameMatcher = new Regex(@"^CREATE.+INDEX[^[]+\[(?<IndexName>[^[]+)\] ON \[(?<SchemaName>[^[]+)\]\.\[(?<TableName>.+)\].*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
