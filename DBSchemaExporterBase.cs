@@ -165,12 +165,27 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         protected bool mAbortProcessing;
 
+        /// <summary>
+        /// Match any lowercase letter
+        /// </summary>
         private readonly Regex mAnyLowerMatcher;
 
+        /// <summary>
+        /// Match a lowercase letter followed by an uppercase letter
+        /// </summary>
         private readonly Regex mCamelCaseMatcher;
 
+        /// <summary>
+        /// Match any character that is not a letter, number, or underscore
+        /// </summary>
+        /// <remarks>
+        /// If a match is found, quote the name with double quotes (PostgreSQL) or square brackets (SQL Server)
+        /// </remarks>
         private readonly Regex mColumnCharNonStandardMatcher;
 
+        /// <summary>
+        /// Disallowed characters for file names
+        /// </summary>
         private readonly Regex mNonStandardOSChars;
 
         /// <summary>
