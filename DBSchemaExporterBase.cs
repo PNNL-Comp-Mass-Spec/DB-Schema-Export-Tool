@@ -273,7 +273,7 @@ namespace DB_Schema_Export_Tool
 
             mAnyLowerMatcher = new Regex("[a-z]", RegexOptions.Compiled | RegexOptions.Singleline);
 
-            mCamelCaseMatcher = new Regex("(?<Part1>.+?)(?<Part2Start>[A-Z]+)(?<Part3>.*)", RegexOptions.Compiled | RegexOptions.Singleline);
+            mCamelCaseMatcher = new Regex("(?<LowerLetter>[a-z])(?<UpperLetter>[A-Z])", RegexOptions.Compiled);
 
             mColumnCharNonStandardMatcher = new Regex("[^a-z0-9_]", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
@@ -642,21 +642,11 @@ namespace DB_Schema_Export_Tool
                 return objectName.ToLower();
             }
 
-            var updatedName = objectName;
+            var match = mCamelCaseMatcher.Match(objectName);
 
-            while (true)
-            {
-                var match = mCamelCaseMatcher.Match(updatedName);
-
-                if (!match.Success)
-                    break;
-
-                var part1 = match.Groups["Part1"].Value.TrimEnd('_');
-                var part2 = match.Groups["Part2Start"].Value.TrimStart('_');
-                var part3 = match.Groups["Part3"].Value;
-
-                updatedName = part1.ToLower() + "_" + part2.ToLower() + part3;
-            }
+            var updatedName = match.Success
+                ? mCamelCaseMatcher.Replace(objectName, "${LowerLetter}_${UpperLetter}")
+                : objectName;
 
             return updatedName.ToLower();
         }
