@@ -191,7 +191,7 @@ Use `/MaxRows` to define the maximum number of data rows to export
 Use `/NoTableData` or `/NoData` to prevent any table data from being exported
 * This parameter is useful when processing an existing DDL file with `/ExistingDDL`
 
-Use `/SnakeCase` to auto change column names from Upper_Case and UpperCase to lower_case when exporting data from tables
+Use `/SnakeCase` to auto change column names from Upper\_Case and UpperCase to lower_case when exporting data from tables
 * Also used for table names when exporting data from tables
 * Entries in the `/DataTables` and `/ColumnMap` files will override auto-generated snake_case names
 
