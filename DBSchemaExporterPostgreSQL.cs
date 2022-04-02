@@ -2275,9 +2275,12 @@ namespace DB_Schema_Export_Tool
 
                 using var writer = new StreamWriter(new FileStream(outputFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite));
 
+                // EditPad is configured to trim trailing whitespace when saving .sql files
+                // To avoid extra whitespace being removed when manually editing .sql files, trim trailing whitespace
+
                 foreach (var cachedLine in cachedLines)
                 {
-                    writer.WriteLine(cachedLine);
+                    writer.WriteLine(cachedLine.TrimEnd());
                 }
 
                 // Add one blank line to the end of the file (provided the previous line was not empty)
