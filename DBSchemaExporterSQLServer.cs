@@ -208,11 +208,6 @@ namespace DB_Schema_Export_Tool
 
         private List<string> CleanSqlScript(IEnumerable<string> scriptInfo, bool removeAllScriptDateOccurrences, bool removeDuplicateHeaderLine)
         {
-            var whitespaceChars = new[] {
-                ' ',
-                '\t'
-            };
-
             var cleanScriptInfo = new List<string>();
 
             try
@@ -276,7 +271,7 @@ namespace DB_Schema_Export_Tool
 
                             if (indexEndCurrent > indexStartCurrent && indexEndCurrent <= finalSearchIndex)
                             {
-                                currentLine = currentLine.Substring(0, indexStartCurrent).TrimEnd(whitespaceChars) + COMMENT_END_TEXT +
+                                currentLine = currentLine.Substring(0, indexStartCurrent).TrimEnd() + COMMENT_END_TEXT +
                                               currentLine.Substring(indexEndCurrent + COMMENT_END_TEXT_SHORT.Length);
                             }
                         }
