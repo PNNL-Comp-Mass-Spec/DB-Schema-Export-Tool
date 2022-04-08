@@ -1,5 +1,23 @@
 DB Schema Export Tool
 
+Version 2.0.8132; April 7, 2022
+	- Remove trailing whitespace from schema files created by pg_dump
+
+Version 2.0.8124; March 30, 2022
+	- Simplify the logic used to convert names from camelCase to snake_case
+
+Version 2.0.8119; March 25, 2022
+	- When reading tab-delimited text files with column info, use header names to determine column order
+
+Version 2.0.7588; October 10, 2020
+	- Add option to filter exported objects by name
+
+Version 2.0.7228; October 16, 2019
+	- Add support for PostgreSQL by parsing output from pg_dump
+
+Version 2.0.7222; October 10, 2019
+	- Convert to C# and add console app
+
 Version 1.2.6869; October 22, 2018
 	- Update PRISM.dll with renamed classes
 	- Rename parameters
