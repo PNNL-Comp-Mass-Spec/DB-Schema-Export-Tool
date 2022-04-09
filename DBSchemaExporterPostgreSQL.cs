@@ -365,12 +365,14 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseName">Database name</param>
         /// <param name="tablesForDataExport">Table names that should be auto-selected</param>
+        /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported</param>
         /// <param name="databaseNotFound">Output: true if the database does not exist on the server (or is inaccessible)</param>
         /// <param name="workingParams"></param>
         /// <returns>True if successful, false if an error</returns>
         protected override bool ExportDBObjectsAndTableData(
             string databaseName,
             IReadOnlyList<TableDataExportInfo> tablesForDataExport,
+            IReadOnlyList<string> tableDataExportOrder,
             out bool databaseNotFound,
             out WorkingParams workingParams)
         {
@@ -432,7 +434,7 @@ namespace DB_Schema_Export_Tool
                 var success = ExportDBObjectsWork(databaseName, workingParams, out databaseNotFound);
 
                 // Export data from tables specified by tablesToExportData
-                var dataSuccess = ExportDBTableData(databaseName, tablesToExportData, workingParams);
+                var dataSuccess = ExportDBTableData(databaseName, tablesToExportData, tableDataExportOrder, workingParams);
 
                 return success && dataSuccess;
             }

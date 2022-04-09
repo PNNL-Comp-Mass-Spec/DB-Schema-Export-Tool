@@ -649,7 +649,7 @@ namespace DB_Schema_Export_Tool
         /// Convert the object name to snake_case
         /// </summary>
         /// <param name="objectName"></param>
-        private string ConvertNameToSnakeCase(string objectName)
+        public string ConvertNameToSnakeCase(string objectName)
         {
             if (!mAnyLowerMatcher.IsMatch(objectName))
             {
@@ -743,12 +743,14 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseName"></param>
         /// <param name="tablesForDataExport"></param>
+        /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported</param>
         /// <param name="databaseNotFound"></param>
         /// <param name="workingParams"></param>
         /// <returns>True if successful, false if an error</returns>
         protected abstract bool ExportDBObjectsAndTableData(
             string databaseName,
             IReadOnlyList<TableDataExportInfo> tablesForDataExport,
+            IReadOnlyList<string> tableDataExportOrder,
             out bool databaseNotFound,
             out WorkingParams workingParams);
 
@@ -756,12 +758,14 @@ namespace DB_Schema_Export_Tool
         /// Export data from the specified tables
         /// </summary>
         /// <param name="databaseName">Database name</param>
-        /// <param name="tablesToExportData">Dictionary with names of tables to export; values are the maximum rows to export from each table</param>
+        /// <param name="tablesToExportData">Dictionary where keys are information on tables to export and values are the maximum number of rows to export</param>
+        /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported</param>
         /// <param name="workingParams">Working parameters</param>
         /// <returns>True if successful, false if an error</returns>
         protected bool ExportDBTableData(
             string databaseName,
             Dictionary<TableDataExportInfo, long> tablesToExportData,
+            IReadOnlyList<string> tableDataExportOrder,
             WorkingParams workingParams)
         {
             try
@@ -787,7 +791,32 @@ namespace DB_Schema_Export_Tool
                         break;
                 }
 
-                foreach (var tableItem in tablesToExportData)
+                // The KeyValuePairs in this list are instances of TableDataExportInfo and the maximum number of rows to export for the given table
+                var tablesToExportOrdered = new List<KeyValuePair<TableDataExportInfo, long>>();
+
+                var storedTableInfo = new SortedSet<string>();
+
+                foreach (var tableNameToFind in tableDataExportOrder)
+                {
+                    var alternateNameToFind = mOptions.TableDataSnakeCase ? ConvertNameToSnakeCase(tableNameToFind) : string.Empty;
+
+                    foreach (var item in tablesToExportData)
+                    {
+                        if (StoreDataExportTableIfMatch(item.Key, item.Value, tableNameToFind, alternateNameToFind, tablesToExportOrdered, storedTableInfo))
+                            break;
+                    }
+                }
+
+                // Add tables that were not in tableDataExportOrder
+                foreach (var item in tablesToExportData)
+                {
+                    if (storedTableInfo.Contains(item.Key.SourceTableName))
+                        continue;
+
+                    tablesToExportOrdered.Add(new KeyValuePair<TableDataExportInfo, long>(item.Key, item.Value));
+                }
+
+                foreach (var tableItem in tablesToExportOrdered)
                 {
                     var tableInfo = tableItem.Key;
                     var maxRowsToExport = tableItem.Value;
@@ -822,6 +851,45 @@ namespace DB_Schema_Export_Tool
                 SetLocalError(DBSchemaExportErrorCodes.GeneralError, "Error in ExportDBTableData", ex);
                 return false;
             }
+        }
+
+        private bool StoreDataExportTableIfMatch(
+            TableDataExportInfo tableInfo,
+            long maxRowsToExport,
+            string tableNameToFind,
+            string alternateNameToFind,
+            ICollection<KeyValuePair<TableDataExportInfo, long>> tablesToExportOrdered,
+            ISet<string> storedTableInfo)
+        {
+            if (string.IsNullOrWhiteSpace(tableInfo.SourceTableName))
+                return false;
+
+            var tableNameWithoutSchema = GetNameWithoutSchema(tableInfo.SourceTableName);
+            var namesToCheck = new List<string>
+            {
+                tableNameWithoutSchema
+            };
+
+            var sourceNameSnakeCase = ConvertNameToSnakeCase(tableNameWithoutSchema);
+
+            if (!sourceNameSnakeCase.Equals(tableNameWithoutSchema, StringComparison.OrdinalIgnoreCase))
+            {
+                namesToCheck.Add(sourceNameSnakeCase);
+            }
+
+            if (!string.IsNullOrWhiteSpace(tableInfo.TargetTableName))
+                namesToCheck.Add(tableInfo.TargetTableName);
+
+            if (!namesToCheck.Any(tableName =>
+                    tableName.Equals(tableNameToFind, StringComparison.OrdinalIgnoreCase) &&
+                    tableName.Equals(alternateNameToFind, StringComparison.OrdinalIgnoreCase)))
+            {
+                return false;
+            }
+
+            tablesToExportOrdered.Add(new KeyValuePair<TableDataExportInfo, long>(tableInfo, maxRowsToExport));
+            storedTableInfo.Add(tableInfo.SourceTableName);
+            return true;
         }
 
         /// <summary>
@@ -1020,6 +1088,16 @@ namespace DB_Schema_Export_Tool
             var fileName = cleanName + suffix + ".sql";
 
             return defaultOwnerSchema ? fileName : Path.Combine(dataExportParams.TargetTableSchema, fileName);
+        }
+
+        /// <summary>
+        /// Get the object name, without the schema
+        /// </summary>
+        /// <param name="objectName">Object name (with or without schema)</param>
+        public string GetNameWithoutSchema(string objectName)
+        {
+            GetSchemaName(objectName, out var objectNameWithoutSchema);
+            return objectNameWithoutSchema;
         }
 
         /// <summary>
@@ -1387,9 +1465,11 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseListToProcess"></param>
         /// <param name="tablesForDataExport"></param>
+        /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported</param>
         private bool ScriptDBObjectsAndData(
             IReadOnlyCollection<string> databaseListToProcess,
-            IReadOnlyList<TableDataExportInfo> tablesForDataExport)
+            IReadOnlyList<TableDataExportInfo> tablesForDataExport,
+            IReadOnlyList<string> tableDataExportOrder)
         {
             var processedDBList = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -1444,7 +1524,7 @@ namespace DB_Schema_Export_Tool
                     {
                         currentDB = currentDbName;
                         OnDebugEvent(tasksToPerform + " from database " + currentDbName);
-                        success = ExportDBObjectsAndTableData(currentDbName, tablesForDataExport, out var databaseNotFound, out var workingParams);
+                        success = ExportDBObjectsAndTableData(currentDbName, tablesForDataExport, tableDataExportOrder, out var databaseNotFound, out var workingParams);
 
                         if (!warningsByDatabase.ContainsKey(currentDB))
                         {
@@ -1502,10 +1582,12 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseList">Database names to export></param>
         /// <param name="tablesForDataExport">Table names for which data should be exported</param>
+        /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported</param>
         /// <returns>True if success, false if a problem</returns>
         public bool ScriptServerAndDBObjects(
             IReadOnlyList<string> databaseList,
-            IReadOnlyList<TableDataExportInfo> tablesForDataExport)
+            IReadOnlyList<TableDataExportInfo> tablesForDataExport,
+            IReadOnlyList<string> tableDataExportOrder)
         {
             if (mOptions.NoSchema && mOptions.DisableDataExport)
             {
@@ -1555,7 +1637,7 @@ namespace DB_Schema_Export_Tool
 
             if (databaseList?.Count > 0)
             {
-                var success = ScriptDBObjectsAndData(databaseList, tablesForDataExport);
+                var success = ScriptDBObjectsAndData(databaseList, tablesForDataExport, tableDataExportOrder);
 
                 if (!success)
                 {

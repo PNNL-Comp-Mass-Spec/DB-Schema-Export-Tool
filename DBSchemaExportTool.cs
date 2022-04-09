@@ -221,6 +221,21 @@ namespace DB_Schema_Export_Tool
                         return false;
                 }
 
+
+                List<string> tableDataExportOrder;
+
+                if (string.IsNullOrWhiteSpace(mOptions.TableDataExportOrderFile))
+                {
+                    tableDataExportOrder = new List<string>();
+                }
+                else
+                {
+                    tableDataExportOrder = LoadTableDataExportOrderFile(mOptions.TableDataExportOrderFile, out var abortProcessing);
+
+                    if (abortProcessing)
+                        return false;
+                }
+
                 if (!string.IsNullOrWhiteSpace(mOptions.TableDataColumnMapFile))
                 {
                     LoadColumnMapInfo(mOptions.TableDataColumnMapFile);
@@ -246,7 +261,7 @@ namespace DB_Schema_Export_Tool
                         return false;
                 }
 
-                var success = ScriptServerAndDBObjectsWork(databaseList, tablesForDataExport);
+                var success = ScriptServerAndDBObjectsWork(databaseList, tablesForDataExport, tableDataExportOrder);
 
                 // Populate a dictionary with the database names (properly capitalized) and the output directory path used for each
                 var databaseNameToDirectoryMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -803,6 +818,83 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        private List<string> LoadTableDataExportOrderFile(string dataExportOrderFilePath, out bool abortProcessing)
+        {
+            var tableDataExportOrder = new List<string>();
+
+            // This SortedSet is used to check for duplicate table names
+            var tableNames = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            abortProcessing = false;
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(dataExportOrderFilePath))
+                {
+                    return tableDataExportOrder;
+                }
+
+                var dataFile = new FileInfo(dataExportOrderFilePath);
+
+                if (!dataFile.Exists)
+                {
+                    LogWarning("Table Data Export Order File not found: " + dataFile.FullName);
+                    abortProcessing = true;
+                    return tableDataExportOrder;
+                }
+
+                ShowTrace(string.Format("Reading table data export order from file {0}", dataFile.FullName));
+
+                // This is not incremented for blank lines or comment lines
+                var linesRead = 0;
+
+                using var dataReader = new StreamReader(new FileStream(dataFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+
+                while (!dataReader.EndOfStream)
+                {
+                    var dataLine = dataReader.ReadLine();
+
+                    // Lines that start with # are treated as comment lines
+                    if (string.IsNullOrWhiteSpace(dataLine) || dataLine.Trim().StartsWith("#"))
+                        continue;
+
+                    linesRead++;
+
+                    // There should only be one column, but split on tab anyway in case other columns were included
+                    var lineParts = dataLine.Split('\t');
+
+                    if (linesRead == 1 && lineParts[0].Trim().Equals("Table_Name", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Header line
+                        continue;
+                    }
+
+                    var tableName = mDBSchemaExporter.GetNameWithoutSchema(lineParts[0].Trim());
+
+                    if (tableNames.Contains(tableName))
+                    {
+                        OnWarningEvent("Table {0} is listed more than once in file {1}", tableName, dataFile.Name);
+                        continue;
+                    }
+
+                    tableDataExportOrder.Add(tableName);
+                    tableNames.Add(tableName);
+                }
+
+                var tableText = tableDataExportOrder.Count == 1 ? "table name" : "table names";
+
+                ShowTrace(string.Format(
+                    "Loaded {0} {1} for data export sort order",
+                    tableDataExportOrder.Count, tableText));
+            }
+            catch (Exception ex)
+            {
+                OnErrorEvent("Error in LoadTableDataExportOrderFile", ex);
+            }
+
+            return tableDataExportOrder;
+        }
+
         private List<TableDataExportInfo> LoadTablesForDataExport(string tableDataFilePath, out bool abortProcessing)
         {
             var tableNames = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -1319,14 +1411,22 @@ namespace DB_Schema_Export_Tool
             if (!isValid)
                 return false;
 
-            return ScriptServerAndDBObjectsWork(databaseList, tablesForDataExport);
+            return ScriptServerAndDBObjectsWork(databaseList, tablesForDataExport, new List<string>());
         }
 
+        /// <summary>
+        /// Script server and database objects, plus optionally table data
+        /// </summary>
+        /// <param name="databaseList"></param>
+        /// <param name="tablesForDataExport"></param>
+        /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported</param>
+        /// <returns>True if successful; false if an error</returns>
         private bool ScriptServerAndDBObjectsWork(
             IReadOnlyList<string> databaseList,
-            IReadOnlyList<TableDataExportInfo> tablesForDataExport)
+            IReadOnlyList<TableDataExportInfo> tablesForDataExport,
+            IReadOnlyList<string> tableDataExportOrder)
         {
-            return mDBSchemaExporter.ScriptServerAndDBObjects(databaseList, tablesForDataExport);
+            return mDBSchemaExporter.ScriptServerAndDBObjects(databaseList, tablesForDataExport, tableDataExportOrder);
         }
 
         private void ShowTrace(string message)

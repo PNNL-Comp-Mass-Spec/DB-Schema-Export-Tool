@@ -360,16 +360,18 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseName"></param>
         /// <param name="tablesForDataExport"></param>
+        /// <param name="tableDataExportOrder"></param>
         /// <param name="databaseNotFound"></param>
         /// <param name="workingParams"></param>
         /// <returns>True if successful, false if an error</returns>
         protected override bool ExportDBObjectsAndTableData(
             string databaseName,
             IReadOnlyList<TableDataExportInfo> tablesForDataExport,
+            IReadOnlyList<string> tableDataExportOrder,
             out bool databaseNotFound,
             out WorkingParams workingParams)
         {
-            return ExportDBObjectsUsingSMO(mSqlServer, databaseName, tablesForDataExport, out databaseNotFound, out workingParams);
+            return ExportDBObjectsUsingSMO(mSqlServer, databaseName, tablesForDataExport, tableDataExportOrder, out databaseNotFound, out workingParams);
         }
 
         /// <summary>
@@ -379,6 +381,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="sqlServer">SQL Server Accessor</param>
         /// <param name="databaseName">Database name</param>
         /// <param name="tablesForDataExport">Table names that should be auto-selected</param>
+        /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported</param>
         /// <param name="databaseNotFound">Output: true if the database does not exist on the server (or is inaccessible)</param>
         /// <param name="workingParams"></param>
         /// <returns>True if successful, false if an error</returns>
@@ -386,6 +389,7 @@ namespace DB_Schema_Export_Tool
             Server sqlServer,
             string databaseName,
             IReadOnlyList<TableDataExportInfo> tablesForDataExport,
+            IReadOnlyList<string> tableDataExportOrder,
             out bool databaseNotFound,
             out WorkingParams workingParams)
         {
@@ -514,7 +518,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 // Export data from tables specified by tablesToExportData (will preview the SQL to be used if mOptions.Preview is true)
-                var dataSuccess = ExportDBTableData(mCurrentDatabase.Name, tablesToExportData, workingParams);
+                var dataSuccess = ExportDBTableData(mCurrentDatabase.Name, tablesToExportData, tableDataExportOrder, workingParams);
 
                 return success && dataSuccess;
             }

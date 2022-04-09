@@ -386,6 +386,16 @@ namespace DB_Schema_Export_Tool
         public string ObjectNameFilter { get; set; }
 
         /// <summary>
+        /// Text file with table names (one name per line) defining the order that table data should be exported
+        /// </summary>
+        [Option("TableDataExportOrder", "DataExportOrder", HelpShowsDefault = false, IsInputFilePath = true,
+            HelpText = "Text file with table names (one name per line) defining the order that data should be exported from tables\n" +
+                       "Should have table names only, without schema\n" +
+                       "Tables not listed in this file will have their data exported alphabetically by table name\n" +
+                       "If the first line is Table_Name, will assume that it is a header line (and will thus ignore it)")]
+        public string TableDataExportOrderFile { get; set; }
+
+        /// <summary>
         /// "Default schema for exported tables and data
         /// </summary>
         [Option("DefaultSchema", "Schema", HelpShowsDefault = false,
@@ -734,6 +744,11 @@ namespace DB_Schema_Export_Tool
                     Console.WriteLine(" {0,-48} {1}", "Default value for the PgInsert column:", PgInsertTableData);
                     Console.WriteLine(" {0,-48} {1}", "PgInsert chunk size:", PgInsertChunkSize);
                 }
+            }
+
+            if (!string.IsNullOrWhiteSpace(TableDataExportOrderFile))
+            {
+                Console.WriteLine(" {0,-48} {1}", "File defining table data export order:", PathUtils.CompactPathString(TableDataExportOrderFile, 80));
             }
 
             if (TableNameFilterSet.Count > 0)
