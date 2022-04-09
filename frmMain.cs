@@ -100,7 +100,7 @@ namespace DB_Schema_Export_Tool
         /// Cached table info
         /// </summary>
         /// <remarks>
-        /// Keys are table names, values are row counts; row counts will be 0 if mCachedTableListIncludesRowCounts = False
+        /// Keys are instances of TableDataExportInfo, values are row counts; row counts will be 0 if mCachedTableListIncludesRowCounts = False
         /// </remarks>
         private readonly Dictionary<TableDataExportInfo, long> mCachedTableList = new ();
 
@@ -1007,7 +1007,7 @@ namespace DB_Schema_Export_Tool
 
         private void ScriptDBSchemaObjectsThread()
         {
-            // Note: Populate mDatabaseListToProcess and mTablesForDataExport prior to calling this sub
+            // Note: Populate mDatabaseListToProcess and mTablesForDataExport prior to calling this method
             try
             {
                 mSchemaExportSuccess = mDBSchemaExporter.ScriptServerAndDBObjects(mDatabaseListToProcess, mTablesForDataExport);

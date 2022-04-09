@@ -321,7 +321,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="tablesForDataExport">
         /// Tables that should be auto-selected; also used to track tables that should be skipped if the TargetTableName is &lt;skip&gt;
         /// </param>
-        /// <returns>Dictionary where keys are table names and values are the maximum number of rows to export</returns>
+        /// <returns>Dictionary where keys are information on tables to export and values are the maximum number of rows to export</returns>
         protected Dictionary<TableDataExportInfo, long> AutoSelectTablesForDataExport(
             string databaseName,
             IReadOnlyList<TableDataExportInfo> tablesInDatabase,
@@ -1055,7 +1055,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="databaseName">Database to query</param>
         /// <param name="includeTableRowCounts">When true, determines the row count in each table</param>
         /// <param name="includeSystemObjects">When true, also returns system tables</param>
-        /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
+        /// <returns>Dictionary where keys are information on database tables and values are row counts (if includeTableRowCounts = true)</returns>
         public abstract Dictionary<TableDataExportInfo, long> GetDatabaseTables(string databaseName, bool includeTableRowCounts, bool includeSystemObjects);
 
         /// <summary>

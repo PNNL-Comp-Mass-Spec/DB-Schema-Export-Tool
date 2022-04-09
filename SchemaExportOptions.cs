@@ -110,7 +110,7 @@ namespace DB_Schema_Export_Tool
         public string DBUserPassword { get; set; }
 
         /// <summary>
-        /// Existing schema (DDL) file to parse to rename columns based on information in the ColumnMap file
+        /// Existing schema file (DDL file from SSMS) to parse to rename columns based on information in the ColumnMap file
         /// </summary>
         [Option("ExistingDDL", "ExistingSchema", HelpShowsDefault = false, IsInputFilePath = true,
             HelpText = "Existing schema (DDL) file to parse to rename columns based on information in the ColumnMap file\n" +

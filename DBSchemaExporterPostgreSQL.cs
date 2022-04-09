@@ -230,7 +230,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="databaseName">Database name</param>
         /// <param name="tablesForDataExport">Table names that should be auto-selected</param>
         /// <param name="databaseNotFound">Output: true if the database does not exist on the server (or is inaccessible)</param>
-        /// <returns>Dictionary where keys are table names and values are the maximum number of rows to export</returns>
+        /// <returns>Dictionary where keys are information on tables to export and values are the maximum number of rows to export</returns>
         private Dictionary<TableDataExportInfo, long> AutoSelectTablesForDataExport(
             string databaseName,
             IReadOnlyList<TableDataExportInfo> tablesForDataExport,
@@ -378,7 +378,7 @@ namespace DB_Schema_Export_Tool
         {
             workingParams = new WorkingParams();
 
-            // Keys are table names to export data
+            // Keys are information on tables to export
             // Values are the maximum number of rows to export
             Dictionary<TableDataExportInfo, long> tablesToExportData;
             databaseNotFound = false;
@@ -1035,7 +1035,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="databaseName">Database to query</param>
         /// <param name="includeTableRowCounts">When true, determines the row count in each table</param>
         /// <param name="includeSystemObjects">When true, also returns system tables</param>
-        /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
+        /// <returns>Dictionary where keys are instances of TableDataExportInfo and values are row counts (if includeTableRowCounts = true)</returns>
         public override Dictionary<TableDataExportInfo, long> GetDatabaseTables(
             string databaseName,
             bool includeTableRowCounts,

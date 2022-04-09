@@ -174,7 +174,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="currentDatabase">SQL Server database</param>
         /// <param name="tablesForDataExport">Table names that should be auto-selected</param>
-        /// <returns>Dictionary where keys are table names and values are the maximum number of rows to export</returns>
+        /// <returns>Dictionary where keys are instances of TableDataExportInfo and values are the maximum number of rows to export</returns>
         private Dictionary<TableDataExportInfo, long> AutoSelectTablesForDataExport(
             Database currentDatabase,
             IReadOnlyList<TableDataExportInfo> tablesForDataExport)
@@ -397,7 +397,7 @@ namespace DB_Schema_Export_Tool
 
             ScriptingOptions scriptOptions;
 
-            // Keys are table names to export
+            // Keys are information on tables to export
             // Values are the maximum number of rows to export
             Dictionary<TableDataExportInfo, long> tablesToExportData;
 
@@ -1982,7 +1982,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="databaseName">Database to query</param>
         /// <param name="includeTableRowCounts">When true, determines the row count in each table</param>
         /// <param name="includeSystemObjects">When true, also returns system tables</param>
-        /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
+        /// <returns>Dictionary where keys are instances of TableDataExportInfo and values are row counts (if includeTableRowCounts = true)</returns>
         public override Dictionary<TableDataExportInfo, long> GetDatabaseTables(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
         {
             return GetSqlServerDatabaseTables(databaseName, includeTableRowCounts, includeSystemObjects);
@@ -2161,7 +2161,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="databaseName">Database to query</param>
         /// <param name="includeTableRowCounts">When true, determines the row count in each table</param>
         /// <param name="includeSystemObjects">When true, also returns system tables</param>
-        /// <returns>Dictionary where keys are table names and values are row counts (if includeTableRowCounts = true)</returns>
+        /// <returns>Dictionary where keys are instances of TableDataExportInfo and values are row counts (if includeTableRowCounts = true)</returns>
         public Dictionary<TableDataExportInfo, long> GetSqlServerDatabaseTables(string databaseName, bool includeTableRowCounts, bool includeSystemObjects)
         {
             // Keys are table names; values are row counts
