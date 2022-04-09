@@ -859,18 +859,12 @@ namespace DB_Schema_Export_Tool
             {
                 // Populate mDatabaseListToProcess and mTablesForDataExport
                 mDatabaseListToProcess.Clear();
-                foreach (var item in GetSelectedDatabases())
-                {
-                    mDatabaseListToProcess.Add(item);
-                }
+                mDatabaseListToProcess.AddRange(GetSelectedDatabases());
 
                 var selectedTables = GetSelectedTableNamesForDataExport(mnuEditWarnOnHighTableRowCount.Checked, out var cancelExport);
 
                 mTablesForDataExport.Clear();
-                foreach (var item in selectedTables)
-                {
-                    mTablesForDataExport.Add(item);
-                }
+                mTablesForDataExport.AddRange(selectedTables);
 
                 if (cancelExport)
                 {
