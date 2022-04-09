@@ -46,8 +46,9 @@ DB_Schema_Export_Tool.exe
  [/PgUser:username] [/PgPass:password] [/PgPort:5432]
  [/DirectoryPrefix:PrefixText] [/NoSubdirectory] [/CreateDBDirectories]
  [/DataTables:TableDataToExport.txt] [/Map:ColumnMapping.txt]
- [/DateFilter:MinimumDate] [/TableFilterList]
- [/NameFilter:FilterSpec]
+ [/TableFilterList] [/SchemaSkipList]
+ [/DateFilter:MinimumDate] [/NameFilter:FilterSpec]
+ [/DataExportOrder] 
  [/Schema:SchemaName] [/ExistingDDL:SchemaFileName]
  [/NoAutoData] [/ExportAllData] [/MaxRows:1000] [/NoData]
  [/SnakeCase] [/PgDump] [/KeepPgDumpFile]
@@ -148,8 +149,12 @@ Use `/Map` or `/ColumnMap` to define a tab-delimited text file mapping source co
 | t_users	       | name_with_prn	  | `<skip>`         |
 
 Use `/TableFilterList` or `/TableNameFilter` to specify a table name (or comma separated list of names) to restrict table export operations. 
-* This is useful for exporting the data from just a single table
+* This is useful for exporting the data from just a single table (or a few tables)
 * This parameter does not support reading names from a file; it only supports actual table names
+* If a file was defined via the `/DataTables` parameter, the list of tables loaded from that file will be filtered by this list (matching both SourceTableName and TargetTableName)
+
+Use `/SchemaSkipList` to specify a schema name (or comma separated list of names) of schema to skip
+* This is useful if using partitioned tables
 
 Use `/DateFilter` or `/TableDataDateFilter` to define a tab-delimited text file that defines date filters to use when exporting data from tables.
 * The data file will include the start date in the name, for example: `mc.t_log_entries_Data_Since_2020-01-01.sql`
@@ -169,6 +174,11 @@ Use `/NameFilter` to define a filter to apply to exported tables, views, procedu
   * This only works if using a parameter file, since the Windows command line parser removes ^
 * Use `$` to indicate the object names must end with the text, for example `Report$` to end with Report
 * Other RegEx qualifiers are supported; matches are case insensitive
+
+Use `/DataExportOrder` to define a text file with table names (one name per line) defining the order that data should be exported from tables
+* Should have table names only, without schema
+* Tables not listed in this file will have their data exported alphabetically by table name
+* If the first line is Table_Name, will assume that it is a header line (and will thus ignore it)
 
 Use `/Schema` or `/DefaultSchema` to define the default schema name to use when exporting data from tables
 * Entries in the `/DataTables` file will override this default schema

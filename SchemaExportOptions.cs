@@ -313,7 +313,9 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         [Option("TableFilterList", "TableNameFilter", HelpShowsDefault = false,
             HelpText = "Table name (or comma separated list of names) to restrict table export operations\n" +
-                       "This is useful for exporting the data from just a single table")]
+                       "This is useful for exporting the data from just a single table (or a few tables)\n" +
+                       "This parameter does not support reading names from a file; it only supports actual table names\n" +
+                       "If a file was defined via the DataTables parameter, the list of tables loaded from that file will be filtered by this list (matching both SourceTableName and TargetTableName)")]
         public string TableNameFilterList
         {
             get => TableNameFilterSet.Count == 0 ? string.Empty : string.Join(", ", TableNameFilterSet);
