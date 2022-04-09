@@ -221,6 +221,11 @@ namespace DB_Schema_Export_Tool
                         return false;
                 }
 
+                // Append any tables defined in TableNameFilterSet
+                foreach (var item in mOptions.TableNameFilterSet)
+                {
+                    tablesForDataExport.Add(new TableDataExportInfo(item));
+                }
 
                 List<string> tableDataExportOrder;
 
@@ -1077,6 +1082,36 @@ namespace DB_Schema_Export_Tool
                         foreach (var primaryKeyColumn in keyColumns.Split(','))
                         {
                             tableInfo.PrimaryKeyColumns.Add(primaryKeyColumn);
+                        }
+                    }
+
+                    if (mOptions.TableNameFilterSet.Count > 0)
+                    {
+                        bool exportTable;
+
+                        if (mOptions.TableNameFilterSet.Contains(sourceTableName))
+                        {
+                            exportTable = true;
+                        }
+                        else if (mOptions.TableNameFilterSet.Contains(mDBSchemaExporter.ConvertNameToSnakeCase(sourceTableName)))
+                        {
+                            exportTable = true;
+                        }
+                        else if (!string.IsNullOrWhiteSpace(tableInfo.TargetTableName) && mOptions.TableNameFilterSet.Contains(tableInfo.TargetTableName))
+                        {
+                            exportTable = true;
+                        }
+                        else
+                        {
+                            exportTable = false;
+                        }
+
+                        if (!exportTable)
+                        {
+                            LogDebug(string.Format(
+                                "Skipping table {0} in file {1} since not present in the TableFilterList option", sourceTableName, dataFile.Name));
+
+                            continue;
                         }
                     }
 
