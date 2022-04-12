@@ -92,7 +92,7 @@ namespace DB_Schema_Export_Tool
             var sourceTableName = createItemMatch.Groups["TableName"].ToString();
 
             // This group will exist for default constraints and foreign key constraints
-            var defaultConstraintColumn = createItemMatch.Groups["ColumnName"].ToString();
+            var constraintColumnName = createItemMatch.Groups["ColumnName"].ToString();
 
             if (DBSchemaExportTool.GetTableByName(tablesForDataExport, sourceTableName, out var tableInfo) &&
                 DBSchemaExporterBase.SkipTableForDataExport(options, tableInfo))
@@ -106,23 +106,37 @@ namespace DB_Schema_Export_Tool
                 columnMapInfo = new ColumnMapInfo(sourceTableName);
             }
 
-            if (!string.IsNullOrWhiteSpace(defaultConstraintColumn))
+            if (!string.IsNullOrWhiteSpace(constraintColumnName))
             {
-                // Matched a default constraint, e.g.
+                // Matched a default constraint or foreign key constraint, e.g.
                 // ALTER TABLE [dbo].[T_ParamValue] ADD  CONSTRAINT [DF_T_ParamValue_Last_Affected]  DEFAULT (GetDate()) FOR [Last_Affected]
+                // or
+                // ALTER TABLE [dbo].[T_Dataset]  WITH CHECK ADD  CONSTRAINT [FK_T_Dataset_T_Experiments] FOREIGN KEY([Exp_ID])
+                // REFERENCES [dbo].[T_Experiments] ([Exp_ID])
 
-                if (!columnMapInfo.IsColumnDefined(defaultConstraintColumn))
+                if (!columnMapInfo.IsColumnDefined(constraintColumnName))
                 {
+                    // Column has not been renamed
                     outputLines.Add(createItemMatch.Value);
                 }
                 else
                 {
-                    var newColumnName = columnMapInfo.GetTargetColumnName(defaultConstraintColumn);
-                    var updatedLine = createItemMatch.Value.Replace(
-                        "[" + defaultConstraintColumn + "]",
-                        "[" + newColumnName + "]");
+                    var newColumnName = columnMapInfo.GetTargetColumnName(constraintColumnName);
 
-                    outputLines.Add(updatedLine);
+                    if (newColumnName.Equals("<skip>"))
+                    {
+                        // The table definition in the output file will not have this column; skip it
+                        OnDebugEvent("Skipping constraint since the target column is tagged with <skip> in the file specified by the DataTables parameter:\n" +
+                                     createItemMatch.Value);
+                    }
+                    else
+                    {
+                        var updatedLine = createItemMatch.Value.Replace(
+                            "[" + constraintColumnName + "]",
+                            "[" + newColumnName + "]");
+
+                        outputLines.Add(updatedLine);
+                    }
                 }
             }
             else
