@@ -12,6 +12,8 @@ namespace DB_Schema_Export_Tool
     {
         // Ignore Spelling: dbo
 
+        private const string FILE_SUFFIX_UPDATED_COLUMN_NAMES = "_UpdatedColumnNames";
+
         private readonly Regex mColumnNameMatcher;
 
         /// <summary>
@@ -234,10 +236,12 @@ namespace DB_Schema_Export_Tool
         /// <param name="schemaFileToParse"></param>
         /// <param name="options"></param>
         /// <param name="tablesForDataExport"></param>
+        /// <param name="updatedSchemaFilePath"></param>
         public bool UpdateColumnNamesInExistingSchemaFile(
             string schemaFileToParse,
             SchemaExportOptions options,
-            IReadOnlyCollection<TableDataExportInfo> tablesForDataExport)
+            IReadOnlyCollection<TableDataExportInfo> tablesForDataExport,
+            out string updatedSchemaFilePath)
         {
             try
             {
@@ -245,21 +249,23 @@ namespace DB_Schema_Export_Tool
 
                 if (!existingSchemaFile.Exists)
                 {
-                    LogWarning("Existing schema file is missing; cannot update names");
+                    LogWarning("Existing schema file is missing; cannot update column names");
                     OnWarningEvent("File not found: " + existingSchemaFile.FullName);
+                    updatedSchemaFilePath = string.Empty;
                     return false;
                 }
 
                 if (existingSchemaFile.Directory == null)
                 {
-                    LogWarning("Cannot update names in an existing schema file");
+                    LogWarning("Cannot update column names in an existing schema file");
                     OnWarningEvent("Unable to determine the parent directory of: " + existingSchemaFile.FullName);
+                    updatedSchemaFilePath = string.Empty;
                     return false;
                 }
 
-                var updatedSchemaFile = Path.Combine(
+                updatedSchemaFilePath = Path.Combine(
                     existingSchemaFile.Directory.FullName,
-                    Path.GetFileNameWithoutExtension(existingSchemaFile.Name) + "_UpdatedColumnNames" +
+                    Path.GetFileNameWithoutExtension(existingSchemaFile.Name) + FILE_SUFFIX_UPDATED_COLUMN_NAMES +
                     existingSchemaFile.Extension);
 
                 var tableNameMatcher = new Regex(@"^CREATE TABLE[^[]+\[(?<SchemaName>[^[]+)\]\.\[(?<TableName>[^[]+)\].*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -269,10 +275,10 @@ namespace DB_Schema_Export_Tool
                 var defaultConstraintMatcher = new Regex(@"^ALTER TABLE[^[]+\[(?<SchemaName>[^[]+)\]\.\[(?<TableName>[^[]+)\][^[]+ADD[^[]+CONSTRAINT.+DEFAULT.+ FOR \[(?<ColumnName>[^[]+)\].*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
                 var foreignKeyConstraintMatcher = new Regex(@"^ALTER TABLE[^[]+\[(?<SchemaName>[^[]+)\]\.\[(?<TableName>[^[]+)\][^[]+ADD[^[]+CONSTRAINT.+FOREIGN KEY.*\(\[(?<ColumnName>[^[]+)\]\).*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-                ShowTrace("Opening " + PathUtils.CompactPathString(schemaFileToParse, 120));
+                ShowTrace("Opening " + PathUtils.CompactPathString(existingSchemaFile.FullName, 120));
 
-                using var reader = new StreamReader(new FileStream(schemaFileToParse, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
-                using var writer = new StreamWriter(new FileStream(updatedSchemaFile, FileMode.Create, FileAccess.Write, FileShare.Read));
+                using var reader = new StreamReader(new FileStream(existingSchemaFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+                using var writer = new StreamWriter(new FileStream(updatedSchemaFilePath, FileMode.Create, FileAccess.Write, FileShare.Read));
 
                 while (!reader.EndOfStream)
                 {
@@ -332,13 +338,14 @@ namespace DB_Schema_Export_Tool
                     writer.WriteLine(dataLine);
                 }
 
-                LogMessage("Created " + PathUtils.CompactPathString(updatedSchemaFile, 120));
+                LogMessage("Created " + PathUtils.CompactPathString(updatedSchemaFilePath, 120));
 
                 return true;
             }
             catch (Exception ex)
             {
                 OnErrorEvent("Error in UpdateNamesInExistingSchemaFile", ex);
+                updatedSchemaFilePath = string.Empty;
                 return false;
             }
         }
@@ -489,6 +496,8 @@ namespace DB_Schema_Export_Tool
                 return createTableDDL;
             }
 
+            Console.WriteLine();
+
             OnStatusEvent(
                 "Moving primary key column {0} from position {1} to position 1 for table {2}",
                 firstPrimaryKeyColumn, primaryKeyColumnPosition, tableName);
@@ -498,6 +507,7 @@ namespace DB_Schema_Export_Tool
 
             outputLines.Add(tableColumnDDL[firstPrimaryKeyColumn]);
 
+            // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var columnInfo in from item in tableColumns orderby item.Value select item)
             {
                 if (columnInfo.Value == primaryKeyColumnPosition)
