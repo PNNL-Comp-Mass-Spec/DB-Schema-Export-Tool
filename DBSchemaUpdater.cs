@@ -123,7 +123,7 @@ namespace DB_Schema_Export_Tool
                 {
                     var newColumnName = columnMapInfo.GetTargetColumnName(constraintColumnName);
 
-                    if (newColumnName.Equals("<skip>"))
+                    if (newColumnName.Equals(DBSchemaExportTool.SKIP_FLAG))
                     {
                         // The table definition in the output file will not have this column; skip it
                         OnDebugEvent("Skipping constraint since the target column is tagged with <skip> in the file specified by the DataTables parameter:\n" +
@@ -211,7 +211,7 @@ namespace DB_Schema_Export_Tool
 
                 var newColumnName = columnMapInfo.GetTargetColumnName(columnName);
 
-                if (newColumnName.Equals("<skip>"))
+                if (newColumnName.Equals(DBSchemaExportTool.SKIP_FLAG))
                 {
                     // Skip this column
                     continue;

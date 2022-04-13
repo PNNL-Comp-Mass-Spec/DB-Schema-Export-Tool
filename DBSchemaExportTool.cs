@@ -21,6 +21,8 @@ namespace DB_Schema_Export_Tool
 
         // ReSharper restore CommentTypo
 
+        internal const string SKIP_FLAG = "<skip>";
+
         private enum DifferenceReasonType
         {
             Unchanged = 0,
