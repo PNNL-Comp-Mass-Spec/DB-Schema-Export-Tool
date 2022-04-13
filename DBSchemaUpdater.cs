@@ -237,6 +237,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="options"></param>
         /// <param name="tablesForDataExport"></param>
         /// <param name="updatedSchemaFilePath"></param>
+        /// <returns>True if successful, false if an error</returns>
         public bool UpdateColumnNamesInExistingSchemaFile(
             string schemaFileToParse,
             SchemaExportOptions options,
@@ -524,6 +525,12 @@ namespace DB_Schema_Export_Tool
             return outputLines;
         }
 
+        /// <summary>
+        /// Open the newly created schema file and look for additional references to tables and views that need to be renamed
+        /// </summary>
+        /// <param name="schemaFileToUpdate"></param>
+        /// <param name="renamedTablesAndViews"></param>
+        /// <returns>True if successful, false if an error</returns>
         public bool UpdateTableAndViewNamesInExistingSchemaFile(
             string schemaFileToUpdate,
             IReadOnlyDictionary<string, string> renamedTablesAndViews)

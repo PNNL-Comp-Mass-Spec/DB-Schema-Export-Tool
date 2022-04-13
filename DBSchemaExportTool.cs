@@ -922,6 +922,13 @@ namespace DB_Schema_Export_Tool
             return tableDataExportOrder;
         }
 
+        /// <summary>
+        /// Read the table data export file
+        /// </summary>
+        /// <remarks>This file can also have views that should be renamed</remarks>
+        /// <param name="tableDataFilePath"></param>
+        /// <param name="abortProcessing"></param>
+        /// <returns>True if successful, false if an error</returns>
         private List<TableDataExportInfo> LoadTablesForDataExport(string tableDataFilePath, out bool abortProcessing)
         {
             var tablesForDataExport = new List<TableDataExportInfo>();
