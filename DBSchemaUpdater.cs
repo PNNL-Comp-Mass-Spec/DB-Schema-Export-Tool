@@ -607,6 +607,10 @@ namespace DB_Schema_Export_Tool
                     return true;
                 }
 
+                // When stepping through tableAndViewMatchers, process longer names before shorter names
+                // This is required so that we can search for and rename data lines with names like T_Cell_Culture_Tracking before renaming lines with T_Cell_Culture
+                var sortedNames = (from item in tableAndViewMatchers.Keys orderby item.Length descending select item).ToList();
+
                 ShowTrace("Opening " + PathUtils.CompactPathString(schemaFile.FullName, 120));
 
                 using var reader = new StreamReader(new FileStream(schemaFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
@@ -625,9 +629,9 @@ namespace DB_Schema_Export_Tool
                     var updatedLine = dataLine;
 
                     // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
-                    foreach (var tableItem in tableMatchers)
+                    foreach (var tableOrViewName in sortedNames)
                     {
-                        foreach (var matcher in tableItem.Value)
+                        foreach (var matcher in tableAndViewMatchers[tableOrViewName])
                         {
                             var match = matcher.Key.Match(updatedLine);
 
@@ -637,7 +641,7 @@ namespace DB_Schema_Export_Tool
                             // Note that the Prefix and/or Suffix group will be empty strings if a word boundary was matched
                             updatedLine = matcher.Key.Replace(updatedLine, match.Groups["Prefix"] + matcher.Value + match.Groups["Suffix"]);
 
-                            tableRenameStats[tableItem.Key]++;
+                            renameStats[tableOrViewName]++;
                         }
                     }
 
