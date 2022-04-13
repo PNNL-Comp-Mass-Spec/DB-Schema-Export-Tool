@@ -6,6 +6,7 @@ using System.Threading;
 using System.Windows.Forms;
 #endif
 using PRISM;
+using PRISM.Logging;
 
 namespace DB_Schema_Export_Tool
 {
@@ -125,7 +126,7 @@ namespace DB_Schema_Export_Tool
             {
                 var schemaExporter = new DBSchemaExportTool(options);
 
-                schemaExporter.ProgressUpdate += Processor_ProgressUpdate;
+                RegisterEvents(schemaExporter);
 
                 var success = schemaExporter.ProcessDatabases(options);
 
@@ -149,19 +150,47 @@ namespace DB_Schema_Export_Tool
             }
         }
 
-        private static void Processor_DebugEvent(string message)
+        /// <summary>
+        /// Use this method to chain events between classes
+        /// </summary>
+        /// <param name="sourceClass"></param>
+        private static void RegisterEvents(IEventNotifier sourceClass)
+        {
+            sourceClass.DebugEvent += OnDebugEvent;
+            sourceClass.StatusEvent += OnStatusEvent;
+            sourceClass.ErrorEvent += OnErrorEvent;
+            sourceClass.WarningEvent += OnWarningEvent;
+            sourceClass.ProgressUpdate += ProgressChanged;
+        }
+
+        private static void OnDebugEvent(string message)
         {
             ConsoleMsgUtils.ShowDebug(message);
         }
 
-        private static void Processor_ProgressUpdate(string progressMessage, float percentComplete)
+        private static void OnErrorEvent(string message, Exception ex)
+        {
+            ConsoleMsgUtils.ShowError(message, ex);
+        }
+
+        private static void OnStatusEvent(string message)
+        {
+            Console.WriteLine(message);
+        }
+
+        private static void OnWarningEvent(string message)
+        {
+            ConsoleMsgUtils.ShowWarning(message);
+        }
+
+        private static void ProgressChanged(string progressMessage, float percentComplete)
         {
             if (DateTime.UtcNow.Subtract(mLastProgressTime).TotalSeconds < 3)
                 return;
 
             Console.WriteLine();
             mLastProgressTime = DateTime.UtcNow;
-            Processor_DebugEvent(percentComplete.ToString("0.0") + "%, " + progressMessage);
+            OnDebugEvent(percentComplete.ToString("0.0") + "%, " + progressMessage);
         }
     }
 }
