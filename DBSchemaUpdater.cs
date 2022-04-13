@@ -660,6 +660,12 @@ namespace DB_Schema_Export_Tool
                     LogMessage(string.Format("{0,-60} {1}", item.Key, item.Value));
                 }
 
+                Console.WriteLine();
+                foreach (var item in renameStats.Where(item => item.Value == 0))
+                {
+                    LogWarning("Warning: table or view name not found in the input file: " + item.Key);
+                }
+
                 return true;
             }
             catch (Exception ex)
