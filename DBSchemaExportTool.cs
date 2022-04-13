@@ -966,13 +966,19 @@ namespace DB_Schema_Export_Tool
                 // The first column must be named SourceTableName
                 var columnMap = new Dictionary<TableInfoFileColumns, int>();
 
+                var sourceTableNames = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                var targetTableNames = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+
                 var invalidLineCount = 0;
+                var linesRead = 0;
 
                 using var dataReader = new StreamReader(new FileStream(dataFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
 
                 while (!dataReader.EndOfStream)
                 {
                     var dataLine = dataReader.ReadLine();
+                    linesRead++;
 
                     // Lines that start with # are treated as comment lines
                     if (string.IsNullOrWhiteSpace(dataLine) || dataLine.Trim().StartsWith("#"))
@@ -1049,6 +1055,15 @@ namespace DB_Schema_Export_Tool
 
                     var sourceTableName = lineParts[0].Trim();
 
+                    if (string.IsNullOrWhiteSpace(sourceTableName))
+                    {
+                        LogWarning(string.Format("Source table name cannot be blank; see line {0} in {1}", linesRead, dataFile.Name));
+
+                        // Set this to true and abort processing
+                        abortProcessing = true;
+                        break;
+                    }
+
                     var tableInfo = new TableDataExportInfo(sourceTableName)
                     {
                         UsePgInsert = mOptions.PgInsertTableData
@@ -1070,8 +1085,8 @@ namespace DB_Schema_Export_Tool
                          tableInfo.TargetTableName.Equals("false", StringComparison.OrdinalIgnoreCase)))
                     {
                         LogWarning(string.Format(
-                            "Invalid line in the table data file; target table name cannot be {0}; see {1}",
-                            tableInfo.TargetTableName, dataLine));
+                            "Invalid line in the table data file; target table name cannot be {0}; see line {1}: {2}",
+                            tableInfo.TargetTableName, linesRead, dataLine));
 
                         // Set this to true, but keep processing, showing up to 5 warnings
                         abortProcessing = true;
@@ -1082,6 +1097,51 @@ namespace DB_Schema_Export_Tool
                             break;
 
                         continue;
+                    }
+
+                    // Check for duplicate source and/or duplicate target table name
+
+                    if (sourceTableNames.Contains(sourceTableName))
+                    {
+                        LogWarning(string.Format(
+                            "Table {0} is listed more than once as a source table in file {1}",
+                            sourceTableName, dataFile.Name));
+
+                        // Set this to true, but keep processing, showing up to 5 warnings
+                        abortProcessing = true;
+
+                        invalidLineCount++;
+
+                        if (invalidLineCount >= 5)
+                            break;
+
+                        continue;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(tableInfo.TargetTableName) &&
+                        !tableInfo.TargetTableName.Equals(SKIP_FLAG) &&
+                        targetTableNames.Contains(tableInfo.TargetTableName))
+                    {
+                        LogWarning(string.Format(
+                            "Table {0} is listed more than once as a target table in file {1}",
+                            tableInfo.TargetTableName, dataFile.Name));
+
+                        // Set this to true, but keep processing, showing up to 5 warnings
+                        abortProcessing = true;
+
+                        invalidLineCount++;
+
+                        if (invalidLineCount >= 5)
+                            break;
+
+                        continue;
+                    }
+
+                    sourceTableNames.Add(sourceTableName);
+
+                    if (!string.IsNullOrWhiteSpace(tableInfo.TargetTableName))
+                    {
+                        targetTableNames.Add(tableInfo.TargetTableName);
                     }
 
                     if (TryGetColumnValue(lineParts, columnMapCurrentLine, TableInfoFileColumns.PgInsert, out var pgInsertValue))
@@ -1136,11 +1196,7 @@ namespace DB_Schema_Export_Tool
                         }
                     }
 
-                    if (!tableNames.Contains(sourceTableName))
-                    {
-                        tableNames.Add(sourceTableName);
-                        tablesForDataExport.Add(tableInfo);
-                    }
+                    tablesForDataExport.Add(tableInfo);
                 }
 
                 var tableText = tablesForDataExport.Count == 1 ? "table" : "tables";
