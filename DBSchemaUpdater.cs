@@ -524,9 +524,9 @@ namespace DB_Schema_Export_Tool
             return outputLines;
         }
 
-        public bool UpdateTableNamesInExistingSchemaFile(
+        public bool UpdateTableAndViewNamesInExistingSchemaFile(
             string schemaFileToUpdate,
-            IReadOnlyDictionary<string, string> renamedTables)
+            IReadOnlyDictionary<string, string> renamedTablesAndViews)
         {
             try
             {
@@ -559,15 +559,15 @@ namespace DB_Schema_Export_Tool
 
                 var updatedSchemaFile = Path.Combine(schemaFile.Directory.FullName, outputFileName);
 
-                // Keys in this dictionary are the old table name
-                // Values are a list of key value pairs of RegEx instances for finding the old table name and replacing with the new name
-                var tableMatchers = new Dictionary<string, List<KeyValuePair<Regex, string>>>();
+                // Keys in this dictionary are the old table or view name
+                // Values are a list of key value pairs of RegEx instances for finding the old name and replacing with the new name
+                var tableAndViewMatchers = new Dictionary<string, List<KeyValuePair<Regex, string>>>();
 
-                // Keys in this dictionary are the old table name
+                // Keys in this dictionary are the old table or view name
                 // Values are the number of lines in the schema file where the table was renamed
-                var tableRenameStats = new Dictionary<string, int>();
+                var renameStats = new Dictionary<string, int>();
 
-                foreach (var item in renamedTables)
+                foreach (var item in renamedTablesAndViews)
                 {
                     if (item.Value.Equals(DBSchemaExportTool.SKIP_FLAG))
                         continue;
@@ -585,17 +585,18 @@ namespace DB_Schema_Export_Tool
                     kvPairs.Add(new KeyValuePair<Regex, string>(new Regex(pattern4, RegexOptions.Compiled | RegexOptions.IgnoreCase), item.Value));
 
                     // First search for the name surround by underscores
-                    // Next search for the name surrounded by word boundaries
+                    // Next search for a word boundary on either side
+                    // Finally, search for the name surrounded by two word boundaries
+
                     // Need to search for the underscores first to avoid unintended replacements
 
-                    tableMatchers.Add(item.Key, kvPairs);
-
-                    tableRenameStats.Add(item.Key, 0);
+                    tableAndViewMatchers.Add(item.Key, kvPairs);
+                    renameStats.Add(item.Key, 0);
                 }
 
-                if (tableMatchers.Count == 0)
+                if (tableAndViewMatchers.Count == 0)
                 {
-                    // Each entry in renamedTables has <skip> as the new name
+                    // Each entry in renamedTablesAndViews has <skip> as the new name
                     return true;
                 }
 
@@ -643,7 +644,7 @@ namespace DB_Schema_Export_Tool
 
                 LogMessage(string.Format("{0,-60} {1}", "Table", "Updated Lines"));
 
-                foreach (var item in tableRenameStats)
+                foreach (var item in renameStats)
                 {
                     LogMessage(string.Format("{0,-60} {1}", item.Key, item.Value));
                 }
@@ -652,7 +653,7 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                OnErrorEvent("Error in UpdateTableNamesInExistingSchemaFile", ex);
+                OnErrorEvent("Error in UpdateTableAndViewNamesInExistingSchemaFile", ex);
                 return false;
             }
         }

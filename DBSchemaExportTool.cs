@@ -259,21 +259,21 @@ namespace DB_Schema_Export_Tool
                     if (!successUpdatingColumnNames)
                         return false;
 
-                    var renamedTables = new Dictionary<string, string>();
+                    var renamedTablesAndViews = new Dictionary<string, string>();
 
                     // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
                     foreach (var item in tablesForDataExport)
                     {
                         if (!item.SourceTableName.Equals(item.TargetTableName, StringComparison.Ordinal))
                         {
-                            renamedTables.Add(item.SourceTableName, item.TargetTableName);
+                            renamedTablesAndViews.Add(item.SourceTableName, item.TargetTableName);
                         }
                     }
 
-                    if (renamedTables.Count > 0)
+                    if (renamedTablesAndViews.Count > 0)
                     {
-                        // Need to rename one or more tables
-                        var successUpdatingTableNames = schemaUpdater.UpdateTableNamesInExistingSchemaFile(updatedSchemaFilePath, renamedTables);
+                        // Need to rename one or more tables and views
+                        var successUpdatingTableNames = schemaUpdater.UpdateTableAndViewNamesInExistingSchemaFile(updatedSchemaFilePath, renamedTablesAndViews);
 
                         if (!successUpdatingTableNames)
                             return false;
