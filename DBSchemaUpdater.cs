@@ -524,6 +524,139 @@ namespace DB_Schema_Export_Tool
             return outputLines;
         }
 
+        public bool UpdateTableNamesInExistingSchemaFile(
+            string schemaFileToUpdate,
+            IReadOnlyDictionary<string, string> renamedTables)
+        {
+            try
+            {
+                var schemaFile = new FileInfo(schemaFileToUpdate);
+
+                if (!schemaFile.Exists)
+                {
+                    LogWarning("Schema file is missing; cannot update table names");
+                    OnWarningEvent("File not found: " + schemaFile.FullName);
+                    return false;
+                }
+
+                if (schemaFile.Directory == null)
+                {
+                    LogWarning("Cannot update table names in the schema file");
+                    OnWarningEvent("Unable to determine the parent directory of: " + schemaFile.FullName);
+                    return false;
+                }
+
+                string outputFileName;
+
+                if (Path.GetFileNameWithoutExtension(schemaFile.Name).EndsWith(FILE_SUFFIX_UPDATED_COLUMN_NAMES))
+                {
+                    outputFileName = schemaFile.Name.Replace(FILE_SUFFIX_UPDATED_COLUMN_NAMES, "_UpdatedColumnAndTableNames");
+                }
+                else
+                {
+                    outputFileName = Path.GetFileNameWithoutExtension(schemaFile.Name) + "_UpdatedTableNames" + schemaFile.Extension;
+                }
+
+                var updatedSchemaFile = Path.Combine(schemaFile.Directory.FullName, outputFileName);
+
+                // Keys in this dictionary are the old table name
+                // Values are a list of key value pairs of RegEx instances for finding the old table name and replacing with the new name
+                var tableMatchers = new Dictionary<string, List<KeyValuePair<Regex, string>>>();
+
+                // Keys in this dictionary are the old table name
+                // Values are the number of lines in the schema file where the table was renamed
+                var tableRenameStats = new Dictionary<string, int>();
+
+                foreach (var item in renamedTables)
+                {
+                    if (item.Value.Equals(DBSchemaExportTool.SKIP_FLAG))
+                        continue;
+
+                    var kvPairs = new List<KeyValuePair<Regex, string>> ();
+
+                    var pattern1 = "(?<Prefix>_)" + item.Key + "(?<Suffix>_)";
+                    var pattern2 = "(?<Prefix>_)" + item.Key + @"(?<Suffix>\b)";
+                    var pattern3 = @"(?<Prefix>\b)" + item.Key + "(?<Suffix>_)";
+                    var pattern4 = @"(?<Prefix>\b)" + item.Key + @"(?<Suffix>\b)";
+
+                    kvPairs.Add(new KeyValuePair<Regex, string>(new Regex(pattern1, RegexOptions.Compiled | RegexOptions.IgnoreCase), item.Value));
+                    kvPairs.Add(new KeyValuePair<Regex, string>(new Regex(pattern2, RegexOptions.Compiled | RegexOptions.IgnoreCase), item.Value));
+                    kvPairs.Add(new KeyValuePair<Regex, string>(new Regex(pattern3, RegexOptions.Compiled | RegexOptions.IgnoreCase), item.Value));
+                    kvPairs.Add(new KeyValuePair<Regex, string>(new Regex(pattern4, RegexOptions.Compiled | RegexOptions.IgnoreCase), item.Value));
+
+                    // First search for the name surround by underscores
+                    // Next search for the name surrounded by word boundaries
+                    // Need to search for the underscores first to avoid unintended replacements
+
+                    tableMatchers.Add(item.Key, kvPairs);
+
+                    tableRenameStats.Add(item.Key, 0);
+                }
+
+                if (tableMatchers.Count == 0)
+                {
+                    // Each entry in renamedTables has <skip> as the new name
+                    return true;
+                }
+
+                ShowTrace("Opening " + PathUtils.CompactPathString(schemaFile.FullName, 120));
+
+                using var reader = new StreamReader(new FileStream(schemaFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+                using var writer = new StreamWriter(new FileStream(updatedSchemaFile, FileMode.Create, FileAccess.Write, FileShare.Read));
+
+                while (!reader.EndOfStream)
+                {
+                    var dataLine = reader.ReadLine();
+
+                    if (string.IsNullOrWhiteSpace(dataLine))
+                    {
+                        writer.WriteLine(dataLine);
+                        continue;
+                    }
+
+                    var updatedLine = dataLine;
+
+                    // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
+                    foreach (var tableItem in tableMatchers)
+                    {
+                        foreach (var matcher in tableItem.Value)
+                        {
+                            var match = matcher.Key.Match(updatedLine);
+
+                            if (!match.Success)
+                                continue;
+
+                            // Note that the Prefix and/or Suffix group will be empty strings if a word boundary was matched
+                            updatedLine = matcher.Key.Replace(updatedLine, match.Groups["Prefix"] + matcher.Value + match.Groups["Suffix"]);
+
+                            tableRenameStats[tableItem.Key]++;
+                        }
+                    }
+
+                    writer.WriteLine(updatedLine);
+                }
+
+                LogMessage("Created " + PathUtils.CompactPathString(updatedSchemaFile, 120));
+                Console.WriteLine();
+
+                LogMessage("Rename stats:");
+
+                LogMessage(string.Format("{0,-60} {1}", "Table", "Updated Lines"));
+
+                foreach (var item in tableRenameStats)
+                {
+                    LogMessage(string.Format("{0,-60} {1}", item.Key, item.Value));
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                OnErrorEvent("Error in UpdateTableNamesInExistingSchemaFile", ex);
+                return false;
+            }
+        }
+
         private void WriteCreateTableDDL(TextWriter writer, string tableName, List<string> createTableDDL)
         {
             var primaryKeyColumns = DBSchemaExporterSQLServer.GetPrimaryKeysForTableViaDDL(createTableDDL);

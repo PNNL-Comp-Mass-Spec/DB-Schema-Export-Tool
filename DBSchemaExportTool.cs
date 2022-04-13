@@ -253,11 +253,31 @@ namespace DB_Schema_Export_Tool
                     var schemaUpdater = new DBSchemaUpdater(mOptions);
                     RegisterEvents(schemaUpdater);
 
-                    var successUpdatingNames = schemaUpdater.UpdateColumnNamesInExistingSchemaFile(
-                        mOptions.ExistingSchemaFileToParse, mOptions, tablesForDataExport);
+                    var successUpdatingColumnNames = schemaUpdater.UpdateColumnNamesInExistingSchemaFile(
+                        mOptions.ExistingSchemaFileToParse, mOptions, tablesForDataExport, out var updatedSchemaFilePath);
 
-                    if (!successUpdatingNames)
+                    if (!successUpdatingColumnNames)
                         return false;
+
+                    var renamedTables = new Dictionary<string, string>();
+
+                    // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
+                    foreach (var item in tablesForDataExport)
+                    {
+                        if (!item.SourceTableName.Equals(item.TargetTableName, StringComparison.Ordinal))
+                        {
+                            renamedTables.Add(item.SourceTableName, item.TargetTableName);
+                        }
+                    }
+
+                    if (renamedTables.Count > 0)
+                    {
+                        // Need to rename one or more tables
+                        var successUpdatingTableNames = schemaUpdater.UpdateTableNamesInExistingSchemaFile(updatedSchemaFilePath, renamedTables);
+
+                        if (!successUpdatingTableNames)
+                            return false;
+                    }
                 }
 
                 if (!string.IsNullOrWhiteSpace(mOptions.TableDataDateFilterFile))
@@ -904,7 +924,6 @@ namespace DB_Schema_Export_Tool
 
         private List<TableDataExportInfo> LoadTablesForDataExport(string tableDataFilePath, out bool abortProcessing)
         {
-            var tableNames = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
             var tablesForDataExport = new List<TableDataExportInfo>();
             abortProcessing = false;
 
