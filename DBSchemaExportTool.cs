@@ -264,7 +264,8 @@ namespace DB_Schema_Export_Tool
                     // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
                     foreach (var item in tablesForDataExport)
                     {
-                        if (!item.SourceTableName.Equals(item.TargetTableName, StringComparison.Ordinal))
+                        if (!string.IsNullOrWhiteSpace(item.TargetTableName) &&
+                            !item.SourceTableName.Equals(item.TargetTableName, StringComparison.Ordinal))
                         {
                             renamedTablesAndViews.Add(item.SourceTableName, item.TargetTableName);
                         }
