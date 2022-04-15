@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{2A5BA9B9-32ED-4E3B-9094-CF5D5A71D5E9}</ProjectGuid>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>DB_Schema_Export_Tool</RootNamespace>
-    <AssemblyName>DB_Schema_Export_Tool</AssemblyName>
+    <ProjectGuid>{10CC3F92-4187-46B0-BFD4-E14F60E30A99}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>TableNameMapContainer</RootNamespace>
+    <AssemblyName>TableNameMapContainer</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -23,16 +23,18 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\DB_Schema_Export_Tool.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\</OutputPath>
+    <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -45,48 +47,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ColumnMapInfo.cs" />
-    <Compile Include="DatabaseObjectInfo.cs" />
-    <Compile Include="DatabaseScriptingOptions.cs" />
-    <Compile Include="DBSchemaExporterBase.cs" />
-    <Compile Include="DBSchemaExporterPostgreSQL.cs" />
-    <Compile Include="DBSchemaExporterSQLServer.cs" />
-    <Compile Include="DBSchemaExportTool.cs" />
-    <Compile Include="DataExportWorkingParams.cs" />
-    <Compile Include="DBSchemaUpdater.cs" />
-    <Compile Include="GlobalSuppressions.cs" />
-    <Compile Include="LoggerBase.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="ProgramRunner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SchemaExportOptions.cs" />
-    <Compile Include="ServerConnectionInfo.cs" />
-    <Compile Include="TableDataExportInfo.cs" />
-    <Compile Include="WorkingParams.cs" />
+    <Compile Include="TableNameInfo.cs" />
+    <Compile Include="TableNameMapReader.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include=".editorconfig" />
-    <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.SqlServer.SqlManagementObjects">
-      <Version>161.46437.65</Version>
-    </PackageReference>
-    <PackageReference Include="Npgsql">
-      <Version>5.0.7</Version>
-    </PackageReference>
-    <PackageReference Include="PRISM-DatabaseUtils">
-      <Version>1.1.13</Version>
-    </PackageReference>
     <PackageReference Include="PRISM-Library">
       <Version>2.6.49</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="TableNameMapContainer\TableNameMapContainer.csproj">
-      <Project>{10cc3f92-4187-46b0-bfd4-e14f60e30a99}</Project>
-      <Name>TableNameMapContainer</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>if exist $(SolutionDir)..\PgSQL_View_Creator_Helper\Lib xcopy $(TargetPath) $(SolutionDir)..\SQLServer_Stored_Procedure_Converter\Lib /D /Y</PostBuildEvent>
+  </PropertyGroup>
 </Project>

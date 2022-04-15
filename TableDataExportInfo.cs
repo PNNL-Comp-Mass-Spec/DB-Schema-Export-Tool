@@ -1,50 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
+using TableNameMapContainer;
 
 namespace DB_Schema_Export_Tool
 {
     /// <summary>
     /// Table data export info
     /// </summary>
-    public class TableDataExportInfo
+    public class TableDataExportInfo : TableNameInfo
     {
-        // Ignore Spelling: PostgreSQL, stdin
-
-        /// <summary>
-        /// Source table name
-        /// </summary>
-        /// <remarks>Can either be just the table name or SchemaName.TableName</remarks>
-        public string SourceTableName { get; }
-
-        /// <summary>
-        /// Target schema name
-        /// </summary>
-        public string TargetSchemaName { get; set; }
-
-        /// <summary>
-        /// Target table name
-        /// </summary>
-        public string TargetTableName { get; set; }
-
-        /// <summary>
-        /// <para>
-        /// When true, export data from SQL Server using insert commands formatted as PostgreSQL compatible
-        /// INSERT INTO statements using the syntax "ON CONFLICT(key_column) DO UPDATE SET"
-        /// </para>
-        /// <para>
-        /// When false, use the syntax "COPY from stdin"
-        /// </para>
-        /// </summary>
-        public bool UsePgInsert { get; set; }
-
-        /// <summary>
-        /// Primary key column (or columns)
-        /// Only used when UsePgInsert is true
-        /// </summary>
-        /// <remarks>
-        /// If UsePgInsert is true, but this list is empty, will auto-populate using the table's identity column
-        /// </remarks>
-        public SortedSet<string> PrimaryKeyColumns { get; }
+        // Ignore Spelling: PostgreSQL
 
         /// <summary>
         /// Column name for filtering rows by date when exporting data
@@ -67,11 +31,17 @@ namespace DB_Schema_Export_Tool
         /// Constructor
         /// </summary>
         /// <param name="sourceTableName">Either just the table name or SchemaName.TableName (depends on the circumstance)</param>
-        public TableDataExportInfo(string sourceTableName)
+        public TableDataExportInfo(string sourceTableName) : base(sourceTableName)
         {
-            SourceTableName = sourceTableName;
-            PrimaryKeyColumns = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+            DefineDateFilter(string.Empty, DateTime.MinValue);
+        }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="tableInfo">Instance of TableNameInfo to clone</param>
+        public TableDataExportInfo(TableNameInfo tableInfo) : base(tableInfo)
+        {
             DefineDateFilter(string.Empty, DateTime.MinValue);
         }
 

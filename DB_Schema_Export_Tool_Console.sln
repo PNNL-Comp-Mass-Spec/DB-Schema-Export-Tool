@@ -10,6 +10,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TableNameMapContainer", "TableNameMapContainer\TableNameMapContainer.csproj", "{10CC3F92-4187-46B0-BFD4-E14F60E30A99}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,6 +22,10 @@ Global
 		{2A5BA9B9-32ED-4E3B-9094-CF5D5A71D5E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2A5BA9B9-32ED-4E3B-9094-CF5D5A71D5E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2A5BA9B9-32ED-4E3B-9094-CF5D5A71D5E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10CC3F92-4187-46B0-BFD4-E14F60E30A99}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10CC3F92-4187-46B0-BFD4-E14F60E30A99}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10CC3F92-4187-46B0-BFD4-E14F60E30A99}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10CC3F92-4187-46B0-BFD4-E14F60E30A99}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
