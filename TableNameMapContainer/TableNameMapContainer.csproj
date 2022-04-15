@@ -58,6 +58,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>if exist $(SolutionDir)..\PgSQL_View_Creator_Helper\Lib xcopy $(TargetPath) $(SolutionDir)..\SQLServer_Stored_Procedure_Converter\Lib /D /Y</PostBuildEvent>
+    <PostBuildEvent>if exist $(ProjectDir)..\..\PgSQL_View_Creator_Helper\Lib xcopy $(TargetPath) $(ProjectDir)..\..\PgSQL_View_Creator_Helper\Lib /D /Y</PostBuildEvent>
   </PropertyGroup>
 </Project>

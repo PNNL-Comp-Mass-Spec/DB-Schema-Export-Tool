@@ -942,7 +942,6 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var reader = new TableNameMapContainer.NameMapReader();
-
                 RegisterEvents(reader);
 
                 var tableNameMap = reader.LoadTableNameMapFile(dataFile.FullName, mOptions.PgInsertTableData, out abortProcessing);
