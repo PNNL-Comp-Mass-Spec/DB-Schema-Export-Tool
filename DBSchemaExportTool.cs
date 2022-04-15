@@ -919,7 +919,7 @@ namespace DB_Schema_Export_Tool
         /// <remarks>This file can also have views that should be renamed</remarks>
         /// <param name="tableDataFilePath"></param>
         /// <param name="abortProcessing"></param>
-        /// <returns>True if successful, false if an error</returns>
+        /// <returns>List of loaded column info</returns>
         private List<TableDataExportInfo> LoadTablesForDataExport(string tableDataFilePath, out bool abortProcessing)
         {
             var tablesForDataExport = new List<TableDataExportInfo>();
