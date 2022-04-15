@@ -96,15 +96,21 @@ should be exported. In addition to table names defined in `/Data`, there are def
 which will have their data exported; disable the defaults using `/NoAutoData`
 * Also supports a multi-column, tab-delimited format
   * Put `<skip>` in the TargetTableName column to indicate that the table should not be included when using `/ExportAllData`
+* The file can also track renamed views
 * File format
 
-| SourceTableName  | TargetSchemaName | TargetTableName  | PgInsert  | KeyColumn(s)  |
-|------------------|------------------|------------------|-----------|---------------|
-| T_Log_Entries    | public           | t_log_entries    | false     |               |
-| T_Job_Events     | cap              | t_job_Events     | false     |               |
-| T_Job_State_Name | cap              | t_job_state_name | true      | job           |
-| T_Users          | public           | t_users          | true      | user_id       |
-| x_T_MgrState     | public           | `<skip>`         |           |               |
+| SourceTableName        | TargetSchemaName | TargetTableName       | PgInsert  | KeyColumn(s)      |
+|------------------------|------------------|-----------------------|-----------|-------------------|
+| T_Analysis_State_Name  | public           | t_analysis_job_state  | true      | job_state_id      |
+| T_DatasetRatingName    | public           | t_dataset_rating_name | true      | dataset_rating_id |
+| T_Log_Entries          | public           | t_log_entries         | false     |                   |
+| T_Job_Events           | cap              | t_job_Events          | false     |                   |
+| T_Job_State_Name       | cap              | t_job_state_name      | true      | job               |
+| T_Users                | public           | t_users               | true      | user_id           |
+| x_T_MgrState           | public           | `<skip>`              |           |                   |
+| V_Cell_Culture         | public           | v_biomaterial         |           |                   |
+| V_Cell_Culture_Date    | public           | v_biomaterial_date    |           |                   |
+
 
 Tables with `PgInsert` set to true will have data insert commands formatted as PostgreSQL compatible 
 `INSERT INTO` statements using the `ON CONFLICT (key_column) DO UPDATE SET` syntax
@@ -146,7 +152,8 @@ Use `/Map` or `/ColumnMap` to define a tab-delimited text file mapping source co
 | T_Analysis_Job   | AJ_jobID         | job              |
 | T_Analysis_Job   | AJ_start         | start            |
 | T_Analysis_Job   | AJ_finish        | finish           |
-| t_users	       | name_with_prn	  | `<skip>`         |
+| t_users          | name_with_prn    | `<skip>`         |
+
 
 Use `/TableFilterList` or `/TableNameFilter` to specify a table name (or comma separated list of names) to restrict table export operations. 
 * This is useful for exporting the data from just a single table (or a few tables)
@@ -166,6 +173,7 @@ Use `/DateFilter` or `/TableDataDateFilter` to define a tab-delimited text file 
 | T_Log_Entries            | posting_time     | 2020-01-01   |
 | T_ParamValue             | last_affected    | 2020-01-01   |
 | T_ParamValue_OldManagers | last_affected    | 2016-01-07   |
+
 
 Use `/NameFilter` to define a filter to apply to exported tables, views, procedures, etc.
 * Will only export objects that contain this text in the name
