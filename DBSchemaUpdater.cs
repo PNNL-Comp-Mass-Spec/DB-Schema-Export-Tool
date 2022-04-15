@@ -611,7 +611,12 @@ namespace DB_Schema_Export_Tool
                 // This is required so that we can search for and rename data lines with names like T_Cell_Culture_Tracking before renaming lines with T_Cell_Culture
                 var sortedNames = (from item in tableAndViewMatchers.Keys orderby item.Length descending select item).ToList();
 
-                ShowTrace("Opening " + PathUtils.CompactPathString(schemaFile.FullName, 120));
+                Console.WriteLine();
+
+                LogMessage("Renaming tables in " + PathUtils.CompactPathString(schemaFile.FullName, 120));
+
+                var lastStatus = DateTime.UtcNow;
+                long bytesRead = 0;
 
                 using var reader = new StreamReader(new FileStream(schemaFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
                 using var writer = new StreamWriter(new FileStream(updatedSchemaFile, FileMode.Create, FileAccess.Write, FileShare.Read));
@@ -619,6 +624,8 @@ namespace DB_Schema_Export_Tool
                 while (!reader.EndOfStream)
                 {
                     var dataLine = reader.ReadLine();
+
+                    bytesRead += (dataLine ?? string.Empty).Length + 2;
 
                     if (string.IsNullOrWhiteSpace(dataLine))
                     {
@@ -646,9 +653,20 @@ namespace DB_Schema_Export_Tool
                     }
 
                     writer.WriteLine(updatedLine);
+
+                    if (DateTime.UtcNow.Subtract(lastStatus).TotalSeconds < 0.5)
+                        continue;
+
+                    lastStatus = DateTime.UtcNow;
+
+                    var percentComplete = (double)bytesRead / schemaFile.Length * 100;
+                    ConsoleMsgUtils.ShowDebugCustom(string.Format("{0:F0}% complete", percentComplete), emptyLinesBeforeMessage: 0);
                 }
 
+                Console.WriteLine();
+
                 LogMessage("Created " + PathUtils.CompactPathString(updatedSchemaFile, 120));
+
                 Console.WriteLine();
 
                 LogMessage("Rename stats:");
