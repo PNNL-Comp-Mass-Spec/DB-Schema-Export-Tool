@@ -271,8 +271,9 @@ namespace DB_Schema_Export_Tool
 
                             if (indexEndCurrent > indexStartCurrent && indexEndCurrent <= finalSearchIndex)
                             {
-                                currentLine = currentLine.Substring(0, indexStartCurrent).TrimEnd() + COMMENT_END_TEXT +
-                                              currentLine.Substring(indexEndCurrent + COMMENT_END_TEXT_SHORT.Length);
+                                currentLine =
+                                    currentLine.Substring(0, indexStartCurrent).TrimEnd() + COMMENT_END_TEXT +
+                                    currentLine.Substring(indexEndCurrent + COMMENT_END_TEXT_SHORT.Length);
                             }
                         }
 
@@ -1517,17 +1518,19 @@ namespace DB_Schema_Export_Tool
             {
                 if (dataExportParams.IdentityColumnFound)
                 {
-                    insertIntoLine = string.Format("INSERT INTO {0} ({1}) VALUES (",
-                                                   dataExportParams.QuotedTargetTableNameWithSchema,
-                                                   dataExportParams.HeaderRowValues);
+                    insertIntoLine = string.Format(
+                        "INSERT INTO {0} ({1}) VALUES (",
+                        dataExportParams.QuotedTargetTableNameWithSchema,
+                        dataExportParams.HeaderRowValues);
 
                     headerRows.Add("SET IDENTITY_INSERT " + dataExportParams.QuotedTargetTableNameWithSchema + " ON");
                 }
                 else
                 {
                     // Identity column not present; no need to explicitly list the column names
-                    insertIntoLine = string.Format("INSERT INTO {0} VALUES (",
-                                                   dataExportParams.QuotedTargetTableNameWithSchema);
+                    insertIntoLine = string.Format(
+                        "INSERT INTO {0} VALUES (",
+                        dataExportParams.QuotedTargetTableNameWithSchema);
 
                     headerRows.Add(COMMENT_START_TEXT + "Columns: " + dataExportParams.HeaderRowValues + COMMENT_END_TEXT);
                 }
@@ -1729,8 +1732,9 @@ namespace DB_Schema_Export_Tool
                 }
                 catch (Exception ex)
                 {
-                    OnWarningEvent("Error scripting the SQL Server database mail settings; " +
-                                   "most likely the user is not a server administrator: " + ex.Message);
+                    OnWarningEvent(
+                        "Error scripting the SQL Server database mail settings; " +
+                        "most likely the user is not a server administrator: " + ex.Message);
                 }
             }
 

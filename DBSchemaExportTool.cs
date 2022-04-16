@@ -1739,8 +1739,9 @@ namespace DB_Schema_Export_Tool
                     cmdArgs = string.Format(" commit \"{0}\" --message \"{1}\"", targetDirectory.FullName, commitMessage);
                     maxRuntimeSeconds = 120;
 
-                    success = programRunner.RunCommand(repoExe.FullName, cmdArgs, targetDirectory.FullName,
-                                                       out var commitConsoleOutput, out var commitErrorOutput, maxRuntimeSeconds);
+                    success = programRunner.RunCommand(
+                        repoExe.FullName, cmdArgs, targetDirectory.FullName,
+                        out var commitConsoleOutput, out var commitErrorOutput, maxRuntimeSeconds);
 
                     if (!success)
                     {
@@ -1783,8 +1784,9 @@ namespace DB_Schema_Export_Tool
                             }
 
                             maxRuntimeSeconds = 300;
-                            success = programRunner.RunCommand(repoExe.FullName, cmdArgs, targetDirectory.FullName,
-                                                               out var pushConsoleOutput, out _, maxRuntimeSeconds);
+                            success = programRunner.RunCommand(
+                                repoExe.FullName, cmdArgs, targetDirectory.FullName,
+                                out var pushConsoleOutput, out _, maxRuntimeSeconds);
 
                             if (!success)
                             {

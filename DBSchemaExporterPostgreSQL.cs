@@ -485,8 +485,9 @@ namespace DB_Schema_Export_Tool
                 return true;
             }
 
-            var success = mProgramRunner.RunCommand(pgDump.FullName, cmdArgs, workingParams.OutputDirectory.FullName,
-                                                    out var consoleOutput, out var errorOutput, maxRuntimeSeconds);
+            var success = mProgramRunner.RunCommand(
+                pgDump.FullName, cmdArgs, workingParams.OutputDirectory.FullName,
+                      out var consoleOutput, out var errorOutput, maxRuntimeSeconds);
 
             if (!success)
             {
@@ -864,8 +865,9 @@ namespace DB_Schema_Export_Tool
                 return true;
             }
 
-            var success = mProgramRunner.RunCommand(pgDump.FullName, cmdArgs, workingParams.OutputDirectory.FullName,
-                                                    out var consoleOutput, out _, maxRuntimeSeconds);
+            var success = mProgramRunner.RunCommand(
+                pgDump.FullName, cmdArgs, workingParams.OutputDirectory.FullName,
+                      out var consoleOutput, out _, maxRuntimeSeconds);
 
             if (!success)
             {
@@ -1172,8 +1174,7 @@ namespace DB_Schema_Export_Tool
                             if (!includeSystemObjects && isSystemObject)
                                 continue;
 
-                            var tableNameWithSchema = PossiblyQuoteName(schemaName) + "." +
-                                                      PossiblyQuoteName(tableName);
+                            var tableNameWithSchema = PossiblyQuoteName(schemaName) + "." + PossiblyQuoteName(tableName);
 
                             if (SkipSchema(schemaName))
                             {
@@ -1196,9 +1197,12 @@ namespace DB_Schema_Export_Tool
                     foreach (var item in databaseTables)
                     {
                         // ReSharper disable StringLiteralTypo
-                        var rowCountSql = string.Format("SELECT relname, reltuples::bigint as ApproximateRowCount " +
-                                                        "FROM pg_class " +
-                                                        "WHERE oid = '{0}'::regclass", item.SourceTableName);
+
+                        var rowCountSql = string.Format(
+                            "SELECT relname, reltuples::bigint as ApproximateRowCount " +
+                            "FROM pg_class " +
+                            "WHERE oid = '{0}'::regclass", item.SourceTableName);
+
                         // ReSharper restore StringLiteralTypo
 
                         var rowCountCmd = new NpgsqlCommand(rowCountSql, mPgConnection);
@@ -1413,8 +1417,9 @@ namespace DB_Schema_Export_Tool
                 }
 
                 // If userPassword is blank, Npgsql (and pg_dump and pd_dumpall) will look for the user's password in the user's pgpass file
-                var connectionString = string.Format("Host={0};Username={1};Password={2};Database={3}",
-                                                     mOptions.ServerName, mOptions.DBUser, userPassword, databaseName);
+                var connectionString = string.Format(
+                    "Host={0};Username={1};Password={2};Database={3}",
+                    mOptions.ServerName, mOptions.DBUser, userPassword, databaseName);
 
                 var connectionStringToUse = DbToolsFactory.AddApplicationNameToConnectionString(connectionString, "DBSchemaExportTool");
 
@@ -1490,9 +1495,10 @@ namespace DB_Schema_Export_Tool
                         if (candidateFile.Exists)
                         {
                             passwordFileExists = true;
-                            var passwordToReturn = LookupUserPasswordFromDisk(candidateFile, isStandardLocation,
-                                                                              pgUser, currentDatabase,
-                                                                              caseSensitive, out definedInPgPassFile);
+                            var passwordToReturn = LookupUserPasswordFromDisk(
+                                candidateFile, isStandardLocation,
+                                pgUser, currentDatabase,
+                                caseSensitive, out definedInPgPassFile);
 
                             if (!string.IsNullOrWhiteSpace(passwordToReturn) || definedInPgPassFile)
                             {
@@ -1775,11 +1781,13 @@ namespace DB_Schema_Export_Tool
                     // ALTER TABLE mc.t_event_log
                     // ALTER TABLE ONLY mc.t_event_log
 
-                    var alterTableMatcher = new Regex(string.Format(@"ALTER TABLE.+ {0}\.(?<TargetTable>.+)", schemaToUse),
-                                                      RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                    var alterTableMatcher = new Regex(
+                        string.Format(@"ALTER TABLE.+ {0}\.(?<TargetTable>.+)", schemaToUse),
+                              RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-                    var alterTableAlterColumnMatcher = new Regex(string.Format(@"ALTER TABLE.+ {0}\.(?<TargetTable>.+) ALTER COLUMN", schemaToUse),
-                                                                 RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                    var alterTableAlterColumnMatcher = new Regex(
+                        string.Format(@"ALTER TABLE.+ {0}\.(?<TargetTable>.+) ALTER COLUMN", schemaToUse),
+                              RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
                     var alterTableMatched = false;
 
@@ -2116,8 +2124,9 @@ namespace DB_Schema_Export_Tool
                     return true;
                 }
 
-                var success = mProgramRunner.RunCommand(pgDumpAll.FullName, cmdArgs, serverInfoOutputDirectory.FullName,
-                                                       out var consoleOutput, out _, maxRuntimeSeconds);
+                var success = mProgramRunner.RunCommand(
+                    pgDumpAll.FullName, cmdArgs, serverInfoOutputDirectory.FullName,
+                          out var consoleOutput, out _, maxRuntimeSeconds);
 
                 if (!success)
                 {
