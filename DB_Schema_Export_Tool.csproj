@@ -117,5 +117,11 @@
       <Version>2.6.49</Version>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="TableNameMapContainer\TableNameMapContainer.csproj">
+      <Project>{10cc3f92-4187-46b0-bfd4-e14f60e30a99}</Project>
+      <Name>TableNameMapContainer</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
