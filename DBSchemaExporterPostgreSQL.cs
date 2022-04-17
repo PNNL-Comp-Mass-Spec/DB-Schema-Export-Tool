@@ -504,7 +504,9 @@ namespace DB_Schema_Export_Tool
 
             if (pgDumpOutputFile.LastWriteTime > existingData)
             {
-                // Parse the pgDump output file and create separate files for each object
+                // Parse the pgDump output file and create a separate file for each object
+                // Overloaded functions will be stored in the same file, with comments indicating the overload number
+
                 ProcessPgDumpSchemaFile(databaseName, pgDumpOutputFile, out var unhandledScriptingCommands);
 
                 if (unhandledScriptingCommands)
