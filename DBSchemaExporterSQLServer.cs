@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using Microsoft.SqlServer.Management.Common;
 using Microsoft.SqlServer.Management.Smo;
 using PRISM;
+using TableNameMapContainer;
 
 namespace DB_Schema_Export_Tool
 {
@@ -1376,7 +1377,7 @@ namespace DB_Schema_Export_Tool
         }
 
         private string ExportDBTableDataInit(
-            TableDataExportInfo tableInfo,
+            TableNameInfo tableInfo,
             ColumnMapInfo columnMapInfo,
             DataExportWorkingParams dataExportParams,
             List<string> headerRows,
@@ -1997,7 +1998,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="tableInfo"></param>
         /// <returns>Comma separated list of primary key columns</returns>
-        private IEnumerable<string> GetPrimaryKeysForTableViaScripter(TableDataExportInfo tableInfo)
+        private IEnumerable<string> GetPrimaryKeysForTableViaScripter(TableNameInfo tableInfo)
         {
             if (!mCurrentDatabase.Tables.Contains(tableInfo.SourceTableName))
                 return new SortedSet<string>();
@@ -2308,7 +2309,7 @@ namespace DB_Schema_Export_Tool
             return PossiblyQuoteName(objectName, true);
         }
 
-        private string ResolvePrimaryKeys(DataExportWorkingParams dataExportParams, TableDataExportInfo tableInfo, ColumnMapInfo columnMapInfo)
+        private string ResolvePrimaryKeys(DataExportWorkingParams dataExportParams, TableNameInfo tableInfo, ColumnMapInfo columnMapInfo)
         {
             // Comma separated list of primary key columns
             string primaryKeyColumnList;
