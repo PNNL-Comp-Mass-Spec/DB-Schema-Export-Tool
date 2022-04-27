@@ -856,11 +856,11 @@ namespace DB_Schema_Export_Tool
         private bool ExportDBViewsProceduresAndUDFs(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
             // Option 1) obtain the list of views, stored procedures, and UDFs is to use currentDatabase.EnumObjects
-            // However, this only returns the var name, type, and URN, not whether or not it is a system object
-            //
+            // However, this only returns the object name, type, and URN, not whether or not it is a system object
+
             // Option 2) use currentDatabase.Views, currentDatabase.StoredProcedures, etc.
             // However, on Sql Server 2005 this returns many system views and system procedures that we typically don't want to export
-            //
+
             // Option 3) query the sysobjects table and filter on the xtype field
             // Possible values for XType:
             //   C = CHECK constraint
@@ -881,70 +881,103 @@ namespace DB_Schema_Export_Tool
             //   V = View
             //   X = Extended stored procedure
 
-            // Dim strXType As String
-            // For intObjectIterator = 0 To 2
-            //    strXType = string.Empty
-            //    Select Case intObjectIterator
-            //        Case 0
-            //            ' Views
-            //            If mOptions.ScriptingOptions.ExportViews Then
-            //                strXType = " = 'V'"
-            //            End If
-            //        Case 1
-            //            ' Stored procedures
-            //            If mOptions.ScriptingOptions.ExportStoredProcedures Then
-            //                strXType = " = 'P'"
-            //            End If
-            //        Case 2
-            //            ' User defined functions
-            //            If mOptions.ScriptingOptions.ExportUserDefinedFunctions Then
-            //                strXType = " IN ('IF', 'FN', 'TF')"
-            //            End If
-            //        Case Else
-            //            ' Unknown value for intObjectIterator; skip it
-            //    End Select
-            //    If strXType.Length > 0 Then
-            //        sql = "SELECT name FROM sysobjects WHERE xtype " & strXType
-            //        If Not mOptions.ScriptingOptions.IncludeSystemObjects Then
-            //            sql &= " AND category = 0"
-            //        End If
-            //        sql &= " ORDER BY Name"
-            //        sysObjects = currentDatabase.ExecuteWithResults(sql)
-            //        If workingParams.CountObjectsOnly Then
-            //            workingParams.ProcessCount += sysObjects.Tables(0).Rows.Count
-            //        Else
-            //            For Each currentRow In sysObjects.Tables(0).Rows
-            //                strObjectName = currentRow.Item(0).ToString
-            //                mSubtaskProgressStepDescription = strObjectName
-            //                UpdateSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected)
-            //                Select Case intObjectIterator
-            //                    Case 0
-            //                        ' Views
-            //                        smoObjects = currentDatabase.Views(strObjectName)
-            //                    Case 1
-            //                        ' Stored procedures
-            //                        smoObjects = currentDatabase.StoredProcedures(strObjectName)
-            //                    Case 2
-            //                        ' User defined functions
-            //                        smoObjects = currentDatabase.UserDefinedFunctions(strObjectName)
-            //                    Case Else
-            //                        ' Unknown value for intObjectIterator; skip it
-            //                        smoObjects = Nothing
-            //                End Select
-            //                If Not smoObjects Is Nothing Then
-            //                    WriteTextToFile(workingParams.OutputDirectoryPathCurrentDB, strObjectName,
-            //                                      CleanSqlScript(scripter.Script(smoObjects), schemaExportOptions)))
-            //                End If
-            //                workingParams.ProcessCount += 1
-            //                CheckPauseStatus()
-            //                If mAbortProcessing Then
-            //                    UpdateProgress("Aborted processing")
-            //                    Exit Function
-            //                End If
-            //            Next currentRow
-            //        End If
-            //    End If
-            // Next intObjectIterator
+            /*
+                for (var i = 0; i <= 2; i++)
+                {
+                    var objectType = string.Empty;
+
+                    switch (i)
+                    {
+                        case 0:
+                            // Views
+                            if (mOptions.ScriptingOptions.ExportViews )
+                            {
+                                objectType = " = 'V'";
+                            }
+                            break;
+
+                        case 1:
+                            // Stored procedures
+                            if (mOptions.ScriptingOptions.ExportStoredProcedures)
+                            {
+                                objectType = " = 'P'";
+                            }
+                            break;
+
+                        case 2: // User defined functions
+                            if (mOptions.ScriptingOptions.ExportUserDefinedFunctions)
+                            {
+                                objectType = " IN ('IF', 'FN', 'TF')";
+                            }
+                            break;
+
+                        default:
+                            // Unknown value for i; skip it
+                            objectType = string.Empty;
+                            break;
+                    }
+
+                    if (objectType.Length > 0)
+                    {
+                        var sql = "SELECT name FROM sysobjects WHERE xtype " + objectType;
+
+                        if (!mOptions.ScriptingOptions.IncludeSystemObjects)
+                        {
+                            sql += " AND category = 0";
+                        }
+
+                        sql += " ORDER BY Name";
+
+                        var sysObjects = currentDatabase.ExecuteWithResults(sql);
+
+                        if (workingParams.CountObjectsOnly)
+                        {
+                            workingParams.ProcessCount += sysObjects.Tables[0].Rows.Count;
+                        }
+                        else
+                        {
+                            // Initialize the scripter and smoObjects
+                            var scripter2 = new Scripter(mSqlServer)
+                            {
+                                Options = scriptOptions
+                            };
+
+                            for each (DataRow currentRow in sysObjects.Tables[0].Rows)
+                            {
+                                var objectName = currentRow[0].ToString();
+
+                                var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
+                                var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
+
+                                OnProgressUpdate(string.Format("Scripting {0}..{1}", currentDatabase.Name, objectName), percentComplete);
+
+                                var smoObjects = i switch
+                                {
+                                    0 => new SqlSmoObject[] { currentDatabase.Views[objectName] },
+                                    1 => new SqlSmoObject[] { currentDatabase.StoredProcedures[objectName] },
+                                    2 => new SqlSmoObject[] { currentDatabase.UserDefinedFunctions[objectName] },
+                                    _ => null
+                                };
+
+                                if (smoObjects != null)
+                                {
+                                    var scriptInfo = CleanSqlScript(StringCollectionToList(scripter2.Script(smoObjects)));
+                                    WriteTextToFile(workingParams.OutputDirectory, objectName, scriptInfo);
+                                }
+
+                                workingParams.ProcessCount++;
+
+                                CheckPauseStatus();
+                                if (mAbortProcessing)
+                                {
+                                    OnWarningEvent("Aborted processing");
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            */
 
             // Option 4) Query the INFORMATION_SCHEMA views
 
