@@ -797,7 +797,13 @@ namespace DB_Schema_Export_Tool
             else
             {
                 ShowTrace("Scripting User Defined Data Types");
-                var itemCount = ScriptCollectionOfObjects(currentDatabase.UserDefinedDataTypes, scriptOptions, workingParams.OutputDirectory);
+                var itemCount = ScriptCollectionOfObjects(
+                    currentDatabase.UserDefinedDataTypes,
+                    scriptOptions,
+                    workingParams.OutputDirectory,
+                    currentDatabase.Name,
+                    "User Defined Data Type");
+
                 workingParams.ProcessCount += itemCount;
             }
 
@@ -817,7 +823,12 @@ namespace DB_Schema_Export_Tool
             else
             {
                 ShowTrace("Scripting User Defined Types");
-                var itemCount = ScriptCollectionOfObjects(currentDatabase.UserDefinedTypes, scriptOptions, workingParams.OutputDirectory);
+                var itemCount = ScriptCollectionOfObjects(
+                    currentDatabase.UserDefinedTypes,
+                    scriptOptions,
+                    workingParams.OutputDirectory,
+                    currentDatabase.Name,
+                    "User Defined Type");
                 workingParams.ProcessCount += itemCount;
             }
 
@@ -1032,45 +1043,52 @@ namespace DB_Schema_Export_Tool
                             continue;
                         }
 
-                        var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
-                        var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
-
-                        OnProgressUpdate(string.Format("Scripting {0}.{1}.{2}", currentDatabase.Name, objectSchema, objectName), percentComplete);
-
-                        SqlSmoObject smoObjects = objectIterator switch
+                        try
                         {
-                            // Views
-                            0 => currentDatabase.Views[objectName, objectSchema],
+                            var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
+                            var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
 
-                            // Stored procedures
-                            1 => currentDatabase.StoredProcedures[objectName, objectSchema],
+                            OnProgressUpdate(string.Format("Scripting {0}.{1}.{2}", currentDatabase.Name, objectSchema, objectName), percentComplete);
 
-                            // User defined functions
-                            2 => currentDatabase.UserDefinedFunctions[objectName, objectSchema],
-
-                            // Synonyms
-                            3 => currentDatabase.Synonyms[objectName, objectSchema],
-
-                            _ => null
-                        };
-
-                        if (smoObjects != null)
-                        {
-                            if (workingParams.TablesToSkip.Contains(objectName))
+                            SqlSmoObject smoObjects = objectIterator switch
                             {
-                                // Skip this object
-                                OnDebugEvent("Skipping {0} {1} ", objectType, objectName);
-                            }
-                            else
+                                // Views
+                                0 => currentDatabase.Views[objectName, objectSchema],
+
+                                // Stored procedures
+                                1 => currentDatabase.StoredProcedures[objectName, objectSchema],
+
+                                // User defined functions
+                                2 => currentDatabase.UserDefinedFunctions[objectName, objectSchema],
+
+                                // Synonyms
+                                3 => currentDatabase.Synonyms[objectName, objectSchema],
+
+                                _ => null
+                            };
+
+                            if (smoObjects != null)
                             {
-                                var smoObjectArray = new[]
+                                if (workingParams.TablesToSkip.Contains(objectName))
                                 {
-                                    smoObjects
-                                };
+                                    // Skip this object
+                                    OnDebugEvent("Skipping {0} {1} ", objectType, objectName);
+                                }
+                                else
+                                {
+                                    var smoObjectArray = new[]
+                                    {
+                                        smoObjects
+                                    };
 
-                                var scriptInfo = CleanSqlScript(StringCollectionToList(scripter.Script(smoObjectArray)));
-                                WriteTextToFile(workingParams.OutputDirectory, objectName, scriptInfo);
+                                    var scriptInfo = CleanSqlScript(StringCollectionToList(scripter.Script(smoObjectArray)));
+                                    WriteTextToFile(workingParams.OutputDirectory, objectName, scriptInfo);
+                                }
                             }
+                        }
+                        catch (Exception ex)
+                        {
+                            HandleScriptingError(workingParams.OutputDirectory, currentDatabase.Name, objectType, objectSchema, objectName, ex);
                         }
 
                         workingParams.ProcessCount++;
@@ -2257,6 +2275,43 @@ namespace DB_Schema_Export_Tool
             return string.Join(",", targetColumnNames);
         }
 
+        private void HandleScriptingError(FileSystemInfo outputDirectory, string databaseName, string objectType, string objectSchema, string objectName, Exception ex)
+        {
+            var scriptComment = "Error scripting this object:";
+            var exceptionMessage = ex.Message;
+
+            // This list is used to convert the object type name to a string where each word is capitalized and there are no spaces
+            // For example, "StoredProcedure" or "UserDefinedFunction"
+            var capitalizedObjectTypeWords = new List<string>();
+
+            // ReSharper disable once LoopCanBeConvertedToQuery
+            foreach (var item in objectType.Split(' '))
+            {
+                capitalizedObjectTypeWords.Add(char.ToUpper(item[0]) + item.Substring(1).ToLower());
+            }
+
+            var scriptInfo = new List<string>
+            {
+                string.Format("/****** Object:  {0} [{1}].[{2}] ******/", string.Concat(capitalizedObjectTypeWords), objectSchema, objectName),
+                string.Empty,
+                "--",
+                "-- " + scriptComment,
+            };
+
+            if (!string.IsNullOrWhiteSpace(exceptionMessage))
+            {
+                scriptInfo.Add("-- " + exceptionMessage);
+            }
+
+            scriptInfo.Add("--");
+            scriptInfo.Add(string.Empty);
+            scriptInfo.Add("GO");
+
+            WriteTextToFile(outputDirectory, objectName, scriptInfo, false);
+
+            OnWarningEvent("Error scripting {0} {1} from database {2}: {3}", objectType.ToLower(), objectName, databaseName, ex.Message);
+        }
+
         /// <summary>
         /// Login to the server
         /// </summary>
@@ -2348,11 +2403,15 @@ namespace DB_Schema_Export_Tool
         /// <param name="schemaCollection">IEnumerable of type SchemaCollectionBase</param>
         /// <param name="scriptOptions">Script options</param>
         /// <param name="outputDirectory">Output directory</param>
+        /// <param name="databaseName">Database name</param>
+        /// <param name="objectType">Object type</param>
         /// <returns>The number of objects scripted</returns>
         private int ScriptCollectionOfObjects(
             IEnumerable schemaCollection,
             ScriptingOptions scriptOptions,
-            FileSystemInfo outputDirectory)
+            FileSystemInfo outputDirectory,
+            string databaseName,
+            string objectType)
         {
             var processCount = 0;
 
@@ -2363,9 +2422,17 @@ namespace DB_Schema_Export_Tool
                     continue;
                 }
 
-                var scriptInfo = CleanSqlScript(StringCollectionToList(schemaItem.Script(scriptOptions)));
+                try
+                {
+                    var scriptInfo = CleanSqlScript(StringCollectionToList(schemaItem.Script(scriptOptions)));
 
-                WriteTextToFile(outputDirectory, schemaItem.Name, scriptInfo);
+                    WriteTextToFile(outputDirectory, schemaItem.Name, scriptInfo);
+                }
+                catch (Exception ex)
+                {
+                    HandleScriptingError(outputDirectory, databaseName, objectType, "dbo", schemaItem.Name, ex);
+                }
+
                 processCount++;
                 CheckPauseStatus();
 
