@@ -143,17 +143,23 @@ namespace DB_Schema_Export_Tool
             if (string.IsNullOrWhiteSpace(message))
                 return;
 
-            if (msgType == MessageTypeConstants.Error && !message.StartsWith("Error", StringComparison.OrdinalIgnoreCase))
+            switch (msgType)
             {
-                lblMessage.Text = "Error: " + message;
-            }
-            else if (msgType == MessageTypeConstants.Warning && !message.StartsWith("Warning", StringComparison.OrdinalIgnoreCase))
-            {
-                lblMessage.Text = "Warning: " + message;
-            }
-            else
-            {
-                lblMessage.Text = message;
+                case MessageTypeConstants.Error:
+                    lblMessage.Text = message.StartsWith("Error", StringComparison.OrdinalIgnoreCase) ? string.Empty : "Error: " + message;
+                    ConsoleMsgUtils.ShowError(lblMessage.Text);
+                    Console.WriteLine();
+                    break;
+
+                case MessageTypeConstants.Warning:
+                    lblMessage.Text = message.StartsWith("Warning", StringComparison.OrdinalIgnoreCase) ? string.Empty : "Warning: " + message;
+                    ConsoleMsgUtils.ShowWarning(lblMessage.Text);
+                    Console.WriteLine();
+                    break;
+
+                default:
+                    lblMessage.Text = message;
+                    break;
             }
 
             Application.DoEvents();
