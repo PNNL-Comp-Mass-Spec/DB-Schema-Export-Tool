@@ -663,7 +663,7 @@ namespace DB_Schema_Export_Tool
             catch (Exception ex)
             {
                 // User likely doesn't have privilege to script the DB; ignore the error
-                OnErrorEvent("Unable to script DB " + currentDatabase.Name, ex);
+                OnWarningEvent("Unable to script database {0}: {1}", currentDatabase.Name, ex.Message);
                 return false;
             }
 
@@ -678,11 +678,20 @@ namespace DB_Schema_Export_Tool
                         continue;
                     }
 
-                    ShowTrace("Exporting schema " + currentDatabase.Schemas[index]);
+                    try
+                    {
+                        ShowTrace("Exporting schema " + currentDatabase.Schemas[index]);
 
-                    var scriptInfo = CleanSqlScript(StringCollectionToList(currentDatabase.Schemas[index].Script(scriptOptions)));
+                        var scriptInfo = CleanSqlScript(StringCollectionToList(currentDatabase.Schemas[index].Script(scriptOptions)));
 
-                    WriteTextToFile(workingParams.OutputDirectory, "Schema_" + currentDatabase.Schemas[index].Name, scriptInfo);
+                        WriteTextToFile(workingParams.OutputDirectory, "Schema_" + currentDatabase.Schemas[index].Name, scriptInfo);
+                    }
+                    catch (Exception ex)
+                    {
+                        // User likely doesn't have privilege to script the schema; ignore the error
+                        OnWarningEvent("Unable to script schema {0}: {1}", currentDatabase.Schemas[index], ex.Message);
+                    }
+
                     workingParams.ProcessCount++;
                     CheckPauseStatus();
 
@@ -699,8 +708,17 @@ namespace DB_Schema_Export_Tool
                 if (!ExportRole(currentDatabase.Roles[index]))
                     continue;
 
-                var scriptInfo = CleanSqlScript(StringCollectionToList(currentDatabase.Roles[index].Script(scriptOptions)));
-                WriteTextToFile(workingParams.OutputDirectory, "Role_" + currentDatabase.Roles[index].Name, scriptInfo);
+                try
+                {
+                    var scriptInfo = CleanSqlScript(StringCollectionToList(currentDatabase.Roles[index].Script(scriptOptions)));
+                    WriteTextToFile(workingParams.OutputDirectory, "Role_" + currentDatabase.Roles[index].Name, scriptInfo);
+                }
+                catch (Exception ex)
+                {
+                    // User likely doesn't have privilege to script the role; ignore the error
+                    OnWarningEvent("Unable to script role {0}: {1}", currentDatabase.Roles[index], ex.Message);
+                }
+
                 workingParams.ProcessCount++;
                 CheckPauseStatus();
 
@@ -1752,8 +1770,8 @@ namespace DB_Schema_Export_Tool
                 catch (Exception ex)
                 {
                     OnWarningEvent(
-                        "Error scripting the SQL Server database mail settings; " +
-                        "most likely the user is not a server administrator: " + ex.Message);
+                        "Error scripting the SQL Server database mail settings; most likely the user is not a server administrator: {0}",
+                        ex.Message);
                 }
             }
 
@@ -1774,7 +1792,9 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                OnWarningEvent("Error scripting the SQL Server registry settings; most likely the user is not a server admin: " + ex.Message);
+                OnWarningEvent(
+                    "Error scripting the SQL Server registry settings; most likely the user is not a server admin: {0}",
+                    ex.Message);
             }
         }
 
@@ -1949,8 +1969,8 @@ namespace DB_Schema_Export_Tool
             for (var index = 0; index < sqlServer.JobServer.Jobs.Count; index++)
             {
                 var currentJob = sqlServer.JobServer.Jobs[index].Name;
-
                 OnDebugEvent("Exporting job " + currentJob);
+
                 var scriptInfo = CleanSqlScript(StringCollectionToList(sqlServer.JobServer.Jobs[index].Script(scriptOptions)), true, true);
                 var success = WriteTextToFile(outputDirectoryPathCurrentServer, "AgentJob_" + currentJob, scriptInfo);
 
