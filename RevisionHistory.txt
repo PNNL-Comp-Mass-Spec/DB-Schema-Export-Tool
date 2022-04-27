@@ -1,5 +1,9 @@
 DB Schema Export Tool
 
+Version 2.0.8152; April 27, 2022
+	- Continue scripting objects if an error occurs scripting a single object
+	- Show warning message when trying to script an encrypted object (view, stored procedure, or user defined function)
+
 Version 2.0.8132; April 7, 2022
 	- Remove trailing whitespace from schema files created by pg_dump
 
