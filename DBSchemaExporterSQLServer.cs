@@ -2277,8 +2277,22 @@ namespace DB_Schema_Export_Tool
 
         private void HandleScriptingError(FileSystemInfo outputDirectory, string databaseName, string objectType, string objectSchema, string objectName, Exception ex)
         {
-            var scriptComment = "Error scripting this object:";
-            var exceptionMessage = ex.Message;
+            string scriptComment;
+            string exceptionMessage;
+            bool encryptedObject;
+
+            if (ex is FailedOperationException && ex.InnerException is PropertyCannotBeRetrievedException)
+            {
+                scriptComment = "This object's content is encrypted and thus cannot be scripted";
+                exceptionMessage = string.Empty;
+                encryptedObject = true;
+            }
+            else
+            {
+                scriptComment = "Error scripting this object:";
+                exceptionMessage = ex.Message;
+                encryptedObject = false;
+            }
 
             // This list is used to convert the object type name to a string where each word is capitalized and there are no spaces
             // For example, "StoredProcedure" or "UserDefinedFunction"
@@ -2309,7 +2323,14 @@ namespace DB_Schema_Export_Tool
 
             WriteTextToFile(outputDirectory, objectName, scriptInfo, false);
 
-            OnWarningEvent("Error scripting {0} {1} from database {2}: {3}", objectType.ToLower(), objectName, databaseName, ex.Message);
+            if (encryptedObject)
+            {
+                OnWarningEvent("Cannot script {0} {1} from database {2} because the object is encrypted", objectType.ToLower(), objectName, databaseName);
+            }
+            else
+            {
+                OnWarningEvent("Error scripting {0} {1} from database {2}: {3}", objectType.ToLower(), objectName, databaseName, ex.Message);
+            }
         }
 
         /// <summary>
