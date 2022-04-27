@@ -2513,10 +2513,10 @@ namespace DB_Schema_Export_Tool
                 {
                     ExportSQLServerAgentJobs(sqlServer, scriptOptions, serverInfoOutputDirectory);
                 }
-                catch (Exception ex2) when (ex2.InnerException?.Message.Contains("permission was denied") == true)
+                catch (Exception ex) when (ex.InnerException?.Message.IndexOf("permission was denied", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     OnWarningEvent("Error scripting the SQL Server Agent jobs; most likely the user is not a server administrator");
-                    OnWarningEvent(ex2.InnerException.Message);
+                    OnWarningEvent(ex.InnerException.Message);
                 }
 
                 return true;
