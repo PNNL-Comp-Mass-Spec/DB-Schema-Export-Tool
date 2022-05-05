@@ -968,87 +968,7 @@ namespace DB_Schema_Export_Tool
                     continue;
                 }
 
-                switch (dataExportParams.ColumnNamesAndTypes[columnIndex].Value)
-                {
-                    case DataColumnTypeConstants.Numeric:
-                        delimitedRowValues.Append(columnValues[columnIndex]);
-                        break;
-
-                    case DataColumnTypeConstants.Text:
-                    case DataColumnTypeConstants.DateTime:
-                    case DataColumnTypeConstants.GUID:
-                        if (mOptions.PgDumpTableData && !pgInsertEnabled)
-                        {
-                            delimitedRowValues.Append(CleanForCopyCommand(columnValues[columnIndex]));
-                        }
-                        else if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || pgInsertEnabled)
-                        {
-                            delimitedRowValues.Append(PossiblyQuoteText(columnValues[columnIndex].ToString()));
-                        }
-                        else
-                        {
-                            delimitedRowValues.Append(columnValues[columnIndex]);
-                        }
-                        break;
-
-                    case DataColumnTypeConstants.BinaryArray:
-                        try
-                        {
-                            var bytData = (byte[])(Array)columnValues[columnIndex];
-                            delimitedRowValues.Append("0x");
-                            var dataFound = false;
-
-                            foreach (var value in bytData)
-                            {
-                                if (dataFound || value != 0)
-                                {
-                                    dataFound = true;
-                                    delimitedRowValues.Append(value.ToString("X2"));
-                                }
-                            }
-
-                            if (!dataFound)
-                            {
-                                delimitedRowValues.Append("00");
-                            }
-                        }
-                        catch (Exception)
-                        {
-                            delimitedRowValues.Append("[Byte]");
-                        }
-                        break;
-
-                    case DataColumnTypeConstants.BinaryByte:
-                        try
-                        {
-                            delimitedRowValues.AppendFormat("0x{0:X2}", Convert.ToByte(columnValues[columnIndex]));
-                        }
-                        catch (Exception)
-                        {
-                            delimitedRowValues.Append("[Byte]");
-                        }
-
-                        break;
-
-                    case DataColumnTypeConstants.ImageObject:
-                        delimitedRowValues.Append("[Image]");
-                        break;
-
-                    case DataColumnTypeConstants.GeneralObject:
-                        delimitedRowValues.Append("[var]");
-                        break;
-
-                    case DataColumnTypeConstants.SqlVariant:
-                        delimitedRowValues.Append("[Sql_Variant]");
-                        break;
-
-                    case DataColumnTypeConstants.SkipColumn:
-                        // Ignore this column
-                        break;
-
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
+                delimitedRowValues.Append(FormatValueForInsert(dataExportParams.ColumnNamesAndTypes, columnValues, columnIndex, pgInsertEnabled));
             }
 
             if (dataExportParams.PgInsertEnabled)
@@ -1072,6 +992,98 @@ namespace DB_Schema_Export_Tool
                 }
 
                 writer.WriteLine(delimitedRowValues.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Format a column value as a string, based on the data type of the database column
+        /// </summary>
+        /// <param name="columnNamesAndTypes">Column names and types</param>
+        /// <param name="columnValues">Column values, as objects</param>
+        /// <param name="columnIndex">Column index</param>
+        /// <param name="pgInsertEnabled">True if using insert commands formatted as PostgreSQL compatible INSERT INTO statements</param>
+        /// <returns>Value as a string</returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        protected string FormatValueForInsert(
+            IReadOnlyList<KeyValuePair<string, DataColumnTypeConstants>> columnNamesAndTypes,
+            IReadOnlyList<object> columnValues,
+            int columnIndex,
+            bool pgInsertEnabled)
+        {
+
+            switch (columnNamesAndTypes[columnIndex].Value)
+            {
+                case DataColumnTypeConstants.Numeric:
+                    return columnValues[columnIndex].ToString();
+
+                case DataColumnTypeConstants.Text:
+                case DataColumnTypeConstants.DateTime:
+                case DataColumnTypeConstants.GUID:
+                    if (mOptions.PgDumpTableData && !pgInsertEnabled)
+                    {
+                        return CleanForCopyCommand(columnValues[columnIndex]);
+                    }
+
+                    if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || pgInsertEnabled)
+                    {
+                        return PossiblyQuoteText(columnValues[columnIndex].ToString());
+                    }
+
+                    return columnValues[columnIndex].ToString();
+
+                case DataColumnTypeConstants.BinaryArray:
+                    try
+                    {
+                        var bytData = (byte[])(Array)columnValues[columnIndex];
+                        var formattedValue = "0x";
+                        var dataFound = false;
+
+                        foreach (var value in bytData)
+                        {
+                            if (dataFound || value != 0)
+                            {
+                                dataFound = true;
+                                formattedValue += value.ToString("X2");
+                            }
+                        }
+
+                        if (dataFound)
+                        {
+                            return formattedValue;
+                        }
+
+                        return formattedValue + "00";
+                    }
+                    catch (Exception)
+                    {
+                        return "[Byte]";
+                    }
+
+                case DataColumnTypeConstants.BinaryByte:
+                    try
+                    {
+                        return string.Format("0x{0:X2}", Convert.ToByte(columnValues[columnIndex]));
+                    }
+                    catch (Exception)
+                    {
+                        return "[Byte]";
+                    }
+
+                case DataColumnTypeConstants.ImageObject:
+                    return "[Image]";
+
+                case DataColumnTypeConstants.GeneralObject:
+                    return "[var]";
+
+                case DataColumnTypeConstants.SqlVariant:
+                    return "[Sql_Variant]";
+
+                case DataColumnTypeConstants.SkipColumn:
+                    // Ignore this column
+                    return string.Empty;
+
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
 
