@@ -652,8 +652,16 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
-                dataExportParams.ColumnNameByIndex.Add(columnIndex, quotedColumnName);
-                dataExportParams.ColumnNamesAndTypes.Add(new KeyValuePair<string, DataColumnTypeConstants>(targetColumnName, dataColumnType));
+                if (dataColumnType == DataColumnTypeConstants.SkipColumn)
+                {
+                    dataExportParams.ColumnNameByIndex.Add(columnIndex, currentColumnName);
+                    dataExportParams.ColumnNamesAndTypes.Add(new KeyValuePair<string, DataColumnTypeConstants>(currentColumnName, dataColumnType));
+                }
+                else
+                {
+                    dataExportParams.ColumnNameByIndex.Add(columnIndex, quotedColumnName);
+                    dataExportParams.ColumnNamesAndTypes.Add(new KeyValuePair<string, DataColumnTypeConstants>(targetColumnName, dataColumnType));
+                }
 
                 columnIndex++;
             }
