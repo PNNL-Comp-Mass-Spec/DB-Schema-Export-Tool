@@ -1453,6 +1453,7 @@ namespace DB_Schema_Export_Tool
                         var sequenceName = string.Format("{0}_{1}_seq",
                             dataExportParams.TargetTableNameWithSchema.Replace("\"", string.Empty), primaryKeyColumnName);
 
+                        writer.WriteLine();
                         writer.WriteLine("-- Set the sequence's current value to the maximum current ID");
                         writer.WriteLine("SELECT setval('{0}', (SELECT MAX({1}) FROM {2}));",
                             sequenceName, PossiblyQuoteName(primaryKeyColumnName, false), dataExportParams.TargetTableNameWithSchema);
