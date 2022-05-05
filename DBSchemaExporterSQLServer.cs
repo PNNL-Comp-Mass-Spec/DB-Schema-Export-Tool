@@ -1690,8 +1690,6 @@ namespace DB_Schema_Export_Tool
 
             var delimitedRowValues = new StringBuilder();
 
-            var columnValues = new object[columnCount];
-
             var commandAndLfRequired = false;
             var startingNewChunk = false;
 
@@ -1709,17 +1707,7 @@ namespace DB_Schema_Export_Tool
                     delimitedRowValues.Append(insertIntoLine);
                 }
 
-                for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
-                {
-                    if (currentRow.IsNull(columnIndex))
-                    {
-                        columnValues[columnIndex] = null;
-                    }
-                    else
-                    {
-                        columnValues[columnIndex] = currentRow[columnIndex];
-                    }
-                }
+                var columnValues = GetColumnValues(columnCount, currentRow);
 
                 if (commandAndLfRequired)
                 {
@@ -2072,6 +2060,25 @@ namespace DB_Schema_Export_Tool
                         string.Format("Processing failed for server {0}; job {1}", mOptions.ServerName, currentJob));
                 }
             }
+        }
+
+        private static object[] GetColumnValues(int columnCount, DataRow currentRow)
+        {
+            var columnValues = new object[columnCount];
+
+            for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
+            {
+                if (currentRow.IsNull(columnIndex))
+                {
+                    columnValues[columnIndex] = null;
+                }
+                else
+                {
+                    columnValues[columnIndex] = currentRow[columnIndex];
+                }
+            }
+
+            return columnValues;
         }
 
         /// <summary>
