@@ -369,6 +369,16 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
+        /// Text file used to exclude columns when exporting data from tables
+        /// </summary>
+        [Option("TableDataColumnFilter", "ColumnFilter", HelpShowsDefault = false, IsInputFilePath = true,
+            HelpText = "Text file used to define columns to skip when exporting data from tables\n" +
+                       "The program auto-skips computed columns and timestamp columns when exporting data as PostgreSQL compatible INSERT INTO statements. " +
+                       "Tab-delimited columns are:\n" +
+                       "Table  Column  Comment")]
+        public string TableDataColumnFilterFile { get; set; }
+
+        /// <summary>
         /// Text file used to filter data by date when exporting data from tables
         /// </summary>
         [Option("TableDataDateFilter", "DateFilter", HelpShowsDefault = false, IsInputFilePath = true,
@@ -770,6 +780,11 @@ namespace DB_Schema_Export_Tool
             if (!string.IsNullOrWhiteSpace(TableDataColumnMapFile))
             {
                 Console.WriteLine(" {0,-48} {1}", "File with source/target column names:", PathUtils.CompactPathString(TableDataColumnMapFile, 80));
+            }
+
+            if (!string.IsNullOrWhiteSpace(TableDataColumnFilterFile))
+            {
+                Console.WriteLine(" {0,-48} {1}", "File listing columns to skip when exporting data from tables:", PathUtils.CompactPathString(TableDataColumnFilterFile, 80));
             }
 
             if (!string.IsNullOrWhiteSpace(TableDataDateFilterFile))

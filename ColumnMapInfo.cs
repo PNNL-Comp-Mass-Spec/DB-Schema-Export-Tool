@@ -69,5 +69,17 @@ namespace DB_Schema_Export_Tool
         {
             return mColumnNameMap.ContainsKey(sourceColumnName);
         }
+
+        /// <summary>
+        /// Update the target column name to be "&lt;skip&gt;"
+        /// </summary>
+        /// <param name="sourceColumnName"></param>
+        public void SkipColumn(string sourceColumnName)
+        {
+            if (IsColumnDefined(sourceColumnName))
+                mColumnNameMap[sourceColumnName] = DBSchemaExportTool.SKIP_FLAG;
+            else
+                AddColumn(sourceColumnName, DBSchemaExportTool.SKIP_FLAG);
+        }
     }
 }

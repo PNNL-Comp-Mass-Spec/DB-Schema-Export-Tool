@@ -271,6 +271,14 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
+                if (!string.IsNullOrWhiteSpace(mOptions.TableDataColumnFilterFile))
+                {
+                    var columnFilterSuccess = LoadColumnFiltersForTableData(mOptions.TableDataColumnFilterFile);
+
+                    if (!columnFilterSuccess)
+                        return false;
+                }
+
                 if (!string.IsNullOrWhiteSpace(mOptions.TableDataDateFilterFile))
                 {
                     var dateFilterSuccess = LoadDateFiltersForTableData(mOptions.TableDataDateFilterFile, tablesForDataExport);
@@ -737,6 +745,87 @@ namespace DB_Schema_Export_Tool
             catch (Exception ex)
             {
                 OnErrorEvent("Error in LoadColumnMapInfo", ex);
+            }
+        }
+
+        private bool LoadColumnFiltersForTableData(string columnFilterFilePath)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(columnFilterFilePath))
+                {
+                    return true;
+                }
+
+                var filterFile = new FileInfo(columnFilterFilePath);
+
+                if (!filterFile.Exists)
+                {
+                    Console.WriteLine();
+                    OnStatusEvent("Table Data Column Filter File not found");
+                    OnWarningEvent("File not found: " + filterFile.FullName);
+                    return false;
+                }
+
+                ShowTrace(string.Format("Reading date filter information from {0}", filterFile.FullName));
+
+                var headerLineChecked = false;
+                var tableCountWithFilters = 0;
+
+                using var dataReader = new StreamReader(new FileStream(filterFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+
+                while (!dataReader.EndOfStream)
+                {
+                    var dataLine = dataReader.ReadLine();
+
+                    if (string.IsNullOrWhiteSpace(dataLine))
+                        continue;
+
+                    var lineParts = dataLine.Split('\t');
+
+                    if (!headerLineChecked)
+                    {
+                        headerLineChecked = true;
+
+                        if (IsHeaderRowTableColumn(lineParts[0]))
+                            continue;
+                    }
+
+                    if (lineParts.Length < 2)
+                    {
+                        OnDebugEvent("Skipping line with fewer than two columns: " + dataLine);
+                        continue;
+                    }
+
+                    var tableName = lineParts[0].Trim();
+                    var columnName = lineParts[1].Trim();
+
+                    if (mOptions.ColumnMapForDataExport.TryGetValue(tableName, out var currentTableColumns))
+                    {
+                        currentTableColumns.SkipColumn(columnName);
+                    }
+                    else
+                    {
+                        var tableColumns = new ColumnMapInfo(columnName);
+                        tableColumns.SkipColumn(columnName);
+
+                        mOptions.ColumnMapForDataExport.Add(tableName, tableColumns);
+                    }
+
+                    tableCountWithFilters++;
+                }
+
+                var tableText = tableCountWithFilters == 1 ? "table" : "tables";
+                ShowTrace(string.Format(
+                    "Loaded column filters for {0} {1} from {2}",
+                    tableCountWithFilters, tableText, filterFile.Name));
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                OnErrorEvent("Error in LoadColumnFiltersForTableData", ex);
+                return false;
             }
         }
 
