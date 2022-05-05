@@ -1292,12 +1292,6 @@ namespace DB_Schema_Export_Tool
                     sql += string.Format(" WHERE [{0}] >= '{1:yyyy-MM-dd}'", tableInfo.DateColumnName, tableInfo.MinimumDate);
                 }
 
-                if (mOptions.PreviewExport)
-                {
-                    OnStatusEvent("Preview querying database {0} with {1}", databaseName, sql);
-                    return true;
-                }
-
                 if (SkipTableForDataExport(tableInfo))
                 {
                     // Skip this table
@@ -1305,6 +1299,12 @@ namespace DB_Schema_Export_Tool
                         "Skipping data export from table {0} in database {1}",
                         dataExportParams.SourceTableNameWithSchema, databaseName);
 
+                    return true;
+                }
+
+                if (mOptions.PreviewExport)
+                {
+                    OnStatusEvent("Preview querying database {0} with {1}", databaseName, sql);
                     return true;
                 }
 
