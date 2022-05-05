@@ -668,6 +668,20 @@ namespace DB_Schema_Export_Tool
             ConsoleMsgUtils.ShowDebug("Log file path: " + LogTools.CurrentLogFilePath);
         }
 
+        /// <summary>
+        /// Return true if the text in headerName matches once of the supported names for the Table Name column
+        /// </summary>
+        /// <param name="headerName"></param>
+        private bool IsHeaderRowTableColumn(string headerName)
+        {
+            headerName = headerName.Trim();
+
+            return headerName.Equals("Table", StringComparison.OrdinalIgnoreCase) ||
+                   headerName.Equals("TableName", StringComparison.OrdinalIgnoreCase) ||
+                   headerName.Equals("Table_Name", StringComparison.OrdinalIgnoreCase) ||
+                   headerName.Equals("SourceTableName", StringComparison.OrdinalIgnoreCase);
+        }
+
         private void LoadColumnMapInfo(string columnMapFilePath)
         {
             mOptions.ColumnMapForDataExport.Clear();
@@ -711,7 +725,7 @@ namespace DB_Schema_Export_Tool
                     {
                         headerLineChecked = true;
 
-                        if (lineParts[0].Equals("SourceTableName"))
+                        if (IsHeaderRowTableColumn(lineParts[0]))
                             continue;
                     }
 
@@ -876,7 +890,7 @@ namespace DB_Schema_Export_Tool
                     {
                         headerLineChecked = true;
 
-                        if (lineParts[0].Equals("SourceTableName"))
+                        if (IsHeaderRowTableColumn(lineParts[0]))
                             continue;
                     }
 
@@ -972,7 +986,7 @@ namespace DB_Schema_Export_Tool
                     // There should only be one column, but split on tab anyway in case other columns were included
                     var lineParts = dataLine.Split('\t');
 
-                    if (linesRead == 1 && lineParts[0].Trim().Equals("Table_Name", StringComparison.OrdinalIgnoreCase))
+                    if (linesRead == 1 && IsHeaderRowTableColumn(lineParts[0]))
                     {
                         // Header line
                         continue;
