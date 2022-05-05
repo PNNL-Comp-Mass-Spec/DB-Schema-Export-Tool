@@ -1403,9 +1403,7 @@ namespace DB_Schema_Export_Tool
 
                 var columnMapInfo = ConvertDataTableColumnInfo(databaseTable.Name, quoteWithSquareBrackets, dataExportParams);
 
-                var dataRowCount = queryResults.Tables[0].Rows.Count;
-
-                var insertIntoLine = ExportDBTableDataInit(tableInfo, columnMapInfo, dataExportParams, headerRows, workingParams, dataRowCount);
+                var insertIntoLine = ExportDBTableDataInit(tableInfo, columnMapInfo, dataExportParams, headerRows, workingParams, queryResults);
 
                 var tableDataOutputFile = GetTableDataOutputFile(tableInfo, dataExportParams, workingParams, out var relativeFilePath);
 
@@ -1480,15 +1478,135 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        /// <summary>
+        /// Generate SQL to delete extra rows from the target table
+        /// </summary>
+        /// <param name="dataExportParams"></param>
+        /// <param name="queryResults"></param>
+        private void ExportDBTableDataDeleteExtraRows(DataExportWorkingParams dataExportParams, DataSet queryResults)
+        {
+            // If just one column in the table, use:
+            //   DELETE FROM t_target_table
+            //   WHERE NOT id in (1, 2, 3);
+
+            // If multiple columns, use:
+            //   DELETE FROM t_target_table
+            //   WHERE NOT (
+            //       id = 1 and value = 'Item A' Or
+            //       id = 2 and value = 'Item B' Or
+            //     id = 3 and value = 'Item C');
+
+            var sql = new StringBuilder();
+
+            sql.AppendFormat("DELETE FROM {0}", dataExportParams.QuotedTargetTableNameWithSchema);
+            sql.AppendLine();
+
+            var columnCount = queryResults.Tables[0].Columns.Count;
+            var pgInsertEnabled = dataExportParams.PgInsertEnabled;
+
+            var filterValues = new StringBuilder();
+
+            if (columnCount == 1)
+            {
+                sql.AppendFormat("WHERE NOT {0} IN (", dataExportParams.ColumnNameByIndex[0]);
+            }
+            else
+            {
+                sql.Append("WHERE NOT (");
+                sql.AppendLine();
+            }
+
+            var rowNumber = 0;
+
+            foreach (DataRow currentRow in queryResults.Tables[0].Rows)
+            {
+                filterValues.Clear();
+                rowNumber++;
+
+                var columnValues = GetColumnValues(columnCount, currentRow);
+
+                for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
+                {
+                    if (columnCount > 1 && dataExportParams.ColumnNamesAndTypes[columnIndex].Value == DataColumnTypeConstants.SkipColumn)
+                    {
+                        // Skip this column
+                        continue;
+                    }
+
+                    var formattedValue = FormatValueForInsert(dataExportParams.ColumnNamesAndTypes, columnValues, columnIndex, pgInsertEnabled);
+
+                    if (columnCount == 1)
+                    {
+                        // Using the form "WHERE NOT id in (1, 2, 3);"
+                        // Append to the list
+
+                        if (rowNumber > 1)
+                            sql.Append(", ");
+
+                        sql.Append(columnValues[columnIndex] == null ? "NULL" : formattedValue);
+
+                        continue;
+                    }
+
+                    if (filterValues.Length == 0)
+                    {
+                        if (rowNumber > 1)
+                        {
+                            // Add OR to the previous filter value
+                            sql.AppendLine(" OR");
+                        }
+
+                        sql.Append("    ");
+                    }
+
+                    var quotedColumnName = dataExportParams.ColumnNameByIndex[columnIndex];
+
+                    if (columnIndex > 0 && filterValues.Length > 0)
+                    {
+                        filterValues.Append(" AND ");
+                    }
+
+                    if (columnValues[columnIndex] == null)
+                    {
+                        filterValues.AppendFormat("{0} IS NULL", quotedColumnName);
+                        continue;
+                    }
+
+                    filterValues.AppendFormat("{0} = {1}", quotedColumnName, formattedValue);
+                }
+
+                if (columnCount > 1)
+                {
+                    sql.Append(filterValues);
+                }
+            }
+
+            sql.AppendLine(");");
+
+            dataExportParams.PgInsertHeaders.Add(sql.ToString());
+        }
+
+        /// <summary>
+        /// Construct the header rows then return the INSERT INTO line to use for each block of data
+        /// </summary>
+        /// <param name="tableInfo"></param>
+        /// <param name="columnMapInfo"></param>
+        /// <param name="dataExportParams"></param>
+        /// <param name="headerRows"></param>
+        /// <param name="workingParams"></param>
+        /// <param name="queryResults"></param>
+        /// <returns>Insert Into line to use when SaveDataAsInsertIntoStatements is true and PgInsertEnabled is false; otherwise, an empty string</returns>
         private string ExportDBTableDataInit(
             TableNameInfo tableInfo,
             ColumnMapInfo columnMapInfo,
             DataExportWorkingParams dataExportParams,
             List<string> headerRows,
             WorkingParams workingParams,
-            int dataRowCount)
+            DataSet queryResults)
         {
             string insertIntoLine;
+
+            var dataRowCount = queryResults.Tables[0].Rows.Count;
 
             if (dataExportParams.PgInsertEnabled)
             {
@@ -1497,24 +1615,51 @@ namespace DB_Schema_Export_Tool
 
                 var primaryKeyColumnList = ResolvePrimaryKeys(dataExportParams, tableInfo, columnMapInfo);
 
-                bool truncateTableEnabled;
+                bool useTruncateTable;
+                bool deleteExtrasThenAddNew;
 
                 if (tableInfo.PrimaryKeyColumns.Count == dataExportParams.ColumnNamesAndTypes.Count)
                 {
-                    truncateTableEnabled = true;
-                    Console.WriteLine();
+                    if (dataRowCount < 100 && tableInfo.PrimaryKeyColumns.Count <= 2)
+                    {
+                        // Every column in the table is part of the primary key
 
-                    var message = string.Format(
-                        "Every column in table {0} is part of the primary key; will use TRUNCATE TABLE instead of ON CONFLICT ... DO UPDATE",
-                        dataExportParams.QuotedTargetTableNameWithSchema);
+                        // For smaller tables, we can will delete extra values then add new values
 
-                    OnStatusEvent(message);
+                        // This is preferable to TRUNCATE TABLE since the table might be referenced via a foreign key
+                        // and PostgreSQL will not allow a table to be truncated when the target of a foreign key reference
 
-                    workingParams.AddWarningMessage(message);
+                        deleteExtrasThenAddNew = true;
+                        useTruncateTable = false;
+
+                        Console.WriteLine();
+
+                        var message = string.Format(
+                            "Every column in table {0} is part of the primary key; since this is a small table, will delete extra rows from the target table, then add missing rows",
+                            dataExportParams.QuotedTargetTableNameWithSchema);
+
+                        OnStatusEvent(message);
+                    }
+                    else
+                    {
+                        deleteExtrasThenAddNew = false;
+                        useTruncateTable = true;
+
+                        Console.WriteLine();
+
+                        var message = string.Format(
+                            "Every column in table {0} is part of the primary key; will use TRUNCATE TABLE instead of ON CONFLICT ... DO UPDATE",
+                            dataExportParams.QuotedTargetTableNameWithSchema);
+
+                        OnStatusEvent(message);
+
+                        workingParams.AddWarningMessage(message);
+                    }
                 }
                 else if (tableInfo.PrimaryKeyColumns.Count == 0)
                 {
-                    truncateTableEnabled = true;
+                    deleteExtrasThenAddNew = false;
+                    useTruncateTable = true;
                     var warningMessage = string.Format(
                         "Table {0} does not have a primary key; will use TRUNCATE TABLE since ON CONFLICT ... DO UPDATE is not possible",
                         dataExportParams.QuotedTargetTableNameWithSchema);
@@ -1525,10 +1670,16 @@ namespace DB_Schema_Export_Tool
                 }
                 else
                 {
-                    truncateTableEnabled = false;
+                    deleteExtrasThenAddNew = false;
+                    useTruncateTable = false;
                 }
 
-                if (truncateTableEnabled)
+                if (deleteExtrasThenAddNew)
+                {
+                    ExportDBTableDataDeleteExtraRows(dataExportParams, queryResults);
+                }
+
+                if (useTruncateTable)
                 {
                     var truncateTableCommand = string.Format("TRUNCATE TABLE {0};", dataExportParams.QuotedTargetTableNameWithSchema);
 
@@ -1576,7 +1727,7 @@ namespace DB_Schema_Export_Tool
                 if (primaryKeyColumnList.Length == 0)
                     return string.Empty;
 
-                if (truncateTableEnabled)
+                if (useTruncateTable)
                 {
                     return string.Empty;
                 }
@@ -1609,16 +1760,32 @@ namespace DB_Schema_Export_Tool
                         setStatements.Add("DO UPDATE SET");
                     }
 
-                    setStatements.Add(string.Format("  {0} = EXCLUDED.{0}{1}", PossiblyQuoteName(targetColumnName, false), optionalComma));
+                    if (!deleteExtrasThenAddNew)
+                    {
+                        setStatements.Add(string.Format("  {0} = EXCLUDED.{0}{1}", PossiblyQuoteName(targetColumnName, false), optionalComma));
+                    }
                 }
 
-                // Assure that the last line in setStatements does not end with a comma
-                // This would be the case if the final column for the table is a <skip> column or an identity column
-                var mostRecentLine = setStatements.LastOrDefault() ?? string.Empty;
-
-                if (mostRecentLine.EndsWith(","))
+                if (deleteExtrasThenAddNew)
                 {
-                    setStatements[setStatements.Count - 1] = mostRecentLine.Substring(0, mostRecentLine.Length - 1);
+                    if (setStatements.Count > 0)
+                    {
+                        throw new Exception("Logic bug in ExportDBTableDataInit: deleteExtrasThenAddNew is true, but setStatements is not empty");
+                    }
+
+                    setStatements.Add(string.Format("ON CONFLICT ({0})", PossiblyQuoteNameList(primaryKeyColumnList, false)));
+                    setStatements.Add("DO NOTHING");
+                }
+                else
+                {
+                    // Assure that the last line in setStatements does not end with a comma
+                    // This would be the case if the final column for the table is a <skip> column or an identity column
+                    var mostRecentLine = setStatements.LastOrDefault() ?? string.Empty;
+
+                    if (mostRecentLine.EndsWith(","))
+                    {
+                        setStatements[setStatements.Count - 1] = mostRecentLine.Substring(0, mostRecentLine.Length - 1);
+                    }
                 }
 
                 dataExportParams.PgInsertFooters.AddRange(setStatements);
