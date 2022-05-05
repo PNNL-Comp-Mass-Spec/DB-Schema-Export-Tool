@@ -973,7 +973,7 @@ namespace DB_Schema_Export_Tool
 
             if (dataExportParams.PgInsertEnabled)
             {
-                // Do not include a linefeed here; we may need to append a comma
+                // Do not include a line feed here; we may need to append a comma
                 writer.Write("  ({0})", delimitedRowValues);
             }
             else if (mOptions.PgDumpTableData)

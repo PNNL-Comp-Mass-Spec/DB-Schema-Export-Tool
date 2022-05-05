@@ -24,7 +24,9 @@ namespace DB_Schema_Export_Tool
 
         /// <summary>
         /// List of parsed columns
+        /// Keys are the target column name, values are the data type
         /// </summary>
+        /// <remarks>For skipped columns, uses the column name in the source database</remarks>
         public List<KeyValuePair<string, DBSchemaExporterBase.DataColumnTypeConstants>> ColumnNamesAndTypes { get; }
 
         /// <summary>
@@ -108,7 +110,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="pgInsertEnabled">True using insert commands formatted as PostgreSQL compatible INSERT INTO statements</param>
+        /// <param name="pgInsertEnabled">True if using insert commands formatted as PostgreSQL compatible INSERT INTO statements</param>
         /// <param name="nullValueFlag">Text to write for null columns</param>
         public DataExportWorkingParams(bool pgInsertEnabled, string nullValueFlag)
         {

@@ -1846,7 +1846,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="writer">Text file writer</param>
         /// <param name="queryResults">Query results dataset</param>
-        /// <param name="insertIntoLine">Insert Into (Column1, Column2, Column3) line</param>
+        /// <param name="insertIntoLine">Insert Into (Column1, Column2, Column3) line (used when SaveDataAsInsertIntoStatements is true and PgInsertEnabled is false)</param>
         /// <param name="dataExportParams"></param>
         private void ExportDBTableDataWork(
             TextWriter writer,
@@ -1879,7 +1879,7 @@ namespace DB_Schema_Export_Tool
 
                 if (commandAndLfRequired)
                 {
-                    // Add a comma and a linefeed
+                    // Add a comma and a line feed
                     writer.WriteLine(",");
                 }
 
@@ -1911,7 +1911,7 @@ namespace DB_Schema_Export_Tool
 
             if (commandAndLfRequired)
             {
-                // Add a linefeed (but no comma)
+                // Add a line feed (but no comma)
                 writer.WriteLine();
                 dataExportParams.FooterWriteRequired = true;
             }
