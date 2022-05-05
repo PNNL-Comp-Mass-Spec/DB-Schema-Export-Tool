@@ -10,7 +10,7 @@ Uses a named user, password, and port to connect to a PostgreSQL database.
 
 ### Continuous Integration
 
-The latest version of the application is available for six months on the [AppVeyor CI server](https://ci.appveyor.com/project/PNNLCompMassSpec/db-schema-export-tool/build/artifacts)
+The latest version of the application is available for one month on the [AppVeyor CI server](https://ci.appveyor.com/project/PNNLCompMassSpec/db-schema-export-tool/build/artifacts)
 
 [![Build status](https://ci.appveyor.com/api/projects/status/sdk00tc0l0seupic?svg=true)](https://ci.appveyor.com/project/PNNLCompMassSpec/db-schema-export-tool)
 
@@ -47,8 +47,9 @@ DB_Schema_Export_Tool.exe
  [/DirectoryPrefix:PrefixText] [/NoSubdirectory] [/CreateDBDirectories]
  [/DataTables:TableDataToExport.txt] [/Map:ColumnMapping.txt]
  [/TableFilterList] [/SchemaSkipList]
- [/DateFilter:MinimumDate] [/NameFilter:FilterSpec]
- [/DataExportOrder] 
+ [/ColumnFilter:FileName] [/DateFilter:FileName]
+ [/NameFilter:FilterSpec]
+ [/DataExportOrder:FileName] 
  [/Schema:SchemaName] [/ExistingDDL:SchemaFileName]
  [/NoAutoData] [/ExportAllData] [/MaxRows:1000] [/NoData]
  [/SnakeCase] [/PgDump] [/KeepPgDumpFile]
@@ -162,6 +163,17 @@ Use `/TableFilterList` or `/TableNameFilter` to specify a table name (or comma s
 
 Use `/SchemaSkipList` to specify a schema name (or comma separated list of names) of schema to skip
 * This is useful if using partitioned tables
+
+Use `ColumnFilter` or `/TableDataColumnFilter` to define a tab-delimited text file that defines columns to skip when exporting data from tables
+* The program auto-skips computed columns and timestamp columns when exporting data as PostgreSQL compatible INSERT INTO statements
+* File format:
+
+| Table                  | Column           | Comment                                                                        |
+|------------------------|------------------|--------------------------------------------------------------------------------|
+| T_Cached_Dataset_Links | DS_RowVersion    | In Postgres, tracked via data type xid; comes from t_dataset.xmin              |
+| T_Cached_Dataset_Links | SPath_RowVersion | In Postgres, tracked via data type xid; comes from t_storage_path.xmin         |
+| T_EUS_Proposals        | Numeric_ID       | Computed column (redundant here since the program auto-skips computed columns) |
+
 
 Use `/DateFilter` or `/TableDataDateFilter` to define a tab-delimited text file that defines date filters to use when exporting data from tables.
 * The data file will include the start date in the name, for example: `mc.t_log_entries_Data_Since_2020-01-01.sql`
