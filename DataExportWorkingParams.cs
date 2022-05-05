@@ -17,6 +17,12 @@ namespace DB_Schema_Export_Tool
         public List<KeyValuePair<string, Type>> ColumnInfoByType { get; }
 
         /// <summary>
+        /// Quoted target column names, by index
+        /// </summary>
+        /// <remarks>For skipped columns, uses the column name in the source database</remarks>
+        public Dictionary<int, string> ColumnNameByIndex { get; }
+
+        /// <summary>
         /// List of parsed columns
         /// </summary>
         public List<KeyValuePair<string, DBSchemaExporterBase.DataColumnTypeConstants>> ColumnNamesAndTypes { get; }
@@ -108,6 +114,8 @@ namespace DB_Schema_Export_Tool
         {
             ColumnInfoByType = new List<KeyValuePair<string, Type>>();
             ColumnNamesAndTypes = new List<KeyValuePair<string, DBSchemaExporterBase.DataColumnTypeConstants>>();
+
+            ColumnNameByIndex = new Dictionary<int, string>();
 
             ColSepChar = ',';
 

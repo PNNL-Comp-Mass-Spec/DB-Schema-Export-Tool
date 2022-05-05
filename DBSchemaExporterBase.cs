@@ -633,6 +633,8 @@ namespace DB_Schema_Export_Tool
 
                 var targetColumnName = GetTargetColumnName(columnMapInfo, currentColumnName, ref dataColumnType);
 
+                var quotedColumnName = PossiblyQuoteName(targetColumnName, quoteWithSquareBrackets);
+
                 if (dataColumnType != DataColumnTypeConstants.SkipColumn)
                 {
                     if (columnIndex > 0 && dataExportParams.HeaderRowValues.Length > 0)
@@ -642,7 +644,7 @@ namespace DB_Schema_Export_Tool
 
                     if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || mOptions.PgDumpTableData || dataExportParams.PgInsertEnabled)
                     {
-                        dataExportParams.HeaderRowValues.Append(PossiblyQuoteName(targetColumnName, quoteWithSquareBrackets));
+                        dataExportParams.HeaderRowValues.Append(quotedColumnName);
                     }
                     else
                     {
@@ -650,6 +652,7 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
+                dataExportParams.ColumnNameByIndex.Add(columnIndex, quotedColumnName);
                 dataExportParams.ColumnNamesAndTypes.Add(new KeyValuePair<string, DataColumnTypeConstants>(targetColumnName, dataColumnType));
 
                 columnIndex++;
