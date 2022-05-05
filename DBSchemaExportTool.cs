@@ -860,22 +860,22 @@ namespace DB_Schema_Export_Tool
                     return true;
                 }
 
-                var dataFile = new FileInfo(dateFilterFilePath);
+                var filterFile = new FileInfo(dateFilterFilePath);
 
-                if (!dataFile.Exists)
+                if (!filterFile.Exists)
                 {
                     Console.WriteLine();
                     OnStatusEvent("Table Data Date Filter File not found");
-                    OnWarningEvent("File not found: " + dataFile.FullName);
+                    OnWarningEvent("File not found: " + filterFile.FullName);
                     return false;
                 }
 
-                ShowTrace(string.Format("Reading date filter information from {0}", dataFile.FullName));
+                ShowTrace(string.Format("Reading date filter information from {0}", filterFile.FullName));
 
                 var headerLineChecked = false;
                 var tableCountWithFilters = 0;
 
-                using var dataReader = new StreamReader(new FileStream(dataFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+                using var dataReader = new StreamReader(new FileStream(filterFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
 
                 while (!dataReader.EndOfStream)
                 {
@@ -930,7 +930,7 @@ namespace DB_Schema_Export_Tool
                 var tableText = tableCountWithFilters == 1 ? "table" : "tables";
                 ShowTrace(string.Format(
                     "Loaded date filters for {0} {1} from {2}",
-                    tableCountWithFilters, tableText, dataFile.Name));
+                    tableCountWithFilters, tableText, filterFile.Name));
 
                 return true;
             }
