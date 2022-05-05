@@ -184,6 +184,14 @@ namespace DB_Schema_Export_Tool
         private readonly Regex mColumnCharNonStandardMatcher;
 
         /// <summary>
+        /// Matches reserved words (key words)
+        /// </summary>
+        /// <remarks>
+        /// If a match is found, quote the name with double quotes (PostgreSQL) or square brackets (SQL Server)
+        /// </remarks>
+        private readonly Regex mReservedWordMatcher;
+
+        /// <summary>
         /// Disallowed characters for file names
         /// </summary>
         private readonly Regex mNonStandardOSChars;
@@ -291,6 +299,11 @@ namespace DB_Schema_Export_Tool
             mCamelCaseMatcher = new Regex("(?<LowerLetter>[a-z])(?<UpperLetter>[A-Z])", RegexOptions.Compiled);
 
             mColumnCharNonStandardMatcher = new Regex("[^a-z0-9_]", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+            // The reserved words in this RegEx are a combination of PostgreSQL reserved words and SQL standard reserved words (SQL:2016)
+            // See https://www.postgresql.org/docs/current/sql-keywords-appendix.html
+
+            mReservedWordMatcher = new Regex(@"\b(ALL|ALTER|ANALYSE|ANALYZE|ARRAY|ASC|AVG|BEGIN|BETWEEN|CALL|CALLED|CASE|CAST|CHAR|CHECK|COLUMN|COMMIT|CONSTRAINT|CONTAINS|CONVERT|COPY|COUNT|CREATE|CROSS|CUBE|CURRENT|DATE|DAY|DEFAULT|DELETE|DESC|DISTINCT|DOUBLE|DROP|ELEMENT|EMPTY|EQUALS|ESCAPE|EXTERNAL|FALSE|FILTER|FROM|FULL|FUNCTION|GROUP|HAVING|IN|INNER|INTEGER|INTERVAL|INTO|JOIN|LANGUAGE|LATERIAL|LEADING|LEFT|LIKE|LIMIT|LOCAL|LOCALTIME|LOCALTIMESTAMP|MATCH|MAX|MEMBER|METHOD|MIN|MINUTE|MODULE|MONTH|NATURAL|NEW|NULL|NUMERIC|OFFSET|OLD|ON|ONE|ONLY|OPEN|OR|ORDER|OUT|OUTER|OVER|OVERLAPS|PARAMETER|PARTITION|PER|PERCENT|PERIOD|PLACING|POSITION|POWER|PRIMARY|RANGE|RANK|REFERENCES|RESULT|RIGHT|ROW|ROWS|SCOPE|SECOND|SELECT|SOME|START|SUM|SYMMETRIC|TABLE|THEN|TIMESTAMP|TO|TRAILING|TRUE|UNION|UNIQUE|UNKNOWN|UPDATE|UPPER|USER|USING|VALUE|VALUES|VERBOSE|WHEN|WHERE|WINDOW|WITH|YEAR)\b", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
             mNonStandardOSChars = new Regex(@"[^a-z0-9_ =+-,.;~!@#$%^&(){}\[\]]", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
@@ -1400,8 +1413,12 @@ namespace DB_Schema_Export_Tool
         /// <param name="alwaysQuoteNames"></param>
         protected string PossiblyQuoteName(string objectName, bool quoteWithSquareBrackets, bool alwaysQuoteNames = false)
         {
-            if (!alwaysQuoteNames && !mColumnCharNonStandardMatcher.Match(objectName).Success)
+            if (!alwaysQuoteNames &&
+                !mColumnCharNonStandardMatcher.Match(objectName).Success &&
+                !mReservedWordMatcher.Match(objectName).Success)
+            {
                 return objectName;
+            }
 
             if (quoteWithSquareBrackets)
             {
@@ -1411,6 +1428,25 @@ namespace DB_Schema_Export_Tool
 
             // PostgreSQL quotes names with double quotes
             return '"' + objectName + '"';
+        }
+
+        /// <summary>
+        /// Examine object names in a comma separated list, quoting any that are keywords or have non standard characters
+        /// </summary>
+        /// <param name="objectNames"></param>
+        /// <param name="quoteWithSquareBrackets"></param>
+        /// <returns>Comma separated list of quoted names</returns>
+        protected string PossiblyQuoteNameList(string objectNames, bool quoteWithSquareBrackets)
+        {
+            var quotedNames = new List<string>();
+
+            // ReSharper disable once LoopCanBeConvertedToQuery
+            foreach (var objectName in objectNames.Split(','))
+            {
+                quotedNames.Add(PossiblyQuoteName(objectName, quoteWithSquareBrackets));
+            }
+
+            return string.Join(",", quotedNames);
         }
 
         /// <summary>

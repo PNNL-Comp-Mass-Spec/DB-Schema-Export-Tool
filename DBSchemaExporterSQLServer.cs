@@ -1457,7 +1457,7 @@ namespace DB_Schema_Export_Tool
 
                         writer.WriteLine("-- Set the sequence's current value to the maximum current ID");
                         writer.WriteLine("SELECT setval('{0}', (SELECT MAX({1}) FROM {2}));",
-                            sequenceName, primaryKeyColumnName, dataExportParams.TargetTableNameWithSchema);
+                            sequenceName, PossiblyQuoteName(primaryKeyColumnName, false), dataExportParams.TargetTableNameWithSchema);
                         writer.WriteLine();
                         writer.WriteLine("-- Preview the ID that will be assigned to the next item");
                         writer.WriteLine("SELECT currval('{0}');", sequenceName);
@@ -1600,11 +1600,11 @@ namespace DB_Schema_Export_Tool
 
                     if (setStatements.Count == 0)
                     {
-                        setStatements.Add(string.Format("ON CONFLICT ({0})", primaryKeyColumnList));
+                        setStatements.Add(string.Format("ON CONFLICT ({0})", PossiblyQuoteNameList(primaryKeyColumnList, false)));
                         setStatements.Add("DO UPDATE SET");
                     }
 
-                    setStatements.Add(string.Format("  {0} = EXCLUDED.{0}{1}", targetColumnName, optionalComma));
+                    setStatements.Add(string.Format("  {0} = EXCLUDED.{0}{1}", PossiblyQuoteName(targetColumnName, false), optionalComma));
                 }
 
                 // Assure that the last line in setStatements does not end with a comma
@@ -2467,6 +2467,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// If objectName contains characters other than A-Z, a-z, 0-9, or an underscore, surround the name with square brackets
         /// </summary>
+        /// <remarks>Also quote if the name is a keyword</remarks>
         /// <param name="objectName"></param>
         private string PossiblyQuoteName(string objectName)
         {
