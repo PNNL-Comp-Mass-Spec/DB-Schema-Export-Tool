@@ -1328,6 +1328,41 @@ namespace DB_Schema_Export_Tool
                     return false;
                 }
 
+                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || tableInfo.UsePgInsert)
+                {
+                    // Skip any computed columns since exporting data using PostgreSQL compatible INSERT INTO statements
+
+                    var mapInfoToUse = mOptions.ColumnMapForDataExport.TryGetValue(databaseTable.Name, out var currentColumnMapInfo)
+                        ? currentColumnMapInfo
+                        : new ColumnMapInfo(databaseTable.Name);
+
+                    var skippedColumn = false;
+
+                    foreach (Column currentColumn in databaseTable.Columns)
+                    {
+                        if (currentColumn.Computed)
+                        {
+                            OnStatusEvent("Skipping computed column {0} on table {1}", currentColumn.Name, databaseTable.Name);
+                        }
+                        else if (currentColumn.DataType.SqlDataType.Equals(SqlDataType.Timestamp))
+                        {
+                            OnStatusEvent("Skipping Timestamp column {0} on table {1}", currentColumn.Name, databaseTable.Name);
+                        }
+                        else
+                        {
+                            continue;
+                        }
+
+                        mapInfoToUse.SkipColumn(currentColumn.Name);
+                        skippedColumn = true;
+                    }
+
+                    if (skippedColumn && !mOptions.ColumnMapForDataExport.ContainsKey(databaseTable.Name))
+                    {
+                        mOptions.ColumnMapForDataExport.Add(databaseTable.Name, mapInfoToUse);
+                    }
+                }
+
                 // Get the table name, with schema, in the form schema.table_name
                 // The schema and table name will always be quoted
                 dataExportParams.QuotedTargetTableNameWithSchema = GetQuotedTargetTableName(dataExportParams, tableInfo, quoteWithSquareBrackets);
