@@ -1587,6 +1587,72 @@ namespace DB_Schema_Export_Tool
             dataExportParams.PgInsertHeaders.Add(sql.ToString());
         }
 
+        private IEnumerable<string> ExportDBTableDataGetSetStatements(
+            TableNameInfo tableInfo,
+            ColumnMapInfo columnMapInfo,
+            DataExportWorkingParams dataExportParams,
+            string primaryKeyColumnList,
+            bool deleteExtrasThenAddNew)
+        {
+            var setStatements = new List<string>();
+
+            for (var columnIndex = 0; columnIndex < dataExportParams.ColumnNamesAndTypes.Count; columnIndex++)
+            {
+                var currentColumn = dataExportParams.ColumnInfoByType[columnIndex];
+
+                var currentColumnName = currentColumn.Key;
+
+                var dataColumnType = DataColumnTypeConstants.Numeric;
+                var targetColumnName = GetTargetColumnName(columnMapInfo, currentColumnName, ref dataColumnType);
+
+                if (dataColumnType == DataColumnTypeConstants.SkipColumn)
+                    continue;
+
+                if (tableInfo.PrimaryKeyColumns.Contains(targetColumnName))
+                {
+                    // Skip this column
+                    continue;
+                }
+
+                var optionalComma = columnIndex < dataExportParams.ColumnNamesAndTypes.Count - 1 ? "," : string.Empty;
+
+                if (setStatements.Count == 0)
+                {
+                    setStatements.Add(string.Format("ON CONFLICT ({0})", PossiblyQuoteNameList(primaryKeyColumnList, false)));
+                    setStatements.Add("DO UPDATE SET");
+                }
+
+                if (!deleteExtrasThenAddNew)
+                {
+                    setStatements.Add(string.Format("  {0} = EXCLUDED.{0}{1}", PossiblyQuoteName(targetColumnName, false), optionalComma));
+                }
+            }
+
+            if (deleteExtrasThenAddNew)
+            {
+                if (setStatements.Count > 0)
+                {
+                    throw new Exception("Logic bug in ExportDBTableDataInit: deleteExtrasThenAddNew is true, but setStatements is not empty");
+                }
+
+                setStatements.Add(string.Format("ON CONFLICT ({0})", PossiblyQuoteNameList(primaryKeyColumnList, false)));
+                setStatements.Add("DO NOTHING");
+            }
+            else
+            {
+                // Assure that the last line in setStatements does not end with a comma
+                // This would be the case if the final column for the table is a <skip> column or an identity column
+                var mostRecentLine = setStatements.LastOrDefault() ?? string.Empty;
+
+                if (mostRecentLine.EndsWith(","))
+                {
+                    setStatements[setStatements.Count - 1] = mostRecentLine.Substring(0, mostRecentLine.Length - 1);
+                }
+            }
+
+            return setStatements;
+        }
+
         /// <summary>
         /// Construct the header rows then return the INSERT INTO line to use for each block of data
         /// </summary>
@@ -1733,61 +1799,7 @@ namespace DB_Schema_Export_Tool
                     return string.Empty;
                 }
 
-                var setStatements = new List<string>();
-
-                for (var columnIndex = 0; columnIndex < dataExportParams.ColumnNamesAndTypes.Count; columnIndex++)
-                {
-                    var currentColumn = dataExportParams.ColumnInfoByType[columnIndex];
-
-                    var currentColumnName = currentColumn.Key;
-
-                    var dataColumnType = DataColumnTypeConstants.Numeric;
-                    var targetColumnName = GetTargetColumnName(columnMapInfo, currentColumnName, ref dataColumnType);
-
-                    if (dataColumnType == DataColumnTypeConstants.SkipColumn)
-                        continue;
-
-                    if (tableInfo.PrimaryKeyColumns.Contains(targetColumnName))
-                    {
-                        // Skip this column
-                        continue;
-                    }
-
-                    var optionalComma = columnIndex < dataExportParams.ColumnNamesAndTypes.Count - 1 ? "," : string.Empty;
-
-                    if (setStatements.Count == 0)
-                    {
-                        setStatements.Add(string.Format("ON CONFLICT ({0})", PossiblyQuoteNameList(primaryKeyColumnList, false)));
-                        setStatements.Add("DO UPDATE SET");
-                    }
-
-                    if (!deleteExtrasThenAddNew)
-                    {
-                        setStatements.Add(string.Format("  {0} = EXCLUDED.{0}{1}", PossiblyQuoteName(targetColumnName, false), optionalComma));
-                    }
-                }
-
-                if (deleteExtrasThenAddNew)
-                {
-                    if (setStatements.Count > 0)
-                    {
-                        throw new Exception("Logic bug in ExportDBTableDataInit: deleteExtrasThenAddNew is true, but setStatements is not empty");
-                    }
-
-                    setStatements.Add(string.Format("ON CONFLICT ({0})", PossiblyQuoteNameList(primaryKeyColumnList, false)));
-                    setStatements.Add("DO NOTHING");
-                }
-                else
-                {
-                    // Assure that the last line in setStatements does not end with a comma
-                    // This would be the case if the final column for the table is a <skip> column or an identity column
-                    var mostRecentLine = setStatements.LastOrDefault() ?? string.Empty;
-
-                    if (mostRecentLine.EndsWith(","))
-                    {
-                        setStatements[setStatements.Count - 1] = mostRecentLine.Substring(0, mostRecentLine.Length - 1);
-                    }
-                }
+                var setStatements = ExportDBTableDataGetSetStatements(tableInfo, columnMapInfo, dataExportParams, primaryKeyColumnList, deleteExtrasThenAddNew);
 
                 dataExportParams.PgInsertFooters.AddRange(setStatements);
                 dataExportParams.PgInsertFooters.Add(";");
