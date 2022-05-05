@@ -565,7 +565,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="sourceTableName"></param>
         /// <param name="quoteWithSquareBrackets">When true, quote names using double quotes instead of square brackets</param>
         /// <param name="dataExportParams"></param>
-        /// <returns>List of column names and column names (names are the column names in the target table)</returns>
+        /// <returns>Class tracking the source and target column names for the table</returns>
         protected ColumnMapInfo ConvertDataTableColumnInfo(
             string sourceTableName,
             bool quoteWithSquareBrackets,
@@ -803,6 +803,8 @@ namespace DB_Schema_Export_Tool
                         OnDebugEvent("Exporting data from database {0}, tables {1}, ...", databaseName, string.Join(", ", tablesToExportData.Keys.Take(5)));
                         break;
                 }
+
+                // Use tableDataExportOrder to define the order with which table data will be exported
 
                 // The KeyValuePairs in this list are instances of TableDataExportInfo and the maximum number of rows to export for the given table
                 var tablesToExportOrdered = new List<KeyValuePair<TableDataExportInfo, long>>();
@@ -1338,9 +1340,10 @@ namespace DB_Schema_Export_Tool
                 return PossiblyQuoteName(dataExportParams.TargetTableName, quoteWithSquareBrackets, alwaysQuoteNames);
             }
 
-            return string.Format("{0}.{1}",
-                                 PossiblyQuoteName(dataExportParams.TargetTableSchema, quoteWithSquareBrackets, alwaysQuoteNames),
-                                 PossiblyQuoteName(dataExportParams.TargetTableName, quoteWithSquareBrackets, alwaysQuoteNames));
+            return string.Format(
+                "{0}.{1}",
+                PossiblyQuoteName(dataExportParams.TargetTableSchema, quoteWithSquareBrackets, alwaysQuoteNames),
+                PossiblyQuoteName(dataExportParams.TargetTableName, quoteWithSquareBrackets, alwaysQuoteNames));
         }
 
         /// <summary>

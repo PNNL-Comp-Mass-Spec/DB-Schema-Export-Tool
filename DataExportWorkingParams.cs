@@ -90,7 +90,7 @@ namespace DB_Schema_Export_Tool
 
         /// <summary>
         /// True when exporting data from SQL Server and using insert commands formatted as PostgreSQL compatible
-        /// INSERT INTO statements using the ON CONFLICT(key_column) DO UPDATE SET syntax
+        /// INSERT INTO statements using the ON CONFLICT (key_column) DO UPDATE SET syntax
         /// </summary>
         public bool PgInsertEnabled { get; set; }
 

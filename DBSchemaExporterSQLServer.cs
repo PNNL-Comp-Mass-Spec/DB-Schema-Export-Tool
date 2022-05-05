@@ -1492,6 +1492,9 @@ namespace DB_Schema_Export_Tool
 
             if (dataExportParams.PgInsertEnabled)
             {
+                // Exporting data from SQL Server and using insert commands formatted as PostgreSQL compatible
+                // INSERT INTO statements using the ON CONFLICT (key_column) DO UPDATE SET syntax
+
                 var primaryKeyColumnList = ResolvePrimaryKeys(dataExportParams, tableInfo, columnMapInfo);
 
                 bool truncateTableEnabled;
@@ -1543,6 +1546,8 @@ namespace DB_Schema_Export_Tool
 
                     dataExportParams.PgInsertHeaders.Add(string.Empty);
                 }
+
+                // Note that column names in HeaderRowValues should already be properly quoted
 
                 var insertCommand = string.Format("INSERT INTO {0} ({1})",
                     dataExportParams.QuotedTargetTableNameWithSchema,
@@ -1621,6 +1626,8 @@ namespace DB_Schema_Export_Tool
             }
             else if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData)
             {
+                // Export as SQL Server compatible INSERT INTO statements
+
                 if (dataExportParams.IdentityColumnFound)
                 {
                     insertIntoLine = string.Format(
@@ -1644,6 +1651,8 @@ namespace DB_Schema_Export_Tool
             }
             else if (mOptions.PgDumpTableData)
             {
+                // Use the T-SQL COPY command to export data from a SQL Server database
+
                 // ReSharper disable once StringLiteralTypo
                 var copyCommand = string.Format("COPY {0} ({1}) from stdin;",
                     dataExportParams.TargetTableNameWithSchema, dataExportParams.HeaderRowValues);
@@ -1741,6 +1750,8 @@ namespace DB_Schema_Export_Tool
                     startingNewChunk = true;
                 }
             }
+
+            // Note that the calling method will call AppendPgExportFooters()
 
             if (commandAndLfRequired)
             {
@@ -2354,6 +2365,7 @@ namespace DB_Schema_Export_Tool
         {
             targetColumnNames = new List<string>();
 
+            // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var columnName in sourceColumnNames)
             {
                 var targetColumnName = GetTargetColumnName(columnMapInfo, columnName);

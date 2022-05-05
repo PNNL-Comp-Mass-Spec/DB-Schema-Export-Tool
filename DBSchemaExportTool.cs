@@ -235,6 +235,7 @@ namespace DB_Schema_Export_Tool
 
                 if (!string.IsNullOrWhiteSpace(mOptions.TableDataColumnMapFile))
                 {
+                    // This method updates mOptions.ColumnMapForDataExport
                     LoadColumnMapInfo(mOptions.TableDataColumnMapFile);
                 }
 
@@ -281,6 +282,7 @@ namespace DB_Schema_Export_Tool
 
                 if (!string.IsNullOrWhiteSpace(mOptions.TableDataDateFilterFile))
                 {
+                    // This method updates mOptions.ColumnMapForDataExport
                     var dateFilterSuccess = LoadDateFiltersForTableData(mOptions.TableDataDateFilterFile, tablesForDataExport);
 
                     if (!dateFilterSuccess)

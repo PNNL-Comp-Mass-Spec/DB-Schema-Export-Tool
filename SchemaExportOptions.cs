@@ -115,7 +115,7 @@ namespace DB_Schema_Export_Tool
         [Option("ExistingDDL", "ExistingSchema", HelpShowsDefault = false, IsInputFilePath = true,
             HelpText = "Existing schema (DDL) file to parse to rename columns based on information in the ColumnMap file\n" +
                        "Will also skip any tables or views with <skip> in the DataTables file\n" +
-                       "The updated DDL file will end with _UpdatedColumnNames.sql")]
+                       "The updated DDL file will end with _UpdatedColumnNames.sql or _UpdatedColumnAndTableNames.sql")]
         public string ExistingSchemaFileToParse { get; set; }
 
         /// <summary>
