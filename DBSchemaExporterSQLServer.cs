@@ -1495,7 +1495,7 @@ namespace DB_Schema_Export_Tool
             //   WHERE NOT (
             //       id = 1 and value = 'Item A' Or
             //       id = 2 and value = 'Item B' Or
-            //     id = 3 and value = 'Item C');
+            //       id = 3 and value = 'Item C');
 
             var sql = new StringBuilder();
 
