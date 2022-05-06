@@ -17,7 +17,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "May 5, 2022";
+        public const string PROGRAM_DATE = "May 6, 2022";
 
         /// <summary>
         /// Default output directory name prefix
@@ -110,10 +110,10 @@ namespace DB_Schema_Export_Tool
         public string DBUserPassword { get; set; }
 
         /// <summary>
-        /// Existing schema file (DDL file from SSMS) to parse to rename columns based on information in the ColumnMap file
+        /// Existing schema file to parse to rename columns based on information in the ColumnMap file
         /// </summary>
         [Option("ExistingDDL", "ExistingSchema", HelpShowsDefault = false, IsInputFilePath = true,
-            HelpText = "Existing schema (DDL) file to parse to rename columns based on information in the ColumnMap file\n" +
+            HelpText = "Existing schema file (DDL file from SSMS) to parse to rename columns based on information in the ColumnMap file\n" +
                        "Will also skip any tables or views with <skip> in the DataTables file\n" +
                        "The updated DDL file will end with _UpdatedColumnNames.sql or _UpdatedColumnAndTableNames.sql")]
         public string ExistingSchemaFileToParse { get; set; }
@@ -294,7 +294,8 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         [Option("DataTables", "Data", HelpShowsDefault = false, IsInputFilePath = true,
             HelpText = "Text file with table names (one name per line) for which table data should be exported\n" +
-                       "Also supports a multi-column, tab-delimited format:\n" +
+                       "Also supports a multi-column, tab-delimited format, which allows for renaming tables and views\n" +
+                       "Tab-delimited columns are:\n" +
                        "SourceTableName  TargetSchemaName  TargetTableName  PgInsert  KeyColumn(s)")]
         public string TableDataToExportFile { get; set; }
 
@@ -373,7 +374,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         [Option("TableDataColumnFilter", "ColumnFilter", HelpShowsDefault = false, IsInputFilePath = true,
             HelpText = "Text file used to define columns to skip when exporting data from tables\n" +
-                       "The program auto-skips computed columns and timestamp columns when exporting data as PostgreSQL compatible INSERT INTO statements. " +
+                       "The program auto-skips computed columns and timestamp columns when exporting data as PostgreSQL compatible INSERT INTO statements\n" +
                        "Tab-delimited columns are:\n" +
                        "Table  Column  Comment")]
         public string TableDataColumnFilterFile { get; set; }
@@ -402,8 +403,10 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         [Option("TableDataExportOrder", "DataExportOrder", HelpShowsDefault = false, IsInputFilePath = true,
             HelpText = "Text file with table names (one name per line) defining the order that data should be exported from tables\n" +
-                       "Should have table names only, without schema\n" +
-                       "Tables not listed in this file will have their data exported alphabetically by table name\n" +
+                       "The export order also dictates the order that tables will be listed in the shell script created for importing data into the target database\n" +
+                       "The order with which data is imported is important if foreign key relationships are defined on tables prior to importing the data\n" +
+                       "The data export order file should have table names only, without schema\n" +
+                       "Tables not listed in this file will have their data exported alphabetically by table name (and will thus be appended alphabetically to the end of the shell script)\n" +
                        "If the first line is Table_Name, will assume that it is a header line (and will thus ignore it)")]
         public string TableDataExportOrderFile { get; set; }
 
