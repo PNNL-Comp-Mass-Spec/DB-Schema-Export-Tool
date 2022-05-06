@@ -1519,8 +1519,7 @@ namespace DB_Schema_Export_Tool
 
             var sql = new StringBuilder();
 
-            sql.AppendFormat("DELETE FROM {0}", dataExportParams.QuotedTargetTableNameWithSchema);
-            sql.AppendLine();
+            sql.AppendFormat("DELETE FROM {0}", dataExportParams.QuotedTargetTableNameWithSchema).AppendLine();
 
             var columnCount = queryResults.Tables[0].Columns.Count;
             var pgInsertEnabled = dataExportParams.PgInsertEnabled;
@@ -1533,8 +1532,7 @@ namespace DB_Schema_Export_Tool
             }
             else
             {
-                sql.Append("WHERE NOT (");
-                sql.AppendLine();
+                sql.Append("WHERE NOT (").AppendLine();
             }
 
             var rowNumber = 0;
