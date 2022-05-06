@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using PRISM;
 using PRISM.Logging;
+using TableNameMapContainer;
 
 namespace DB_Schema_Export_Tool
 {
@@ -125,7 +126,7 @@ namespace DB_Schema_Export_Tool
                 {
                     var newColumnName = columnMapInfo.GetTargetColumnName(constraintColumnName);
 
-                    if (newColumnName.Equals(DBSchemaExportTool.SKIP_FLAG))
+                    if (newColumnName.Equals(NameMapReader.SKIP_FLAG))
                     {
                         // The table definition in the output file will not have this column; skip it
                         OnDebugEvent("Skipping constraint since the target column is tagged with <skip> in the file specified by the DataTables parameter:\n" +
@@ -213,7 +214,7 @@ namespace DB_Schema_Export_Tool
 
                 var newColumnName = columnMapInfo.GetTargetColumnName(columnName);
 
-                if (newColumnName.Equals(DBSchemaExportTool.SKIP_FLAG))
+                if (newColumnName.Equals(NameMapReader.SKIP_FLAG))
                 {
                     // Skip this column
                     continue;
@@ -576,7 +577,7 @@ namespace DB_Schema_Export_Tool
 
                 foreach (var item in renamedTablesAndViews)
                 {
-                    if (item.Value.Equals(DBSchemaExportTool.SKIP_FLAG))
+                    if (item.Value.Equals(NameMapReader.SKIP_FLAG))
                         continue;
 
                     var kvPairs = new List<KeyValuePair<Regex, string>> ();

@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 
 using PRISM;
+using TableNameMapContainer;
 
 namespace DB_Schema_Export_Tool
 {
@@ -1275,7 +1276,7 @@ namespace DB_Schema_Export_Tool
             {
                 targetColumnName = columnMapInfo.GetTargetColumnName(currentColumnName);
 
-                if (targetColumnName.Equals(DBSchemaExportTool.SKIP_FLAG, StringComparison.OrdinalIgnoreCase))
+                if (targetColumnName.Equals(NameMapReader.SKIP_FLAG, StringComparison.OrdinalIgnoreCase))
                 {
                     // Do not include this column in the output file
                     dataColumnType = DataColumnTypeConstants.SkipColumn;
@@ -1867,7 +1868,7 @@ namespace DB_Schema_Export_Tool
             if (!TableNamePassesFilters(options, tableInfo.SourceTableName))
                 return true;
 
-            return tableInfo.TargetTableName?.Equals(DBSchemaExportTool.SKIP_FLAG, StringComparison.OrdinalIgnoreCase) == true;
+            return tableInfo.TargetTableName?.Equals(NameMapReader.SKIP_FLAG, StringComparison.OrdinalIgnoreCase) == true;
         }
 
         /// <summary>

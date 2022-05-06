@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using PRISM;
+using TableNameMapContainer;
 
 namespace DB_Schema_Export_Tool
 {
@@ -77,9 +78,9 @@ namespace DB_Schema_Export_Tool
         public void SkipColumn(string sourceColumnName)
         {
             if (IsColumnDefined(sourceColumnName))
-                mColumnNameMap[sourceColumnName] = DBSchemaExportTool.SKIP_FLAG;
+                mColumnNameMap[sourceColumnName] = NameMapReader.SKIP_FLAG;
             else
-                AddColumn(sourceColumnName, DBSchemaExportTool.SKIP_FLAG);
+                AddColumn(sourceColumnName, NameMapReader.SKIP_FLAG);
         }
     }
 }

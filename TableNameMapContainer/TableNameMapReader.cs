@@ -17,7 +17,7 @@ public enum TableInfoFileColumns
 
 public class NameMapReader : EventNotifier
 {
-    private const string SKIP_FLAG = "<skip>";
+    public const string SKIP_FLAG = "<skip>";
 
     /// <summary>
     /// Read a table name map file, which is typically sent to DB_Schema_Export_Tool.exe via the DataTables parameter
