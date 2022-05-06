@@ -919,10 +919,18 @@ namespace DB_Schema_Export_Tool
             if (!string.IsNullOrWhiteSpace(tableInfo.TargetTableName))
                 namesToCheck.Add(tableInfo.TargetTableName);
 
-            if (!namesToCheck.Any(tableName =>
-                    tableName.Equals(tableNameToFind, StringComparison.OrdinalIgnoreCase) &&
-                    tableName.Equals(alternateNameToFind, StringComparison.OrdinalIgnoreCase)))
+            var storeTable = namesToCheck.Any(tableName =>
+                tableName.Equals(tableNameToFind, StringComparison.OrdinalIgnoreCase) ||
+                tableName.Equals(alternateNameToFind, StringComparison.OrdinalIgnoreCase));
+
+            if (!storeTable)
             {
+                return false;
+            }
+
+            if (storedTableInfo.Contains(tableInfo.SourceTableName))
+            {
+                OnWarningEvent("Table {0} has already been added to the list of tables to export; skipping duplicate", tableInfo.SourceTableName);
                 return false;
             }
 
