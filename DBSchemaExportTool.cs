@@ -216,6 +216,12 @@ namespace DB_Schema_Export_Tool
                 // Append any tables defined in TableNameFilterSet
                 foreach (var item in mOptions.TableNameFilterSet)
                 {
+                    // Skip this table if LoadTablesForDataExport already added it to tablesForDataExport
+                    var skipTable = tablesForDataExport.Any(existingItem => existingItem.SourceTableName.Equals(item, StringComparison.OrdinalIgnoreCase));
+
+                    if (skipTable)
+                        continue;
+
                     tablesForDataExport.Add(new TableDataExportInfo(item));
                 }
 
