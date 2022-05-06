@@ -1752,7 +1752,7 @@ namespace DB_Schema_Export_Tool
 
                     if (dataRowCount > 0)
                     {
-                        dataExportParams.PgInsertHeaders.Add(truncateTableCommand);
+                        headerRows.Add(truncateTableCommand);
                     }
                     else
                     {
