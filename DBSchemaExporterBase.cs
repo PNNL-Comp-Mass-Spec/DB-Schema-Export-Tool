@@ -355,6 +355,8 @@ namespace DB_Schema_Export_Tool
 
                     // Export data from every table in the database
                     // Skip any tables in tablesForDataExport where the TargetTableName is <skip>
+                    // In addition, if tablesForDataExport is not empty, skip any table not in the list
+
                     foreach (var candidateTable in tablesInDatabase)
                     {
                         if (candidateTable.SourceTableName.Equals("sysdiagrams") ||
@@ -840,6 +842,7 @@ namespace DB_Schema_Export_Tool
                 {
                     var alternateNameToFind = mOptions.TableDataSnakeCase ? ConvertNameToSnakeCase(tableNameToFind) : string.Empty;
 
+                    // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
                     foreach (var item in tablesToExportData)
                     {
                         if (StoreDataExportTableIfMatch(item.Key, item.Value, tableNameToFind, alternateNameToFind, tablesToExportOrdered, storedTableInfo))
@@ -1141,9 +1144,9 @@ namespace DB_Schema_Export_Tool
                 cleanName = CleanNameForOS(dataExportParams.TargetTableNameWithSchema + "_Data");
             }
 
-            var suffix = tableInfo.FilterByDate ?
-                             string.Format("_Since_{0:yyyy-MM-dd}", tableInfo.MinimumDate) :
-                             string.Empty;
+            var suffix = tableInfo.FilterByDate
+                ? string.Format("_Since_{0:yyyy-MM-dd}", tableInfo.MinimumDate)
+                : string.Empty;
 
             var fileName = cleanName + suffix + ".sql";
 
