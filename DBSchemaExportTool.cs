@@ -675,7 +675,7 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
-        /// Return true if the text in headerName matches once of the supported names for the Table Name column
+        /// Return true if the text in headerName matches one of the supported names for the Table Name column
         /// </summary>
         /// <param name="headerName"></param>
         private bool IsHeaderRowTableColumn(string headerName)
@@ -684,6 +684,7 @@ namespace DB_Schema_Export_Tool
 
             return headerName.Equals("Table", StringComparison.OrdinalIgnoreCase) ||
                    headerName.Equals("TableName", StringComparison.OrdinalIgnoreCase) ||
+                   headerName.Equals("Table Name", StringComparison.OrdinalIgnoreCase) ||
                    headerName.Equals("Table_Name", StringComparison.OrdinalIgnoreCase) ||
                    headerName.Equals("SourceTableName", StringComparison.OrdinalIgnoreCase);
         }
