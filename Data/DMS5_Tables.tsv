@@ -1,0 +1,53 @@
+SourceTableName	TargetSchemaName	TargetTableName	PgInsert	KeyColumn(s)
+T_Analysis_State_Name	public	t_analysis_job_state	true	job_state_id
+T_Campaign	public	t_campaign	true	campaign_id
+T_Cell_Culture	public	t_biomaterial	true	biomaterial_id
+T_Cell_Culture_Tracking	public	t_biomaterial_tracking	true	biomaterial_id
+T_Cell_Culture_Type_Name	public	t_biomaterial_type_name	true	biomaterial_type_id
+T_Dataset	public	t_dataset	true	dataset_id
+T_Dataset_Archive	public	t_dataset_archive	true	dataset_id
+T_DatasetArchiveStateName	public	t_dataset_archive_state_name	true	archive_state_id
+T_DatasetRatingName	public	t_dataset_rating_name	true	dataset_rating_id
+T_DatasetStateName	public	t_dataset_state_name	true	dataset_state_id
+T_DatasetTypeName	public	t_dataset_type_name	true	dataset_type_id
+T_Experiment_Cell_Cultures	public	t_experiment_biomaterial	true	biomaterial_id
+T_Experiments	public	t_experiments	true	experiment_id
+T_MyEMSLState	public	t_myemsl_state	true	myemsl_state
+T_Organisms	public	t_organisms	true	organism_id
+V_Campaign_Cell_Culture	public	v_campaign_biomaterial
+V_Cell_Culture	public	v_biomaterial
+V_Cell_Culture_Count_by_Month	public	v_biomaterial_count_by_month
+V_Cell_Culture_Date	public	v_biomaterial_date
+V_Cell_Culture_Detail_Report	public	v_biomaterial_detail_report
+V_Cell_Culture_Entry	public	v_biomaterial_entry
+V_Cell_Culture_Experiment_Tracking	public	v_biomaterial_experiment_tracking
+V_Cell_Culture_List_Report_2	public	v_biomaterial_list_report_2
+V_Cell_Culture_Metadata	public	v_biomaterial_metadata
+V_Cell_Culture_Report	public	v_biomaterial_report
+V_Cell_Culture_Report_Ex	public	v_biomaterial_report_ex
+V_Cell_Culture_Tracking	public	v_biomaterial_tracking
+V_Experiment_Cell_Culture	public	v_experiment_biomaterial
+V_Export_Campaign_Cell_Culture	public	v_export_campaign_biomaterial
+V_Export_Cell_Culture	public	v_export_biomaterial
+V_MyEMSL_Main_Metadata	public	v_myemsl_main_metadata
+V_MyEMSL_Proposal_ID_Update	public	v_myemsl_proposal_id_update
+V_MyEMSL_Supplemental_Metadata	public	v_myemsl_supplemental_metadata
+V_Purgable_Datasets	public	v_purgeable_datasets
+V_Purgable_Datasets_NoInterest	public	v_purgeable_datasets_nointerest
+V_Purgable_Datasets_NoInterest_NoRecentJob	public	v_purgeable_datasets_nointerest_norecentjob
+V_Purgable_Datasets_NoJob	public	v_purgeable_datasets_nojob
+SchemaChangeLog	public	<skip>		
+T_Auth_Database_LoginsAndRoles	public	<skip>		
+T_Auth_Database_LoginsAndRoles_2016Feb	public	<skip>		
+T_Auth_Database_Permissions	public	<skip>		
+T_Auth_Database_Permissions_2016Feb	public	<skip>		
+T_Auth_Server_Logins	public	<skip>		
+T_Auth_Server_Logins_2016Feb	public	<skip>		
+V_Table_Index_Sizes	public	<skip>		
+V_Table_Row_Counts	public	<skip>		
+V_Table_Size_Summary	public	<skip>		
+V_Table_Sizes	public	<skip>		
+V_Tmp_Purgable_Datasets	public	<skip>
+V_Tmp_Purgable_Datasets_NoInterest	public	<skip>
+V_Tmp_Purgable_Datasets_NoInterest_NoRecentJob	public	<skip>
+V_Tmp_Purgable_Datasets_NoJob	public	<skip>
