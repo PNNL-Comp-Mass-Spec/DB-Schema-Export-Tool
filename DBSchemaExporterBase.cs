@@ -373,6 +373,19 @@ namespace DB_Schema_Export_Tool
                         candidateTable.UsePgInsert = mOptions.PgInsertTableData;
                         candidateTable.DefineDateFilter(tableInfo.DateColumnName, tableInfo.MinimumDate);
 
+                        if (!string.IsNullOrWhiteSpace(tableInfo.TargetTableName) &&
+                            !tableInfo.TargetTableName.Equals(tableInfo.SourceTableName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // This table has a new name in the target database
+                            candidateTable.TargetTableName = tableInfo.TargetTableName;
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(tableInfo.TargetSchemaName))
+                        {
+                            // This table has a new name in the target database
+                            candidateTable.TargetSchemaName = tableInfo.TargetSchemaName;
+                        }
+
                         tablesToExportData.Add(candidateTable, maxRowsToExportPerTable);
                     }
 
