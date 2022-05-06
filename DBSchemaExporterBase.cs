@@ -833,7 +833,7 @@ namespace DB_Schema_Export_Tool
                 // The KeyValuePairs in this list are instances of TableDataExportInfo and the maximum number of rows to export for the given table
                 var tablesToExportOrdered = new List<KeyValuePair<TableDataExportInfo, long>>();
 
-                var storedTableInfo = new SortedSet<string>();
+                var storedTableInfo = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 foreach (var tableNameToFind in tableDataExportOrder)
                 {
