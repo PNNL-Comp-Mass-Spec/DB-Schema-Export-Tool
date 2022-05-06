@@ -772,6 +772,7 @@ namespace DB_Schema_Export_Tool
 
                 writer.WriteLine("test -f {0} && rm {0}", targetFilePath);
                 writer.WriteLine("mv {0} {1} && echo '   ... moved to {1}'", scriptFileName, targetFilePath);
+                writer.WriteLine("sleep 1");
             }
         }
 
