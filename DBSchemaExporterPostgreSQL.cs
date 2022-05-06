@@ -31,6 +31,11 @@ namespace DB_Schema_Export_Tool
         public const int DEFAULT_PORT = 5432;
 
         /// <summary>
+        /// Maximum length of object names in PostgreSQL
+        /// </summary>
+        public const int MAX_OBJECT_NAME_LENGTH = 63;
+
+        /// <summary>
         /// postgres database
         /// </summary>
         public const string POSTGRES_DATABASE = "postgres";

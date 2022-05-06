@@ -1450,8 +1450,7 @@ namespace DB_Schema_Export_Tool
 
                         // Make an educated guess of the sequence name, for example
                         // mc.t_mgr_types_mt_type_id_seq
-                        var sequenceName = string.Format("{0}_{1}_seq",
-                            dataExportParams.TargetTableNameWithSchema.Replace("\"", string.Empty), primaryKeyColumnName);
+                        var sequenceName = GetIdentityColumnSequenceName(dataExportParams.TargetTableNameWithSchema, primaryKeyColumnName);
 
                         writer.WriteLine();
                         writer.WriteLine("-- Set the sequence's current value to the maximum current ID");
@@ -1477,6 +1476,27 @@ namespace DB_Schema_Export_Tool
                 SetLocalError(DBSchemaExportErrorCodes.GeneralError, "Error in ExportDBTableData", ex);
                 return false;
             }
+        }
+
+        private string GetIdentityColumnSequenceName(string targetTableNameWithSchema, string primaryKeyColumnName)
+        {
+            var tableName = GetNameWithoutSchema(targetTableNameWithSchema).Replace("\"", string.Empty);
+
+            var sequenceNameWithoutSchema = string.Format("{0}_{1}_seq", tableName, primaryKeyColumnName);
+
+            if (sequenceNameWithoutSchema.Length <= DBSchemaExporterPostgreSQL.MAX_OBJECT_NAME_LENGTH)
+            {
+                return string.Format("{0}_{1}_seq", targetTableNameWithSchema.Replace("\"", string.Empty), primaryKeyColumnName);
+            }
+
+            // Shorten the table name, trimming any trailing underscores
+            var tableNameLengthToUse = DBSchemaExporterPostgreSQL.MAX_OBJECT_NAME_LENGTH - primaryKeyColumnName.Length - 4;
+
+            var truncatedTableName = tableName.Substring(0, tableNameLengthToUse).TrimEnd('_');
+
+            var truncatedTableNameWithSchema = targetTableNameWithSchema.Replace(tableName, truncatedTableName).Replace("\"", string.Empty);
+
+            return string.Format("{0}_{1}_seq", truncatedTableNameWithSchema, primaryKeyColumnName);
         }
 
         /// <summary>
