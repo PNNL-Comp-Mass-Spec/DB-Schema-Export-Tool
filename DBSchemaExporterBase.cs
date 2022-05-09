@@ -5,9 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-
 using PRISM;
-using TableNameMapContainer;
 
 namespace DB_Schema_Export_Tool
 {
@@ -167,16 +165,6 @@ namespace DB_Schema_Export_Tool
         protected bool mAbortProcessing;
 
         /// <summary>
-        /// Match any lowercase letter
-        /// </summary>
-        private readonly Regex mAnyLowerMatcher;
-
-        /// <summary>
-        /// Match a lowercase letter followed by an uppercase letter
-        /// </summary>
-        private readonly Regex mCamelCaseMatcher;
-
-        /// <summary>
         /// Match any character that is not a letter, number, or underscore
         /// </summary>
         /// <remarks>
@@ -294,10 +282,6 @@ namespace DB_Schema_Export_Tool
             SchemaOutputDirectories = new Dictionary<string, string>();
             TableNamesToAutoExportData = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
             TableNameRegexToAutoExportData = new SortedSet<string>();
-
-            mAnyLowerMatcher = new Regex("[a-z]", RegexOptions.Compiled | RegexOptions.Singleline);
-
-            mCamelCaseMatcher = new Regex("(?<LowerLetter>[a-z])(?<UpperLetter>[A-Z])", RegexOptions.Compiled);
 
             mColumnCharNonStandardMatcher = new Regex("[^a-z0-9_]", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
@@ -691,19 +675,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="objectName"></param>
         public string ConvertNameToSnakeCase(string objectName)
         {
-            if (!mAnyLowerMatcher.IsMatch(objectName))
-            {
-                // objectName contains no lowercase letters; simply change to lowercase and return
-                return objectName.ToLower();
-            }
-
-            var match = mCamelCaseMatcher.Match(objectName);
-
-            var updatedName = match.Success
-                ? mCamelCaseMatcher.Replace(objectName, "${LowerLetter}_${UpperLetter}")
-                : objectName;
-
-            return updatedName.ToLower();
+            return TableColumnNameMapContainer.NameUpdater.ConvertNameToSnakeCase(objectName);
         }
 
         /// <summary>
@@ -1276,7 +1248,7 @@ namespace DB_Schema_Export_Tool
             {
                 targetColumnName = columnMapInfo.GetTargetColumnName(currentColumnName);
 
-                if (targetColumnName.Equals(NameMapReader.SKIP_FLAG, StringComparison.OrdinalIgnoreCase))
+                if (targetColumnName.Equals(TableNameMapContainer.NameMapReader.SKIP_FLAG, StringComparison.OrdinalIgnoreCase))
                 {
                     // Do not include this column in the output file
                     dataColumnType = DataColumnTypeConstants.SkipColumn;
@@ -1868,7 +1840,7 @@ namespace DB_Schema_Export_Tool
             if (!TableNamePassesFilters(options, tableInfo.SourceTableName))
                 return true;
 
-            return tableInfo.TargetTableName?.Equals(NameMapReader.SKIP_FLAG, StringComparison.OrdinalIgnoreCase) == true;
+            return tableInfo.TargetTableName?.Equals(TableNameMapContainer.NameMapReader.SKIP_FLAG, StringComparison.OrdinalIgnoreCase) == true;
         }
 
         /// <summary>
