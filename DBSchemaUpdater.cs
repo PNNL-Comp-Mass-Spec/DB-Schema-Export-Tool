@@ -289,7 +289,9 @@ namespace DB_Schema_Export_Tool
 
                     if (string.IsNullOrWhiteSpace(dataLine))
                     {
-                        writer.WriteLine(dataLine);
+                        writer.WriteLine(dataLine?.Trim());
+                        continue;
+                    }
 
                     var objectHeaderMatch = objectHeaderMatcher.Match(dataLine);
                     if (objectHeaderMatch.Success)
@@ -356,7 +358,7 @@ namespace DB_Schema_Export_Tool
                         continue;
                     }
 
-                    writer.WriteLine(dataLine);
+                    writer.WriteLine(dataLine.TrimEnd());
                 }
 
                 LogMessage("Created " + PathUtils.CompactPathString(updatedSchemaFilePath, 120));
@@ -599,7 +601,7 @@ namespace DB_Schema_Export_Tool
                     if (item.Value.Equals(NameMapReader.SKIP_FLAG))
                         continue;
 
-                    var kvPairs = new List<KeyValuePair<Regex, string>> ();
+                    var kvPairs = new List<KeyValuePair<Regex, string>>();
 
                     var pattern1 = "(?<Prefix>_)" + item.Key + "(?<Suffix>_)";
                     var pattern2 = "(?<Prefix>_)" + item.Key + @"(?<Suffix>\b)";
@@ -649,7 +651,7 @@ namespace DB_Schema_Export_Tool
 
                     if (string.IsNullOrWhiteSpace(dataLine))
                     {
-                        writer.WriteLine(dataLine);
+                        writer.WriteLine(dataLine?.TrimEnd());
                         continue;
                     }
 
@@ -672,7 +674,7 @@ namespace DB_Schema_Export_Tool
                         }
                     }
 
-                    writer.WriteLine(updatedLine);
+                    writer.WriteLine(updatedLine.TrimEnd());
 
                     if (DateTime.UtcNow.Subtract(lastStatus).TotalSeconds < 0.5)
                         continue;
@@ -730,7 +732,7 @@ namespace DB_Schema_Export_Tool
 
             foreach (var outputLine in outputLines)
             {
-                writer.WriteLine(outputLine);
+                writer.WriteLine(outputLine.TrimEnd());
             }
         }
     }
