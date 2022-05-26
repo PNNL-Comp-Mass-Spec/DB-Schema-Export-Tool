@@ -270,6 +270,7 @@ namespace DB_Schema_Export_Tool
                     Path.GetFileNameWithoutExtension(existingSchemaFile.Name) + FILE_SUFFIX_UPDATED_COLUMN_NAMES +
                     existingSchemaFile.Extension);
 
+                var objectHeaderMatcher = new Regex(@"^(?<ObjectName>/\*+.+)(?<ScriptDate>Script Date:.+ )(?<EndTag>\*+/)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
                 var tableNameMatcher = new Regex(@"^CREATE TABLE[^[]+\[(?<SchemaName>[^[]+)\]\.\[(?<TableName>[^[]+)\].*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
                 var indexNameMatcher = new Regex(@"^CREATE.+INDEX[^[]+\[(?<IndexName>[^[]+)\] ON \[(?<SchemaName>[^[]+)\]\.\[(?<TableName>.+)\].*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
                 var viewNameMatcher = new Regex(@"^CREATE VIEW[^[]+\[(?<SchemaName>[^[]+)\]\.\[(?<TableName>[^[]+)\].*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -289,6 +290,24 @@ namespace DB_Schema_Export_Tool
                     if (string.IsNullOrWhiteSpace(dataLine))
                     {
                         writer.WriteLine(dataLine);
+
+                    var objectHeaderMatch = objectHeaderMatcher.Match(dataLine);
+                    if (objectHeaderMatch.Success)
+                    {
+                        // Matched the object header line
+                        // Write the line to the output file, but remove script date portion, giving
+
+                        // For example, change from:
+                        /****** Object:  Table [dbo].[T_Dataset]    Script Date: 5/25/2022 5:43:32 PM ******/
+
+                        // To:
+                        /****** Object:  Table [dbo].[T_Dataset] ******/
+
+                        var objectHeader = string.Format("{0} {1}",
+                            objectHeaderMatch.Groups["ObjectName"].Value.TrimEnd(),
+                            objectHeaderMatch.Groups["EndTag"].Value);
+
+                        writer.WriteLine(objectHeader.Trim());
                         continue;
                     }
 
