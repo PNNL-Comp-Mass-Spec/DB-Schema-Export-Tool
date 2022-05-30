@@ -1473,7 +1473,7 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.GeneralError, "Error in ExportDBTableData", ex);
+                SetLocalError(DBSchemaExportErrorCodes.GeneralError, "Error in ExportDBTableData for table " + tableInfo.SourceTableName, ex);
                 return false;
             }
         }
