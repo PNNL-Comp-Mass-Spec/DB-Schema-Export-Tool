@@ -95,7 +95,9 @@ public class NameMapReader : EventNotifier
                 if (string.IsNullOrWhiteSpace(dataLine) || dataLine.Trim().StartsWith("#"))
                     continue;
 
-                var lineParts = dataLine.Split('\t');
+                // Files edited with Excel will have column values surrounded by double quotes if they contain a comma
+                // The following method splits the row on tabs, then removes double quotes from quoted values
+                var lineParts = SplitLineAndUnquote(dataLine);
 
                 if (columnMap.Count == 0)
                 {
@@ -107,7 +109,7 @@ public class NameMapReader : EventNotifier
                     {
                         columnMap.Add(TableInfoFileColumns.SourceTableName, 0);
 
-                        for (var i = 1; i < lineParts.Length; i++)
+                        for (var i = 1; i < lineParts.Count; i++)
                         {
                             if (lineParts[i].Equals("TargetTableName", StringComparison.OrdinalIgnoreCase))
                             {
@@ -151,7 +153,7 @@ public class NameMapReader : EventNotifier
                         { TableInfoFileColumns.SourceTableName, 0 }
                     };
 
-                    switch (lineParts.Length)
+                    switch (lineParts.Count)
                     {
                         case 2:
                             columnMapCurrentLine.Add(TableInfoFileColumns.TargetTableName, 1);
@@ -292,7 +294,23 @@ public class NameMapReader : EventNotifier
         return tableNameMap;
     }
 
-    private bool TryGetColumnValue(
+    private static IReadOnlyList<string> SplitLineAndUnquote(string dataLine)
+    {
+        if (string.IsNullOrWhiteSpace(dataLine))
+            return new List<string>();
+
+        var lineParts = dataLine.Split('\t');
+
+        for (var i = 0; i < lineParts.Length; i++)
+        {
+            if (lineParts[i].StartsWith("\"") && lineParts[i].EndsWith("\""))
+                lineParts[i] = lineParts[i].Trim('"');
+        }
+
+        return lineParts;
+    }
+
+    private static bool TryGetColumnValue(
         IReadOnlyList<string> lineParts,
         IReadOnlyDictionary<TableInfoFileColumns, int> columnMapCurrentLine,
         TableInfoFileColumns column,
