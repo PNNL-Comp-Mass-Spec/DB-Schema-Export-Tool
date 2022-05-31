@@ -1215,7 +1215,8 @@ namespace DB_Schema_Export_Tool
                 tableDataOutputFile.Directory.Create();
             }
 
-            OnDebugEvent("Writing table data to " + PathUtils.CompactPathString(tableDataOutputFile.FullName, 120));
+            ConsoleMsgUtils.ShowDebugCustom("Writing table data to " + PathUtils.CompactPathString(tableDataOutputFile.FullName, 120), "  ", 0);
+            Console.WriteLine();
 
             return tableDataOutputFile;
         }
