@@ -220,7 +220,12 @@ namespace DB_Schema_Export_Tool
                     if (skipTable)
                         continue;
 
-                    tablesForDataExport.Add(new TableDataExportInfo(item));
+                    var sourceTable = new TableDataExportInfo(item)
+                    {
+                        UsePgInsert = mOptions.PgInsertTableData
+                    };
+
+                    tablesForDataExport.Add(sourceTable);
                 }
 
                 List<string> tableDataExportOrder;
