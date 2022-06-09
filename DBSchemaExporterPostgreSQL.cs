@@ -1782,6 +1782,9 @@ namespace DB_Schema_Export_Tool
                 case "CONSTRAINT":
                 case "FK CONSTRAINT":
                 case "DEFAULT":
+                case "SEQUENCE":
+                case "SEQUENCE OWNED BY":
+
                     // Parse out the target table name from the Alter Table DDL
 
                     // The RegEx will match lines like this:
@@ -1814,6 +1817,13 @@ namespace DB_Schema_Export_Tool
                     {
                         foreach (var cachedLine in cachedLines)
                         {
+                            if (cachedLine.StartsWith("CREATE SEQUENCE ") ||
+                                cachedLine.StartsWith("ALTER SEQUENCE "))
+                            {
+                                targetScriptFile = previousTargetScriptFile;
+                                return;
+                            }
+
                             var match = alterTableMatcher.Match(cachedLine);
 
                             if (!match.Success)
@@ -1827,9 +1837,14 @@ namespace DB_Schema_Export_Tool
 
                     if (!alterTableMatched)
                     {
-                        OnWarningEvent("Did not find a valid ALTER TABLE line in the cached lines for a constraint against: " + currentObject.Name);
+                        OnWarningEvent(
+                            "Did not find a valid ALTER TABLE line in the cached lines for a {0}{1}",
+                            currentObject.Type.StartsWith("SEQUENCE") ? "sequence near: " : "constraint against: ",
+                            currentObject.Name);
+
                         unhandledScriptingCommands = true;
                     }
+
                     break;
 
                 case "EVENT TRIGGER":
@@ -1856,7 +1871,7 @@ namespace DB_Schema_Export_Tool
                     {
                         Regex createIndexMatcher;
 
-                        // These RegEx specs includes ONLY as an optional group to allow for CREATE INDEX statements on partitioned tables
+                        // These RegEx specs include ONLY as an optional group to allow for CREATE INDEX statements on partitioned tables
                         if (i == 1)
                         {
                             createIndexMatcher = new Regex(string.Format(
@@ -1934,11 +1949,6 @@ namespace DB_Schema_Export_Tool
                     nameToUse = "_Schema_" + currentObject.Name;
                     schemaToUse = string.Empty;
                     break;
-
-                case "SEQUENCE":
-                case "SEQUENCE OWNED BY":
-                    targetScriptFile = previousTargetScriptFile;
-                    return;
 
                 case "TRIGGER":
                     var triggerTableMatch = mTriggerTargetTableMatcher.Match(currentObject.Name);
