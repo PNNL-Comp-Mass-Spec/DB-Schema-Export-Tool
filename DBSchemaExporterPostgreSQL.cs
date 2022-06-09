@@ -1789,11 +1789,11 @@ namespace DB_Schema_Export_Tool
                     // ALTER TABLE ONLY mc.t_event_log
 
                     var alterTableMatcher = new Regex(
-                        string.Format(@"ALTER TABLE.+ {0}\.(?<TargetTable>.+)", schemaToUse),
+                        string.Format(@"ALTER TABLE.+{0}\.(?<TargetTable>.+)", schemaToUse),
                               RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
                     var alterTableAlterColumnMatcher = new Regex(
-                        string.Format(@"ALTER TABLE.+ {0}\.(?<TargetTable>.+) ALTER COLUMN", schemaToUse),
+                        string.Format(@"ALTER TABLE.+{0}\.(?<TargetTable>.+) ALTER COLUMN", schemaToUse),
                               RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
                     var alterTableMatched = false;
