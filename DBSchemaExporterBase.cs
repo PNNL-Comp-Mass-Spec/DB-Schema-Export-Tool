@@ -858,6 +858,9 @@ namespace DB_Schema_Export_Tool
 
                 if (mOptions.ScriptPgLoadCommands)
                 {
+                    // Note that the script file info is tracked by List workingParams.DataLoadScriptFiles
+                    // If TableDataExportOrder was defined, the items in DataLoadScriptFiles will match the specified order
+
                     CreateDataLoadScriptFile(workingParams, tablesToExportData.Keys);
                 }
 

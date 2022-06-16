@@ -1319,7 +1319,7 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
-        /// Export the schema for the databases defined in databasesToProcess
+        /// Export the schema or data for the databases defined in databasesToProcess
         /// </summary>
         /// <param name="options"></param>
         /// <returns>True if successful, false if an error</returns>
@@ -1330,7 +1330,7 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
-        /// Export the schema for the databases defined in databaseList
+        /// Export the schema or data for the databases defined in databaseList
         /// </summary>
         /// <param name="outputDirectoryPath"></param>
         /// <param name="serverName"></param>
