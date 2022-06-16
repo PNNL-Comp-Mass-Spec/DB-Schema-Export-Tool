@@ -1709,6 +1709,7 @@ namespace DB_Schema_Export_Tool
             {
                 case "TABLE":
                 case "VIEW":
+                case "FOREIGN TABLE":
                     break;
 
                 case "ACL":
@@ -1950,6 +1951,11 @@ namespace DB_Schema_Export_Tool
                     schemaToUse = string.Empty;
                     break;
 
+                case "SERVER":
+                    nameToUse = "_Server_" + currentObject.Name;
+                    schemaToUse = string.Empty;
+                    break;
+
                 case "TRIGGER":
                     var triggerTableMatch = mTriggerTargetTableMatcher.Match(currentObject.Name);
 
@@ -1962,6 +1968,11 @@ namespace DB_Schema_Export_Tool
                         OnWarningEvent("Did not find a valid table name for trigger: " + currentObject.Name);
                         unhandledScriptingCommands = true;
                     }
+                    break;
+
+                case "USER MAPPING":
+                    nameToUse = "_" + currentObject.Name.Replace(" ", "_").Replace("USER_MAPPING", "User_Mapping").Replace("_SERVER_", "_Server_");
+                    schemaToUse = string.Empty;
                     break;
 
                 default:
@@ -2019,7 +2030,7 @@ namespace DB_Schema_Export_Tool
                 if (dataLine == null)
                     continue;
 
-                if (dataLine.StartsWith("SQL to find"))
+                if (dataLine.StartsWith("USER MAPPING"))
                 {
                     Console.WriteLine("Check this code");
                 }
