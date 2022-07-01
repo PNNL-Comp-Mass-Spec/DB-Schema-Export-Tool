@@ -186,9 +186,9 @@ namespace DB_Schema_Export_Tool
         private readonly Regex mNonStandardOSChars;
 
         /// <summary>
-        /// Object name Reg Ex
+        /// Object name Reg Ex match list
         /// </summary>
-        protected Regex mObjectNameMatcher;
+        protected readonly List<Regex> mObjectNameMatchers;
 
         /// <summary>
         /// Current server info
@@ -292,10 +292,11 @@ namespace DB_Schema_Export_Tool
 
             mNonStandardOSChars = new Regex(@"[^a-z0-9_ =+-,.;~!@#$%^&(){}\[\]]", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
-            // This will get updated later if mOptions.ObjectNameFilter is not empty
-            // We are not instantiating this here since we want to use OnErrorEvent() if there is as problem,
-            // and that event is not subscribed to until after this class is instantiated
-            mObjectNameMatcher = new Regex(".+", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            // This list will get updated later if mOptions.ObjectNameFilter is not empty
+            mObjectNameMatchers = new List<Regex>
+            {
+                new(".+", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline)
+            };
 
             mConnectedToServer = false;
             mCurrentServerInfo = new ServerConnectionInfo(string.Empty, true);
@@ -1409,6 +1410,21 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
+        /// Return true if any of the RegEx matchers in mObjectNameMatchers match the object name
+        /// </summary>
+        /// <param name="objectName"></param>
+        protected bool MatchesObjectsToProcess(string objectName)
+        {
+            foreach (var matcher in mObjectNameMatchers)
+            {
+                if (matcher.IsMatch(objectName))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Invoke the DBExportStarting event
         /// </summary>
         /// <param name="databaseName"></param>
@@ -1830,7 +1846,7 @@ namespace DB_Schema_Export_Tool
             if (skipTable)
                 return true;
 
-            return !mObjectNameMatcher.IsMatch(tableInfo.SourceTableName);
+            return !MatchesObjectsToProcess(tableInfo.SourceTableName);
         }
 
         /// <summary>
@@ -1925,7 +1941,7 @@ namespace DB_Schema_Export_Tool
         private bool TableNamePassesFilters(string tableName)
         {
             var passesFilter = TableNamePassesFilters(mOptions, tableName);
-            return passesFilter && mObjectNameMatcher.IsMatch(tableName);
+            return passesFilter && MatchesObjectsToProcess(tableName);
         }
 
         /// <summary>
@@ -1996,22 +2012,40 @@ namespace DB_Schema_Export_Tool
                 return false;
             }
 
+            mObjectNameMatchers.Clear();
+
             if (string.IsNullOrWhiteSpace(mOptions.ObjectNameFilter))
             {
-                mObjectNameMatcher = new Regex(".+", RegexOptions.Compiled);
+                mObjectNameMatchers.Add(new Regex(".+", RegexOptions.Compiled));
             }
             else
             {
-                try
+                var nameFilters = new List<string>();
+
+                // Split on commas, but do not split if mOptions.ObjectNameFilter has square brackets
+                if (mOptions.ObjectNameFilter.IndexOfAny(new[] {'[', ']'}) >= 0)
                 {
-                    mObjectNameMatcher = new Regex(mOptions.ObjectNameFilter, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                    nameFilters.Add(mOptions.ObjectNameFilter);
                 }
-                catch (Exception ex)
+                else
                 {
-                    OnErrorEvent(string.Format(
-                        "Invalid text defined for the object name filter, '{0}'; " +
-                        "should be a series of letters or valid RegEx", mOptions.ObjectNameFilter), ex);
-                    return false;
+                    nameFilters.AddRange(mOptions.ObjectNameFilter.Split(','));
+                }
+
+                foreach (var filter in nameFilters)
+                {
+                    try
+                    {
+                        mObjectNameMatchers.Add(new Regex(filter.Trim(), RegexOptions.Compiled | RegexOptions.IgnoreCase));
+                    }
+                    catch (Exception ex)
+                    {
+                        OnErrorEvent(string.Format(
+                            "Invalid text defined for the object name filter, '{0}'; " +
+                            "should be a series of letters or valid RegEx", filter.Trim()), ex);
+
+                        return false;
+                    }
                 }
             }
 

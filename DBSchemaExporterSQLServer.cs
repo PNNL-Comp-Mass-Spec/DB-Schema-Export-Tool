@@ -809,7 +809,7 @@ namespace DB_Schema_Export_Tool
         {
             if (workingParams.CountObjectsOnly)
             {
-                var processCount = currentDatabase.UserDefinedDataTypes.Cast<Schema>().Count(schemaItem => mObjectNameMatcher.IsMatch(schemaItem.Name));
+                var processCount = currentDatabase.UserDefinedDataTypes.Cast<Schema>().Count(schemaItem => MatchesObjectsToProcess(schemaItem.Name));
                 workingParams.ProcessCount += processCount;
             }
             else
@@ -835,7 +835,7 @@ namespace DB_Schema_Export_Tool
 
             if (workingParams.CountObjectsOnly)
             {
-                var processCount = currentDatabase.UserDefinedTypes.Cast<Schema>().Count(schemaItem => mObjectNameMatcher.IsMatch(schemaItem.Name));
+                var processCount = currentDatabase.UserDefinedTypes.Cast<Schema>().Count(schemaItem => MatchesObjectsToProcess(schemaItem.Name));
                 workingParams.ProcessCount += processCount;
             }
             else
@@ -1072,8 +1072,7 @@ namespace DB_Schema_Export_Tool
                 {
                     // In queryResults.Tables[0].Rows, the first column is the schema name and the second column is the object name
 
-                    var foundItemCount = queryResults.Tables[0].Rows.Cast<DataRow>().Count(
-                        currentRow => mObjectNameMatcher.IsMatch(currentRow[1].ToString()));
+                    var foundItemCount = queryResults.Tables[0].Rows.Cast<DataRow>().Count(currentRow => MatchesObjectsToProcess(currentRow[1].ToString()));
 
                     workingParams.ProcessCount += foundItemCount;
 
@@ -1089,7 +1088,7 @@ namespace DB_Schema_Export_Tool
                         var objectSchema = currentRow[0].ToString();
                         var objectName = currentRow[1].ToString();
 
-                        if (!mObjectNameMatcher.IsMatch(objectName))
+                        if (!MatchesObjectsToProcess(objectName))
                         {
                             continue;
                         }
@@ -2744,7 +2743,7 @@ namespace DB_Schema_Export_Tool
 
             foreach (Schema schemaItem in schemaCollection)
             {
-                if (!mObjectNameMatcher.IsMatch(schemaItem.Name))
+                if (!MatchesObjectsToProcess(schemaItem.Name))
                 {
                     continue;
                 }
@@ -2908,13 +2907,15 @@ namespace DB_Schema_Export_Tool
                 return false;
             }
 
-            if (!mObjectNameMatcher.IsMatch(databaseTable.Name))
+            if (!MatchesObjectsToProcess(databaseTable.Name))
             {
                 if (showTraceMessages)
                 {
                     ShowTrace(string.Format(
-                        "Skipping schema export from table {0}.{1} since it does not match {2}", databaseTable.Schema, databaseTable.Name,
-                        mOptions.ObjectNameFilter));
+                        "Skipping schema export from table {0}.{1} since it does not match {2}",
+                        databaseTable.Schema,
+                        databaseTable.Name,
+                        mObjectNameMatchers.Count == 1 ? mOptions.ObjectNameFilter : "any of the object name filters"));
                 }
 
                 return false;

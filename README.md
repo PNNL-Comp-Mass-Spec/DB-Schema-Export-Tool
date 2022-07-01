@@ -194,6 +194,9 @@ Use `/NameFilter` to define a filter to apply to exported tables, views, procedu
   * This only works if using a parameter file, since the Windows command line parser removes ^
 * Use `$` to indicate the object names must end with the text, for example `Report$` to end with Report
 * Other RegEx qualifiers are supported; matches are case insensitive
+* Multiple filters can be provided by separating with commas
+  * At the command line, surround comma separated lists with double quotes
+  * Will not split on commas if the object name filter has square brackets
 
 Use `/DataExportOrder` to define a text file with table names (one name per line) defining the order that data should be exported from tables
 * Should have table names only, without schema

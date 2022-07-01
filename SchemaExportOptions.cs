@@ -17,7 +17,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "June 16, 2022";
+        public const string PROGRAM_DATE = "July 1, 2022";
 
         /// <summary>
         /// Default output directory name prefix
@@ -389,13 +389,15 @@ namespace DB_Schema_Export_Tool
         public string TableDataDateFilterFile { get; set; }
 
         /// <summary>
-        /// Only export objects that contain this text
+        /// Only export objects that contain the specified text (comma separated list)
         /// </summary>
         /// <remarks>
         /// Supports RegEx symbols like ^ and $
         /// </remarks>
         [Option("ObjectNameFilter", "NameFilter", HelpShowsDefault = false,
-            HelpText = "Only export objects that contain this text; supports RegEx symbols like ^ and $")]
+            HelpText = "Comma separated list of text to use to filter objects to export (at the command line, surround lists with double quotes)\n" +
+                       "Supports RegEx symbols like ^, $, parentheses, and brackets\n" +
+                       "Will not split on commas if the object name filter has square brackets")]
         public string ObjectNameFilter { get; set; }
 
         /// <summary>
