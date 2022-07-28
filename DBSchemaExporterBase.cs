@@ -361,16 +361,17 @@ namespace DB_Schema_Export_Tool
                         candidateTable.UsePgInsert = mOptions.PgInsertTableData;
                         candidateTable.DefineDateFilter(tableInfo.DateColumnName, tableInfo.MinimumDate);
 
-                        if (!string.IsNullOrWhiteSpace(tableInfo.TargetTableName) &&
-                            !tableInfo.TargetTableName.Equals(tableInfo.SourceTableName, StringComparison.OrdinalIgnoreCase))
+                        if (!string.IsNullOrWhiteSpace(tableInfo.TargetTableName))
                         {
                             // This table has a new name in the target database
+                            // Alternatively, the new name is the same as the input name, but we want to avoid snake case errors
+                            // (e.g. prevent T_MaxQuant_Mods converting to t_max_quant_mods)
                             candidateTable.TargetTableName = tableInfo.TargetTableName;
                         }
 
                         if (!string.IsNullOrWhiteSpace(tableInfo.TargetSchemaName))
                         {
-                            // This table has a new name in the target database
+                            // This table has a new schema name in the target database
                             candidateTable.TargetSchemaName = tableInfo.TargetSchemaName;
                         }
 
