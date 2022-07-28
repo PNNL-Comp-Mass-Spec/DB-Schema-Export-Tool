@@ -1547,7 +1547,7 @@ namespace DB_Schema_Export_Tool
             }
             else
             {
-                sql.Append("WHERE NOT (").AppendLine();
+                sql.AppendLine("WHERE NOT (");
             }
 
             var rowNumber = 0;
