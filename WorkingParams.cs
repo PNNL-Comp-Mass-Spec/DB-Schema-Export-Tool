@@ -32,7 +32,7 @@ namespace DB_Schema_Export_Tool
         public DirectoryInfo OutputDirectory { get; set; }
 
         /// <summary>
-        /// Number of script files created
+        /// Number of script files created when exporting database schema
         /// </summary>
         public int ProcessCount { get; set; }
 
