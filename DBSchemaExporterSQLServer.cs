@@ -1426,7 +1426,17 @@ namespace DB_Schema_Export_Tool
 
                 if (dataExportParams.PgInsertEnabled)
                 {
+                    // Simply enabled triggers (the default) will fire when the replication role is "origin" (the default) or "local"
+                    // Triggers configured as ENABLE REPLICA will only fire if the session is in "replica" mode
+                    // Triggers configured as ENABLE ALWAYS will fire regardless of the current replication role
+
+                    writer.WriteLine("-- Setting the replication role to 'replica' will disable normal triggers on tables");
                     writer.WriteLine("SET session_replication_role = replica;");
+                    writer.WriteLine();
+                }
+                else
+                {
+                    writer.WriteLine("ALTER TABLE {0} DISABLE TRIGGER ALL;", dataExportParams.TargetTableNameWithSchema);
                     writer.WriteLine();
                 }
 
@@ -1466,6 +1476,12 @@ namespace DB_Schema_Export_Tool
                 else if (dataExportParams.IdentityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData)
                 {
                     writer.WriteLine("SET IDENTITY_INSERT " + dataExportParams.QuotedTargetTableNameWithSchema + " OFF");
+                }
+
+                if (!dataExportParams.PgInsertEnabled)
+                {
+                    writer.WriteLine("ALTER TABLE {0} ENABLE TRIGGER ALL;", dataExportParams.TargetTableNameWithSchema);
+                    writer.WriteLine();
                 }
 
                 return true;
