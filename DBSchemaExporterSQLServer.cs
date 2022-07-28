@@ -1697,7 +1697,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="queryResults"></param>
         /// <returns>Insert Into line to use when SaveDataAsInsertIntoStatements is true and PgInsertEnabled is false; otherwise, an empty string</returns>
         private string ExportDBTableDataInit(
-            TableNameInfo tableInfo,
+            TableDataExportInfo tableInfo,
             ColumnMapInfo columnMapInfo,
             DataExportWorkingParams dataExportParams,
             List<string> headerRows,
@@ -1774,7 +1774,7 @@ namespace DB_Schema_Export_Tool
                     useTruncateTable = false;
                 }
 
-                if (deleteExtrasThenAddNew)
+                if (deleteExtrasThenAddNew && dataRowCount > 0 && !tableInfo.FilterByDate)
                 {
                     ExportDBTableDataDeleteExtraRows(dataExportParams, queryResults);
                 }
