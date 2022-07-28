@@ -14,7 +14,7 @@ namespace DB_Schema_Export_Tool
     /// </summary>
     public abstract class DBSchemaExporterBase : EventNotifier
     {
-        // Ignore Spelling: dbo, dms, dtproperties, localhost, mkdir, mv, PostgreSQL, psql, sql, sysdiagrams, unpause, unpaused
+        // Ignore Spelling: ag, dbo, dev, dms, dtproperties, fi, grep, localhost, mkdir, mv, PostgreSQL, psql, sql, sysdiagrams, unpause, unpaused
         // Ignore Spelling: dd, yyyy, HH:mm:ss
 
         /// <summary>
@@ -756,6 +756,17 @@ namespace DB_Schema_Export_Tool
                 writer.WriteLine("sleep 1");
                 writer.WriteLine("echo ''");
             }
+
+            writer.WriteLine();
+
+            // Show error messages in the data import log file
+            // Use ag (The Silver Searcher) if it exists, otherwise use grep
+
+            writer.WriteLine("if command -v ag > /dev/null; then");
+            writer.WriteLine("    ag   -i \"error\" {0}", dataImportLogFile);
+            writer.WriteLine("else");
+            writer.WriteLine("    grep -i \"error\" {0}", dataImportLogFile);
+            writer.WriteLine("fi");
         }
 
         /// <summary>
