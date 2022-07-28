@@ -710,7 +710,7 @@ namespace DB_Schema_Export_Tool
 
             var currentUser = Environment.UserName.ToLower();
 
-            var importLogFile = string.Format("ImportLog_{0:yyyy-MM-dd}.txt", DateTime.Now);
+            var dataImportLogFile = string.Format("ImportLog_{0:yyyy-MM-dd}.txt", DateTime.Now);
 
             using var writer = new StreamWriter(new FileStream(scriptFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
             {
@@ -744,7 +744,10 @@ namespace DB_Schema_Export_Tool
 
                 writer.WriteLine();
                 writer.WriteLine("echo Processing " + scriptFileName);
-                writer.WriteLine("psql -d dms -h localhost -U {0} -f {1} | tee -a {2}", currentUser, scriptFileName, importLogFile);
+
+                // The following uses 2>&1 to redirect standard error to standard output
+                // This is required to allow tee to store error messages to the text file
+                writer.WriteLine("psql -d dms -h localhost -U {0} -f {1} 2>&1 | tee -a {2}", currentUser, scriptFileName, dataImportLogFile);
 
                 var targetFilePath = "Done/" + scriptFileName;
 
