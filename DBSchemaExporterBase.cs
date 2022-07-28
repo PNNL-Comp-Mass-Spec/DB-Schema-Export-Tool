@@ -710,6 +710,8 @@ namespace DB_Schema_Export_Tool
 
             var currentUser = Environment.UserName.ToLower();
 
+            var importLogFile = string.Format("ImportLog_{0:yyyy-MM-dd}.txt", DateTime.Now);
+
             using var writer = new StreamWriter(new FileStream(scriptFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
             {
                 // Use Linux-compatible line feeds
@@ -742,7 +744,7 @@ namespace DB_Schema_Export_Tool
 
                 writer.WriteLine();
                 writer.WriteLine("echo Processing " + scriptFileName);
-                writer.WriteLine("psql -d dms -h localhost -U {0} -f {1}", currentUser, scriptFileName);
+                writer.WriteLine("psql -d dms -h localhost -U {0} -f {1} | tee -a {2}", currentUser, scriptFileName, importLogFile);
 
                 var targetFilePath = "Done/" + scriptFileName;
 
