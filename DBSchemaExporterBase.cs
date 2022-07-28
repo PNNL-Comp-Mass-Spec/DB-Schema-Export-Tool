@@ -744,7 +744,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 writer.WriteLine();
-                writer.WriteLine("echo Processing " + scriptFileName);
+                writer.WriteLine("echo Processing {0} | tee -a {1}", scriptFileName, dataImportLogFile);
 
                 // The following uses 2>&1 to redirect standard error to standard output
                 // This is required to allow tee to store error messages to the text file
@@ -753,7 +753,7 @@ namespace DB_Schema_Export_Tool
                 var targetFilePath = "Done/" + scriptFileName;
 
                 writer.WriteLine("test -f {0} && rm {0}", targetFilePath);
-                writer.WriteLine("mv {0} {1} && echo '   ... moved to {1}'", scriptFileName, targetFilePath);
+                writer.WriteLine("mv {0} {1} && echo '   ... moved to {1}' | tee -a {2}", scriptFileName, targetFilePath, dataImportLogFile);
                 writer.WriteLine("sleep 1");
                 writer.WriteLine("echo ''");
             }
