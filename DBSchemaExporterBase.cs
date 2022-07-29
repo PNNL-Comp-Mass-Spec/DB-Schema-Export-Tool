@@ -754,7 +754,7 @@ namespace DB_Schema_Export_Tool
 
                 writer.WriteLine("test -f {0} && rm {0}", targetFilePath);
                 writer.WriteLine("mv {0} {1} && echo '   ... moved to {1}' | tee -a {2}", scriptFileName, targetFilePath, dataImportLogFile);
-                writer.WriteLine("sleep 1");
+                writer.WriteLine("sleep 0.33");
                 writer.WriteLine("echo ''");
             }
 
