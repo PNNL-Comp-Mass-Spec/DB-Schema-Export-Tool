@@ -1434,7 +1434,7 @@ namespace DB_Schema_Export_Tool
                     writer.WriteLine("SET session_replication_role = replica;");
                     writer.WriteLine();
                 }
-                else
+                else if (mOptions.IncludeDisableTriggerCommands)
                 {
                     writer.WriteLine("ALTER TABLE {0} DISABLE TRIGGER ALL;", dataExportParams.TargetTableNameWithSchema);
                     writer.WriteLine();
@@ -1478,8 +1478,9 @@ namespace DB_Schema_Export_Tool
                     writer.WriteLine("SET IDENTITY_INSERT " + dataExportParams.QuotedTargetTableNameWithSchema + " OFF");
                 }
 
-                if (!dataExportParams.PgInsertEnabled)
+                if (!dataExportParams.PgInsertEnabled && mOptions.IncludeDisableTriggerCommands)
                 {
+                    writer.WriteLine();
                     writer.WriteLine("ALTER TABLE {0} ENABLE TRIGGER ALL;", dataExportParams.TargetTableNameWithSchema);
                     writer.WriteLine();
                 }

@@ -52,6 +52,7 @@ DB_Schema_Export_Tool.exe
  [/DataExportOrder:FileName] 
  [/Schema:SchemaName] [/ExistingDDL:SchemaFileName]
  [/NoAutoData] [/ExportAllData] [/MaxRows:1000] [/NoData]
+ [/DisableTriggers]
  [/SnakeCase] [/PgDump] [/KeepPgDumpFile]
  [/PgInsert] [/PgInsertChunkSize:50000] 
  [/ServerInfo] [/NoSchema] [/ScriptLoad]
@@ -224,6 +225,9 @@ Use `/MaxRows` to define the maximum number of data rows to export
 Use `/NoTableData` or `/NoData` to prevent any table data from being exported
 * This parameter is useful when processing an existing DDL file with `/ExistingDDL`
 
+Use `/DisableTriggers` (or `/IncludeDisableTriggerCommands`) to include trigger disable / enable commands in data export files
+* Ignored if `PgInsert` is true
+ 
 Use `/SnakeCase` to auto change column names from Upper\_Case and UpperCase to lower_case when exporting data from tables
 * Also used for table names when exporting data from tables
 * Entries in the `/DataTables` and `/ColumnMap` files will override auto-generated snake_case names

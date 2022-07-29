@@ -17,7 +17,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "July 28, 2022";
+        public const string PROGRAM_DATE = "July 29, 2022";
 
         /// <summary>
         /// Default output directory name prefix
@@ -465,6 +465,15 @@ namespace DB_Schema_Export_Tool
         public bool DisableDataExport { get; set; }
 
         /// <summary>
+        /// Optionally enable, then later re-enable triggers
+        /// </summary>
+        /// <remarks>Ignored if PgInsertTableData is true</remarks>
+        [Option("IncludeDisableTriggerCommands", "DisableTriggers", HelpShowsDefault = false,
+            HelpText = "When exporting data, if this is true, include commands to disable triggers prior to inserting data into tables, " +
+                       "then re-enable triggers after inserting the data; ignored if PgInsert is true")]
+        public bool IncludeDisableTriggerCommands { get; set; }
+
+        /// <summary>
         /// Generate a bash script for loading table data
         /// </summary>
         [Option("ScriptLoad", "Script", HelpShowsDefault = false,
@@ -854,6 +863,11 @@ namespace DB_Schema_Export_Tool
                 else
                 {
                     Console.WriteLine(" {0,-48} {1}", "Maximum rows to export, per table:", MaxRows);
+                }
+
+                if (!PgInsertTableData)
+                {
+                    Console.WriteLine(" {0,-48} {1}", "Include disable trigger commands:", BoolToEnabledDisabled(IncludeDisableTriggerCommands));
                 }
             }
 
