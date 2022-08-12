@@ -275,7 +275,7 @@ namespace TableNameMapContainer
                         // One or more primary key columns
                         foreach (var primaryKeyColumn in keyColumns.Split(','))
                         {
-                            tableInfo.PrimaryKeyColumns.Add(primaryKeyColumn);
+                            tableInfo.AddPrimaryKeyColumn(primaryKeyColumn);
                         }
                     }
 

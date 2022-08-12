@@ -1187,6 +1187,7 @@ namespace DB_Schema_Export_Tool
                     try
                     {
                         mCurrentDatabase = mSqlServer.Databases[databaseName];
+                        workingParams.PrimaryKeysByTable.Clear();
                     }
                     catch (Exception ex)
                     {
@@ -1714,7 +1715,7 @@ namespace DB_Schema_Export_Tool
                 // Exporting data from SQL Server and using insert commands formatted as PostgreSQL compatible
                 // INSERT INTO statements using the ON CONFLICT (key_column) DO UPDATE SET syntax
 
-                var primaryKeyColumnList = ResolvePrimaryKeys(dataExportParams, tableInfo, columnMapInfo);
+                var primaryKeyColumnList = ResolvePrimaryKeys(dataExportParams, workingParams, tableInfo, columnMapInfo);
 
                 bool useTruncateTable;
                 bool deleteExtrasThenAddNew;
@@ -2332,6 +2333,98 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
+        /// Query the database to obtain the primary key information for every table
+        /// Store in workingParams.PrimaryKeysByTable
+        /// </summary>
+        /// <param name="workingParams"></param>
+        /// <returns>True if successful, false if an error</returns>
+        public bool GetPrimaryKeyInfoFromDatabase(WorkingParams workingParams)
+        {
+            try
+            {
+                // Query to view primary key columns, by table, listed by table name, then ordinal position
+
+                // SELECT U.Table_Name,
+                //        U.Column_Name,
+                //        C.Ordinal_Position,
+                //        Row_Number() OVER ( PARTITION BY U.Table_Name ORDER BY C.Ordinal_Position ) AS Column_Order,
+                //        C.Data_Type
+                // FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS T
+                //      INNER JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE U
+                //        ON U.Constraint_Name = T.Constraint_Name
+                //      INNER JOIN INFORMATION_SCHEMA.COLUMNS C
+                //        ON U.TABLE_NAME = C.TABLE_NAME AND
+                //           U.Column_Name = C.COLUMN_NAME
+                // WHERE U.Table_Catalog = 'dms5' AND
+                //       T.CONSTRAINT_TYPE = 'PRIMARY KEY'
+                //       AND U.TABLE_NAME In (                        -- Optional filter to only show tables with multi-column based primary keys
+                //            SELECT DISTINCT Table_Name
+                //            FROM ( SELECT U.Table_Name,
+                //                          Row_Number() OVER ( PARTITION BY U.Table_Name ORDER BY C.Ordinal_Position ) AS
+                //                            Column_Order
+                //                   FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS T
+                //                        INNER JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE U
+                //                          ON U.Constraint_Name = T.Constraint_Name
+                //                        INNER JOIN INFORMATION_SCHEMA.COLUMNS C
+                //                          ON U.TABLE_NAME = C.TABLE_NAME AND
+                //                             U.Column_Name = C.COLUMN_NAME
+                //                   WHERE U.Table_Catalog = 'dms5' AND
+                //                         T.CONSTRAINT_TYPE = 'PRIMARY KEY' ) LookupQ
+                //            WHERE LookupQ.Column_Order > 1
+                //        )
+                // ORDER BY U.Table_Name, 4
+
+                workingParams.PrimaryKeysByTable.Clear();
+
+                var sql = string.Format(
+                    "SELECT U.Table_Name, " +
+                    "       U.Column_Name, " +
+                    "       C.Ordinal_Position " +
+                    "FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS T " +
+                    "     INNER JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE U " +
+                    "       ON U.Constraint_Name = T.Constraint_Name " +
+                    "     INNER JOIN INFORMATION_SCHEMA.COLUMNS C " +
+                    "       ON U.TABLE_NAME = C.TABLE_NAME AND " +
+                    "          U.Column_Name = C.COLUMN_NAME " +
+                    "WHERE U.Table_Catalog = '{0}' AND " +
+                    "      T.CONSTRAINT_TYPE = 'PRIMARY KEY' " +
+                    "ORDER BY U.Table_Name, C.Ordinal_Position, U.Column_Name ",
+                    mCurrentDatabase.Name);
+
+                var queryResults = mCurrentDatabase.ExecuteWithResults(sql);
+
+                foreach (DataRow currentRow in queryResults.Tables[0].Rows)
+                {
+                    var tableName = currentRow[0].ToString();
+                    var columnName = currentRow[1].ToString();
+
+                    // var ordinalPosition = currentRow[2].ToString();
+
+                    if (workingParams.PrimaryKeysByTable.TryGetValue(tableName, out var existingPrimaryKeyColumns))
+                    {
+                        existingPrimaryKeyColumns.Add(columnName);
+                        continue;
+                    }
+
+                    var primaryKeyColumns = new List<string>
+                        {
+                            columnName
+                        };
+
+                    workingParams.PrimaryKeysByTable.Add(tableName, primaryKeyColumns);
+                }
+
+                workingParams.PrimaryKeysRetrieved = true;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                OnErrorEvent(string.Format("Error obtaining primary key columns for tables in database {0} on the current server", mCurrentDatabase), ex);
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Use mTableDataScripter to look for primary key column(s) for the table
         /// </summary>
         /// <param name="tableInfo"></param>
@@ -2707,37 +2800,64 @@ namespace DB_Schema_Export_Tool
             return PossiblyQuoteName(objectName, true);
         }
 
-        private string ResolvePrimaryKeys(DataExportWorkingParams dataExportParams, TableNameInfo tableInfo, ColumnMapInfo columnMapInfo)
+        /// <summary>
+        /// Determine the primary key column (or columns) for a table
+        /// </summary>
+        /// <param name="dataExportParams"></param>
+        /// <param name="workingParams"></param>
+        /// <param name="tableInfo"></param>
+        /// <param name="columnMapInfo"></param>
+        /// <returns>Comma separated list of primary key column names (using target column names)</returns>
+        private string ResolvePrimaryKeys(
+            DataExportWorkingParams dataExportParams,
+            WorkingParams workingParams,
+            TableNameInfo tableInfo,
+            ColumnMapInfo columnMapInfo)
         {
-            // Comma separated list of primary key columns
-            string primaryKeyColumnList;
+            if (!workingParams.PrimaryKeysRetrieved)
+            {
+                GetPrimaryKeyInfoFromDatabase(workingParams);
+            }
 
             if (tableInfo.PrimaryKeyColumns.Count > 0)
             {
-                primaryKeyColumnList = GetTargetColumnNames(columnMapInfo, tableInfo.PrimaryKeyColumns, out _);
+                return GetTargetColumnNames(columnMapInfo, tableInfo.PrimaryKeyColumns, out _);
             }
-            else if (dataExportParams.IdentityColumnFound)
+
+            if (workingParams.PrimaryKeysByTable.TryGetValue(tableInfo.SourceTableName, out var primaryKeys))
             {
-                primaryKeyColumnList = GetTargetColumnName(columnMapInfo, dataExportParams.IdentityColumnName);
-                tableInfo.PrimaryKeyColumns.Add(primaryKeyColumnList);
+                foreach (var item in primaryKeys)
+                {
+                    var targetColumnName = GetTargetColumnName(columnMapInfo, item);
+
+                    tableInfo.AddPrimaryKeyColumn(targetColumnName);
+                }
             }
-            else if (mTableDataScripter != null)
+
+            if (tableInfo.PrimaryKeyColumns.Count == 0 && dataExportParams.IdentityColumnFound)
+            {
+                var targetIdentityColumn = GetTargetColumnName(columnMapInfo, dataExportParams.IdentityColumnName);
+
+                tableInfo.AddPrimaryKeyColumn(targetIdentityColumn);
+            }
+            else if (tableInfo.PrimaryKeyColumns.Count == 0 && mTableDataScripter != null)
             {
                 var primaryKeyColumns = GetPrimaryKeysForTableViaScripter(tableInfo);
 
-                primaryKeyColumnList = GetTargetColumnNames(columnMapInfo, primaryKeyColumns, out var targetPrimaryKeyColumns);
+                GetTargetColumnNames(columnMapInfo, primaryKeyColumns, out var targetPrimaryKeyColumns);
 
                 foreach (var targetColumnName in targetPrimaryKeyColumns)
                 {
-                    tableInfo.PrimaryKeyColumns.Add(targetColumnName);
+                    tableInfo.AddPrimaryKeyColumn(targetColumnName);
                 }
             }
-            else
+
+            if (tableInfo.PrimaryKeyColumns.Count > 0)
             {
-                primaryKeyColumnList = string.Empty;
+                return GetTargetColumnNames(columnMapInfo, tableInfo.PrimaryKeyColumns, out _);
             }
 
-            return primaryKeyColumnList;
+            return string.Empty;
         }
 
         /// <summary>
