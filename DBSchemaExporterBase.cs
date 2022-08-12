@@ -1038,17 +1038,7 @@ namespace DB_Schema_Export_Tool
                 case DataColumnTypeConstants.Text:
                 case DataColumnTypeConstants.DateTime:
                 case DataColumnTypeConstants.GUID:
-                    if (mOptions.PgDumpTableData && !pgInsertEnabled)
-                    {
-                        return CleanForCopyCommand(columnValues[columnIndex]);
-                    }
-
-                    if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || pgInsertEnabled)
-                    {
-                        return PossiblyQuoteText(columnValues[columnIndex].ToString());
-                    }
-
-                    return columnValues[columnIndex].ToString();
+                    return FormatValueForInsertAsString(columnValues[columnIndex], pgInsertEnabled);
 
                 case DataColumnTypeConstants.BinaryArray:
                     try
@@ -1106,6 +1096,29 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        /// <summary>
+        /// Format a column value as a string, based on the data type of the database column
+        /// </summary>
+        /// <param name="columnValue">Column value, as an object</param>
+        /// <param name="pgInsertEnabled">True if using insert commands formatted as PostgreSQL compatible INSERT INTO statements</param>
+        /// <returns>Value as a string</returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public string FormatValueForInsertAsString(
+           object columnValue,
+           bool pgInsertEnabled)
+        {
+            if (mOptions.PgDumpTableData && !pgInsertEnabled)
+            {
+                return CleanForCopyCommand(columnValue);
+            }
+
+            if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || pgInsertEnabled)
+            {
+                return PossiblyQuoteText(columnValue.ToString());
+            }
+
+            return columnValue.ToString();
+        }
         /// <summary>
         /// Retrieve a list of tables in the given database
         /// </summary>
