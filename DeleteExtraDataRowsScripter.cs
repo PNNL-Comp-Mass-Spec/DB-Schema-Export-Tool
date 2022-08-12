@@ -231,7 +231,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="tableDataOutputFileRelativePath"></param>
         /// <returns>True if successful, false if an error</returns>
         public bool DeleteExtraRowsUsingPrimaryKey(
-            TableNameInfo tableInfo,
+            TableDataExportInfo tableInfo,
             ColumnMapInfo columnMapInfo,
             DataExportWorkingParams dataExportParams,
             WorkingParams workingParams,
@@ -249,10 +249,16 @@ namespace DB_Schema_Export_Tool
                         return false;
                 }
 
+                if (tableInfo.FilterByDate)
+                {
+                    OnWarningEvent("Table {0} used a date filter when exporting the data; cannot create a file to delete extra rows (this method should not have been called)", dataExportParams.SourceTableNameWithSchema);
+                    return true;
+                }
+
                 if (tableInfo.PrimaryKeyColumns.Count < 1)
                 {
                     OnWarningEvent("Table {0} does not have any primary keys; cannot create a file to delete extra rows (this method should not have been called)", dataExportParams.SourceTableNameWithSchema);
-                    return false;
+                    return true;
                 }
 
                 if (tableDataOutputFile.DirectoryName == null)
