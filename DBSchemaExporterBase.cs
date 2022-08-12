@@ -52,6 +52,11 @@ namespace DB_Schema_Export_Tool
         public const string TABLE_DATA_FILE_SUFFIX = "_Data";
 
         /// <summary>
+        /// Text to append to the end of file names with commands to remove extra rows from target tables
+        /// </summary>
+        public const string DELETE_EXTRA_ROWS_FILE_SUFFIX = "_DeleteExtraRows.sql";
+
+        /// <summary>
         /// Data column types
         /// </summary>
         public enum DataColumnTypeConstants

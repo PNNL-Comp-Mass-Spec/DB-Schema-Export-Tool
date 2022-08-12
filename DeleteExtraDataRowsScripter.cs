@@ -275,7 +275,7 @@ namespace DB_Schema_Export_Tool
                     return false;
                 }
 
-                var outputFileName = baseName.Substring(0, baseName.Length - DBSchemaExporterBase.TABLE_DATA_FILE_SUFFIX.Length) + "_DeleteExtraRows.sql";
+                var outputFileName = baseName.Substring(0, baseName.Length - DBSchemaExporterBase.TABLE_DATA_FILE_SUFFIX.Length) + DBSchemaExporterBase.DELETE_EXTRA_ROWS_FILE_SUFFIX;
 
                 var deleteExtrasFile = new FileInfo(Path.Combine(tableDataOutputFile.DirectoryName, outputFileName));
 
