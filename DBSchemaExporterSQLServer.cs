@@ -1403,8 +1403,6 @@ namespace DB_Schema_Export_Tool
 
                 var columnMapInfo = ConvertDataTableColumnInfo(databaseTable.Name, quoteWithSquareBrackets, dataExportParams);
 
-                var insertIntoLine = ExportDBTableDataInit(tableInfo, columnMapInfo, dataExportParams, headerRows, workingParams, queryResults);
-
                 var tableDataOutputFile = GetTableDataOutputFile(tableInfo, dataExportParams, workingParams, out var relativeFilePath);
 
                 if (tableDataOutputFile == null)
@@ -1412,6 +1410,11 @@ namespace DB_Schema_Export_Tool
                     // Skip this table (a warning message should have already been shown)
                     return false;
                 }
+
+                var insertIntoLine = ExportDBTableDataInit(tableInfo, columnMapInfo, dataExportParams, headerRows, workingParams, queryResults, tableDataOutputFile, relativeFilePath, out var dataExportError);
+
+                if (dataExportError)
+                    return false;
 
                 if (mOptions.ScriptPgLoadCommands)
                 {
@@ -1427,7 +1430,9 @@ namespace DB_Schema_Export_Tool
 
                 if (dataExportParams.PgInsertEnabled)
                 {
-                    // Simply enabled triggers (the default) will fire when the replication role is "origin" (the default) or "local"
+                    // Set the replication role to replicate to disable triggers
+
+                    // By default, triggers will fire when the replication role is "origin" (the default) or "local", but will not fire if the replication role is "replica"
                     // Triggers configured as ENABLE REPLICA will only fire if the session is in "replica" mode
                     // Triggers configured as ENABLE ALWAYS will fire regardless of the current replication role
 
@@ -1691,12 +1696,18 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Construct the header rows then return the INSERT INTO line to use for each block of data
         /// </summary>
+        /// <remarks>
+        /// If DeleteExtraRowsBeforeImport is true and the table has a primary key, will create a file for deleting extra data rows in a target table
+        /// </remarks>
         /// <param name="tableInfo"></param>
         /// <param name="columnMapInfo"></param>
         /// <param name="dataExportParams"></param>
         /// <param name="headerRows"></param>
         /// <param name="workingParams"></param>
         /// <param name="queryResults"></param>
+        /// <param name="tableDataOutputFile"></param>
+        /// <param name="tableDataOutputFileRelativePath"></param>
+        /// <param name="dataExportError">Output: true if an error was encountered, otherwise false</param>
         /// <returns>Insert Into line to use when SaveDataAsInsertIntoStatements is true and PgInsertEnabled is false; otherwise, an empty string</returns>
         private string ExportDBTableDataInit(
             TableDataExportInfo tableInfo,
@@ -1704,9 +1715,13 @@ namespace DB_Schema_Export_Tool
             DataExportWorkingParams dataExportParams,
             List<string> headerRows,
             WorkingParams workingParams,
-            DataSet queryResults)
+            DataSet queryResults,
+            FileInfo tableDataOutputFile,
+            string tableDataOutputFileRelativePath,
+            out bool dataExportError)
         {
             string insertIntoLine;
+            dataExportError = false;
 
             var dataRowCount = queryResults.Tables[0].Rows.Count;
 
@@ -1717,8 +1732,9 @@ namespace DB_Schema_Export_Tool
 
                 var primaryKeyColumnList = ResolvePrimaryKeys(dataExportParams, workingParams, tableInfo, columnMapInfo);
 
-                bool useTruncateTable;
                 bool deleteExtrasThenAddNew;
+                bool deleteExtrasUsingPrimaryKey;
+                bool useTruncateTable;
 
                 if (tableInfo.PrimaryKeyColumns.Count == dataExportParams.ColumnNamesAndTypes.Count)
                 {
@@ -1726,12 +1742,13 @@ namespace DB_Schema_Export_Tool
                     {
                         // Every column in the table is part of the primary key
 
-                        // For smaller tables, we can will delete extra values then add new values
+                        // For smaller tables, we can delete extra rows then add new rows
 
                         // This is preferable to TRUNCATE TABLE since the table might be referenced via a foreign key
-                        // and PostgreSQL will not allow a table to be truncated when the target of a foreign key reference
+                        // and PostgreSQL will not allow a table to be truncated when it is the target of a foreign key reference
 
                         deleteExtrasThenAddNew = true;
+                        deleteExtrasUsingPrimaryKey = false;
                         useTruncateTable = false;
 
                         Console.WriteLine();
@@ -1745,6 +1762,7 @@ namespace DB_Schema_Export_Tool
                     else
                     {
                         deleteExtrasThenAddNew = false;
+                        deleteExtrasUsingPrimaryKey = false;
                         useTruncateTable = true;
 
                         Console.WriteLine();
@@ -1761,7 +1779,9 @@ namespace DB_Schema_Export_Tool
                 else if (tableInfo.PrimaryKeyColumns.Count == 0)
                 {
                     deleteExtrasThenAddNew = false;
+                    deleteExtrasUsingPrimaryKey = false;
                     useTruncateTable = true;
+
                     var warningMessage = string.Format(
                         "Table {0} does not have a primary key; will use TRUNCATE TABLE since ON CONFLICT ... DO UPDATE is not possible",
                         dataExportParams.QuotedTargetTableNameWithSchema);
@@ -1773,12 +1793,34 @@ namespace DB_Schema_Export_Tool
                 else
                 {
                     deleteExtrasThenAddNew = false;
+                    deleteExtrasUsingPrimaryKey = mOptions.DeleteExtraRowsBeforeImport;
                     useTruncateTable = false;
                 }
 
-                if (deleteExtrasThenAddNew && dataRowCount > 0 && !tableInfo.FilterByDate)
+                if (dataRowCount > 0 && !tableInfo.FilterByDate)
                 {
-                    ExportDBTableDataDeleteExtraRows(dataExportParams, queryResults);
+                    if (deleteExtrasThenAddNew)
+                    {
+                        ExportDBTableDataDeleteExtraRows(dataExportParams, queryResults);
+                    }
+                    else if (deleteExtrasUsingPrimaryKey)
+                    {
+                        var deleteExtrasScripter = new DeleteExtraDataRowsScripter(this, mOptions);
+
+                        RegisterEvents(deleteExtrasScripter);
+
+                        var success = deleteExtrasScripter.DeleteExtraRowsUsingPrimaryKey(
+                            tableInfo, columnMapInfo,
+                            dataExportParams, workingParams,
+                            queryResults,
+                            tableDataOutputFile, tableDataOutputFileRelativePath);
+
+                        if (!success)
+                        {
+                            dataExportError = true;
+                            return string.Empty;
+                        }
+                    }
                 }
 
                 if (useTruncateTable)

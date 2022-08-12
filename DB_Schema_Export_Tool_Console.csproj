@@ -59,6 +59,7 @@
     <Compile Include="DBSchemaExportTool.cs" />
     <Compile Include="DataExportWorkingParams.cs" />
     <Compile Include="DBSchemaUpdater.cs" />
+    <Compile Include="DeleteExtraDataRowsScripter.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="LoggerBase.cs" />
     <Compile Include="Program.cs" />

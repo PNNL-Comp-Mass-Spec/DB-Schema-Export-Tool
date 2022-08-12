@@ -47,6 +47,11 @@ namespace DB_Schema_Export_Tool
         public const string COMMENT_SCRIPT_DATE_TEXT = "Script Date: ";
 
         /// <summary>
+        /// Text to append to the end of files with export table data
+        /// </summary>
+        public const string TABLE_DATA_FILE_SUFFIX = "_Data";
+
+        /// <summary>
         /// Data column types
         /// </summary>
         public enum DataColumnTypeConstants
@@ -1144,11 +1149,11 @@ namespace DB_Schema_Export_Tool
 
             if (defaultOwnerSchema)
             {
-                cleanName = CleanNameForOS(dataExportParams.TargetTableName + "_Data");
+                cleanName = CleanNameForOS(dataExportParams.TargetTableName + TABLE_DATA_FILE_SUFFIX);
             }
             else
             {
-                cleanName = CleanNameForOS(dataExportParams.TargetTableNameWithSchema + "_Data");
+                cleanName = CleanNameForOS(dataExportParams.TargetTableNameWithSchema + TABLE_DATA_FILE_SUFFIX);
             }
 
             var suffix = tableInfo.FilterByDate
@@ -1276,7 +1281,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="columnMapInfo"></param>
         /// <param name="columnName"></param>
         /// <returns>Target column name</returns>
-        protected string GetTargetColumnName(ColumnMapInfo columnMapInfo, string columnName)
+        public string GetTargetColumnName(ColumnMapInfo columnMapInfo, string columnName)
         {
             var unusedDataColumnType = DataColumnTypeConstants.Numeric;
             return GetTargetColumnName(columnMapInfo, columnName, ref unusedDataColumnType);
@@ -2068,7 +2073,7 @@ namespace DB_Schema_Export_Tool
                 var nameFilters = new List<string>();
 
                 // Split on commas, but do not split if mOptions.ObjectNameFilter has square brackets
-                if (mOptions.ObjectNameFilter.IndexOfAny(new[] {'[', ']'}) >= 0)
+                if (mOptions.ObjectNameFilter.IndexOfAny(new[] { '[', ']' }) >= 0)
                 {
                     nameFilters.Add(mOptions.ObjectNameFilter);
                 }

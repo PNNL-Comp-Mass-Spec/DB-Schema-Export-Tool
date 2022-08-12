@@ -12,12 +12,12 @@ namespace DB_Schema_Export_Tool
     /// </summary>
     public class SchemaExportOptions
     {
-        // Ignore Spelling: Npgsql, PostgreSQL, psql, schemas, Svn, username
+        // Ignore Spelling: Npgsql, PostgreSQL, psql, schemas, stdin, Svn, username
 
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "July 29, 2022";
+        public const string PROGRAM_DATE = "August 11, 2022";
 
         /// <summary>
         /// Default output directory name prefix
@@ -135,8 +135,9 @@ namespace DB_Schema_Export_Tool
         /// </para>
         /// </summary>
         [Option("PgDump", "PgDumpData", HelpShowsDefault = false,
-            HelpText = "With SQL Server databases, dump table data using COPY commands instead of INSERT INTO statements\n" +
-                       "With PostgreSQL data, dump table data using pg_dump.exe and COPY commands")]
+            HelpText = "When true and exporting data from a SQL Server database, write table data using COPY commands (if PgInsert is false); " +
+                       "however, if PgInsert is true, use INSERT INTO statements using the syntax \"ON CONFLICT (key_column) DO UPDATE SET\"\n" +
+                       "When true and exporting data from a PostgreSQL database, dump table data using pg_dump.exe and COPY commands")]
         public bool PgDumpTableData { get; set; }
 
         /// <summary>
@@ -160,8 +161,10 @@ namespace DB_Schema_Export_Tool
         /// meaning table data will be exported via INSERT INTO statements using the syntax "ON CONFLICT (key_column) DO UPDATE SET"
         /// </summary>
         [Option("PgInsert", HelpShowsDefault = false,
-            HelpText = "With SQL Server databases, while reading the TableDataToExport.txt file, default the PgInsert column to true, " +
+            HelpText = "When true and exporting data from a SQL Server database, while reading the TableDataToExport.txt file, default the PgInsert column to true, " +
                        "meaning table data will be exported via INSERT INTO statements using the syntax \"ON CONFLICT (key_column) DO UPDATE SET\"\n" +
+                       "When false, if PgDump is true, export data using \"COPY t_table (column1, column2, column3) FROM stdin;\" followed by a list of tab-delimited rows of data, " +
+                       "otherwise, export data using SQL Server compatible INSERT INTO statements\n" +
                        "Ignored for PostgreSQL data")]
         public bool PgInsertTableData { get; set; }
 
@@ -431,7 +434,7 @@ namespace DB_Schema_Export_Tool
         /// Export data from every table in the database
         /// </summary>
         [Option("ExportAllData", "ExportAllTables", "AllData", HelpShowsDefault = false,
-            HelpText = "Export data from every table in the database\n" +
+            HelpText = "Export data from every table in the database, creating one file per table\n" +
                        "Will skip tables (and views) that have <skip> in the DataTables file\n" +
                        "Ignored if NoTableData is true")]
         public bool ExportAllData { get; set; }
@@ -455,6 +458,14 @@ namespace DB_Schema_Export_Tool
             }
             set => MaxRowsToExport = value;
         }
+
+        /// <summary>
+        /// When true, create files with commands to delete extra rows in each table
+        /// </summary>
+        [Option("DeleteExtraRows", "DeleteExtraRowsBeforeImport", HelpShowsDefault = false,
+            HelpText = "When true, create files with commands to delete extra rows in database tables (provided the table has 1-column based primary key)\n" +
+                       "If ScriptLoad is true, the shell script will use these files to delete extra rows prior to importing new data for each table")]
+        public bool DeleteExtraRowsBeforeImport { get; set; }
 
         /// <summary>
         /// When true, prevent any table data from being exported
@@ -750,7 +761,15 @@ namespace DB_Schema_Export_Tool
                     Console.WriteLine(" {0,-48} {1}", "Table data export tool:", "pg_dump");
                     Console.WriteLine(" {0,-48} {1}", "Keep the pg_dump output file, _AllObjects_.sql:", BoolToEnabledDisabled(KeepPgDumpFile));
                 }
-                Console.WriteLine(" {0,-48} {1}", "Dump table data as:", "PostgreSQL COPY commands");
+
+                if (!PostgreSQL && PgInsertTableData)
+                {
+                    Console.WriteLine(" {0,-48} {1}", "Dump table data as:", "PostgreSQL compatible INSERT INTO statements");
+                }
+                else
+                {
+                    Console.WriteLine(" {0,-48} {1}", "Dump table data as:", "PostgreSQL COPY commands");
+                }
             }
             else
             {
@@ -758,7 +777,11 @@ namespace DB_Schema_Export_Tool
                 {
                     Console.WriteLine(" {0,-48} {1}", "Table data export tool:", "Npgsql");
                 }
-                Console.WriteLine(" {0,-48} {1}", "Dump table data as:", "INSERT INTO statements");
+
+                Console.WriteLine(" {0,-48} {1}", "Dump table data as:",
+                    PgInsertTableData ?
+                        "PostgreSQL compatible INSERT INTO statements" :
+                        "SQL Server compatible INSERT INTO statements");
             }
 
             if (!string.IsNullOrWhiteSpace(TableDataToExportFile))
@@ -798,7 +821,7 @@ namespace DB_Schema_Export_Tool
 
             if (!string.IsNullOrWhiteSpace(TableDataColumnFilterFile))
             {
-                Console.WriteLine(" {0,-48} {1}", "File listing columns to skip when exporting data from tables:", PathUtils.CompactPathString(TableDataColumnFilterFile, 80));
+                Console.WriteLine(" {0,-48} {1}", "File with columns to skip when exporting data:", PathUtils.CompactPathString(TableDataColumnFilterFile, 80));
             }
 
             if (!string.IsNullOrWhiteSpace(TableDataDateFilterFile))
@@ -869,6 +892,8 @@ namespace DB_Schema_Export_Tool
                 {
                     Console.WriteLine(" {0,-48} {1}", "Include disable trigger commands:", BoolToEnabledDisabled(IncludeDisableTriggerCommands));
                 }
+
+                Console.WriteLine(" {0,-48} {1}", "Create commands to delete extra rows:", BoolToEnabledDisabled(DeleteExtraRowsBeforeImport));
             }
 
             if (NoSchema)
