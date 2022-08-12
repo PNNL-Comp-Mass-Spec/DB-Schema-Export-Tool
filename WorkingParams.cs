@@ -18,6 +18,7 @@ namespace DB_Schema_Export_Tool
 
         /// <summary>
         /// List of script file names (or relative paths) for loading data into a PostgreSQL database
+        /// Keys are the source table name, values are the script file names (or relative paths)
         /// </summary>
         /// <remarks>We use Linux-style path separators when storing relative paths</remarks>
         public List<string> DataLoadScriptFiles { get; }
@@ -80,10 +81,11 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Add a file to be included in the bash script for loading data into a PostgreSQL database
         /// </summary>
-        /// <param name="scriptFileName"></param>
-        public void AddDataLoadScriptFile(string scriptFileName)
+        /// <remarks>Will also include files for removing extra rows if DeleteExtraRowsBeforeImport is true</remarks>
+        /// <param name="relativeFilePath"></param>
+        public void AddDataLoadScriptFile(string relativeFilePath)
         {
-            DataLoadScriptFiles.Add(scriptFileName.Replace('\\', '/'));
+            DataLoadScriptFiles.Add(relativeFilePath.Replace('\\', '/'));
         }
 
         /// <summary>

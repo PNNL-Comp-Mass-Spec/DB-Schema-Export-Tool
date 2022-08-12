@@ -271,7 +271,7 @@ namespace DB_Schema_Export_Tool
 
                 if (!baseName.EndsWith(DBSchemaExporterBase.TABLE_DATA_FILE_SUFFIX))
                 {
-                    OnWarningEvent("Table data file base name, {0}, does not end in {1}; this is unexpected", baseName, DBSchemaExporterBase.TABLE_DATA_FILE_SUFFIX);
+                    OnWarningEvent("Table data file base name, {0}, does not end in {1}; this is indicates a programming error", baseName, DBSchemaExporterBase.TABLE_DATA_FILE_SUFFIX);
                     return false;
                 }
 

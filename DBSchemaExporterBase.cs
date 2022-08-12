@@ -47,7 +47,7 @@ namespace DB_Schema_Export_Tool
         public const string COMMENT_SCRIPT_DATE_TEXT = "Script Date: ";
 
         /// <summary>
-        /// Text to append to the end of files with export table data
+        /// Text to append to the end of file names with exported table data
         /// </summary>
         public const string TABLE_DATA_FILE_SUFFIX = "_Data";
 
@@ -693,6 +693,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Create a bash script for loading data into a PostgreSQL database
         /// </summary>
+        /// <remarks>If table data export order file was provided, tables will have been added to workingParams.DataLoadScriptFiles in the specified order</remarks>
         /// <param name="workingParams"></param>
         /// <param name="tablesToExportData"></param>
         private void CreateDataLoadScriptFile(WorkingParams workingParams, IEnumerable<TableDataExportInfo> tablesToExportData)
@@ -734,15 +735,17 @@ namespace DB_Schema_Export_Tool
             writer.WriteLine();
             writer.WriteLine("mkdir -p Done");
 
+            var sortedScriptFiles = GetSortedDataLoadScriptFiles(workingParams);
+
             var subdirectories = new SortedSet<string>();
 
-            foreach (var scriptFileName in workingParams.DataLoadScriptFiles)
+            foreach (var relativePath in sortedScriptFiles)
             {
-                var lastSlashIndex = scriptFileName.LastIndexOf('/');
+                var lastSlashIndex = relativePath.LastIndexOf('/');
 
                 if (lastSlashIndex > 0)
                 {
-                    var parentDirectory = scriptFileName.Substring(0, lastSlashIndex);
+                    var parentDirectory = relativePath.Substring(0, lastSlashIndex);
 
                     if (!subdirectories.Contains(parentDirectory))
                     {
@@ -754,16 +757,16 @@ namespace DB_Schema_Export_Tool
                 }
 
                 writer.WriteLine();
-                writer.WriteLine("echo Processing {0} | tee -a {1}", scriptFileName, dataImportLogFile);
+                writer.WriteLine("echo Processing {0} | tee -a {1}", relativePath, dataImportLogFile);
 
                 // The following uses 2>&1 to redirect standard error to standard output
                 // This is required to allow tee to store error messages to the text file
-                writer.WriteLine("psql -d dms -h localhost -U {0} -f {1} 2>&1 | tee -a {2}", currentUser, scriptFileName, dataImportLogFile);
+                writer.WriteLine("psql -d dms -h localhost -U {0} -f {1} 2>&1 | tee -a {2}", currentUser, relativePath, dataImportLogFile);
 
-                var targetFilePath = "Done/" + scriptFileName;
+                var targetFilePath = "Done/" + relativePath;
 
                 writer.WriteLine("test -f {0} && rm {0}", targetFilePath);
-                writer.WriteLine("mv {0} {1} && echo '   ... moved to {1}' | tee -a {2}", scriptFileName, targetFilePath, dataImportLogFile);
+                writer.WriteLine("mv {0} {1} && echo '   ... moved to {1}' | tee -a {2}", relativePath, targetFilePath, dataImportLogFile);
                 writer.WriteLine("sleep 0.33");
                 writer.WriteLine("echo ''");
             }
@@ -778,6 +781,35 @@ namespace DB_Schema_Export_Tool
             writer.WriteLine("else");
             writer.WriteLine("    grep -i \"error\" {0}", dataImportLogFile);
             writer.WriteLine("fi");
+        }
+
+        /// <summary>
+        /// If option DeleteExtraRows was enabled, workingParams.DataLoadScriptFiles will have a mix of scripts to remove extra rows and to load new data
+        /// This method extracts the remove data scripts, reverses their order, then appends the load data scripts to the end
+        /// The reason for this is to remove data from tables in the reverse order specified by the table data export order file
+        /// </summary>
+        /// <param name="workingParams"></param>
+        /// <returns>List of non-interleaved relative file paths</returns>
+        private List<string> GetSortedDataLoadScriptFiles(WorkingParams workingParams)
+        {
+            var dataLoadScriptFiles = new List<string>();
+            var removeExtrasScriptFiles = new List<string>();
+
+            foreach (var relativePath in workingParams.DataLoadScriptFiles)
+            {
+                if (relativePath.EndsWith(DELETE_EXTRA_ROWS_FILE_SUFFIX))
+                    removeExtrasScriptFiles.Add(relativePath);
+                else
+                    dataLoadScriptFiles.Add(relativePath);
+            }
+
+            removeExtrasScriptFiles.Reverse();
+
+            var sortedScriptFiles = new List<string>();
+            sortedScriptFiles.AddRange(removeExtrasScriptFiles);
+            sortedScriptFiles.AddRange(dataLoadScriptFiles);
+
+            return sortedScriptFiles;
         }
 
         /// <summary>
