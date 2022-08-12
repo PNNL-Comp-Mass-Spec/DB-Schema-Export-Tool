@@ -556,12 +556,17 @@ namespace DB_Schema_Export_Tool
                         var itemsAppended = 0;
                         while (itemsAppended < currentList.Count)
                         {
+                            if (itemsAppended > 0)
+                                writer.WriteLine(",");
+
                             var delimitedList = GetCommaSeparatedList(currentList.Skip(itemsAppended).Take(itemsPerRow), textDataType, pgInsertEnabled);
 
-                            writer.WriteLine("-- {0}", delimitedList);
+                            writer.Write("-- {0}", delimitedList);
 
                             itemsAppended += itemsPerRow;
                         }
+
+                        writer.WriteLine();
 
                         writer.WriteLine("-- );");
 
@@ -586,12 +591,16 @@ namespace DB_Schema_Export_Tool
                     var itemsWritten = 0;
                     while (itemsWritten < currentList.Count)
                     {
+                        if (itemsWritten > 0)
+                            writer.WriteLine(",");
+
                         var delimitedList = GetCommaSeparatedList(currentList.Skip(itemsWritten).Take(itemsPerRow), textDataType, pgInsertEnabled);
-                        writer.WriteLine(delimitedList);
+                        writer.Write(delimitedList);
 
                         itemsWritten += itemsPerRow;
                     }
 
+                    writer.WriteLine();
                     writer.WriteLine("                         )");
                     writer.WriteLine("                  );");
                     writer.WriteLine();
