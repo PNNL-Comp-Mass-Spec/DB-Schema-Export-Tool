@@ -53,11 +53,11 @@
     <Compile Include="ColumnMapInfo.cs" />
     <Compile Include="DatabaseObjectInfo.cs" />
     <Compile Include="DatabaseScriptingOptions.cs" />
+    <Compile Include="DataExportWorkingParams.cs" />
     <Compile Include="DBSchemaExporterBase.cs" />
     <Compile Include="DBSchemaExporterPostgreSQL.cs" />
     <Compile Include="DBSchemaExporterSQLServer.cs" />
     <Compile Include="DBSchemaExportTool.cs" />
-    <Compile Include="DataExportWorkingParams.cs" />
     <Compile Include="DBSchemaUpdater.cs" />
     <Compile Include="DeleteExtraDataRowsScripter.cs" />
     <Compile Include="GlobalSuppressions.cs" />
