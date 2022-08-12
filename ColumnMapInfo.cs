@@ -53,6 +53,23 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
+        /// Look for the column name in the column name map dictionary's values and return the original (source) column name if found
+        /// If not found, return the provided column name
+        /// </summary>
+        /// <param name="columnName"></param>
+        /// <returns>Source column name if in the name map dictionary, otherwise the provided column name</returns>
+        public string GetSourceColumnName(string columnName)
+        {
+            foreach (var item in mColumnNameMap)
+            {
+                if (item.Value.Equals(columnName))
+                    return item.Key;
+            }
+
+            return columnName;
+        }
+
+        /// <summary>
         /// Get the target column name for the given column
         /// </summary>
         /// <param name="sourceColumnName">Source column name</param>

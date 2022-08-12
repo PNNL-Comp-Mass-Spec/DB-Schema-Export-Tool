@@ -1211,6 +1211,21 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
+        /// Get the expected name of the column in the source database;
+        /// does not try to reverse engineer a snake-cased name
+        /// </summary>
+        /// <param name="columnMapInfo"></param>
+        /// <param name="currentColumnName"></param>
+        /// <returns>Source DB column name</returns>
+        protected string GetSourceColumnName(ColumnMapInfo columnMapInfo, string currentColumnName)
+        {
+            if (columnMapInfo == null)
+                return currentColumnName;
+
+            return columnMapInfo.GetSourceColumnName(currentColumnName);
+        }
+
+        /// <summary>
         /// Get a FileInfo object for table data
         /// </summary>
         /// <param name="tableInfo"></param>
