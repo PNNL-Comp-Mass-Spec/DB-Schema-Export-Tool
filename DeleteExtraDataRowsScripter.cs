@@ -4,8 +4,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
-using TableNameMapContainer;
 using System.Text;
+using TableNameMapContainer;
 
 namespace DB_Schema_Export_Tool
 {
@@ -758,7 +758,8 @@ namespace DB_Schema_Export_Tool
                 systemType == Type.GetType("System.Char") ||
                 systemType == Type.GetType("System.Decimal") ||
                 systemType == Type.GetType("System.Single") ||
-                systemType == Type.GetType("System.Double"))
+                systemType == Type.GetType("System.Double") ||
+                systemType == Type.GetType("System.String"))
             {
                 return true;
             }
