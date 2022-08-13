@@ -52,9 +52,14 @@ namespace DB_Schema_Export_Tool
         public const string TABLE_DATA_FILE_SUFFIX = "_Data";
 
         /// <summary>
-        /// Text to append to the end of file names with commands to remove extra rows from target tables
+        /// Text to append to the end of file names with commands to remove extra rows from the target table
         /// </summary>
         public const string DELETE_EXTRA_ROWS_FILE_SUFFIX = "_DeleteExtraRows.sql";
+
+        /// <summary>
+        /// Text to append to the end of file names with a command to truncate target table data
+        /// </summary>
+        public const string DELETE_ALL_ROWS_FILE_SUFFIX = "_DeleteAllRows.sql";
 
         /// <summary>
         /// Data column types
@@ -864,8 +869,8 @@ namespace DB_Schema_Export_Tool
 
         /// <summary>
         /// If option DeleteExtraRows was enabled, workingParams.DataLoadScriptFiles will have a mix of scripts to remove extra rows and to load new data
-        /// This method extracts the remove data scripts, reverses their order, then appends the load data scripts to the end
-        /// The reason for this is to remove data from tables in the reverse order specified by the table data export order file
+        /// This method extracts the delete extra data scripts, reverses their order, then appends the load data scripts to the end
+        /// The reason for this is to delete extra rows from tables in the reverse order specified by the table data export order file
         /// </summary>
         /// <param name="workingParams"></param>
         /// <returns>List of non-interleaved relative file paths</returns>
@@ -876,7 +881,7 @@ namespace DB_Schema_Export_Tool
 
             foreach (var relativePath in workingParams.DataLoadScriptFiles)
             {
-                if (relativePath.EndsWith(DELETE_EXTRA_ROWS_FILE_SUFFIX))
+                if (relativePath.EndsWith(DELETE_EXTRA_ROWS_FILE_SUFFIX) || relativePath.EndsWith(DELETE_ALL_ROWS_FILE_SUFFIX))
                     removeExtrasScriptFiles.Add(relativePath);
                 else
                     dataLoadScriptFiles.Add(relativePath);

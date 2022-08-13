@@ -44,6 +44,11 @@ namespace DB_Schema_Export_Tool
         public SortedSet<string> DatabasesToProcess { get; }
 
         /// <summary>
+        /// List of tables to truncate when removing extra data rows prior to importing new data
+        /// </summary>
+        public SortedSet<string> DataLoadTruncateTableList { get; }
+
+        /// <summary>
         /// List of tables to limit the processing to
         /// </summary>
         /// <remarks>
@@ -468,6 +473,37 @@ namespace DB_Schema_Export_Tool
         public bool DeleteExtraRowsBeforeImport { get; set; }
 
         /// <summary>
+        /// Table name (or comma separated list of names) to restrict table export operations
+        /// </summary>
+        [Option("ForceTruncateTableList", "ForceTruncate", HelpShowsDefault = false,
+            HelpText = "Table name (or comma separated list of names) to truncate when deleting extra rows prior to loading new data\n" +
+                       "This is useful for large tables where the default DELETE FROM queries run very slowly\n" +
+                       "This parameter does not support reading names from a file; it only supports actual table names\n" +
+                       "Ignored if DeleteExtraRows is False")]
+        public string ForceTruncateTableList
+        {
+            get => DataLoadTruncateTableList.Count == 0 ? string.Empty : string.Join(", ", DataLoadTruncateTableList);
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    DataLoadTruncateTableList.Clear();
+                    return;
+                }
+
+                foreach (var tableName in value.Split(','))
+                {
+                    var trimmedName = tableName.Trim();
+
+                    if (!DataLoadTruncateTableList.Contains(trimmedName))
+                    {
+                        DataLoadTruncateTableList.Add(trimmedName);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// When true, prevent any table data from being exported
         /// </summary>
         [Option("NoTableData", "NoData", HelpShowsDefault = false,
@@ -656,6 +692,7 @@ namespace DB_Schema_Export_Tool
             OutputDirectoryPath = ".";
 
             DatabasesToProcess = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+            DataLoadTruncateTableList = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
             TableNameFilterSet = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
             SchemaNameSkipList = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -955,6 +992,11 @@ namespace DB_Schema_Export_Tool
                 }
 
                 Console.WriteLine(" {0,-48} {1}", "Create commands to delete extra rows:", BoolToEnabledDisabled(DeleteExtraRowsBeforeImport));
+
+                if (DeleteExtraRowsBeforeImport && DataLoadTruncateTableList.Count > 0)
+                {
+                    Console.WriteLine(" {0,-48} {1}", "Truncate when removing extra rows:", ForceTruncateTableList);
+                }
             }
 
             if (NoSchema)

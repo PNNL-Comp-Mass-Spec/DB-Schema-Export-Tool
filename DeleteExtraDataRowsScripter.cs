@@ -35,6 +35,33 @@ namespace DB_Schema_Export_Tool
             mOptions = options;
         }
 
+        /// <summary>
+        /// Create a SQL script to truncate data in a table
+        /// </summary>
+        /// <param name="dataExportParams"></param>
+        /// <param name="deleteExtrasFile"></param>
+        /// <returns>True if successful, false if an error</returns>
+        private bool CreateTruncateTableScriptFile(DataExportWorkingParams dataExportParams, FileSystemInfo deleteExtrasFile)
+        {
+            try
+            {
+                ShowDeleteExtrasFilePath(deleteExtrasFile);
+
+                using var writer = new StreamWriter(new FileStream(deleteExtrasFile.FullName, FileMode.Create, FileAccess.Write, FileShare.Read));
+
+                writer.WriteLine("-- Remove all rows from table {0}", dataExportParams.TargetTableNameWithSchema);
+                writer.WriteLine();
+
+                writer.WriteLine("TRUNCATE TABLE {0};", dataExportParams.QuotedTargetTableNameWithSchema);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                OnErrorEvent(string.Format("Error in CreateTruncateTableScriptFile for table {0}", dataExportParams.SourceTableNameWithSchema), ex);
+                return false;
+            }
+        }
 
         /// <summary>
         /// Create a file with commands to delete extra rows from the target table, filtering using the primary key column(s)
@@ -110,6 +137,13 @@ namespace DB_Schema_Export_Tool
                     return false;
                 }
 
+                var truncateTableData =
+                    mOptions.DataLoadTruncateTableList.Contains(tableInfo.SourceTableName) ||
+                    mOptions.DataLoadTruncateTableList.Contains(tableInfo.TargetSchemaName);
+
+                var fileSuffix = truncateTableData
+                    ? DBSchemaExporterBase.DELETE_ALL_ROWS_FILE_SUFFIX
+                    : DBSchemaExporterBase.DELETE_EXTRA_ROWS_FILE_SUFFIX;
 
                 var outputFileName = baseName.Substring(0, baseName.Length - DBSchemaExporterBase.TABLE_DATA_FILE_SUFFIX.Length) + fileSuffix;
 
@@ -148,7 +182,15 @@ namespace DB_Schema_Export_Tool
 
                 bool success;
 
+                // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
+                if (truncateTableData)
+                {
+                    success = CreateTruncateTableScriptFile(dataExportParams, deleteExtrasFile);
+                }
+                else
+                {
                     success = DeleteExtraRowsUsingPrimaryKey(tableInfo, columnMapInfo, dataExportParams, workingParams, queryResults, deleteExtrasFile);
+                }
 
                 if (!success || !mOptions.ScriptPgLoadCommands)
                     return success;
