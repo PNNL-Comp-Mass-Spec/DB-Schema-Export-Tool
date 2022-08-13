@@ -17,7 +17,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "August 12, 2022";
+        public const string PROGRAM_DATE = "August 13, 2022";
 
         /// <summary>
         /// Default output directory name prefix
@@ -659,6 +659,28 @@ namespace DB_Schema_Export_Tool
         public string LogDirectoryPath { get; set; }
 
         /// <summary>
+        /// When true, log memory usage to a file while exporting data from tables
+        /// </summary>
+        [Option("DataExportLogMemoryUsage", "LogMemoryUsage", HelpShowsDefault = false, SecondaryArg = true,
+            HelpText = "Log memory usage to a file while exporting data from tables; the file will auto-named using the current date and time")]
+        public bool DataExportLogMemoryUsage { get; set; }
+
+        /// <summary>
+        /// File for logging memory usage during data export
+        /// </summary>
+        private FileInfo MemoryUsageLogFile { get; set; }
+
+        /// <summary>
+        /// Total memory on the system, in MB
+        /// </summary>
+        public float SystemMemoryMB { get; }
+
+        /// <summary>
+        /// System memory usage at the start of the program, in MB
+        /// </summary>
+        public float SystemMemoryUsageAtStart { get; }
+
+        /// <summary>
         /// When true, display a count of the number of database objects that would be exported
         /// </summary>
         [Option("Preview", HelpShowsDefault = false,
@@ -736,6 +758,11 @@ namespace DB_Schema_Export_Tool
             LogMessagesToFile = false;
             LogFileBaseName = string.Empty;
             LogDirectoryPath = string.Empty;
+
+            SystemMemoryMB = SystemInfo.GetTotalMemoryMB();
+
+            // Determine the current memory usage, in MB
+            SystemMemoryUsageAtStart = SystemMemoryMB - SystemInfo.GetFreeMemoryMB();
         }
 
         /// <summary>
@@ -766,6 +793,25 @@ namespace DB_Schema_Export_Tool
             var logDirectoryPath = string.IsNullOrWhiteSpace(options.LogDirectoryPath) ? "." : options.LogDirectoryPath;
             var baseLogFileName = string.IsNullOrWhiteSpace(options.LogFileBaseName) ? defaultBaseLogFileName : options.LogFileBaseName;
             return Path.Combine(logDirectoryPath, baseLogFileName);
+        }
+
+        /// <summary>
+        /// Construct the auto-generated filename for logging memory usage and store in <see cref="MemoryUsageLogFile"/>
+        /// </summary>
+        public string GetMemoryUsageLogFilePath()
+        {
+            if (MemoryUsageLogFile != null)
+            {
+                return MemoryUsageLogFile.FullName;
+            }
+
+            var memoryUsageLogFileName = string.Format("MemoryUsage_{0:yyyy-MM-dd_HH_mm_ss}.txt", DateTime.Now);
+
+            var logDirectory = string.IsNullOrWhiteSpace(LogDirectoryPath) ? string.Empty : LogDirectoryPath;
+
+            MemoryUsageLogFile = new FileInfo(Path.Combine(logDirectory, memoryUsageLogFileName));
+
+            return MemoryUsageLogFile.FullName;
         }
 
         /// <summary>
@@ -1076,6 +1122,11 @@ namespace DB_Schema_Export_Tool
                         Console.WriteLine(" {0,-48} {1}", "Value for log_min_duration_statement after load:", StatementLoggingMinDurationAfterLoad);
                     }
                 }
+            }
+
+            if (DataExportLogMemoryUsage && !DisableDataExport)
+            {
+                Console.WriteLine(" {0,-48} {1}", "Data export memory usage log file: ", PathUtils.CompactPathString(GetMemoryUsageLogFilePath(), 80));
             }
 
             if (LogMessagesToFile)

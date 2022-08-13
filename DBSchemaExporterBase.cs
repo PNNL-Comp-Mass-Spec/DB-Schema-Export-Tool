@@ -819,7 +819,6 @@ namespace DB_Schema_Export_Tool
                 writer.WriteLine();
             }
 
-
             // Show error messages in the data import log file
             // Use ag (The Silver Searcher) if it exists, otherwise use grep
 
@@ -977,6 +976,25 @@ namespace DB_Schema_Export_Tool
                     tablesToExportOrdered.Add(new KeyValuePair<TableDataExportInfo, long>(item.Key, item.Value));
                 }
 
+                StreamWriter memoryLogger;
+                if (mOptions.DataExportLogMemoryUsage)
+                {
+                    var memoryUsageLogFilePath = mOptions.GetMemoryUsageLogFilePath();
+
+                    memoryLogger = new StreamWriter(new FileStream(memoryUsageLogFilePath, FileMode.Create, FileAccess.Write, FileShare.Read))
+                    {
+                        AutoFlush = true
+                    };
+
+                    memoryLogger.WriteLine("{0}\t{1}\t{2}\t{3}", "Table", "Elapsed Time (sec)", "Memory Usage (MB)", "Memory Usage (GB)");
+                }
+                else
+                {
+                    memoryLogger = null;
+                }
+
+                var startTime = DateTime.UtcNow;
+
                 foreach (var tableItem in tablesToExportOrdered)
                 {
                     var tableInfo = tableItem.Key;
@@ -998,6 +1016,16 @@ namespace DB_Schema_Export_Tool
                         OnWarningEvent("Aborted processing");
                         return true;
                     }
+
+                    if (!mOptions.DataExportLogMemoryUsage)
+                        continue;
+
+                    var elapsedTime = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
+
+                    // ReSharper disable once InconsistentNaming
+                    var memoryUsageMB = mOptions.SystemMemoryMB - SystemInfo.GetFreeMemoryMB() - mOptions.SystemMemoryUsageAtStart;
+
+                    memoryLogger?.WriteLine("{0}\t{1:0.0}\t{2:0}\t{3:0.00}", tableInfo.SourceTableName, elapsedTime, memoryUsageMB, memoryUsageMB / 1024);
                 }
 
                 if (mOptions.ScriptPgLoadCommands)
@@ -1773,7 +1801,12 @@ namespace DB_Schema_Export_Tool
                     {
                         currentDB = currentDbName;
                         OnDebugEvent(tasksToPerform + " from database " + currentDbName);
-                        success = ExportDBObjectsAndTableData(currentDbName, tablesForDataExport, tableDataExportOrder, out var databaseNotFound, out var workingParams);
+                        success = ExportDBObjectsAndTableData(
+                            currentDbName,
+                            tablesForDataExport,
+                            tableDataExportOrder,
+                            out var databaseNotFound,
+                            out var workingParams);
 
                         if (!warningsByDatabase.ContainsKey(currentDB))
                         {
