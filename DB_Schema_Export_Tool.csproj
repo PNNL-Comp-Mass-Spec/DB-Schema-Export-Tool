@@ -70,6 +70,7 @@
     <Compile Include="GlobalSuppressions2.cs" />
     <Compile Include="GlobalSuppressionsGUI.cs" />
     <Compile Include="LoggerBase.cs" />
+    <Compile Include="PgStatementLogControlFiles.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProgramRunner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -520,6 +520,23 @@ namespace DB_Schema_Export_Tool
         public int ScriptPort { get; set; }
 
         /// <summary>
+        /// Optionally stop PostgreSQL from logging long queries
+        /// </summary>
+        [Option("DisableStatementLogging", HelpShowsDefault = true,
+            HelpText = "When true, change the PostgreSQL server setting 'log_min_duration_statement' to -1 prior to loading data (the user must be a superuser);\n" +
+                       "this will stop the server logging long queries to the log file, which is important when populating large tables\n" +
+                       "After data loading is complete, the value for 'log_min_duration_statement' will be set to 5000 (adjustable using MinLogDurationAfterLoad)")]
+        public bool DisableStatementLogging { get; set; }
+
+        /// <summary>
+        /// Query length to use when re-enabled PostgreSQL logging long queries
+        /// </summary>
+        [Option("MinLogDurationAfterLoad", "MinLogDuration", HelpShowsDefault = true,
+            HelpText = "Value to use for 'log_min_duration_statement' after data loading is complete;\n" +
+                       "Use -1 to disable logging, 0 to log all statements and their durations, or > 0 to log statements running at least this number of milliseconds")]
+        public int StatementLoggingMinDurationAfterLoad { get; set; }
+
+        /// <summary>
         /// Auto-change column names from Upper_Case and UpperCase to lower_case when exporting table data
         /// </summary>
         [Option("SnakeCase", HelpShowsDefault = false,
@@ -673,6 +690,9 @@ namespace DB_Schema_Export_Tool
             ScriptDB = "dms";
             ScriptHost = "localhost";
             ScriptPort = DBSchemaExporterPostgreSQL.DEFAULT_PORT;
+
+            DisableStatementLogging = true;
+            StatementLoggingMinDurationAfterLoad = 5000;
 
             ScriptingOptions = new DatabaseScriptingOptions();
 

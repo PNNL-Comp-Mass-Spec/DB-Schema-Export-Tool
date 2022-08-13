@@ -62,6 +62,7 @@
     <Compile Include="DeleteExtraDataRowsScripter.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="LoggerBase.cs" />
+    <Compile Include="PgStatementLogControlFiles.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProgramRunner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

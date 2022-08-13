@@ -741,8 +741,29 @@ namespace DB_Schema_Export_Tool
 
             writer.WriteLine();
             writer.WriteLine("mkdir -p Done");
+            writer.WriteLine();
 
             var sortedScriptFiles = GetSortedDataLoadScriptFiles(workingParams);
+
+            var statementLogControlFiles = new PgStatementLogControlFiles(workingParams.OutputDirectoryPathCurrentDB);
+
+            var updatePgStatementLogDuration = sortedScriptFiles.Count > 0 && mOptions.DisableStatementLogging;
+
+            if (updatePgStatementLogDuration)
+            {
+                CreateStatementLogControlFiles(statementLogControlFiles);
+
+                writer.WriteLine(
+                    "echo Changing PostgreSQL setting log_min_duration_statement to {0} on {1} | tee -a {2}",
+                    -1, dbHost, dataImportLogFile);
+
+                writer.WriteLine("echo ''");
+                writer.WriteLine();
+
+                writer.WriteLine(psqlFormatString, dbName, dbHost, dbUser, dbPort, Path.GetFileName(statementLogControlFiles.DisablePgStatementLogging), dataImportLogFile);
+                writer.WriteLine("sleep 1");
+                writer.WriteLine(psqlFormatString, dbName, dbHost, dbUser, dbPort, Path.GetFileName(statementLogControlFiles.ShowLogMinDurationValue), dataImportLogFile);
+            }
 
             var subdirectories = new SortedSet<string>();
 
@@ -778,6 +799,22 @@ namespace DB_Schema_Export_Tool
 
             writer.WriteLine();
 
+            if (updatePgStatementLogDuration)
+            {
+                writer.WriteLine(
+                    "echo Changing PostgreSQL setting log_min_duration_statement to {0} on {1} | tee -a {2}",
+                    mOptions.StatementLoggingMinDurationAfterLoad, dbHost, dataImportLogFile);
+
+                writer.WriteLine("echo ''");
+                writer.WriteLine();
+
+                writer.WriteLine(psqlFormatString, dbName, dbHost, dbUser, dbPort, Path.GetFileName(statementLogControlFiles.EnablePgStatementLogging), dataImportLogFile);
+                writer.WriteLine("sleep 1");
+                writer.WriteLine(psqlFormatString, dbName, dbHost, dbUser, dbPort, Path.GetFileName(statementLogControlFiles.ShowLogMinDurationValue), dataImportLogFile);
+                writer.WriteLine();
+            }
+
+
             // Show error messages in the data import log file
             // Use ag (The Silver Searcher) if it exists, otherwise use grep
 
@@ -786,6 +823,43 @@ namespace DB_Schema_Export_Tool
             writer.WriteLine("else");
             writer.WriteLine("    grep -i \"error\" {0}", dataImportLogFile);
             writer.WriteLine("fi");
+        }
+
+        /// <summary>
+        /// Create SQL files for changing PostgreSQL setting 'log_min_duration_statement'
+        /// </summary>
+        /// <param name="statementLogControlFiles"></param>
+        private void CreateStatementLogControlFiles(PgStatementLogControlFiles statementLogControlFiles)
+        {
+            using (var writer = new StreamWriter(new FileStream(statementLogControlFiles.DisablePgStatementLogging, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
+            {
+                writer.WriteLine("-- Show the current setting");
+                writer.WriteLine("select setting \"log_min_duration_statement (msec), original value\" from pg_settings where name = 'log_min_duration_statement';");
+                writer.WriteLine();
+                writer.WriteLine("-- Disable logging long queries");
+                writer.WriteLine("alter system set log_min_duration_statement = -1;");
+                writer.WriteLine();
+                writer.WriteLine("-- Apply the changes");
+                writer.WriteLine("select pg_reload_conf();");
+
+                // Ideally we would now use a query to show the new value for the setting, but the change does not take place immediately
+                // Therefore, the bash script will sleep for one second, then show the value for the setting
+            }
+
+            using (var writer = new StreamWriter(new FileStream(statementLogControlFiles.EnablePgStatementLogging, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
+            {
+                writer.WriteLine("-- Re-enable logging long queries");
+                writer.WriteLine("alter system set log_min_duration_statement = {0};", mOptions.StatementLoggingMinDurationAfterLoad);
+                writer.WriteLine();
+                writer.WriteLine("-- Apply the changes");
+                writer.WriteLine("select pg_reload_conf();");
+            }
+
+            using (var writer = new StreamWriter(new FileStream(statementLogControlFiles.ShowLogMinDurationValue, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
+            {
+                writer.WriteLine("-- Show the current value of the log_min_duration_statement setting ");
+                writer.WriteLine("select setting as \"log_min_duration_statement (msec), new value\" from pg_settings where name = 'log_min_duration_statement';");
+            }
         }
 
         /// <summary>
