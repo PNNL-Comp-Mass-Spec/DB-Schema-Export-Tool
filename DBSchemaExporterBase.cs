@@ -1338,12 +1338,10 @@ namespace DB_Schema_Export_Tool
         /// <param name="columnMapInfo"></param>
         /// <param name="currentColumnName"></param>
         /// <returns>Source DB column name</returns>
+        // ReSharper disable once UnusedMember.Global
         protected string GetSourceColumnName(ColumnMapInfo columnMapInfo, string currentColumnName)
         {
-            if (columnMapInfo == null)
-                return currentColumnName;
-
-            return columnMapInfo.GetSourceColumnName(currentColumnName);
+            return columnMapInfo == null ? currentColumnName : columnMapInfo.GetSourceColumnName(currentColumnName);
         }
 
         /// <summary>
