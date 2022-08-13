@@ -2,8 +2,6 @@ SourceTableName	SourceColumnName	TargetColumnName
 T_MgrTypes	mt_typeid	mgr_type_id
 T_MgrTypes	mt_typename	mgr_type_name
 T_MgrTypes	mt_active	mgr_type_active
-T_MgrType_ParamType_Map	MgrTypeID	mgr_type_id
-T_MgrType_ParamType_Map	ParamTypeID	param_type_id
 T_Mgrs	M_ID	mgr_id
 T_Mgrs	M_Name	mgr_name
 T_Mgrs	M_TypeID	mgr_type_id
