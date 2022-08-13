@@ -17,7 +17,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "August 11, 2022";
+        public const string PROGRAM_DATE = "August 12, 2022";
 
         /// <summary>
         /// Default output directory name prefix
@@ -807,57 +807,61 @@ namespace DB_Schema_Export_Tool
                 Console.WriteLine(" Will not create a subdirectory for each database");
             }
 
-            if (PgDumpTableData)
+            if (!DisableDataExport)
             {
-                if (PostgreSQL)
+                if (PgDumpTableData)
                 {
-                    Console.WriteLine(" {0,-48} {1}", "Table data export tool:", "pg_dump");
-                    Console.WriteLine(" {0,-48} {1}", "Keep the pg_dump output file, _AllObjects_.sql:", BoolToEnabledDisabled(KeepPgDumpFile));
-                }
+                    Console.WriteLine();
+                    if (PostgreSQL)
+                    {
+                        Console.WriteLine(" {0,-48} {1}", "Table data export tool:", "pg_dump");
+                        Console.WriteLine(" {0,-48} {1}", "Keep the pg_dump output file, _AllObjects_.sql:", BoolToEnabledDisabled(KeepPgDumpFile));
+                    }
 
-                if (!PostgreSQL && PgInsertTableData)
-                {
-                    Console.WriteLine(" {0,-48} {1}", "Dump table data as:", "PostgreSQL compatible INSERT INTO statements");
+                    if (!PostgreSQL && PgInsertTableData)
+                    {
+                        Console.WriteLine(" {0,-48} {1}", "Dump table data as:", "PostgreSQL compatible INSERT INTO statements");
+                    }
+                    else
+                    {
+                        Console.WriteLine(" {0,-48} {1}", "Dump table data as:", "PostgreSQL COPY commands");
+                    }
                 }
                 else
                 {
-                    Console.WriteLine(" {0,-48} {1}", "Dump table data as:", "PostgreSQL COPY commands");
+                    if (PostgreSQL)
+                    {
+                        Console.WriteLine(" {0,-48} {1}", "Table data export tool:", "Npgsql");
+                    }
+
+                    Console.WriteLine(" {0,-48} {1}", "Dump table data as:",
+                        PgInsertTableData ? "PostgreSQL compatible INSERT INTO statements" : "SQL Server compatible INSERT INTO statements");
                 }
-            }
-            else
-            {
-                if (PostgreSQL)
+
+                if (!string.IsNullOrWhiteSpace(TableDataToExportFile))
                 {
-                    Console.WriteLine(" {0,-48} {1}", "Table data export tool:", "Npgsql");
+                    Console.WriteLine(" {0,-48} {1}", "File with table names for exporting data:",
+                        PathUtils.CompactPathString(TableDataToExportFile, 80));
+
+                    if (!PostgreSQL)
+                    {
+                        Console.WriteLine(" {0,-48} {1}", "Default value for the PgInsert column:", PgInsertTableData);
+                        Console.WriteLine(" {0,-48} {1}", "PgInsert chunk size:", PgInsertChunkSize);
+                    }
                 }
 
-                Console.WriteLine(" {0,-48} {1}", "Dump table data as:",
-                    PgInsertTableData ?
-                        "PostgreSQL compatible INSERT INTO statements" :
-                        "SQL Server compatible INSERT INTO statements");
-            }
-
-            if (!string.IsNullOrWhiteSpace(TableDataToExportFile))
-            {
-                Console.WriteLine(" {0,-48} {1}", "File with table names for exporting data:", PathUtils.CompactPathString(TableDataToExportFile, 80));
-
-                if (!PostgreSQL)
+                if (!string.IsNullOrWhiteSpace(TableDataExportOrderFile))
                 {
-                    Console.WriteLine(" {0,-48} {1}", "Default value for the PgInsert column:", PgInsertTableData);
-                    Console.WriteLine(" {0,-48} {1}", "PgInsert chunk size:", PgInsertChunkSize);
+                    Console.WriteLine(" {0,-48} {1}", "File defining table data export order:",
+                        PathUtils.CompactPathString(TableDataExportOrderFile, 80));
                 }
-            }
-
-            if (!string.IsNullOrWhiteSpace(TableDataExportOrderFile))
-            {
-                Console.WriteLine(" {0,-48} {1}", "File defining table data export order:", PathUtils.CompactPathString(TableDataExportOrderFile, 80));
             }
 
             if (TableNameFilterSet.Count > 0)
             {
                 Console.WriteLine(" {0,-48} {1}",
-                                  TableNameFilterSet.Count > 1 ? "List of tables to process:" : "Single table to process:",
-                                  TableNameFilterList);
+                    TableNameFilterSet.Count > 1 ? "List of tables to process:" : "Single table to process:",
+                    TableNameFilterList);
             }
 
             if (SchemaNameSkipList.Count > 0)
@@ -867,19 +871,23 @@ namespace DB_Schema_Export_Tool
                     SchemaSkipList);
             }
 
-            if (!string.IsNullOrWhiteSpace(TableDataColumnMapFile))
+            if (!DisableDataExport)
             {
-                Console.WriteLine(" {0,-48} {1}", "File with source/target column names:", PathUtils.CompactPathString(TableDataColumnMapFile, 80));
-            }
+                if (!string.IsNullOrWhiteSpace(TableDataColumnMapFile))
+                {
+                    Console.WriteLine(" {0,-48} {1}", "File with source/target column names:", PathUtils.CompactPathString(TableDataColumnMapFile, 80));
+                }
 
-            if (!string.IsNullOrWhiteSpace(TableDataColumnFilterFile))
-            {
-                Console.WriteLine(" {0,-48} {1}", "File with columns to skip when exporting data:", PathUtils.CompactPathString(TableDataColumnFilterFile, 80));
-            }
+                if (!string.IsNullOrWhiteSpace(TableDataColumnFilterFile))
+                {
+                    Console.WriteLine(" {0,-48} {1}", "File with columns to skip when exporting data:",
+                        PathUtils.CompactPathString(TableDataColumnFilterFile, 80));
+                }
 
-            if (!string.IsNullOrWhiteSpace(TableDataDateFilterFile))
-            {
-                Console.WriteLine(" {0,-48} {1}", "File with date filter column info:", PathUtils.CompactPathString(TableDataDateFilterFile, 80));
+                if (!string.IsNullOrWhiteSpace(TableDataDateFilterFile))
+                {
+                    Console.WriteLine(" {0,-48} {1}", "File with date filter column info:", PathUtils.CompactPathString(TableDataDateFilterFile, 80));
+                }
             }
 
             if (!string.IsNullOrEmpty(ObjectNameFilter))
@@ -921,7 +929,7 @@ namespace DB_Schema_Export_Tool
 
                 if (!DisableAutoDataExport || !string.IsNullOrWhiteSpace(TableDataToExportFile) || ExportAllData)
                 {
-                    var enabledNote = TableDataSnakeCase ? " (when exporting data)" : string.Empty;
+                    var enabledNote = TableDataSnakeCase && !NoSchema ? " (when exporting data)" : string.Empty;
                     Console.WriteLine(" {0,-48} {1}", "Use snake_case for table and column names:", BoolToEnabledDisabled(TableDataSnakeCase) + enabledNote);
                 }
 
@@ -999,19 +1007,33 @@ namespace DB_Schema_Export_Tool
                 }
             }
 
-            Console.WriteLine(" {0,-48} {1}", "Create a bash script for loading data with psql:", BoolToEnabledDisabled(ScriptPgLoadCommands));
-
-            if (ScriptPgLoadCommands)
+            if (!DisableDataExport)
             {
-                if (string.IsNullOrWhiteSpace(ScriptUser))
-                    ScriptUser = Environment.UserName.ToLower();
+                if (ScriptPgLoadCommands)
+                    Console.WriteLine();
 
-                Console.WriteLine(" {0,-48} {1}", "Username for psql in the bash script:", ScriptUser);
-                Console.WriteLine(" {0,-48} {1}", "Database name for psql in the bash script:", ScriptDB);
-                Console.WriteLine(" {0,-48} {1}", "Host name for psql in the bash script:", ScriptHost);
+                Console.WriteLine(" {0,-48} {1}", "Create a bash script for loading data with psql:", BoolToEnabledDisabled(ScriptPgLoadCommands));
 
-                Console.WriteLine(" {0,-48} {1}", "Port number for psql in the bash script:",
-                    ScriptPort == DBSchemaExporterPostgreSQL.DEFAULT_PORT ? "(use default)" : ScriptPort);
+                if (ScriptPgLoadCommands)
+                {
+                    if (string.IsNullOrWhiteSpace(ScriptUser))
+                        ScriptUser = Environment.UserName.ToLower();
+
+                    Console.WriteLine(" {0,-48} {1}", "Username for psql in the bash script:", ScriptUser);
+                    Console.WriteLine(" {0,-48} {1}", "Database name for psql in the bash script:", ScriptDB);
+                    Console.WriteLine(" {0,-48} {1}", "Host name for psql in the bash script:", ScriptHost);
+
+                    Console.WriteLine(" {0,-48} {1}", "Port number for psql in the bash script:",
+                        ScriptPort == DBSchemaExporterPostgreSQL.DEFAULT_PORT ? "(use default)" : ScriptPort);
+
+                    Console.WriteLine(" {0,-48} {1}", "Disable statement logging before loading data:",
+                        BoolToEnabledDisabled(DisableStatementLogging));
+
+                    if (DisableStatementLogging)
+                    {
+                        Console.WriteLine(" {0,-48} {1}", "Value for log_min_duration_statement after load:", StatementLoggingMinDurationAfterLoad);
+                    }
+                }
             }
 
             if (LogMessagesToFile)
