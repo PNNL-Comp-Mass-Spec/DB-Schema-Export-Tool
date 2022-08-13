@@ -5,7 +5,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("CodeQuality", "IDE0079:Remove unnecessary suppression", Justification = "Leave code for reference", Scope = "member", Target = "~M:DB_Schema_Export_Tool.DeleteExtraDataRowsScripter.DeleteUsingSingleColumnKey(DB_Schema_Export_Tool.DataExportWorkingParams,System.Data.DataSet,System.String,System.Int32,System.String,System.Boolean)~System.Boolean")]
 [assembly: SuppressMessage("Design", "RCS1075:Avoid empty catch clause that catches System.Exception.", Justification = "Silently ignore this exception", Scope = "member", Target = "~M:DB_Schema_Export_Tool.DBSchemaExporterBase.SetLocalError(DB_Schema_Export_Tool.DBSchemaExporterBase.DBSchemaExportErrorCodes,System.String,System.Exception)")]
 [assembly: SuppressMessage("Design", "RCS1075:Avoid empty catch clause that catches System.Exception.", Justification = "Silently ignore this exception", Scope = "member", Target = "~M:DB_Schema_Export_Tool.DBSchemaExporterPostgreSQL.ConnectToPgServer(System.String)~System.Boolean")]
 [assembly: SuppressMessage("Readability", "RCS1123:Add parentheses when necessary.", Justification = "Keep for readability", Scope = "member", Target = "~M:DB_Schema_Export_Tool.DBSchemaExporterBase.ComputeIncrementalProgress(System.Single,System.Single,System.Single)~System.Single")]
