@@ -523,7 +523,7 @@ namespace DB_Schema_Export_Tool
 
                 var chunkSize = Math.Max(100, mOptions.PgInsertChunkSize);
 
-                const int itemsPerRow = 500;
+                const int ITEMS_PER_ROW = 500;
                 const bool SHOW_NOT_IN_OPTION = false;
 
                 var pgInsertEnabled = dataExportParams.PgInsertEnabled;
@@ -559,11 +559,11 @@ namespace DB_Schema_Export_Tool
                             if (itemsAppended > 0)
                                 writer.WriteLine(",");
 
-                            var delimitedList = GetCommaSeparatedList(currentList.Skip(itemsAppended).Take(itemsPerRow), textDataType, pgInsertEnabled);
+                            var delimitedList = GetCommaSeparatedList(currentList.Skip(itemsAppended).Take(ITEMS_PER_ROW), textDataType, pgInsertEnabled);
 
                             writer.Write("-- {0}", delimitedList);
 
-                            itemsAppended += itemsPerRow;
+                            itemsAppended += ITEMS_PER_ROW;
                         }
 
                         writer.WriteLine();
@@ -594,10 +594,10 @@ namespace DB_Schema_Export_Tool
                         if (itemsWritten > 0)
                             writer.WriteLine(",");
 
-                        var delimitedList = GetCommaSeparatedList(currentList.Skip(itemsWritten).Take(itemsPerRow), textDataType, pgInsertEnabled);
+                        var delimitedList = GetCommaSeparatedList(currentList.Skip(itemsWritten).Take(ITEMS_PER_ROW), textDataType, pgInsertEnabled);
                         writer.Write(delimitedList);
 
-                        itemsWritten += itemsPerRow;
+                        itemsWritten += ITEMS_PER_ROW;
                     }
 
                     writer.WriteLine();
