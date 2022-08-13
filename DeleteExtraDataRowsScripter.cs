@@ -35,10 +35,283 @@ namespace DB_Schema_Export_Tool
             mOptions = options;
         }
 
+
+        /// <summary>
+        /// Create a file with commands to delete extra rows from the target table, filtering using the primary key column(s)
+        /// </summary>
+        /// <param name="tableInfo"></param>
+        /// <param name="columnMapInfo"></param>
+        /// <param name="dataExportParams"></param>
+        /// <param name="workingParams"></param>
+        /// <param name="queryResults"></param>
+        /// <param name="tableDataOutputFile"></param>
+        /// <param name="tableDataOutputFileRelativePath"></param>
+        /// <returns>True if successful, false if an error</returns>
+        public bool DeleteExtraRowsInTargetTable(
+            TableDataExportInfo tableInfo,
+            ColumnMapInfo columnMapInfo,
+            DataExportWorkingParams dataExportParams,
+            WorkingParams workingParams,
+            DataSet queryResults,
+            FileInfo tableDataOutputFile,
+            string tableDataOutputFileRelativePath)
+        {
+            try
+            {
+                if (workingParams.PrimaryKeysByTable.Count == 0)
+                {
+                    var primaryKeysLoaded = mDbSchemaExporter.GetPrimaryKeyInfoFromDatabase(workingParams);
+
+                    if (!primaryKeysLoaded)
+                    {
+                        // Treat this as a fatal error
+                        return false;
+                    }
+                }
+
+                if (tableInfo.FilterByDate)
+                {
+                    OnWarningEvent(
+                        "Table {0} used a date filter when exporting the data; cannot create a file to delete extra rows (this method should not have been called)",
+                        dataExportParams.SourceTableNameWithSchema);
+
+                    // Treat this as a non-fatal error
+                    return true;
+                }
+
+                if (tableInfo.PrimaryKeyColumns.Count < 1)
+                {
+                    OnWarningEvent(
+                        "Table {0} does not have any primary keys; cannot create a file to delete extra rows (this method should not have been called)",
+                        dataExportParams.SourceTableNameWithSchema);
+
+                    // Treat this as a non-fatal error
+                    return true;
+                }
+
+                if (tableDataOutputFile.DirectoryName == null)
+                {
+                    OnWarningEvent(
+                        "Unable to determine the parent directory of: {0}; cannot create a file to delete extra rows",
+                        tableDataOutputFile.FullName);
+
+                    return false;
+                }
+
+                var baseName = Path.GetFileNameWithoutExtension(tableDataOutputFile.Name);
+
+                if (!baseName.EndsWith(DBSchemaExporterBase.TABLE_DATA_FILE_SUFFIX))
+                {
+                    OnWarningEvent(
+                        "Table data file base name, {0}, does not end in {1}; this is indicates a programming error",
+                        baseName, DBSchemaExporterBase.TABLE_DATA_FILE_SUFFIX);
+
+                    // Treat this as a fatal error
+                    return false;
+                }
+
+
+                var outputFileName = baseName.Substring(0, baseName.Length - DBSchemaExporterBase.TABLE_DATA_FILE_SUFFIX.Length) + fileSuffix;
+
+                var deleteExtrasFile = new FileInfo(Path.Combine(tableDataOutputFile.DirectoryName, outputFileName));
+
+                // Delete extra rows with a query like this:
+
+                // DELETE FROM t_target_table target
+                // WHERE target.group_id BETWEEN 1 AND 5 AND
+                //       NOT EXISTS ( SELECT S.group_id,
+                //                           S.job
+                //                    FROM t_target_table S
+                //                    WHERE target.group_id = S.group_id AND
+                //                          target.job = S.job AND
+                //                          (
+                //                              S.group_id = 1 and S.job = 20 OR
+                //                              S.group_id = 2 and S.job = 21 OR
+                //                              S.group_id = 4 and S.job = 23 OR
+                //                              S.group_id = 5 and S.job = 24
+                //                          )
+                //                   )
+
+                // For single-column primary keys, possibly use this, since better performance vs.
+                // DELETE FROM t_target_table WHERE id BETWEEN 1 and 10 AND NOT id IN (3, 4, 5, 6, 7, 10);
+
+                // DELETE FROM t_target_table target
+                // WHERE target.id BETWEEN 1 AND 5 AND
+                //       NOT EXISTS ( SELECT S.id
+                //                    FROM t_target_table S
+                //                    WHERE target.id = S.id AND
+                //                          S.id in (1,2,4,5)
+                //                   )
+
+                // When truncateTableData is true, use
+                // TRUNCATE TABLE t_target_table;
+
+                bool success;
+
+                    success = DeleteExtraRowsUsingPrimaryKey(tableInfo, columnMapInfo, dataExportParams, workingParams, queryResults, deleteExtrasFile);
+
+                if (!success || !mOptions.ScriptPgLoadCommands)
+                    return success;
+
+                var relativeFilePath = tableDataOutputFileRelativePath.Replace(tableDataOutputFile.Name, deleteExtrasFile.Name);
+
+                workingParams.AddDataLoadScriptFile(relativeFilePath);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                OnErrorEvent(string.Format("Error in DeleteExtraRowsInTargetTable for table {0}", dataExportParams.SourceTableNameWithSchema), ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Create a SQL script to delete extra rows in a table based on data in primary key column(s)
+        /// </summary>
+        /// <param name="tableInfo"></param>
+        /// <param name="columnMapInfo"></param>
+        /// <param name="dataExportParams"></param>
+        /// <param name="workingParams"></param>
+        /// <param name="queryResults"></param>
+        /// <param name="deleteExtrasFile"></param>
+        /// <returns>True if successful, false if an error</returns>
+        private bool DeleteExtraRowsUsingPrimaryKey(
+            TableNameInfo tableInfo,
+            ColumnMapInfo columnMapInfo,
+            DataExportWorkingParams dataExportParams,
+            WorkingParams workingParams,
+            DataSet queryResults,
+            FileSystemInfo deleteExtrasFile)
+        {
+
+            // Verify that the expected primary key columns are in the result set
+
+            var primaryKeyColumnsInSource = new List<string>();
+            var primaryKeyColumnsInTarget = new List<string>();
+
+            var primaryKeyColumnIndices = new List<int>();
+            var primaryKeyColumnTypes = new List<DBSchemaExporterBase.DataColumnTypeConstants>();
+
+            for (var i = 0; i < tableInfo.PrimaryKeyColumns.Count; i++)
+            {
+                // This should already be the column name in the target database
+                // However, call GetTargetColumnName() to make sure that it is
+
+                var primaryKeyColumn = tableInfo.PrimaryKeyColumns[i];
+
+                var columnNameInTarget = mDbSchemaExporter.GetTargetColumnName(columnMapInfo, primaryKeyColumn);
+
+                string currentPrimaryKeyColumn;
+
+                if (string.Equals(primaryKeyColumn, columnNameInTarget, StringComparison.OrdinalIgnoreCase))
+                {
+                    primaryKeyColumnsInTarget.Add(primaryKeyColumn);
+                    currentPrimaryKeyColumn = primaryKeyColumn;
+                }
+                else
+                {
+                    OnWarningEvent(
+                        "Primary key column {0} for table {1} was not already the target column name; this indicates a logic error in the source code",
+                        primaryKeyColumn, dataExportParams.SourceTableNameWithSchema);
+
+                    primaryKeyColumnsInTarget.Add(columnNameInTarget);
+                    currentPrimaryKeyColumn = columnNameInTarget;
+                }
+
+                if (queryResults.Tables[0].Columns.Contains(currentPrimaryKeyColumn))
+                {
+                    primaryKeyColumnsInSource.Add(queryResults.Tables[0].Columns[currentPrimaryKeyColumn].ColumnName);
+
+                    var primaryKeyColumnIndex = queryResults.Tables[0].Columns[currentPrimaryKeyColumn].Ordinal;
+                    primaryKeyColumnIndices.Add(primaryKeyColumnIndex);
+
+                    primaryKeyColumnTypes.Add(dataExportParams.ColumnNamesAndTypes[primaryKeyColumnIndex].Value);
+
+                    continue;
+                }
+
+                // Column name not found in the source data, indicating the column was renamed (either via a name map file or via conversion to snake_case)
+                // Method ResolvePrimaryKeys should have contacted the source database to obtain the primary keys for every table
+                // Use this to determine the correct source column name
+
+                if (workingParams.PrimaryKeysByTable.TryGetValue(tableInfo.SourceTableName, out var primaryKeys))
+                {
+                    primaryKeyColumnsInSource.Add(primaryKeys[i]);
+
+                    var primaryKeyColumnIndex = queryResults.Tables[0].Columns[primaryKeys[i]].Ordinal;
+                    primaryKeyColumnIndices.Add(primaryKeyColumnIndex);
+
+                    primaryKeyColumnTypes.Add(dataExportParams.ColumnNamesAndTypes[primaryKeyColumnIndex].Value);
+
+                    continue;
+                }
+
+                OnWarningEvent(
+                    "Primary key column {0} not found in the retrieved data for table {1}; cannot create a file to delete extra rows",
+                    primaryKeyColumn, dataExportParams.SourceTableNameWithSchema);
+
+                return false;
+            }
+
+            // Assure that each of the primary key columns is text or a valid numeric type
+            for (var i = 0; i < primaryKeyColumnsInSource.Count; i++)
+            {
+                var primaryKeyColumnIndex = primaryKeyColumnIndices[i];
+
+                switch (primaryKeyColumnTypes[i])
+                {
+                    case DBSchemaExporterBase.DataColumnTypeConstants.Text:
+                        continue;
+
+                    case DBSchemaExporterBase.DataColumnTypeConstants.Numeric:
+                        var validType = IsDotNetCompatibleDataType(dataExportParams, primaryKeyColumnIndex);
+
+                        if (validType)
+                        {
+                            continue;
+                        }
+
+                        break;
+                }
+
+                OnWarningEvent(
+                    "Primary key column {0} in table {1} is not a number of text; cannot create a file to delete extra rows",
+                    primaryKeyColumnsInSource[i], dataExportParams.SourceTableNameWithSchema);
+
+                // Treat this as a non-fatal error
+                return true;
+            }
+
+            if (primaryKeyColumnsInSource.Count > 1)
+            {
+                return DeleteUsingMultiColumnPrimaryKey(
+                    dataExportParams, queryResults, deleteExtrasFile,
+                    primaryKeyColumnIndices, primaryKeyColumnsInTarget, primaryKeyColumnTypes);
+            }
+
+            // Single column primary key
+            var columnType = dataExportParams.ColumnNamesAndTypes[primaryKeyColumnIndices[0]].Value;
+
+            var textDataType = columnType == DBSchemaExporterBase.DataColumnTypeConstants.Text;
+
+            return DeleteUsingSingleColumnKey(dataExportParams, queryResults, deleteExtrasFile, primaryKeyColumnIndices[0], primaryKeyColumnsInTarget[0], textDataType);
+        }
+
+        /// <summary>
+        /// Create a SQL script to delete extra rows in a table based on data in each of the table's primary key columns
+        /// </summary>
+        /// <param name="dataExportParams"></param>
+        /// <param name="queryResults"></param>
+        /// <param name="deleteExtrasFile"></param>
+        /// <param name="primaryKeyColumnIndices"></param>
+        /// <param name="primaryKeyColumnsInTarget"></param>
+        /// <param name="primaryKeyColumnTypes"></param>
+        /// <returns>True if successful, false if an error</returns>
         private bool DeleteUsingMultiColumnPrimaryKey(
             DataExportWorkingParams dataExportParams,
             DataSet queryResults,
-            string outputFilePath,
+            FileSystemInfo deleteExtrasFile,
             IReadOnlyList<int> primaryKeyColumnIndices,
             IReadOnlyList<string> primaryKeyColumnsInTarget,
             IReadOnlyList<DBSchemaExporterBase.DataColumnTypeConstants> primaryKeyColumnTypes)
@@ -126,10 +399,9 @@ namespace DB_Schema_Export_Tool
                     primaryKeyComparisonCriteria.Add(firstPrimaryKeyValue, newComparisonCriteria);
                 }
 
-                ConsoleMsgUtils.ShowDebugCustom("Delete extras file at " + PathUtils.CompactPathString(outputFilePath, 120), "  ", 0);
-                Console.WriteLine();
+                ShowDeleteExtrasFilePath(deleteExtrasFile);
 
-                using var writer = new StreamWriter(new FileStream(outputFilePath, FileMode.Create, FileAccess.Write, FileShare.Read));
+                using var writer = new StreamWriter(new FileStream(deleteExtrasFile.FullName, FileMode.Create, FileAccess.Write, FileShare.Read));
 
                 writer.WriteLine("-- Commands to delete extra rows from table {0}", dataExportParams.TargetTableNameWithSchema);
 
@@ -220,247 +492,19 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
-        /// Create a file with commands to delete extra rows from the target table, filtering using the primary key column(s)
+        /// Create a SQL script to delete extra rows in a table based on data in primary key column
         /// </summary>
-        /// <param name="tableInfo"></param>
-        /// <param name="columnMapInfo"></param>
         /// <param name="dataExportParams"></param>
-        /// <param name="workingParams"></param>
         /// <param name="queryResults"></param>
-        /// <param name="tableDataOutputFile"></param>
-        /// <param name="tableDataOutputFileRelativePath"></param>
+        /// <param name="deleteExtrasFile"></param>
+        /// <param name="primaryKeyColumnIndex"></param>
+        /// <param name="primaryKeyTargetColumnName"></param>
+        /// <param name="textDataType"></param>
         /// <returns>True if successful, false if an error</returns>
-        public bool DeleteExtraRowsUsingPrimaryKey(
-            TableDataExportInfo tableInfo,
-            ColumnMapInfo columnMapInfo,
-            DataExportWorkingParams dataExportParams,
-            WorkingParams workingParams,
-            DataSet queryResults,
-            FileInfo tableDataOutputFile,
-            string tableDataOutputFileRelativePath)
-        {
-            try
-            {
-                if (workingParams.PrimaryKeysByTable.Count == 0)
-                {
-                    var primaryKeysLoaded = mDbSchemaExporter.GetPrimaryKeyInfoFromDatabase(workingParams);
-
-                    if (!primaryKeysLoaded)
-                        return false;
-                }
-
-                if (tableInfo.FilterByDate)
-                {
-                    OnWarningEvent("Table {0} used a date filter when exporting the data; cannot create a file to delete extra rows (this method should not have been called)", dataExportParams.SourceTableNameWithSchema);
-                    return true;
-                }
-
-                if (tableInfo.PrimaryKeyColumns.Count < 1)
-                {
-                    OnWarningEvent("Table {0} does not have any primary keys; cannot create a file to delete extra rows (this method should not have been called)", dataExportParams.SourceTableNameWithSchema);
-                    return true;
-                }
-
-                if (tableDataOutputFile.DirectoryName == null)
-                {
-                    OnWarningEvent("Unable to determine the parent directory of: {0}; cannot create a file to delete extra rows", tableDataOutputFile.FullName);
-                    return false;
-                }
-
-                var baseName = Path.GetFileNameWithoutExtension(tableDataOutputFile.Name);
-
-                if (!baseName.EndsWith(DBSchemaExporterBase.TABLE_DATA_FILE_SUFFIX))
-                {
-                    OnWarningEvent("Table data file base name, {0}, does not end in {1}; this is indicates a programming error", baseName, DBSchemaExporterBase.TABLE_DATA_FILE_SUFFIX);
-                    return false;
-                }
-
-                var outputFileName = baseName.Substring(0, baseName.Length - DBSchemaExporterBase.TABLE_DATA_FILE_SUFFIX.Length) + DBSchemaExporterBase.DELETE_EXTRA_ROWS_FILE_SUFFIX;
-
-                var deleteExtrasFile = new FileInfo(Path.Combine(tableDataOutputFile.DirectoryName, outputFileName));
-
-                // Delete extra rows with a query like this:
-
-                // DELETE FROM t_target_table target
-                // WHERE target.group_id BETWEEN 1 AND 5 AND
-                //       NOT EXISTS ( SELECT S.group_id,
-                //                           S.job
-                //                    FROM t_target_table S
-                //                    WHERE target.group_id = S.group_id AND
-                //                          target.job = S.job AND
-                //                          (
-                //                              S.group_id = 1 and S.job = 20 OR
-                //                              S.group_id = 2 and S.job = 21 OR
-                //                              S.group_id = 4 and S.job = 23 OR
-                //                              S.group_id = 5 and S.job = 24
-                //                          )
-                //                   )
-
-                // For single-column primary keys, possibly use this, since better performance vs.
-                // DELETE FROM t_target_table WHERE id BETWEEN 1 and 10 AND NOT id IN (3, 4, 5, 6, 7, 10);
-
-                // DELETE FROM t_target_table target
-                // WHERE target.id BETWEEN 1 AND 5 AND
-                //       NOT EXISTS ( SELECT S.id
-                //                    FROM t_target_table S
-                //                    WHERE target.id = S.id AND
-                //                          S.id in (1,2,4,5)
-                //                   )
-
-                // Verify that the expected primary key columns are in the result set
-
-                var primaryKeyColumnsInSource = new List<string>();
-                var primaryKeyColumnsInTarget = new List<string>();
-
-                var primaryKeyColumnIndices = new List<int>();
-                var primaryKeyColumnTypes = new List<DBSchemaExporterBase.DataColumnTypeConstants>();
-
-                for (var i = 0; i < tableInfo.PrimaryKeyColumns.Count; i++)
-                {
-                    // This should already be the column name in the target database
-                    // However, call GetTargetColumnName() to make sure that it is
-
-                    var primaryKeyColumn = tableInfo.PrimaryKeyColumns[i];
-
-                    var columnNameInTarget = mDbSchemaExporter.GetTargetColumnName(columnMapInfo, primaryKeyColumn);
-
-                    string currentPrimaryKeyColumn;
-
-                    if (string.Equals(primaryKeyColumn, columnNameInTarget, StringComparison.OrdinalIgnoreCase))
-                    {
-                        primaryKeyColumnsInTarget.Add(primaryKeyColumn);
-                        currentPrimaryKeyColumn = primaryKeyColumn;
-                    }
-                    else
-                    {
-                        OnWarningEvent(
-                            "Primary key column {0} for table {1} was not already the target column name; this indicates a logic error in the source code",
-                            primaryKeyColumn, dataExportParams.SourceTableNameWithSchema);
-
-                        primaryKeyColumnsInTarget.Add(columnNameInTarget);
-                        currentPrimaryKeyColumn = columnNameInTarget;
-                    }
-
-                    if (queryResults.Tables[0].Columns.Contains(currentPrimaryKeyColumn))
-                    {
-                        primaryKeyColumnsInSource.Add(queryResults.Tables[0].Columns[currentPrimaryKeyColumn].ColumnName);
-
-                        var primaryKeyColumnIndex = queryResults.Tables[0].Columns[currentPrimaryKeyColumn].Ordinal;
-                        primaryKeyColumnIndices.Add(primaryKeyColumnIndex);
-
-                        primaryKeyColumnTypes.Add(dataExportParams.ColumnNamesAndTypes[primaryKeyColumnIndex].Value);
-
-                        continue;
-                    }
-
-                    // Column name not found in the source data, indicating the column was renamed (either via a name map file or via conversion to snake_case)
-                    // Method ResolvePrimaryKeys should have contacted the source database to obtain the primary keys for every table
-                    // Use this to determine the correct source column name
-
-                    if (workingParams.PrimaryKeysByTable.TryGetValue(tableInfo.SourceTableName, out var primaryKeys))
-                    {
-                        primaryKeyColumnsInSource.Add(primaryKeys[i]);
-
-                        var primaryKeyColumnIndex = queryResults.Tables[0].Columns[primaryKeys[i]].Ordinal;
-                        primaryKeyColumnIndices.Add(primaryKeyColumnIndex);
-
-                        primaryKeyColumnTypes.Add(dataExportParams.ColumnNamesAndTypes[primaryKeyColumnIndex].Value);
-
-                        continue;
-                    }
-
-                    OnWarningEvent(
-                        "Primary key column {0} not found in the retrieved data for table {1}; cannot create a file to delete extra rows",
-                        primaryKeyColumn, dataExportParams.SourceTableNameWithSchema);
-
-                    return false;
-                }
-
-                // Assure that each of the primary key columns is text or a valid numeric type
-                for (var i = 0; i < primaryKeyColumnsInSource.Count; i++)
-                {
-                    var primaryKeyColumnIndex = primaryKeyColumnIndices[i];
-
-                    switch (primaryKeyColumnTypes[i])
-                    {
-                        case DBSchemaExporterBase.DataColumnTypeConstants.Text:
-                            continue;
-
-                        case DBSchemaExporterBase.DataColumnTypeConstants.Numeric:
-                            var validType = IsDotNetCompatibleDataType(dataExportParams, primaryKeyColumnIndex);
-
-                            if (validType)
-                            {
-                                continue;
-                            }
-
-                            break;
-                    }
-
-                    OnWarningEvent(
-                        "Primary key column {0} in table {1} is not a number of text; cannot create a file to delete extra rows",
-                        primaryKeyColumnsInSource[i], dataExportParams.SourceTableNameWithSchema);
-
-                    return true;
-                }
-
-                bool success;
-
-                if (primaryKeyColumnsInSource.Count == 1)
-                {
-                    var columnType = dataExportParams.ColumnNamesAndTypes[primaryKeyColumnIndices[0]].Value;
-
-                    bool textDataType;
-
-                    if (columnType == DBSchemaExporterBase.DataColumnTypeConstants.Text)
-                    {
-                        textDataType = true;
-                    }
-                    else
-                    {
-                        textDataType = false;
-
-                        var validType = IsDotNetCompatibleDataType(dataExportParams, primaryKeyColumnIndices[0]);
-
-                        if (!validType)
-                        {
-                            // A warning should have already been shown to the user
-                            return false;
-                        }
-                    }
-
-                    success = DeleteUsingSingleColumnKey(dataExportParams, queryResults, deleteExtrasFile.FullName, primaryKeyColumnIndices[0], primaryKeyColumnsInTarget[0], textDataType);
-                }
-                else
-                {
-                    success = DeleteUsingMultiColumnPrimaryKey(
-                        dataExportParams, queryResults, deleteExtrasFile.FullName,
-                        primaryKeyColumnIndices, primaryKeyColumnsInTarget, primaryKeyColumnTypes);
-                }
-
-                if (!success)
-                    return false;
-
-                if (mOptions.ScriptPgLoadCommands)
-                {
-                    var relativeFilePath = tableDataOutputFileRelativePath.Replace(tableDataOutputFile.Name, deleteExtrasFile.Name);
-
-                    workingParams.AddDataLoadScriptFile(relativeFilePath);
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                OnErrorEvent(string.Format("Error in DeleteExtraRowsUsingPrimaryKey for table {0}", dataExportParams.SourceTableNameWithSchema), ex);
-                return false;
-            }
-        }
-
         private bool DeleteUsingSingleColumnKey(
             DataExportWorkingParams dataExportParams,
             DataSet queryResults,
-            string outputFilePath,
+            FileSystemInfo deleteExtrasFile,
             int primaryKeyColumnIndex,
             string primaryKeyTargetColumnName,
             bool textDataType)
@@ -511,10 +555,9 @@ namespace DB_Schema_Export_Tool
                     primaryKeyValues.Add(columnValue);
                 }
 
-                ConsoleMsgUtils.ShowDebugCustom("Delete extras file at " + PathUtils.CompactPathString(outputFilePath, 120), "  ", 0);
-                Console.WriteLine();
+                ShowDeleteExtrasFilePath(deleteExtrasFile);
 
-                using var writer = new StreamWriter(new FileStream(outputFilePath, FileMode.Create, FileAccess.Write, FileShare.Read));
+                using var writer = new StreamWriter(new FileStream(deleteExtrasFile.FullName, FileMode.Create, FileAccess.Write, FileShare.Read));
 
                 writer.WriteLine("-- Commands to delete extra rows from table {0}", dataExportParams.TargetTableNameWithSchema);
                 writer.WriteLine();
@@ -683,6 +726,12 @@ namespace DB_Schema_Export_Tool
             OnWarningEvent("Column {0} in table {1} is not a supported data type (text or number); cannot create a file to delete extra rows", columnName, dataExportParams.SourceTableNameWithSchema);
 
             return false;
+        }
+
+        private void ShowDeleteExtrasFilePath(FileSystemInfo deleteExtrasFile)
+        {
+            ConsoleMsgUtils.ShowDebugCustom("Delete extras file at " + PathUtils.CompactPathString(deleteExtrasFile.FullName, 120), "  ", 0);
+            Console.WriteLine();
         }
 
         private void WriteMultiColumnPrimaryKeyDeleteQuery(

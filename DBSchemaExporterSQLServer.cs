@@ -1809,7 +1809,7 @@ namespace DB_Schema_Export_Tool
 
                         RegisterEvents(deleteExtrasScripter);
 
-                        var success = deleteExtrasScripter.DeleteExtraRowsUsingPrimaryKey(
+                        var success = deleteExtrasScripter.DeleteExtraRowsInTargetTable(
                             tableInfo, columnMapInfo,
                             dataExportParams, workingParams,
                             queryResults,
