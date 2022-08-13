@@ -226,7 +226,6 @@ namespace DB_Schema_Export_Tool
             DataSet queryResults,
             FileSystemInfo deleteExtrasFile)
         {
-
             // Verify that the expected primary key columns are in the result set
 
             var primaryKeyColumnsInSource = new List<string>();

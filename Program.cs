@@ -37,7 +37,7 @@ namespace DB_Schema_Export_Tool
             var parser = new CommandLineParser<SchemaExportOptions>(asmName.Name, version)
             {
                 ProgramInfo = "This program exports SQL Server or PostgreSQL database objects as schema files. " +
-                              "Exported objects include tables, views, stored procedures, functions, and synonyms, "+
+                              "Exported objects include tables, views, stored procedures, functions, and synonyms, " +
                               "plus also database properties including database roles and logins.",
 
                 ContactInfo = "Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)" +
