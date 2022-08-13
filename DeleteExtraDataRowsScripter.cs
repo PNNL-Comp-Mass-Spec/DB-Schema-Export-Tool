@@ -664,19 +664,17 @@ namespace DB_Schema_Export_Tool
 
         private string GetCommaSeparatedList(IEnumerable<dynamic> items, bool textDataType, bool pgInsertEnabled)
         {
-            if (textDataType)
+            if (!textDataType)
+                return string.Join(",", items);
+
+            var quotedValues = new List<string>();
+
+            foreach (var value in items)
             {
-                var quotedValues = new List<string>();
-
-                foreach (var value in items)
-                {
-                    quotedValues.Add(GetFormattedValue(value, true, pgInsertEnabled));
-                }
-
-                return string.Join(",", quotedValues);
+                quotedValues.Add(GetFormattedValue(value, true, pgInsertEnabled));
             }
 
-            return string.Join(",", items);
+            return string.Join(",", quotedValues);
         }
 
         private string GetFormattedValue<dynamic>(dynamic columnValue, bool textDataType, bool pgInsertEnabled)
