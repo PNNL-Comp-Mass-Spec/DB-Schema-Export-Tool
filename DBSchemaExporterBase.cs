@@ -720,7 +720,14 @@ namespace DB_Schema_Export_Tool
             Console.WriteLine();
             OnStatusEvent("Creating file " + scriptFilePath);
 
-            var currentUser = Environment.UserName.ToLower();
+            var dbUser = string.IsNullOrWhiteSpace(mOptions.ScriptUser) ? Environment.UserName.ToLower() : mOptions.ScriptUser;
+            var dbName = string.IsNullOrWhiteSpace(mOptions.ScriptDB) ? "dms" : mOptions.ScriptDB;
+            var dbHost = string.IsNullOrWhiteSpace(mOptions.ScriptHost) ? "localhost" : mOptions.ScriptHost;
+            var dbPort = mOptions.ScriptPort == DBSchemaExporterPostgreSQL.DEFAULT_PORT ? string.Empty : " -p " + mOptions.ScriptPort;
+
+            // The following uses 2>&1 to redirect standard error to standard output
+            // This is required to allow tee to store error messages to the text file
+            var psqlFormatString = "psql -d {0} -h {1} -U {2} {3} -f {4} 2>&1 | tee -a {5}";
 
             var dataImportLogFile = string.Format("ImportLog_{0:yyyy-MM-dd}.txt", DateTime.Now);
 
@@ -759,9 +766,7 @@ namespace DB_Schema_Export_Tool
                 writer.WriteLine();
                 writer.WriteLine("echo Processing {0} | tee -a {1}", relativePath, dataImportLogFile);
 
-                // The following uses 2>&1 to redirect standard error to standard output
-                // This is required to allow tee to store error messages to the text file
-                writer.WriteLine("psql -d dms -h localhost -U {0} -f {1} 2>&1 | tee -a {2}", currentUser, relativePath, dataImportLogFile);
+                writer.WriteLine(psqlFormatString, dbName, dbHost, dbUser, dbPort, relativePath, dataImportLogFile);
 
                 var targetFilePath = "Done/" + relativePath;
 

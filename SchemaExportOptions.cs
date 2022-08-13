@@ -12,7 +12,7 @@ namespace DB_Schema_Export_Tool
     /// </summary>
     public class SchemaExportOptions
     {
-        // Ignore Spelling: Npgsql, PostgreSQL, psql, schemas, stdin, Svn, username
+        // Ignore Spelling: dms, localhost, Npgsql, PostgreSQL, psql, schemas, stdin, Svn, username
 
         /// <summary>
         /// Program date
@@ -492,6 +492,34 @@ namespace DB_Schema_Export_Tool
         public bool ScriptPgLoadCommands { get; set; }
 
         /// <summary>
+        /// Username to use when loading data
+        /// </summary>
+        [Option("ScriptLoadUser", "ScriptUser", HelpShowsDefault = false,
+            HelpText = "Username to use when calling psql in the bash script for loading table data")]
+        public string ScriptUser { get; set; }
+
+        /// <summary>
+        /// Database name to use when loading data
+        /// </summary>
+        [Option("ScriptLoadDatabase", "ScriptLoadDB", "ScriptDB", HelpShowsDefault = true,
+            HelpText = "Database name to use when calling psql in the bash script for loading table data")]
+        public string ScriptDB { get; set; }
+
+        /// <summary>
+        /// Host name to use when loading data
+        /// </summary>
+        [Option("ScriptLoadHost", "ScriptHost", HelpShowsDefault = true,
+            HelpText = "Host name to use when calling psql in the bash script for loading table data")]
+        public string ScriptHost { get; set; }
+
+        /// <summary>
+        /// Database name to use when loading data
+        /// </summary>
+        [Option("ScriptLoadPort", "ScriptPort", HelpShowsDefault = true,
+            HelpText = "Port number to use when calling psql in the bash script")]
+        public int ScriptPort { get; set; }
+
+        /// <summary>
         /// Auto-change column names from Upper_Case and UpperCase to lower_case when exporting table data
         /// </summary>
         [Option("SnakeCase", HelpShowsDefault = false,
@@ -640,6 +668,11 @@ namespace DB_Schema_Export_Tool
             CreateDirectoryForEachDB = true;
 
             ServerOutputDirectoryNamePrefix = DEFAULT_SERVER_OUTPUT_DIRECTORY_NAME_PREFIX;
+
+            ScriptUser = string.Empty;
+            ScriptDB = "dms";
+            ScriptHost = "localhost";
+            ScriptPort = DBSchemaExporterPostgreSQL.DEFAULT_PORT;
 
             ScriptingOptions = new DatabaseScriptingOptions();
 
@@ -947,6 +980,19 @@ namespace DB_Schema_Export_Tool
             }
 
             Console.WriteLine(" {0,-48} {1}", "Create a bash script for loading data with psql:", BoolToEnabledDisabled(ScriptPgLoadCommands));
+
+            if (ScriptPgLoadCommands)
+            {
+                if (string.IsNullOrWhiteSpace(ScriptUser))
+                    ScriptUser = Environment.UserName.ToLower();
+
+                Console.WriteLine(" {0,-48} {1}", "Username for psql in the bash script:", ScriptUser);
+                Console.WriteLine(" {0,-48} {1}", "Database name for psql in the bash script:", ScriptDB);
+                Console.WriteLine(" {0,-48} {1}", "Host name for psql in the bash script:", ScriptHost);
+
+                Console.WriteLine(" {0,-48} {1}", "Port number for psql in the bash script:",
+                    ScriptPort == DBSchemaExporterPostgreSQL.DEFAULT_PORT ? "(use default)" : ScriptPort);
+            }
 
             if (LogMessagesToFile)
             {
