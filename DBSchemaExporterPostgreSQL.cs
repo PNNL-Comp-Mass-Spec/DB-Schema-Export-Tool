@@ -55,6 +55,14 @@ namespace DB_Schema_Export_Tool
 
         /// <summary>
         /// Use this to find text
+        /// COLUMN t_log_entries.entered_by
+        /// </summary>
+        private readonly Regex mAclMatcherColumn = new(
+            @"COLUMN (?<TableOrViewName>.+)\.(?<ColumnName>.+)",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+        /// <summary>
+        /// Use this to find text
         /// FUNCTION get_stat_activity(
         /// PROCEDURE post_log_entry(
         /// </summary>
@@ -1716,10 +1724,15 @@ namespace DB_Schema_Export_Tool
                     var aclFunctionOrProcedureMatch = mAclMatcherFunctionOrProcedure.Match(currentObject.Name);
                     var aclSchemaMatch = mAclMatcherSchema.Match(currentObject.Name);
                     var aclTableMatch = mAclMatcherTable.Match(currentObject.Name);
+                    var aclColumnMatch = mAclMatcherColumn.Match(currentObject.Name);
 
                     if (aclTableMatch.Success)
                     {
                         nameToUse = aclTableMatch.Groups["TableName"].Value;
+                    }
+                    else if (aclColumnMatch.Success)
+                    {
+                        nameToUse = aclColumnMatch.Groups["TableOrViewName"].Value;
                     }
                     else if (aclFunctionOrProcedureMatch.Success)
                     {
