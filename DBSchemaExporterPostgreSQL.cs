@@ -2076,6 +2076,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var match = mNameTypeSchemaMatcher.Match(dataLine);
+
                 try
                 {
                     if (!match.Success)
@@ -2111,6 +2112,7 @@ namespace DB_Schema_Export_Tool
                         ref unhandledScriptingCommands);
 
                     UpdateCachedObjectInfo(match, currentObject);
+
                     cachedLines = new List<string> {
                         "--",
                         dataLine
