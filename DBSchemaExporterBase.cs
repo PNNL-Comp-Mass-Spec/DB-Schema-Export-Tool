@@ -732,7 +732,7 @@ namespace DB_Schema_Export_Tool
 
             // The following uses 2>&1 to redirect standard error to standard output
             // This is required to allow tee to store error messages to the text file
-            var psqlFormatString = "psql -d {0} -h {1} -U {2} {3} -f {4} 2>&1 | tee -a {5}";
+            const string PSQL_FORMAT_STRING = "psql -d {0} -h {1} -U {2} {3} -f {4} 2>&1 | tee -a {5}";
 
             var dataImportLogFile = string.Format("ImportLog_{0:yyyy-MM-dd}.txt", DateTime.Now);
 
@@ -765,9 +765,9 @@ namespace DB_Schema_Export_Tool
                 writer.WriteLine("echo ''");
                 writer.WriteLine();
 
-                writer.WriteLine(psqlFormatString, dbName, dbHost, dbUser, dbPort, Path.GetFileName(statementLogControlFiles.DisablePgStatementLogging), dataImportLogFile);
+                writer.WriteLine(PSQL_FORMAT_STRING, dbName, dbHost, dbUser, dbPort, Path.GetFileName(statementLogControlFiles.DisablePgStatementLogging), dataImportLogFile);
                 writer.WriteLine("sleep 1");
-                writer.WriteLine(psqlFormatString, dbName, dbHost, dbUser, dbPort, Path.GetFileName(statementLogControlFiles.ShowLogMinDurationValue), dataImportLogFile);
+                writer.WriteLine(PSQL_FORMAT_STRING, dbName, dbHost, dbUser, dbPort, Path.GetFileName(statementLogControlFiles.ShowLogMinDurationValue), dataImportLogFile);
             }
 
             var subdirectories = new SortedSet<string>();
@@ -792,7 +792,7 @@ namespace DB_Schema_Export_Tool
                 writer.WriteLine();
                 writer.WriteLine("echo Processing {0} | tee -a {1}", relativePath, dataImportLogFile);
 
-                writer.WriteLine(psqlFormatString, dbName, dbHost, dbUser, dbPort, relativePath, dataImportLogFile);
+                writer.WriteLine(PSQL_FORMAT_STRING, dbName, dbHost, dbUser, dbPort, relativePath, dataImportLogFile);
 
                 var targetFilePath = "Done/" + relativePath;
 
@@ -813,9 +813,9 @@ namespace DB_Schema_Export_Tool
                 writer.WriteLine("echo ''");
                 writer.WriteLine();
 
-                writer.WriteLine(psqlFormatString, dbName, dbHost, dbUser, dbPort, Path.GetFileName(statementLogControlFiles.EnablePgStatementLogging), dataImportLogFile);
+                writer.WriteLine(PSQL_FORMAT_STRING, dbName, dbHost, dbUser, dbPort, Path.GetFileName(statementLogControlFiles.EnablePgStatementLogging), dataImportLogFile);
                 writer.WriteLine("sleep 1");
-                writer.WriteLine(psqlFormatString, dbName, dbHost, dbUser, dbPort, Path.GetFileName(statementLogControlFiles.ShowLogMinDurationValue), dataImportLogFile);
+                writer.WriteLine(PSQL_FORMAT_STRING, dbName, dbHost, dbUser, dbPort, Path.GetFileName(statementLogControlFiles.ShowLogMinDurationValue), dataImportLogFile);
                 writer.WriteLine();
             }
 
@@ -1295,8 +1295,8 @@ namespace DB_Schema_Export_Tool
             // Make sure output file name doesn't contain any invalid characters
             var defaultOwnerSchema = IsDefaultOwnerSchema(dataExportParams.TargetTableSchema);
 
-            var cleanName = defaultOwnerSchema ? 
-                CleanNameForOS(dataExportParams.TargetTableName + TABLE_DATA_FILE_SUFFIX) : 
+            var cleanName = defaultOwnerSchema ?
+                CleanNameForOS(dataExportParams.TargetTableName + TABLE_DATA_FILE_SUFFIX) :
                 CleanNameForOS(dataExportParams.TargetTableNameWithSchema + TABLE_DATA_FILE_SUFFIX);
 
             var suffix = tableInfo.FilterByDate
