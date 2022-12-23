@@ -1293,17 +1293,11 @@ namespace DB_Schema_Export_Tool
             DataExportWorkingParams dataExportParams)
         {
             // Make sure output file name doesn't contain any invalid characters
-            string cleanName;
             var defaultOwnerSchema = IsDefaultOwnerSchema(dataExportParams.TargetTableSchema);
 
-            if (defaultOwnerSchema)
-            {
-                cleanName = CleanNameForOS(dataExportParams.TargetTableName + TABLE_DATA_FILE_SUFFIX);
-            }
-            else
-            {
-                cleanName = CleanNameForOS(dataExportParams.TargetTableNameWithSchema + TABLE_DATA_FILE_SUFFIX);
-            }
+            var cleanName = defaultOwnerSchema ? 
+                CleanNameForOS(dataExportParams.TargetTableName + TABLE_DATA_FILE_SUFFIX) : 
+                CleanNameForOS(dataExportParams.TargetTableNameWithSchema + TABLE_DATA_FILE_SUFFIX);
 
             var suffix = tableInfo.FilterByDate
                 ? string.Format("_Since_{0:yyyy-MM-dd}", tableInfo.MinimumDate)

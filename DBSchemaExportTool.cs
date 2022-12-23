@@ -1358,12 +1358,7 @@ namespace DB_Schema_Export_Tool
             {
                 // Keys in this dictionary are database names
                 // Values are the output directory path used (values will be defined by ExportSchema then used by SyncSchemaFiles)
-                var databaseNamesAndOutputPaths = new Dictionary<string, string>();
-
-                foreach (var databaseName in databaseList)
-                {
-                    databaseNamesAndOutputPaths.Add(databaseName, string.Empty);
-                }
+                var databaseNamesAndOutputPaths = databaseList.ToDictionary(databaseName => databaseName, _ => string.Empty);
 
                 var success = ExportSchema(outputDirectoryPath, ref databaseNamesAndOutputPaths);
 
