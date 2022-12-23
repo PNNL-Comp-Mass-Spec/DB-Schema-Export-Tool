@@ -1994,6 +1994,12 @@ namespace DB_Schema_Export_Tool
                     break;
             }
 
+            // If nameToUse is surround by double quotes, remove them
+            if (nameToUse.StartsWith("\"") && nameToUse.EndsWith("\"") && nameToUse.Length > 2)
+            {
+                nameToUse = nameToUse.Substring(1, nameToUse.Length - 2);
+            }
+
             string namePrefix;
 
             if (string.IsNullOrWhiteSpace(schemaToUse) || schemaToUse.Equals("-") || schemaToUse.Equals("public"))
