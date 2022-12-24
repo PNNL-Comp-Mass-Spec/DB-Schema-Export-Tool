@@ -317,7 +317,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 OnWarningEvent(
-                    "Primary key column {0} in table {1} is not a number of text; cannot create a file to delete extra rows",
+                    "Primary key column {0} in table {1} is not a number or text; cannot create a file to delete extra rows",
                     primaryKeyColumnsInSource[i], dataExportParams.SourceTableNameWithSchema);
 
                 // Treat this as a non-fatal error
