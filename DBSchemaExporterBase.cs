@@ -734,7 +734,7 @@ namespace DB_Schema_Export_Tool
             // This is required to allow tee to store error messages to the text file
             const string PSQL_FORMAT_STRING = "psql -d {0} -h {1} -U {2} {3} -f {4} 2>&1 | tee -a {5}";
 
-            var dataImportLogFile = string.Format("ImportLog_{0:yyyy-MM-dd}.txt", DateTime.Now);
+            var dataImportLogFile = string.Format("ImportLog_{0:yyyy-MM-dd_HHmm}.txt", DateTime.Now);
 
             using var writer = new StreamWriter(new FileStream(scriptFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
             {
