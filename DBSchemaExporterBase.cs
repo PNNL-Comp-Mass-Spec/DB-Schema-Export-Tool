@@ -770,31 +770,25 @@ namespace DB_Schema_Export_Tool
                 writer.WriteLine(PSQL_FORMAT_STRING, dbName, dbHost, dbUser, dbPort, Path.GetFileName(statementLogControlFiles.ShowLogMinDurationValue), dataImportLogFile);
             }
 
-            var subdirectories = new SortedSet<string>();
-
             foreach (var relativePath in sortedScriptFiles)
             {
-                var lastSlashIndex = relativePath.LastIndexOf('/');
-
-                if (lastSlashIndex > 0)
-                {
-                    var parentDirectory = relativePath.Substring(0, lastSlashIndex);
-
-                    if (!subdirectories.Contains(parentDirectory))
-                    {
-                        writer.WriteLine();
-                        writer.WriteLine("mkdir -p Done/" + parentDirectory);
-
-                        subdirectories.Add(parentDirectory);
-                    }
-                }
-
                 writer.WriteLine();
                 writer.WriteLine("echo Processing {0} | tee -a {1}", relativePath, dataImportLogFile);
 
                 writer.WriteLine(PSQL_FORMAT_STRING, dbName, dbHost, dbUser, dbPort, relativePath, dataImportLogFile);
 
-                var targetFilePath = "Done/" + relativePath;
+                var lastSlashIndex = relativePath.LastIndexOf('/');
+
+                string targetFilePath;
+
+                if (lastSlashIndex > 0)
+                {
+                    targetFilePath = "Done" + relativePath.Substring(lastSlashIndex);
+                }
+                else
+                {
+                    targetFilePath = "Done/" + relativePath;
+                }
 
                 writer.WriteLine("test -f {0} && rm {0}", targetFilePath);
                 writer.WriteLine("mv {0} {1} && echo '   ... moved to {1}' | tee -a {2}", relativePath, targetFilePath, dataImportLogFile);
