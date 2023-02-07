@@ -613,7 +613,7 @@ namespace DB_Schema_Export_Tool
                     kvPairs.Add(new KeyValuePair<Regex, string>(new Regex(pattern3, RegexOptions.Compiled | RegexOptions.IgnoreCase), item.Value));
                     kvPairs.Add(new KeyValuePair<Regex, string>(new Regex(pattern4, RegexOptions.Compiled | RegexOptions.IgnoreCase), item.Value));
 
-                    // First search for the name surround by underscores
+                    // First search for the name surrounded by underscores
                     // Next search for a word boundary on either side
                     // Finally, search for the name surrounded by two word boundaries
 

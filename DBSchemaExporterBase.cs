@@ -821,9 +821,45 @@ namespace DB_Schema_Export_Tool
 
             // Show error messages in the data import log file
             // Use ag (The Silver Searcher) if it exists, otherwise use grep
+            // If ag does exist, also move the .sql files back from the Done directory to the working directory
 
+            writer.WriteLine("# Look for lines with \"error\"");
+            writer.WriteLine();
             writer.WriteLine("if command -v ag > /dev/null; then");
-            writer.WriteLine("    ag   -i \"error\" {0}", dataImportLogFile);
+            writer.WriteLine("    ag -i \"error\" {0}", dataImportLogFile);
+            writer.WriteLine();
+            writer.WriteLine("    # For tables that had an error, move the .sql file back to the working directory");
+            writer.WriteLine("    # Use a RegEx to extract out the .sql file names and write them to a text file");
+            writer.WriteLine("    ag -i -o \"(?<=psql:)([^:]+)(?=.+error)\" {0} | uniq | sort > FilesToRetry.txt", dataImportLogFile);
+            writer.WriteLine();
+            writer.WriteLine("    if [ ! -s FilesToRetry.txt ]; then");
+            writer.WriteLine("        # The file is empty.");
+            writer.WriteLine("        echo \"No errors were found\"");
+            writer.WriteLine("        exit");
+            writer.WriteLine("    fi");
+            writer.WriteLine();
+            writer.WriteLine("    # Read the text file line-by-line");
+            writer.WriteLine("    while IFS= read -r line; do");
+            writer.WriteLine("        if test -f \"Done/$line\"; then");
+            writer.WriteLine("            echo \"Move $line back to this directory\"");
+            writer.WriteLine("            mv Done/$line .");
+            writer.WriteLine("        else");
+            writer.WriteLine("            if test -f \"$line\"; then");
+            writer.WriteLine("                echo \"File already exists: $line\"");
+            writer.WriteLine("            else");
+            writer.WriteLine("                echo \"File not found in subdirectory or the current directory: $line\"");
+            writer.WriteLine("            fi");
+            writer.WriteLine("        fi");
+            writer.WriteLine("    done < FilesToRetry.txt");
+            writer.WriteLine();
+            writer.WriteLine("    echo \"\"");
+            writer.WriteLine("    echo \"Commands to retry loading data\"");
+            writer.WriteLine();
+            writer.WriteLine("    while IFS= read -r line; do");
+            writer.WriteLine("        echo \"psql -d dms -h localhost -U d3l243  -f $line 2>&1 | tee -a RetryLog.txt\"");
+            writer.WriteLine("    done < FilesToRetry.txt");
+            writer.WriteLine();
+
             writer.WriteLine("else");
             writer.WriteLine("    grep -i \"error\" {0}", dataImportLogFile);
             writer.WriteLine("fi");
