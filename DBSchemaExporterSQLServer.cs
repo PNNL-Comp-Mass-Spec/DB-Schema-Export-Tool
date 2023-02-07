@@ -2717,18 +2717,37 @@ namespace DB_Schema_Export_Tool
             }
         }
 
-        private string GetTargetColumnNames(ColumnMapInfo columnMapInfo, IEnumerable<string> sourceColumnNames, out List<string> targetColumnNames)
+        private string GetTargetPrimaryKeyColumnNames(
+            ColumnMapInfo columnMapInfo,
+            IEnumerable<string> sourceColumnNames,
+            out List<string> targetPrimaryKeyColumns)
         {
-            targetColumnNames = new List<string>();
+            targetPrimaryKeyColumns = new List<string>();
 
             // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var columnName in sourceColumnNames)
             {
                 var targetColumnName = GetTargetColumnName(columnMapInfo, columnName);
-                targetColumnNames.Add(targetColumnName);
+
+                if (targetColumnName.Equals(NameMapReader.SKIP_FLAG))
+                {
+                    // Table T_Job_Steps in DMS_Capture has computed column "step" which is a synonym for primary key column Step_Number
+                    // Column Step_Number gets renamed to "step" when converting to PostgreSQL
+
+                    // For T_Job_Steps, names in in sourceColumnNames are "job" and "step" when this for loop is reached
+
+                    // GetTargetColumnName() will thus convert "step" to "<skip>" since it is a computed column in the source table
+                    // (and method SkipColumn() in ColumnMapInfo will have set the new name to "<skip>")
+
+                    // Therefore, use the original column name as the primary key column
+                    targetPrimaryKeyColumns.Add(columnName);
+                    continue;
+                }
+
+                targetPrimaryKeyColumns.Add(targetColumnName);
             }
 
-            return string.Join(",", targetColumnNames);
+            return string.Join(",", targetPrimaryKeyColumns);
         }
 
         private void HandleScriptingError(FileSystemInfo outputDirectory, string databaseName, string objectType, string objectSchema, string objectName, Exception ex)
@@ -2863,7 +2882,7 @@ namespace DB_Schema_Export_Tool
 
             if (tableInfo.PrimaryKeyColumns.Count > 0)
             {
-                return GetTargetColumnNames(columnMapInfo, tableInfo.PrimaryKeyColumns, out _);
+                return GetTargetPrimaryKeyColumnNames(columnMapInfo, tableInfo.PrimaryKeyColumns, out _);
             }
 
             if (workingParams.PrimaryKeysByTable.TryGetValue(tableInfo.SourceTableName, out var primaryKeys))
@@ -2871,6 +2890,12 @@ namespace DB_Schema_Export_Tool
                 foreach (var item in primaryKeys)
                 {
                     var targetColumnName = GetTargetColumnName(columnMapInfo, item);
+
+                    if (targetColumnName.Equals(NameMapReader.SKIP_FLAG, StringComparison.OrdinalIgnoreCase))
+                    {
+                        OnWarningEvent("Ignoring primary key column {0} since it is flagged to be skipped", item);
+                        continue;
+                    }
 
                     tableInfo.AddPrimaryKeyColumn(targetColumnName);
                 }
@@ -2886,7 +2911,7 @@ namespace DB_Schema_Export_Tool
             {
                 var primaryKeyColumns = GetPrimaryKeysForTableViaScripter(tableInfo);
 
-                GetTargetColumnNames(columnMapInfo, primaryKeyColumns, out var targetPrimaryKeyColumns);
+                GetTargetPrimaryKeyColumnNames(columnMapInfo, primaryKeyColumns, out var targetPrimaryKeyColumns);
 
                 foreach (var targetColumnName in targetPrimaryKeyColumns)
                 {
@@ -2896,7 +2921,7 @@ namespace DB_Schema_Export_Tool
 
             if (tableInfo.PrimaryKeyColumns.Count > 0)
             {
-                return GetTargetColumnNames(columnMapInfo, tableInfo.PrimaryKeyColumns, out _);
+                return GetTargetPrimaryKeyColumnNames(columnMapInfo, tableInfo.PrimaryKeyColumns, out _);
             }
 
             return string.Empty;

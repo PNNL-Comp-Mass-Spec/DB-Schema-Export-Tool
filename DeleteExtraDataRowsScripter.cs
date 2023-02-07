@@ -241,7 +241,12 @@ namespace DB_Schema_Export_Tool
 
                 var primaryKeyColumn = tableInfo.PrimaryKeyColumns[i];
 
-                var columnNameInTarget = mDbSchemaExporter.GetTargetColumnName(columnMapInfo, primaryKeyColumn);
+                var targetColumnName = mDbSchemaExporter.GetTargetColumnName(columnMapInfo, primaryKeyColumn);
+
+                // If targetColumnName is "<skip>", use the original column name instead of the name returned by GetTargetColumnName()
+                // For more info, see the comments in method DBSchemaExporterSQLServer.GetTargetPrimaryKeyColumnNames
+
+                var columnNameInTarget = targetColumnName.Equals(NameMapReader.SKIP_FLAG) ? primaryKeyColumn : targetColumnName;
 
                 string currentPrimaryKeyColumn;
 
@@ -314,6 +319,11 @@ namespace DB_Schema_Export_Tool
                         }
 
                         break;
+
+                    case DBSchemaExporterBase.DataColumnTypeConstants.SkipColumn:
+                        // Assume that this column is number or text
+                        // This is the case for column Step_Number in table T_Job_Steps, which is renamed to "step"
+                        continue;
                 }
 
                 OnWarningEvent(

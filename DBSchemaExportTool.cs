@@ -764,6 +764,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var tableText = mOptions.ColumnMapForDataExport.Count == 1 ? "table" : "tables";
+
                 ShowTrace(string.Format(
                     "Loaded column information for {0} {1} from {2}",
                     mOptions.ColumnMapForDataExport.Count, tableText, dataFile.Name));
