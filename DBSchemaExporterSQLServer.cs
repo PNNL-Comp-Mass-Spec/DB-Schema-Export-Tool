@@ -1797,7 +1797,7 @@ namespace DB_Schema_Export_Tool
                     useTruncateTable = false;
                 }
 
-                if (dataRowCount > 0 && !tableInfo.FilterByDate)
+                if (dataRowCount > 0 && !tableInfo.FilterByDate && mOptions.MaxRows <= 0)
                 {
                     if (deleteExtrasThenAddNew)
                     {
