@@ -344,9 +344,10 @@ namespace DB_Schema_Export_Tool
             // Single column primary key
             var columnType = dataExportParams.ColumnNamesAndTypes[primaryKeyColumnIndices[0]].Value;
 
-            var textDataType = columnType == DBSchemaExporterBase.DataColumnTypeConstants.Text;
+            var primaryKeyIsNumeric = columnType == DBSchemaExporterBase.DataColumnTypeConstants.Numeric;
+            var primaryKeyIsText = columnType == DBSchemaExporterBase.DataColumnTypeConstants.Text;
 
-            return DeleteUsingSingleColumnKey(dataExportParams, queryResults, deleteExtrasFile, primaryKeyColumnIndices[0], primaryKeyColumnsInTarget[0], textDataType);
+            return DeleteUsingSingleColumnKey(dataExportParams, queryResults, deleteExtrasFile, primaryKeyColumnIndices[0], primaryKeyColumnsInTarget[0], primaryKeyIsNumeric, primaryKeyIsText);
         }
 
         /// <summary>
@@ -388,7 +389,7 @@ namespace DB_Schema_Export_Tool
 
             try
             {
-                // This tracks the primary key values for the first primary key column, along the comparison criteria required for additional primary key columns
+                // This tracks the primary key values for the first primary key column, along with the comparison criteria required for additional primary key columns
                 // Keys are primary key values, values are a list of comparisons to perform (e.g. "S.job = 20", "S.job = 21", "S.job = 23")
                 var primaryKeyComparisonCriteria = new SortedDictionary<dynamic, List<string>>();
 
@@ -455,6 +456,26 @@ namespace DB_Schema_Export_Tool
                 using var writer = new StreamWriter(new FileStream(deleteExtrasFile.FullName, FileMode.Create, FileAccess.Write, FileShare.Read));
 
                 writer.WriteLine("-- Commands to delete extra rows from table {0}", dataExportParams.TargetTableNameWithSchema);
+
+                if (primaryKeyComparisonCriteria.Count > 0)
+                {
+                    // Delete rows with primary keys outside the expected range
+                    // Generate a command of the form:
+
+                    // DELETE FROM t_target_table target
+                    // WHERE target.group_id < 1 OR target.group_id > 5;
+
+                    var minimumValue = primaryKeyComparisonCriteria.Keys.First();
+                    var maximumValue = primaryKeyComparisonCriteria.Keys.Last();
+
+                    writer.WriteLine();
+                    writer.WriteLine("DELETE FROM {0} target", dataExportParams.TargetTableNameWithSchema);
+
+                    writer.WriteLine("WHERE target.{0} < {1} OR target.{0} > {2};",
+                        primaryKeyColumnsInTarget[0],
+                        GetFormattedValue(minimumValue, primaryKeyColumnTypes[0], pgInsertEnabled),
+                        GetFormattedValue(maximumValue, primaryKeyColumnTypes[0], pgInsertEnabled));
+                }
 
                 // Create delete commands in batches of size PgInsertChunkSize
 
@@ -550,7 +571,8 @@ namespace DB_Schema_Export_Tool
         /// <param name="deleteExtrasFile"></param>
         /// <param name="primaryKeyColumnIndex"></param>
         /// <param name="primaryKeyTargetColumnName"></param>
-        /// <param name="textDataType"></param>
+        /// <param name="primaryKeyIsNumeric">True if the primary key column is a number (most likely an integer)</param>
+        /// <param name="primaryKeyIsText">True if the primary key column is text</param>
         /// <returns>True if successful, false if an error</returns>
         private bool DeleteUsingSingleColumnKey(
             DataExportWorkingParams dataExportParams,
@@ -558,7 +580,8 @@ namespace DB_Schema_Export_Tool
             FileSystemInfo deleteExtrasFile,
             int primaryKeyColumnIndex,
             string primaryKeyTargetColumnName,
-            bool textDataType)
+            bool primaryKeyIsNumeric,
+            bool primaryKeyIsText)
         {
             // Generate commands of the either of these forms:
 
@@ -575,7 +598,7 @@ namespace DB_Schema_Export_Tool
             //                          S.id in (1,2,4,5)
             //                   )
 
-            // When textDataType is true, surround text values with single quotes, e.g.
+            // When primaryKeyIsText is true, surround text values with single quotes, e.g.
             // DELETE FROM t_target_table
             // WHERE item BETWEEN 'apple' AND 'lemon' AND NOT item IN ('apple', 'banana', 'egg', 'grape', 'kiwi', 'lemon');
 
@@ -634,6 +657,41 @@ namespace DB_Schema_Export_Tool
                     if (currentList.Count < chunkSize && valuesProcessed < primaryKeyValues.Count)
                         continue;
 
+                    dynamic rangeStart;
+                    dynamic rangeEnd;
+
+                    if (chunksProcessed == 0 && primaryKeyIsNumeric)
+                    {
+                        // If the primary key column is an integer, use a very small integer for the lower bound to assure that extra rows get deleted
+                        rangeStart = item switch
+                        {
+                            short => short.MinValue,
+                            int => int.MinValue,
+                            long => long.MinValue,
+                            _ => currentList[0]
+                        };
+                    }
+                    else
+                    {
+                        rangeStart = currentList[0];
+                    }
+
+                    if (valuesProcessed >= primaryKeyValues.Count && primaryKeyIsNumeric)
+                    {
+                        // If the primary key column is an integer, use a very large integer for the upper bound to assure that extra rows get deleted
+                        rangeEnd = item switch
+                        {
+                            short => short.MaxValue,
+                            int => int.MaxValue,
+                            long => long.MaxValue,
+                            _ => item * 10
+                        };
+                    }
+                    else
+                    {
+                        rangeEnd = item;
+                    }
+
                     // ReSharper disable HeuristicUnreachableCode
                     // ReSharper disable once ConditionIsAlwaysTrueOrFalse
                     if (chunksProcessed == 0 && SHOW_NOT_IN_OPTION)
@@ -644,8 +702,8 @@ namespace DB_Schema_Export_Tool
                         writer.WriteLine("-- DELETE FROM {0}", dataExportParams.QuotedTargetTableNameWithSchema);
                         writer.WriteLine("-- WHERE {0} BETWEEN {1} AND {2} AND NOT {0} IN (",
                             primaryKeyTargetColumnName,
-                            GetFormattedValue(currentList[0], textDataType, pgInsertEnabled),
-                            GetFormattedValue(item, textDataType, pgInsertEnabled));
+                            GetFormattedValue(rangeStart, primaryKeyIsText, pgInsertEnabled),
+                            GetFormattedValue(rangeEnd, primaryKeyIsText, pgInsertEnabled));
 
                         var itemsAppended = 0;
                         while (itemsAppended < currentList.Count)
@@ -653,7 +711,7 @@ namespace DB_Schema_Export_Tool
                             if (itemsAppended > 0)
                                 writer.WriteLine(",");
 
-                            var delimitedList = GetCommaSeparatedList(currentList.Skip(itemsAppended).Take(ITEMS_PER_ROW), textDataType, pgInsertEnabled);
+                            var delimitedList = GetCommaSeparatedList(currentList.Skip(itemsAppended).Take(ITEMS_PER_ROW), primaryKeyIsText, pgInsertEnabled);
 
                             writer.Write("-- {0}", delimitedList);
 
@@ -674,8 +732,8 @@ namespace DB_Schema_Export_Tool
                     writer.WriteLine("DELETE FROM {0} target", dataExportParams.QuotedTargetTableNameWithSchema);
                     writer.WriteLine("WHERE {0} BETWEEN {1} AND {2} AND",
                         primaryKeyTargetColumnName,
-                        GetFormattedValue(currentList[0], textDataType, pgInsertEnabled),
-                        GetFormattedValue(item, textDataType, pgInsertEnabled));
+                        GetFormattedValue(rangeStart, primaryKeyIsText, pgInsertEnabled),
+                        GetFormattedValue(rangeEnd, primaryKeyIsText, pgInsertEnabled));
 
                     writer.WriteLine("      NOT EXISTS ( SELECT S.{0}", primaryKeyTargetColumnName);
                     writer.WriteLine("                   FROM {0} S", dataExportParams.QuotedTargetTableNameWithSchema);
@@ -688,7 +746,7 @@ namespace DB_Schema_Export_Tool
                         if (itemsWritten > 0)
                             writer.WriteLine(",");
 
-                        var delimitedList = GetCommaSeparatedList(currentList.Skip(itemsWritten).Take(ITEMS_PER_ROW), textDataType, pgInsertEnabled);
+                        var delimitedList = GetCommaSeparatedList(currentList.Skip(itemsWritten).Take(ITEMS_PER_ROW), primaryKeyIsText, pgInsertEnabled);
                         writer.Write(delimitedList);
 
                         itemsWritten += ITEMS_PER_ROW;
@@ -713,9 +771,9 @@ namespace DB_Schema_Export_Tool
             }
         }
 
-        private string GetCommaSeparatedList(IEnumerable<dynamic> items, bool textDataType, bool pgInsertEnabled)
+        private string GetCommaSeparatedList(IEnumerable<dynamic> items, bool primaryKeyIsText, bool pgInsertEnabled)
         {
-            if (!textDataType)
+            if (!primaryKeyIsText)
                 return string.Join(",", items);
 
             var quotedValues = new List<string>();
@@ -728,9 +786,9 @@ namespace DB_Schema_Export_Tool
             return string.Join(",", quotedValues);
         }
 
-        private string GetFormattedValue<dynamic>(dynamic columnValue, bool textDataType, bool pgInsertEnabled)
+        private string GetFormattedValue<dynamic>(dynamic columnValue, bool primaryKeyIsText, bool pgInsertEnabled)
         {
-            if (textDataType)
+            if (primaryKeyIsText)
             {
                 return mDbSchemaExporter.FormatValueForInsertAsString(columnValue, pgInsertEnabled);
             }
