@@ -225,7 +225,7 @@ namespace DB_Schema_Export_Tool
         {
             const string DEBUG_DIRECTORY_NAME = @"\debug";
 
-            var appDirectoryPath = ProcessFilesOrDirectoriesBase.GetAppDirectoryPath();
+            var appDirectoryPath = AppUtils.GetAppDirectoryPath();
 
             if (returnParentIfDirectoryNamedDebug && appDirectoryPath.ToLower().EndsWith(DEBUG_DIRECTORY_NAME))
             {
