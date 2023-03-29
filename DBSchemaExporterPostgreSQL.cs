@@ -1757,6 +1757,10 @@ namespace DB_Schema_Export_Tool
                     nameToUse = "_Permissions";
                     break;
 
+                case "COLLATION":
+                    nameToUse = "_Collation_" + currentObject.Name;
+                    break;
+
                 case "COMMENT":
                     var typeMatch = mNameTypeTargetMatcher.Match(currentObject.Name);
 
