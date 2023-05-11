@@ -1767,7 +1767,12 @@ namespace DB_Schema_Export_Tool
                     if (typeMatch.Success)
                     {
                         var targetObjectType = typeMatch.Groups["ObjectType"].Value;
-                        var targetObjectName = typeMatch.Groups["ObjectName"].Value;
+                        var targetObjectName = UnquoteName(typeMatch.Groups["ObjectName"].Value);
+
+                        if (targetObjectName.StartsWith("\""))
+                        {
+                            // The name is surrounded by double quotes; remove them
+                        }
 
                         switch (targetObjectType)
                         {
@@ -2252,6 +2257,19 @@ namespace DB_Schema_Export_Tool
             {
                 scriptInfoByObject.Add(outputFileName, cachedLines);
             }
+        }
+
+        /// <summary>
+        /// If objectName is surrounded by double quotes, remove them
+        /// </summary>
+        /// <param name="objectName"></param>
+        /// <returns>Unquoted name</returns>
+        private string UnquoteName(string objectName)
+        {
+            if (objectName.StartsWith("\"") && objectName.EndsWith("\""))
+                return objectName.Trim('"');
+
+            return objectName;
         }
 
         private void UpdateCachedObjectInfo(
