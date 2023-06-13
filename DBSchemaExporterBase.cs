@@ -770,29 +770,35 @@ namespace DB_Schema_Export_Tool
                 writer.WriteLine(PSQL_FORMAT_STRING, dbName, dbHost, dbUser, dbPort, Path.GetFileName(statementLogControlFiles.ShowLogMinDurationValue), dataImportLogFile);
             }
 
-            foreach (var relativePath in sortedScriptFiles)
+            foreach (var relativeScriptFilePath in sortedScriptFiles)
             {
                 writer.WriteLine();
-                writer.WriteLine("echo Processing {0} | tee -a {1}", relativePath, dataImportLogFile);
+                writer.WriteLine("if test -f {0}; then", relativeScriptFilePath);
+                writer.WriteLine("    echo Processing {0} | tee -a {1}", relativeScriptFilePath, dataImportLogFile);
 
-                writer.WriteLine(PSQL_FORMAT_STRING, dbName, dbHost, dbUser, dbPort, relativePath, dataImportLogFile);
+                writer.WriteLine("    " + PSQL_FORMAT_STRING, dbName, dbHost, dbUser, dbPort, relativeScriptFilePath, dataImportLogFile);
 
-                var lastSlashIndex = relativePath.LastIndexOf('/');
+                var lastSlashIndex = relativeScriptFilePath.LastIndexOf('/');
 
                 string targetFilePath;
 
                 if (lastSlashIndex > 0)
                 {
-                    targetFilePath = "Done" + relativePath.Substring(lastSlashIndex);
+                    targetFilePath = "Done" + relativeScriptFilePath.Substring(lastSlashIndex);
                 }
                 else
                 {
-                    targetFilePath = "Done/" + relativePath;
+                    targetFilePath = "Done/" + relativeScriptFilePath;
                 }
 
-                writer.WriteLine("test -f {0} && rm {0}", targetFilePath);
-                writer.WriteLine("mv {0} {1} && echo '   ... moved to {1}' | tee -a {2}", relativePath, targetFilePath, dataImportLogFile);
-                writer.WriteLine("sleep 0.33");
+                writer.WriteLine("    test -f {0} && rm {0}", targetFilePath);
+                writer.WriteLine("    mv {0} {1} && echo '   ... moved to {1}' | tee -a {2}", relativeScriptFilePath, targetFilePath, dataImportLogFile);
+                writer.WriteLine("    sleep 0.33");
+                writer.WriteLine("else");
+                writer.WriteLine("    echo Skipping missing file: {0} | tee -a {1}", relativeScriptFilePath, dataImportLogFile);
+                writer.WriteLine("    sleep 0.1");
+                writer.WriteLine("fi");
+
                 writer.WriteLine("echo ''");
             }
 
