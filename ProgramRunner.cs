@@ -79,6 +79,7 @@ namespace DB_Schema_Export_Tool
 
                     if (DateTime.UtcNow.Subtract(dtLastStatus).TotalSeconds > 15)
                     {
+                        // Waiting for pg_dump.exe, 15 seconds elapsed
                         dtLastStatus = DateTime.UtcNow;
                         OnDebugEvent("Waiting for {0}, {1:0} seconds elapsed", Path.GetFileName(exePath), elapsedSeconds);
                     }
