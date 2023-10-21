@@ -17,7 +17,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "June 12, 2023";
+        public const string PROGRAM_DATE = "October 21, 2023";
 
         /// <summary>
         /// Default output directory name prefix

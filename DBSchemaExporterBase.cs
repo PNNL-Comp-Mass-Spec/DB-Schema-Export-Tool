@@ -1295,7 +1295,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="columnValue">Column value, as an object</param>
         /// <param name="pgInsertEnabled">True if using insert commands formatted as PostgreSQL compatible INSERT INTO statements</param>
         /// <returns>Value as a string</returns>
-        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <remarks>This method removes trailing spaces</remarks>
         public string FormatValueForInsertAsString(
            object columnValue,
            bool pgInsertEnabled)
@@ -1307,11 +1307,12 @@ namespace DB_Schema_Export_Tool
 
             if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || pgInsertEnabled)
             {
-                return PossiblyQuoteText(columnValue.ToString());
+                return PossiblyQuoteText(columnValue.ToString().TrimEnd(' '));
             }
 
             return columnValue.ToString();
         }
+
         /// <summary>
         /// Retrieve a list of tables in the given database
         /// </summary>
