@@ -306,7 +306,7 @@ Use `/ForceTruncate` to specify a table name (or comma separated list of names) 
 * Ignored if `/DeleteExtraRows` is false
 
 Use `/DisableTriggers` (or `/IncludeDisableTriggerCommands`) to include trigger disable / enable commands in data export files
-* Ignored if `PgInsert` is true
+* Ignored if `PgInsert` is true since `session_replication_role` is set to "replica" prior to inserting/deleting data
 
 Use `/ScriptLoad` or `/Script` to create a bash script file for loading exported table data into a PostgreSQL database
 
