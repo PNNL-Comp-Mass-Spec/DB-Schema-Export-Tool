@@ -1428,23 +1428,8 @@ namespace DB_Schema_Export_Tool
                     writer.NewLine = "\n";
                 }
 
-                if (dataExportParams.PgInsertEnabled)
-                {
-                    // Set the replication role to replicate to disable triggers
-
-                    // By default, triggers will fire when the replication role is "origin" (the default) or "local", but will not fire if the replication role is "replica"
-                    // Triggers configured as ENABLE REPLICA will only fire if the session is in "replica" mode
-                    // Triggers configured as ENABLE ALWAYS will fire regardless of the current replication role
-
-                    writer.WriteLine("-- Setting the replication role to 'replica' will disable normal triggers on tables");
-                    writer.WriteLine("SET session_replication_role = replica;");
-                    writer.WriteLine();
-                }
-                else if (mOptions.IncludeDisableTriggerCommands)
-                {
-                    writer.WriteLine("ALTER TABLE {0} DISABLE TRIGGER ALL;", dataExportParams.TargetTableNameWithSchema);
-                    writer.WriteLine();
-                }
+                // Note that the following method will set the session_replication_role to "replica" if PgInsertEnabled is true
+                PossiblyDisableTriggers(dataExportParams, mOptions, writer);
 
                 foreach (var headerRow in headerRows)
                 {
@@ -1475,21 +1460,14 @@ namespace DB_Schema_Export_Tool
                         writer.WriteLine("-- Preview the ID that will be assigned to the next item");
                         writer.WriteLine("SELECT currval('{0}');", sequenceName);
                     }
-
-                    writer.WriteLine();
-                    writer.WriteLine("SET session_replication_role = origin;");
                 }
                 else if (dataExportParams.IdentityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData)
                 {
                     writer.WriteLine("SET IDENTITY_INSERT " + dataExportParams.QuotedTargetTableNameWithSchema + " OFF");
                 }
 
-                if (!dataExportParams.PgInsertEnabled && mOptions.IncludeDisableTriggerCommands)
-                {
-                    writer.WriteLine();
-                    writer.WriteLine("ALTER TABLE {0} ENABLE TRIGGER ALL;", dataExportParams.TargetTableNameWithSchema);
-                    writer.WriteLine();
-                }
+                // Note that the following method will set the session_replication_role to "origin" if PgInsertEnabled is true
+                PossiblyEnableTriggers(dataExportParams, mOptions, writer);
 
                 return true;
             }
@@ -2849,6 +2827,44 @@ namespace DB_Schema_Export_Tool
                 sqlServer = null;
                 return false;
             }
+        }
+
+        internal static void PossiblyDisableTriggers(DataExportWorkingParams dataExportParams, SchemaExportOptions options, TextWriter writer)
+        {
+            if (dataExportParams.PgInsertEnabled)
+            {
+                // Set the replication role to replicate to disable triggers
+
+                // By default, triggers will fire when the replication role is "origin" (the default) or "local", but will not fire if the replication role is "replica"
+                // Triggers configured as ENABLE REPLICA will only fire if the session is in "replica" mode
+                // Triggers configured as ENABLE ALWAYS will fire regardless of the current replication role
+
+                writer.WriteLine("-- Setting the replication role to 'replica' will disable normal triggers on tables");
+                writer.WriteLine("SET session_replication_role = replica;");
+                writer.WriteLine();
+            }
+            else if (options.IncludeDisableTriggerCommands)
+            {
+                writer.WriteLine("ALTER TABLE {0} DISABLE TRIGGER ALL;", dataExportParams.TargetTableNameWithSchema);
+                writer.WriteLine();
+            }
+        }
+
+        internal static void PossiblyEnableTriggers(DataExportWorkingParams dataExportParams, SchemaExportOptions options, TextWriter writer)
+        {
+            if (dataExportParams.PgInsertEnabled)
+            {
+                writer.WriteLine();
+                writer.WriteLine("SET session_replication_role = origin;");
+                return;
+            }
+
+            if (!options.IncludeDisableTriggerCommands)
+                return;
+
+            writer.WriteLine();
+            writer.WriteLine("ALTER TABLE {0} ENABLE TRIGGER ALL;", dataExportParams.TargetTableNameWithSchema);
+            writer.WriteLine();
         }
 
         /// <summary>

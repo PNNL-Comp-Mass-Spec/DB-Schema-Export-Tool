@@ -17,7 +17,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "October 21, 2023";
+        public const string PROGRAM_DATE = "October 22, 2023";
 
         /// <summary>
         /// Default output directory name prefix
@@ -516,8 +516,9 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <remarks>Ignored if PgInsertTableData is true</remarks>
         [Option("IncludeDisableTriggerCommands", "DisableTriggers", HelpShowsDefault = false,
-            HelpText = "When exporting data, if this is true, include commands to disable triggers prior to inserting data into tables, " +
-                       "then re-enable triggers after inserting the data; ignored if PgInsert is true")]
+            HelpText = "When exporting data, if this is true, include commands to disable triggers prior to inserting/deleting table data, " +
+                       "then re-enable triggers after inserting/deleting data; ignored if PgInsert is true since session_replication_role " +
+                       "is set to \"replica\" prior to inserting/deleting data")]
         public bool IncludeDisableTriggerCommands { get; set; }
 
         /// <summary>
