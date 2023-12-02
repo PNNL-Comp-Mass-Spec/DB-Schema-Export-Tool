@@ -12,12 +12,12 @@ namespace DB_Schema_Export_Tool
     /// </summary>
     public class SchemaExportOptions
     {
-        // Ignore Spelling: dms, localhost, Npgsql, PostgreSQL, psql, schemas, stdin, Svn, username
+        // Ignore Spelling: app, dms, localhost, Npgsql, PostgreSQL, psql, schemas, stdin, Svn, username
 
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "October 22, 2023";
+        public const string PROGRAM_DATE = "December 2, 2023";
 
         /// <summary>
         /// Default output directory name prefix

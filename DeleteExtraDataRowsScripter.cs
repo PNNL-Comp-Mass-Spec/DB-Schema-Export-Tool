@@ -18,7 +18,7 @@ namespace DB_Schema_Export_Tool
     /// </remarks>
     internal class DeleteExtraDataRowsScripter : EventNotifier
     {
-        // Ignore Spelling: subquery
+        // Ignore Spelling: scripter, subquery
 
         private readonly DBSchemaExporterSQLServer mDbSchemaExporter;
 

@@ -9,7 +9,7 @@ namespace DB_Schema_Export_Tool
     /// </summary>
     public class DataExportWorkingParams
     {
-        // Ignore Spelling: PostgreSQL
+        // Ignore Spelling: PostgreSQL, sep
 
         /// <summary>
         /// List of column names and column types in the source table
