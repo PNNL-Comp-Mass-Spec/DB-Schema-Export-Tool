@@ -235,10 +235,8 @@ namespace DB_Schema_Export_Tool
                 if (string.IsNullOrWhiteSpace(value))
                     return;
 
-                if (!DatabasesToProcess.Contains(value))
-                {
-                    DatabasesToProcess.Add(value);
-                }
+                // DatabasesToProcess is a sorted set, and thus we can call .Add() even if it already has the value
+                DatabasesToProcess.Add(value);
             }
         }
 
@@ -253,10 +251,8 @@ namespace DB_Schema_Export_Tool
             {
                 foreach (var dbName in value.Split(','))
                 {
-                    if (!DatabasesToProcess.Contains(dbName))
-                    {
-                        DatabasesToProcess.Add(dbName);
-                    }
+                    // DatabasesToProcess is a sorted set, and thus we can call .Add() even if it already has the database name
+                    DatabasesToProcess.Add(dbName);
                 }
             }
         }
@@ -340,10 +336,7 @@ namespace DB_Schema_Export_Tool
                 {
                     var trimmedName = tableName.Trim();
 
-                    if (!TableNameFilterSet.Contains(trimmedName))
-                    {
-                        TableNameFilterSet.Add(trimmedName);
-                    }
+                    TableNameFilterSet.Add(trimmedName);
                 }
             }
         }
@@ -369,10 +362,8 @@ namespace DB_Schema_Export_Tool
                 {
                     var trimmedName = schemaName.Trim();
 
-                    if (!SchemaNameSkipList.Contains(trimmedName))
-                    {
-                        SchemaNameSkipList.Add(trimmedName);
-                    }
+                    // SchemaNameSkipList is a sorted set, and thus we can call .Add() even if it already has the trimmed name
+                    SchemaNameSkipList.Add(trimmedName);
                 }
             }
         }
@@ -495,10 +486,7 @@ namespace DB_Schema_Export_Tool
                 {
                     var trimmedName = tableName.Trim();
 
-                    if (!DataLoadTruncateTableList.Contains(trimmedName))
-                    {
-                        DataLoadTruncateTableList.Add(trimmedName);
-                    }
+                    DataLoadTruncateTableList.Add(trimmedName);
                 }
             }
         }

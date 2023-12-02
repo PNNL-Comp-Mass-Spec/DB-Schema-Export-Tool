@@ -412,10 +412,8 @@ namespace DB_Schema_Export_Tool
 
                         tablesToExportData.Add(item, maxRowsToExportPerTable);
 
-                        if (!userDefinedTableNames.Contains(item.SourceTableName))
-                        {
-                            userDefinedTableNames.Add(item.SourceTableName);
-                        }
+                        // userDefinedTableNames is a sorted set, and thus we can call .Add() even if it already has the table name
+                        userDefinedTableNames.Add(item.SourceTableName);
                     }
                 }
 
@@ -2162,10 +2160,7 @@ namespace DB_Schema_Export_Tool
 
             foreach (var item in tableNames)
             {
-                if (!TableNamesToAutoExportData.Contains(item))
-                {
-                    TableNamesToAutoExportData.Add(item);
-                }
+                TableNamesToAutoExportData.Add(item);
             }
         }
 

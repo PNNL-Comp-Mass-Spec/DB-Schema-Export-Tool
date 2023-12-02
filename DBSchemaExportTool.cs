@@ -110,7 +110,9 @@ namespace DB_Schema_Export_Tool
 
         private static void AddToSortedSetIfNew(ISet<string> filteredNames, string value)
         {
-            if (!string.IsNullOrWhiteSpace(value) && !filteredNames.Contains(value))
+            // filteredNames is a set, and thus we can call .Add() even if it already has the value
+
+            if (!string.IsNullOrWhiteSpace(value))
                 filteredNames.Add(value);
         }
 
