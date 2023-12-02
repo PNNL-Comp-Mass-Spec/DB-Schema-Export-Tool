@@ -547,8 +547,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get a list of table names to auto-export data
         /// </summary>
-        /// <param name="postgreSQLNames"></param>
-        public static SortedSet<string> GetTableNamesToAutoExportData(bool postgreSQLNames)
+        /// <param name="isPostgreSQL"></param>
+        public static SortedSet<string> GetTableNamesToAutoExportData(bool isPostgreSQL)
         {
             // Keys are table names
             // Values are the equivalent PostgreSQL name (empty strings for table names that will not get ported in the near future, or ever)
@@ -642,7 +642,7 @@ namespace DB_Schema_Export_Tool
 
             foreach (var item in tableNames)
             {
-                AddToSortedSetIfNew(filteredNames, postgreSQLNames ? item.Value : item.Key);
+                AddToSortedSetIfNew(filteredNames, isPostgreSQL ? item.Value : item.Key);
             }
 
             return filteredNames;
