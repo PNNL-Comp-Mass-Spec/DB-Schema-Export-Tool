@@ -912,7 +912,14 @@ namespace DB_Schema_Export_Tool
             return false;
         }
 
-        private FileInfo FindNewestExecutable(DirectoryInfo baseDirectory, string exeName)
+        /// <summary>
+        /// Look for the executable in the given directory or any of its subdirectories
+        /// </summary>
+        /// <param name="baseDirectory">Base directory</param>
+        /// <param name="exeName">Executable name</param>
+        /// <param name="preferredDirectoryName">Preferred subdirectory</param>
+        /// <returns></returns>
+        private FileInfo FindNewestExecutable(DirectoryInfo baseDirectory, string exeName, string preferredDirectoryName)
         {
             var foundFiles = baseDirectory.GetFileSystemInfos(exeName, SearchOption.AllDirectories);
 
@@ -920,16 +927,30 @@ namespace DB_Schema_Export_Tool
                 return null;
 
             FileInfo newestItem = null;
+            FileInfo newestItemPreferredDirectory = null;
 
             foreach (var item in foundFiles)
             {
-                if (item is FileInfo matchingExe && (newestItem == null || item.LastWriteTime > newestItem.LastWriteTime))
+                if (item is not FileInfo matchingExe)
+                    continue;
+
+                if (newestItem == null || item.LastWriteTime > newestItem.LastWriteTime)
                 {
                     newestItem = matchingExe;
                 }
+
+                if (string.IsNullOrWhiteSpace(preferredDirectoryName) || matchingExe.Directory?.Name.Equals(preferredDirectoryName) != true)
+                {
+                    continue;
+                }
+
+                if (newestItemPreferredDirectory == null || item.LastWriteTime > newestItemPreferredDirectory.LastWriteTime)
+                {
+                    newestItemPreferredDirectory = matchingExe;
+                }
             }
 
-            return newestItem;
+            return newestItemPreferredDirectory ?? newestItem;
         }
 
         private FileInfo FindPgDumpExecutable()
@@ -972,7 +993,7 @@ namespace DB_Schema_Export_Tool
                 if (userDirectory.Exists)
                 {
                     // Find the newest file named exeName
-                    var foundFile = FindNewestExecutable(userDirectory, exeName);
+                    var foundFile = FindNewestExecutable(userDirectory, exeName, "bin");
 
                     if (foundFile != null)
                     {
@@ -982,7 +1003,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var workingDirectory = new DirectoryInfo(".");
-                var foundWorkDirFile = FindNewestExecutable(workingDirectory, exeName);
+                var foundWorkDirFile = FindNewestExecutable(workingDirectory, exeName, "bin");
 
                 if (foundWorkDirFile != null)
                 {
@@ -1014,8 +1035,8 @@ namespace DB_Schema_Export_Tool
 
                 if (postgresDirectory.Exists)
                 {
-                    // Find the newest file named exeName
-                    var foundFile = FindNewestExecutable(postgresDirectory, exeName);
+                    // Find the newest file named exeName, preferably choosing the .exe in the bin directory vs. the pgAdmin 4 runtime directory
+                    var foundFile = FindNewestExecutable(postgresDirectory, exeName, "bin");
 
                     if (foundFile != null)
                     {
@@ -1025,7 +1046,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 var workingDirectory = new DirectoryInfo(".");
-                var foundWorkDirFile = FindNewestExecutable(workingDirectory, exeName);
+                var foundWorkDirFile = FindNewestExecutable(workingDirectory, exeName, "bin");
 
                 if (foundWorkDirFile != null)
                 {
