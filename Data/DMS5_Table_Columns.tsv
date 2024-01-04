@@ -111,7 +111,7 @@ T_Campaign	Campaign_ID	campaign_id
 T_Campaign	Campaign_Num	campaign	
 T_Campaign	CM_comment	comment	
 T_Campaign	CM_created	created	
-T_Campaign	CM_Data_Release_Restrictions	data_release_restrictions	
+T_Campaign	CM_Data_Release_Restriction	data_release_restriction_id	
 T_Campaign	CM_Description	description	
 T_Campaign	CM_EPR_List	epr_list	
 T_Campaign	CM_EUS_Proposal_List	eus_proposal_list	
