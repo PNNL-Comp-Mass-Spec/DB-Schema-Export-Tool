@@ -17,7 +17,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "December 2, 2023";
+        public const string PROGRAM_DATE = "January 11, 2024";
 
         /// <summary>
         /// Default output directory name prefix
@@ -34,7 +34,7 @@ namespace DB_Schema_Export_Tool
         /// Keys are source table name, values are a class tracking the source and target column names for the table
         /// </summary>
         /// <remarks>
-        /// Keys are not case sensitive
+        /// Keys are not case-sensitive
         /// </remarks>
         public Dictionary<string, ColumnMapInfo> ColumnMapForDataExport { get; }
 

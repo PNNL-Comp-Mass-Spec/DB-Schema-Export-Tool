@@ -93,7 +93,7 @@ namespace TableNameMapContainer
         /// <summary>
         /// Add a primary key column
         /// </summary>
-        /// <param name="columnName"></param>
+        /// <param name="columnName">Primary key column name</param>
         /// <exception cref="DuplicateNameException"></exception>
         public void AddPrimaryKeyColumn(string columnName)
         {
@@ -110,7 +110,7 @@ namespace TableNameMapContainer
         /// <summary>
         /// Returns true if the primary keys include the specified column
         /// </summary>
-        /// <param name="columnName"></param>
+        /// <param name="columnName">Column name</param>
         public bool ContainsPrimaryKey(string columnName)
         {
             return mPrimaryKeyColumnNames.Contains(columnName);

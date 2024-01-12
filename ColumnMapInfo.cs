@@ -14,7 +14,7 @@ namespace DB_Schema_Export_Tool
         /// Keys are source column name
         /// Values are target column name
         /// </summary>
-        /// <remarks>Keys are not case sensitive</remarks>
+        /// <remarks>Keys are not case-sensitive</remarks>
         private readonly Dictionary<string, string> mColumnNameMap;
 
         /// <summary>
