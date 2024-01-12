@@ -1699,7 +1699,6 @@ namespace DB_Schema_Export_Tool
                 var programRunner = new ProgramRunner();
                 RegisterEvents(programRunner);
 
-                string cmdArgs;
                 int maxRuntimeSeconds;
 
                 bool success;
@@ -1724,17 +1723,17 @@ namespace DB_Schema_Export_Tool
                             continue;
                         }
 
-                        cmdArgs = string.Format(" add \"{0}\"", fileToAdd.FullName);
+                        var addArgs = string.Format("add \"{0}\"", fileToAdd.FullName);
                         maxRuntimeSeconds = 30;
 
                         if (mOptions.PreviewExport)
                         {
-                            OnStatusEvent("Preview running {0} {1}", repoExe.FullName, cmdArgs);
+                            OnStatusEvent("Preview running {0} {1}", repoExe.FullName, addArgs);
                             continue;
                         }
 
                         success = programRunner.RunCommand(
-                            repoExe.FullName, cmdArgs, fileToAdd.Directory.FullName,
+                            repoExe.FullName, addArgs, fileToAdd.Directory.FullName,
                             out var addConsoleOutput, out var addErrorOutput, maxRuntimeSeconds);
 
                         if (!success)
@@ -1760,22 +1759,20 @@ namespace DB_Schema_Export_Tool
                 OnStatusEvent("Looking for modified files tracked by {0} at {1}", toolName, targetDirectory.FullName);
 
                 // Count the number of new or modified files
-                cmdArgs = string.Format(" status \"{0}\"", targetDirectory.FullName);
                 maxRuntimeSeconds = 300;
 
-                if (repoManagerType == RepoManagerType.Git)
-                {
-                    cmdArgs = " status -s -u";
-                }
+                var statusArgs = repoManagerType == RepoManagerType.Git
+                    ? "status -s -u"
+                    : string.Format("status \"{0}\"", targetDirectory.FullName);
 
                 if (mOptions.PreviewExport)
                 {
-                    OnStatusEvent("Preview running {0} {1}", repoExe.FullName, cmdArgs);
+                    OnStatusEvent("Preview running {0} {1}", repoExe.FullName, statusArgs);
                     return;
                 }
 
                 success = programRunner.RunCommand(
-                    repoExe.FullName, cmdArgs, targetDirectory.FullName,
+                    repoExe.FullName, statusArgs, targetDirectory.FullName,
                     out var statusConsoleOutput, out var statusErrorOutput, maxRuntimeSeconds);
 
                 if (!success)
@@ -1849,11 +1846,11 @@ namespace DB_Schema_Export_Tool
                     OnStatusEvent("Committing changes to {0}: {1}", toolName, commitMessage);
 
                     // Commit the changes
-                    cmdArgs = string.Format(" commit \"{0}\" --message \"{1}\"", targetDirectory.FullName, commitMessage);
+                    var commitArgs = string.Format("commit \"{0}\" --message \"{1}\"", targetDirectory.FullName, commitMessage);
                     maxRuntimeSeconds = 120;
 
                     success = programRunner.RunCommand(
-                        repoExe.FullName, cmdArgs, targetDirectory.FullName,
+                        repoExe.FullName, commitArgs, targetDirectory.FullName,
                         out var commitConsoleOutput, out var commitErrorOutput, maxRuntimeSeconds);
 
                     if (!success)
@@ -1878,27 +1875,29 @@ namespace DB_Schema_Export_Tool
                     {
                         for (var iteration = 1; iteration <= 2; iteration++)
                         {
+                            string pushArgs;
+
                             if (repoManagerType == RepoManagerType.Hg)
                             {
                                 // Push the changes
-                                cmdArgs = " push";
+                                pushArgs = "push";
                             }
                             else
                             {
                                 // Push the changes to the master, both on origin and GitHub
                                 if (iteration == 1)
                                 {
-                                    cmdArgs = " push origin";
+                                    pushArgs = "push origin";
                                 }
                                 else
                                 {
-                                    cmdArgs = " push GitHub";
+                                    pushArgs = "push GitHub";
                                 }
                             }
 
                             maxRuntimeSeconds = 300;
                             success = programRunner.RunCommand(
-                                repoExe.FullName, cmdArgs, targetDirectory.FullName,
+                                repoExe.FullName, pushArgs, targetDirectory.FullName,
                                 out var pushConsoleOutput, out _, maxRuntimeSeconds);
 
                             if (!success)
