@@ -126,7 +126,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="options"></param>
+        /// <param name="options">Options</param>
         public DBSchemaExporterPostgreSQL(SchemaExportOptions options) : base(options)
         {
             mProgramRunner = new ProgramRunner();
@@ -141,7 +141,7 @@ namespace DB_Schema_Export_Tool
         /// Look for Name/Type lines in cachedLines, e.g. Name: function_name(argument int); Type: FUNCTION; Schema: public; Owner: username
         /// If there is more than one Name/Type line, add a comment for each overload
         /// </summary>
-        /// <param name="cachedLines"></param>
+        /// <param name="cachedLines">Cached text lines</param>
         private void AddCommentsIfOverloaded(ICollection<string> cachedLines)
         {
             // Keys in this dictionary are of the form type_name
@@ -380,7 +380,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="tablesForDataExport">Table names that should be auto-selected</param>
         /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported</param>
         /// <param name="databaseNotFound">Output: true if the database does not exist on the server (or is inaccessible)</param>
-        /// <param name="workingParams"></param>
+        /// <param name="workingParams">Working parameters</param>
         /// <returns>True if successful, false if an error</returns>
         protected override bool ExportDBObjectsAndTableData(
             string databaseName,
@@ -1086,7 +1086,7 @@ namespace DB_Schema_Export_Tool
         /// Look for the "Name" and "Type" groups in the RegEx match
         /// Combine them, but excluding any arguments after the object name
         /// </summary>
-        /// <param name="match"></param>
+        /// <param name="match">Regex match</param>
         /// <returns>Text of the form "FUNCTION_udf_timestamp_text"</returns>
         private string GetObjectTypeNameCode(Match match)
         {
@@ -1421,7 +1421,7 @@ namespace DB_Schema_Export_Tool
         /// Login to the server
         /// </summary>
         /// <param name="databaseName">PostgreSQL database to connect to</param>
-        /// <param name="pgConnection"></param>
+        /// <param name="pgConnection">Output: Npgsql connection instance</param>
         /// <returns>True if success, otherwise false</returns>
         private bool LoginToServerWork(string databaseName, out NpgsqlConnection pgConnection)
         {
@@ -1481,9 +1481,9 @@ namespace DB_Schema_Export_Tool
         /// If a file is found, parse it to look for the given user and database on the server defined by mOptions.ServerName
         /// </summary>
         /// <remarks>This method will return an empty string if a match is found to an entry in a pgpass file in the standard location for this OS</remarks>
-        /// <param name="pgUser"></param>
-        /// <param name="currentDatabase"></param>
-        /// <param name="definedInPgPassFile"></param>
+        /// <param name="pgUser">Username</param>
+        /// <param name="currentDatabase">Database name</param>
+        /// <param name="definedInPgPassFile">Output: true if the user has an entry for the given database in the .pgpass file</param>
         /// <returns>An empty string if the password file is in the standard location; otherwise, the password (if found)</returns>
         private string LookupUserPasswordFromDisk(string pgUser, string currentDatabase, out bool definedInPgPassFile)
         {
@@ -1572,10 +1572,10 @@ namespace DB_Schema_Export_Tool
         /// <remarks>Will update mOptions.ServerName and/or mOptions.DBUser if there is a case mismatch</remarks>
         /// <param name="passwordFile">Password file info</param>
         /// <param name="isStandardLocation">True if the password file is in the standard location for this computer</param>
-        /// <param name="pgUser"></param>
-        /// <param name="currentDatabase"></param>
-        /// <param name="caseSensitive"></param>
-        /// <param name="definedInPgPassFile"></param>
+        /// <param name="pgUser">Username</param>
+        /// <param name="currentDatabase">Database name</param>
+        /// <param name="caseSensitive">When true, use case-sensitive matching</param>
+        /// <param name="definedInPgPassFile">Output: true if the user has an entry for the given database in the .pgpass file</param>
         /// <returns>An empty string if the password file is in the standard location; otherwise, the password (if found)</returns>
         private string LookupUserPasswordFromDisk(
             FileSystemInfo passwordFile,
@@ -1676,7 +1676,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// If objectName contains characters other than A-Z, a-z, 0-9, or an underscore, surround the name with double quotes
         /// </summary>
-        /// <param name="objectName"></param>
+        /// <param name="objectName">Object name</param>
         private string PossiblyQuoteName(string objectName)
         {
             return PossiblyQuoteName(objectName, false);
@@ -2048,9 +2048,9 @@ namespace DB_Schema_Export_Tool
         /// <remarks>
         /// This file will have DDL for schemas, roles, permissions, extensions, functions, tables, and views
         /// </remarks>
-        /// <param name="databaseName"></param>
-        /// <param name="pgDumpOutputFile"></param>
-        /// <param name="unhandledScriptingCommands"></param>
+        /// <param name="databaseName">Database name</param>
+        /// <param name="pgDumpOutputFile">pgDump output file</param>
+        /// <param name="unhandledScriptingCommands">Output: true if unrecognized script commands were found</param>
         private void ProcessPgDumpSchemaFile(string databaseName, FileInfo pgDumpOutputFile, out bool unhandledScriptingCommands)
         {
             unhandledScriptingCommands = false;
@@ -2283,7 +2283,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// If objectName is surrounded by double quotes, remove them
         /// </summary>
-        /// <param name="objectName"></param>
+        /// <param name="objectName">Object name</param>
         /// <returns>Unquoted name</returns>
         private string UnquoteName(string objectName)
         {

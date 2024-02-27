@@ -33,8 +33,8 @@
         /// <summary>
         /// Constructor that accepts name and type
         /// </summary>
-        /// <param name="objectName"></param>
-        /// <param name="objectType"></param>
+        /// <param name="objectName">Object name</param>
+        /// <param name="objectType">Object type</param>
         public DatabaseObjectInfo(string objectName, string objectType)
         {
             Clear();

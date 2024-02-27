@@ -25,7 +25,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="options"></param>
+        /// <param name="options">Options</param>
         public DBSchemaUpdater(SchemaExportOptions options)
         {
             mColumnNameMatcher = new Regex(@"\[(?<ColumnName>[^]]+)\]|(?<ColumnName>[^\s]+)", RegexOptions.Compiled);
@@ -71,12 +71,12 @@ namespace DB_Schema_Export_Tool
         /// Advance the reader and update column names
         /// Write the updated text to the writer
         /// </summary>
-        /// <param name="reader"></param>
-        /// <param name="writer"></param>
-        /// <param name="options"></param>
-        /// <param name="tablesForDataExport"></param>
-        /// <param name="createItemMatch"></param>
-        /// <param name="renameColumns"></param>
+        /// <param name="reader">Reader</param>
+        /// <param name="writer">Writer</param>
+        /// <param name="options">Options</param>
+        /// <param name="tablesForDataExport">Tables to export data from</param>
+        /// <param name="createItemMatch">Regex result for the item creation DDL</param>
+        /// <param name="renameColumns">When true, rename columns</param>
         private void UpdateColumnNamesInDDL(
             StreamReader reader,
             TextWriter writer,
@@ -234,10 +234,10 @@ namespace DB_Schema_Export_Tool
         /// Parse a schema file with CREATE TABLE and other database DDL statements
         /// Update table and column names using information in tablesForDataExport and options.ColumnMapForDataExport
         /// </summary>
-        /// <param name="schemaFileToParse"></param>
-        /// <param name="options"></param>
-        /// <param name="tablesForDataExport"></param>
-        /// <param name="updatedSchemaFilePath"></param>
+        /// <param name="schemaFileToParse">Schema file to parse</param>
+        /// <param name="options">Options</param>
+        /// <param name="tablesForDataExport">Tables to export data from</param>
+        /// <param name="updatedSchemaFilePath">Output: updated schema file path</param>
         /// <returns>True if successful, false if an error</returns>
         public bool UpdateColumnNamesInExistingSchemaFile(
             string schemaFileToParse,
@@ -333,7 +333,7 @@ namespace DB_Schema_Export_Tool
 
                     if (createViewMatch.Success)
                     {
-                        // Note: only check for whether or not to skip the view; do not update column names in the view
+                        // Note: only check for whether to skip the view; do not update column names in the view
                         // A separate application is used to update column names in views:
                         // https://github.com/PNNL-Comp-Mass-Spec/PgSQL-View-Creator-Helper
                         UpdateColumnNamesInDDL(reader, writer, options, tablesForDataExport, createViewMatch, false);
@@ -377,9 +377,9 @@ namespace DB_Schema_Export_Tool
         /// Examine the Create Table DDL to find the location of the primary key column
         /// Move it to the first column if not in the first column
         /// </summary>
-        /// <param name="tableName"></param>
-        /// <param name="createTableDDL"></param>
-        /// <param name="primaryKeyColumns"></param>
+        /// <param name="tableName">Table name</param>
+        /// <param name="createTableDDL">List of table creation DDL commands</param>
+        /// <param name="primaryKeyColumns">Primary key column names</param>
         public List<string> UpdateCreateTablePrimaryKeyPosition(
             string tableName,
             List<string> createTableDDL,
@@ -550,8 +550,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Open the newly created schema file and look for additional references to tables and views that need to be renamed
         /// </summary>
-        /// <param name="schemaFileToUpdate"></param>
-        /// <param name="renamedTablesAndViews"></param>
+        /// <param name="schemaFileToUpdate">Schema file to update</param>
+        /// <param name="renamedTablesAndViews">Dictionary of renamed tables and views; keys are the source name and values are the new name</param>
         /// <returns>True if successful, false if an error</returns>
         public bool UpdateTableAndViewNamesInExistingSchemaFile(
             string schemaFileToUpdate,

@@ -32,14 +32,14 @@ namespace DB_Schema_Export_Tool
         /// <remarks>
         /// If DeleteExtraRowsBeforeImport is true and the table has a primary key, will create a file for deleting extra data rows in a target table
         /// </remarks>
-        /// <param name="tableInfo"></param>
-        /// <param name="columnMapInfo"></param>
-        /// <param name="dataExportParams"></param>
-        /// <param name="headerRows"></param>
-        /// <param name="workingParams"></param>
-        /// <param name="queryResults"></param>
-        /// <param name="tableDataOutputFile"></param>
-        /// <param name="tableDataOutputFileRelativePath"></param>
+        /// <param name="tableInfo">Table info</param>
+        /// <param name="columnMapInfo">Class tracking the source and target column names for the table</param>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="headerRows">Header rows</param>
+        /// <param name="workingParams">Working parameters</param>
+        /// <param name="queryResults">Query results</param>
+        /// <param name="tableDataOutputFile">Table data output file info</param>
+        /// <param name="tableDataOutputFileRelativePath">Table data output file relative path</param>
         /// <param name="dataExportError">Output: true if an error was encountered, otherwise false</param>
         /// <returns>Insert Into line to use when SaveDataAsInsertIntoStatements is true and PgInsertEnabled is false; otherwise, an empty string</returns>
         private string ExportDBTableDataInit(

@@ -13,7 +13,7 @@
         public string ServerName { get; set; }
 
         /// <summary>
-        /// Database user name
+        /// Database username
         /// </summary>
         public string UserName { get; set; }
 
@@ -46,8 +46,8 @@
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="serverName"></param>
-        /// <param name="useIntegrated"></param>
+        /// <param name="serverName">Server name</param>
+        /// <param name="useIntegrated">If true, use integrated authentication</param>
         public ServerConnectionInfo(string serverName, bool useIntegrated)
         {
             Reset();
@@ -71,8 +71,8 @@
         /// <summary>
         /// Update the cached server info
         /// </summary>
-        /// <param name="options"></param>
-        /// <param name="currentDatabase"></param>
+        /// <param name="options">Options</param>
+        /// <param name="currentDatabase">Current database name</param>
         public void UpdateInfo(SchemaExportOptions options, string currentDatabase)
         {
             ServerName = options.ServerName;

@@ -82,7 +82,7 @@ namespace DB_Schema_Export_Tool
         /// Add a file to be included in the bash script for loading data into a PostgreSQL database
         /// </summary>
         /// <remarks>Will also include files for removing extra rows if DeleteExtraRowsBeforeImport is true</remarks>
-        /// <param name="relativeFilePath"></param>
+        /// <param name="relativeFilePath">Relative file path</param>
         public void AddDataLoadScriptFile(string relativeFilePath)
         {
             DataLoadScriptFiles.Add(relativeFilePath.Replace('\\', '/'));
@@ -91,7 +91,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Add a warning message
         /// </summary>
-        /// <param name="message"></param>
+        /// <param name="message">Warning message</param>
         public void AddWarningMessage(string message)
         {
             if (WarningMessages.Contains(message))

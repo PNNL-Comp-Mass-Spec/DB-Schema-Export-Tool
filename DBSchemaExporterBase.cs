@@ -188,7 +188,7 @@ namespace DB_Schema_Export_Tool
         private readonly Regex mColumnCharNonStandardMatcher;
 
         /// <summary>
-        /// Matches reserved words (key words)
+        /// Matches reserved words (keywords)
         /// </summary>
         /// <remarks>
         /// If a match is found, quote the name with double quotes (PostgreSQL) or square brackets (SQL Server)
@@ -289,7 +289,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="options"></param>
+        /// <param name="options">Options</param>
         protected DBSchemaExporterBase(SchemaExportOptions options)
         {
             mOptions = options;
@@ -499,7 +499,7 @@ namespace DB_Schema_Export_Tool
         /// Quote backslash, newline, carriage return, and tab characters
         /// Required to write out data in a format compatible with the PostgreSQL COPY command
         /// </summary>
-        /// <param name="columnValue"></param>
+        /// <param name="columnValue">Column value</param>
         private string CleanForCopyCommand(object columnValue)
         {
             if (columnValue == null)
@@ -525,7 +525,7 @@ namespace DB_Schema_Export_Tool
         /// a-z, 0-9, underscore, space, equals sign, plus sign, minus sign, comma, period,
         /// semicolon, tilde, exclamation mark, and the symbols @ # $ % ^ &amp; ( ) { } [ ]
         ///</remarks>
-        /// <param name="filename"></param>
+        /// <param name="filename">Filename</param>
         /// <returns>Updated filename</returns>
         protected string CleanNameForOS(string filename)
         {
@@ -558,8 +558,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Compute progress, given the number of items processed and the total number of items
         /// </summary>
-        /// <param name="itemsProcessed"></param>
-        /// <param name="totalItems"></param>
+        /// <param name="itemsProcessed">Number of items processed</param>
+        /// <param name="totalItems">Total item count</param>
         protected float ComputeSubtaskProgress(int itemsProcessed, int totalItems)
         {
             if (totalItems <= 0)
@@ -577,9 +577,9 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Examine column types to populate a list of enum DataColumnTypeConstants
         /// </summary>
-        /// <param name="sourceTableName"></param>
-        /// <param name="quoteWithSquareBrackets">When true, quote names using double quotes instead of square brackets</param>
-        /// <param name="dataExportParams"></param>
+        /// <param name="sourceTableName">Source table name</param>
+        /// <param name="quoteWithSquareBrackets">When true, quote names with square brackets; otherwise, quote with double quotes</param>
+        /// <param name="dataExportParams">Data export parameters</param>
         /// <returns>Class tracking the source and target column names for the table</returns>
         protected ColumnMapInfo ConvertDataTableColumnInfo(
             string sourceTableName,
@@ -687,7 +687,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Convert the object name to snake_case
         /// </summary>
-        /// <param name="objectName"></param>
+        /// <param name="objectName">Object name</param>
         public string ConvertNameToSnakeCase(string objectName)
         {
             return TableColumnNameMapContainer.NameUpdater.ConvertNameToSnakeCase(objectName);
@@ -697,8 +697,8 @@ namespace DB_Schema_Export_Tool
         /// Create a bash script for loading data into a PostgreSQL database
         /// </summary>
         /// <remarks>If table data export order file was provided, tables will have been added to workingParams.DataLoadScriptFiles in the specified order</remarks>
-        /// <param name="workingParams"></param>
-        /// <param name="tablesToExportData"></param>
+        /// <param name="workingParams">Working parameters</param>
+        /// <param name="tablesToExportData">Dictionary where keys are information on tables to export and values are the maximum number of rows to export</param>
         private void CreateDataLoadScriptFile(WorkingParams workingParams, IEnumerable<TableDataExportInfo> tablesToExportData)
         {
             var dateFilterApplied = tablesToExportData.Any(item => item.FilterByDate);
@@ -869,7 +869,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Create SQL files for changing PostgreSQL setting 'log_min_duration_statement'
         /// </summary>
-        /// <param name="statementLogControlFiles"></param>
+        /// <param name="statementLogControlFiles">PgStatement log control files</param>
         private void CreateStatementLogControlFiles(PgStatementLogControlFiles statementLogControlFiles)
         {
             using (var writer = new StreamWriter(new FileStream(statementLogControlFiles.DisablePgStatementLogging, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
@@ -908,7 +908,7 @@ namespace DB_Schema_Export_Tool
         /// This method extracts the delete extra data scripts, reverses their order, then appends the load data scripts to the end
         /// The reason for this is to delete extra rows from tables in the reverse order specified by the table data export order file
         /// </summary>
-        /// <param name="workingParams"></param>
+        /// <param name="workingParams">Working parameters</param>
         /// <returns>List of non-interleaved relative file paths</returns>
         private List<string> GetSortedDataLoadScriptFiles(WorkingParams workingParams)
         {
@@ -935,11 +935,11 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Export the tables, views, procedures, etc. in the given database
         /// </summary>
-        /// <param name="databaseName"></param>
-        /// <param name="tablesForDataExport"></param>
+        /// <param name="databaseName">Database name</param>
+        /// <param name="tablesForDataExport">Tables to export data from</param>
         /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported</param>
-        /// <param name="databaseNotFound"></param>
-        /// <param name="workingParams"></param>
+        /// <param name="databaseNotFound">Output: true if the database does not exist on the server (or is inaccessible)</param>
+        /// <param name="workingParams">Working parameters</param>
         /// <returns>True if successful, false if an error</returns>
         protected abstract bool ExportDBObjectsAndTableData(
             string databaseName,
@@ -1144,7 +1144,7 @@ namespace DB_Schema_Export_Tool
         /// Append a single row of results to the output file
         /// </summary>
         /// <param name="writer">Text file writer</param>
-        /// <param name="dataExportParams"></param>
+        /// <param name="dataExportParams">Data export parameters</param>
         /// <param name="delimitedRowValues">Text to write to the current line</param>
         /// <param name="columnCount">Number of columns</param>
         /// <param name="columnValues">Column values</param>
@@ -1323,8 +1323,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Generate the file name to exporting table data
         /// </summary>
-        /// <param name="tableInfo"></param>
-        /// <param name="dataExportParams"></param>
+        /// <param name="tableInfo">Table info</param>
+        /// <param name="dataExportParams">Data export parameters</param>
         /// <returns>Relative path to the output file</returns>
         private string GetFileNameForTableDataExport(
             TableDataExportInfo tableInfo,
@@ -1369,7 +1369,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get the output directory for the server info files
         /// </summary>
-        /// <param name="serverName"></param>
+        /// <param name="serverName">Server name</param>
         protected DirectoryInfo GetServerInfoOutputDirectory(string serverName)
         {
             var outputDirectoryPath = "??";
@@ -1400,8 +1400,8 @@ namespace DB_Schema_Export_Tool
         /// Get the expected name of the column in the source database;
         /// does not try to reverse engineer a snake-cased name
         /// </summary>
-        /// <param name="columnMapInfo"></param>
-        /// <param name="currentColumnName"></param>
+        /// <param name="columnMapInfo">Class tracking the source and target column names for the table</param>
+        /// <param name="currentColumnName">Current column name</param>
         /// <returns>Source DB column name</returns>
         // ReSharper disable once UnusedMember.Global
         protected string GetSourceColumnName(ColumnMapInfo columnMapInfo, string currentColumnName)
@@ -1412,10 +1412,10 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get a FileInfo object for table data
         /// </summary>
-        /// <param name="tableInfo"></param>
-        /// <param name="dataExportParams"></param>
-        /// <param name="workingParams"></param>
-        /// <param name="relativeFilePath"></param>
+        /// <param name="tableInfo">Table info</param>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="workingParams">Working parameters</param>
+        /// <param name="relativeFilePath">Output: relative file path</param>
         protected FileInfo GetTableDataOutputFile(
             TableDataExportInfo tableInfo,
             DataExportWorkingParams dataExportParams,
@@ -1457,8 +1457,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get the target column name to use when exporting data
         /// </summary>
-        /// <param name="columnMapInfo"></param>
-        /// <param name="columnName"></param>
+        /// <param name="columnMapInfo">Class tracking the source and target column names for the table</param>
+        /// <param name="columnName">Column name</param>
         /// <returns>Target column name</returns>
         public string GetTargetColumnName(ColumnMapInfo columnMapInfo, string columnName)
         {
@@ -1469,9 +1469,9 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get the target column name to use when exporting data
         /// </summary>
-        /// <param name="columnMapInfo"></param>
-        /// <param name="currentColumnName"></param>
-        /// <param name="dataColumnType"></param>
+        /// <param name="columnMapInfo">Class tracking the source and target column names for the table</param>
+        /// <param name="currentColumnName">Current column name</param>
+        /// <param name="dataColumnType">Column data type</param>
         /// <returns>Target column name</returns>
         protected string GetTargetColumnName(ColumnMapInfo columnMapInfo, string currentColumnName, ref DataColumnTypeConstants dataColumnType)
         {
@@ -1503,9 +1503,9 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get the target table name to use when exporting data
         /// </summary>
-        /// <param name="dataExportParams">Source table: schema.table_name</param>
+        /// <param name="dataExportParams">Data export parameters, including source and target table info</param>
         /// <param name="tableInfo">Table info object</param>
-        /// <param name="quoteWithSquareBrackets">When true, quote with square brackets; otherwise, quote with double quotes</param>
+        /// <param name="quoteWithSquareBrackets">When true, quote names with square brackets; otherwise, quote with double quotes</param>
         /// <returns>Quoted target table name, with schema</returns>
         protected string GetQuotedTargetTableName(
             DataExportWorkingParams dataExportParams,
@@ -1518,7 +1518,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get the schema name from an object name
         /// </summary>
-        /// <param name="objectNameWithSchema"></param>
+        /// <param name="objectNameWithSchema">Object name, with schema</param>
         protected string GetSchemaName(string objectNameWithSchema)
         {
             return GetSchemaName(objectNameWithSchema, out _);
@@ -1527,8 +1527,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get the schema name from an object name
         /// </summary>
-        /// <param name="objectNameWithSchema"></param>
-        /// <param name="objectName"></param>
+        /// <param name="objectNameWithSchema">Object name, with schema</param>
+        /// <param name="objectName">Object name</param>
         protected string GetSchemaName(string objectNameWithSchema, out string objectName)
         {
             string schemaName;
@@ -1559,7 +1559,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="dataExportParams">Data export parameters, including source and target table info</param>
         /// <param name="tableInfo">Table info object</param>
-        /// <param name="quoteWithSquareBrackets">When true, quote with square brackets; otherwise, quote with double quotes</param>
+        /// <param name="quoteWithSquareBrackets">When true, quote names with square brackets; otherwise, quote with double quotes</param>
         /// <param name="alwaysQuoteNames">When true, always returned quoted schema.table_name</param>
         /// <returns>Target table name, with schema</returns>
         protected string GetTargetTableName(
@@ -1630,7 +1630,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Return True if schemaName is "blank", "dbo", or "public"
         /// </summary>
-        /// <param name="schemaName"></param>
+        /// <param name="schemaName">Schema name</param>
         private bool IsDefaultOwnerSchema(string schemaName)
         {
             return string.IsNullOrWhiteSpace(schemaName) ||
@@ -1641,7 +1641,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Return true if any of the RegEx matchers in mObjectNameMatchers match the object name
         /// </summary>
-        /// <param name="objectName"></param>
+        /// <param name="objectName">Object name</param>
         protected bool MatchesObjectsToProcess(string objectName)
         {
             foreach (var matcher in mObjectNameMatchers)
@@ -1656,7 +1656,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Invoke the DBExportStarting event
         /// </summary>
-        /// <param name="databaseName"></param>
+        /// <param name="databaseName">Database name</param>
         protected void OnDBExportStarting(string databaseName)
         {
             DBExportStarting?.Invoke(databaseName);
@@ -1681,9 +1681,9 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// If objectName contains characters other than A-Z, a-z, 0-9, or an underscore, surround the name with square brackets or double quotes
         /// </summary>
-        /// <param name="objectName"></param>
-        /// <param name="quoteWithSquareBrackets"></param>
-        /// <param name="alwaysQuoteNames"></param>
+        /// <param name="objectName">Object name</param>
+        /// <param name="quoteWithSquareBrackets">When true, quote names with square brackets; otherwise, quote with double quotes</param>
+        /// <param name="alwaysQuoteNames">When true, always quote names</param>
         protected string PossiblyQuoteName(string objectName, bool quoteWithSquareBrackets, bool alwaysQuoteNames = false)
         {
             if (!alwaysQuoteNames &&
@@ -1704,10 +1704,10 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
-        /// Examine object names in a comma separated list, quoting any that are keywords or have non standard characters
+        /// Examine object names in a comma separated list, quoting any that are keywords or have non-standard characters
         /// </summary>
-        /// <param name="objectNames"></param>
-        /// <param name="quoteWithSquareBrackets"></param>
+        /// <param name="objectNames">Object names</param>
+        /// <param name="quoteWithSquareBrackets">When true, quote names with square brackets; otherwise, quote with double quotes</param>
         /// <returns>Comma separated list of quoted names</returns>
         protected string PossiblyQuoteNameList(string objectNames, bool quoteWithSquareBrackets)
         {
@@ -1726,7 +1726,7 @@ namespace DB_Schema_Export_Tool
         /// Surround text with single quotes
         /// Additionally, if text contains single quotes, replace them with two single quotes
         /// </summary>
-        /// <param name="text"></param>
+        /// <param name="text">Text to possibly quote</param>
         private string PossiblyQuoteText(string text)
         {
             return string.Format("'{0}'", text.Replace("'", "''"));
@@ -1772,8 +1772,8 @@ namespace DB_Schema_Export_Tool
         /// Script the objects in each of the specified databases
         /// Also script data from the specified tables from any database that has the given table names
         /// </summary>
-        /// <param name="databaseListToProcess"></param>
-        /// <param name="tablesForDataExport"></param>
+        /// <param name="databaseListToProcess">List of database names to process</param>
+        /// <param name="tablesForDataExport">Tables to export data from</param>
         /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported</param>
         private bool ScriptDBObjectsAndData(
             IReadOnlyCollection<string> databaseListToProcess,
@@ -1894,7 +1894,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Scripts out the objects on the current server, including server info, database schema, and table data
         /// </summary>
-        /// <param name="databaseList">Database names to export></param>
+        /// <param name="databaseList">Database names to export</param>
         /// <param name="tablesForDataExport">Table names for which data should be exported</param>
         /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported</param>
         /// <returns>True if success, false if a problem</returns>
@@ -1977,8 +1977,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Set the local error code
         /// </summary>
-        /// <param name="errorCode"></param>
-        /// <param name="message"></param>
+        /// <param name="errorCode">Error code</param>
+        /// <param name="message">Error message</param>
         protected void SetLocalError(DBSchemaExportErrorCodes errorCode, string message)
         {
             SetLocalError(errorCode, message, null);
@@ -1987,9 +1987,9 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Set the local error code; provide an exception instance
         /// </summary>
-        /// <param name="errorCode"></param>
-        /// <param name="message"></param>
-        /// <param name="ex"></param>
+        /// <param name="errorCode">Error code</param>
+        /// <param name="message">Error message</param>
+        /// <param name="ex">Exception</param>
         protected void SetLocalError(DBSchemaExportErrorCodes errorCode, string message, Exception ex)
         {
             try
@@ -2031,7 +2031,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// When true, show trace messages
         /// </summary>
-        /// <param name="message"></param>
+        /// <param name="message">Trace message</param>
         protected void ShowTrace(string message)
         {
             if (mOptions.Trace)
@@ -2050,7 +2050,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Check whether mOptions.SchemaNameSkipList contains the schema name
         /// </summary>
-        /// <param name="schemaName"></param>
+        /// <param name="schemaName">Schema name</param>
         /// <returns>True if the schema should be ignored</returns>
         protected bool SkipSchema(string schemaName)
         {
@@ -2060,8 +2060,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Check whether options.SchemaNameSkipList contains the schema name
         /// </summary>
-        /// <param name="options"></param>
-        /// <param name="schemaName"></param>
+        /// <param name="options">Options</param>
+        /// <param name="schemaName">Schema name</param>
         /// <returns>True if the schema should be ignored</returns>
         private static bool SkipSchema(SchemaExportOptions options, string schemaName)
         {
@@ -2071,7 +2071,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Determine whether this table should be skipped when exporting data
         /// </summary>
-        /// <param name="tableInfo"></param>
+        /// <param name="tableInfo">Table info</param>
         /// <returns>True (meaning to skip the table) if the table has "&lt;skip&gt;" for the TargetTableName</returns>
         public bool SkipTableForDataExport(TableDataExportInfo tableInfo)
         {
@@ -2086,8 +2086,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Determine whether this table should be skipped when exporting data
         /// </summary>
-        /// <param name="options"></param>
-        /// <param name="tableInfo"></param>
+        /// <param name="options">Options</param>
+        /// <param name="tableInfo">Table info</param>
         /// <returns>True (meaning to skip the table) if the table has "&lt;skip&gt;" for the TargetTableName</returns>
         public static bool SkipTableForDataExport(SchemaExportOptions options, TableDataExportInfo tableInfo)
         {
@@ -2100,9 +2100,9 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Determine whether this table should be skipped when exporting data
         /// </summary>
-        /// <param name="tablesForDataExport"></param>
-        /// <param name="candidateTableSourceTableName"></param>
-        /// <param name="tableInfo"></param>
+        /// <param name="tablesForDataExport">Tables to export data from</param>
+        /// <param name="candidateTableSourceTableName">Source table name</param>
+        /// <param name="tableInfo">Table info</param>
         /// <returns>
         /// True (meaning to skip the table) if the table name is defined in tablesForDataExport and has "&lt;skip&gt;" for the TargetTableName
         /// </returns>
@@ -2135,7 +2135,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Store the RegEx specs to use to find tables from which data should be exported
         /// </summary>
-        /// <param name="tableNameRegExSpecs"></param>
+        /// <param name="tableNameRegExSpecs">Table name Regex specs</param>
         public void StoreTableNameRegexToAutoExportData(SortedSet<string> tableNameRegExSpecs)
         {
             ShowTrace(string.Format("Storing {0} default RegEx specs for finding tables for data export", tableNameRegExSpecs.Count));
@@ -2151,7 +2151,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Store the names of tables from which data should be exported
         /// </summary>
-        /// <param name="tableNames"></param>
+        /// <param name="tableNames">Table names</param>
         public void StoreTableNamesToAutoExportData(SortedSet<string> tableNames)
         {
             ShowTrace(string.Format("Storing {0} default names for finding tables for data export", tableNames.Count));
@@ -2167,7 +2167,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Check whether mOptions.TableNameFilterSet is empty, or contains the table name
         /// </summary>
-        /// <param name="tableName"></param>
+        /// <param name="tableName">Table name</param>
         /// <returns>True if the filter set is empty, or contains the table name; otherwise false</returns>
         private bool TableNamePassesFilters(string tableName)
         {
@@ -2178,8 +2178,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Check whether options.TableNameFilterSet is empty, or contains the table name
         /// </summary>
-        /// <param name="options"></param>
-        /// <param name="tableName"></param>
+        /// <param name="options">Options</param>
+        /// <param name="tableName">Table name</param>
         /// <returns>True if the filter set is empty, or contains the table name; otherwise false</returns>
         private static bool TableNamePassesFilters(SchemaExportOptions options, string tableName)
         {
@@ -2206,7 +2206,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Validate options
         /// </summary>
-        /// <param name="databaseList"></param>
+        /// <param name="databaseList">List of database names</param>
         private bool ValidateOptionsToScriptServerAndDBObjects(IReadOnlyCollection<string> databaseList)
         {
             InitializeLocalVariables(true);
@@ -2286,8 +2286,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Validate the output directory for the current database
         /// </summary>
-        /// <param name="databaseName"></param>
-        /// <param name="workingParams"></param>
+        /// <param name="databaseName">Database name</param>
+        /// <param name="workingParams">Working parameters</param>
         protected bool ValidateOutputDirectoryForDatabaseExport(string databaseName, WorkingParams workingParams)
         {
             try
@@ -2366,9 +2366,9 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Write lines text to a file
         /// </summary>
-        /// <param name="outputFile"></param>
-        /// <param name="scriptInfo"></param>
-        /// <param name="autoAddGoStatements"></param>
+        /// <param name="outputFile">Output file</param>
+        /// <param name="scriptInfo">List of SQL statements</param>
+        /// <param name="autoAddGoStatements">When true, auto-add GO statements</param>
         /// <returns>True if success, false if an error</returns>
         protected bool WriteTextToFile(
             FileInfo outputFile,
@@ -2386,11 +2386,11 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Write lines text to a file
         /// </summary>
-        /// <param name="outputDirectory"></param>
-        /// <param name="objectName"></param>
-        /// <param name="scriptInfo"></param>
-        /// <param name="autoAddGoStatements"></param>
-        /// <param name="fileExtension"></param>
+        /// <param name="outputDirectory">Output directory</param>
+        /// <param name="objectName">Object name</param>
+        /// <param name="scriptInfo">List of SQL statements</param>
+        /// <param name="autoAddGoStatements">When true, auto-add GO statements</param>
+        /// <param name="fileExtension">File extensions</param>
         /// <returns>True if success, false if an error</returns>
         protected bool WriteTextToFile(
             FileSystemInfo outputDirectory,

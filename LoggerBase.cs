@@ -14,7 +14,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="options"></param>
+        /// <param name="options">Options</param>
         protected LoggerBase(SchemaExportOptions options)
         {
             mOptions = options;
@@ -95,8 +95,8 @@ namespace DB_Schema_Export_Tool
         /// However, does not subscribe to .ProgressUpdate
         /// Note: the DatasetInfoPlugin does subscribe to .ProgressUpdate
         /// </summary>
-        /// <param name="processingClass"></param>
-        /// <param name="writeDebugEventsToLog"></param>
+        /// <param name="processingClass">Processing class</param>
+        /// <param name="writeDebugEventsToLog">If true, write debug events to the log</param>
         protected void RegisterEvents(EventNotifier processingClass, bool writeDebugEventsToLog = true)
         {
             if (writeDebugEventsToLog)
@@ -117,8 +117,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Unregister the event handler for the given LogLevel
         /// </summary>
-        /// <param name="processingClass"></param>
-        /// <param name="messageType"></param>
+        /// <param name="processingClass">Processing class</param>
+        /// <param name="messageType">Message type</param>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         // ReSharper disable once UnusedMember.Global
         protected void UnregisterEventHandler(EventNotifier processingClass, BaseLogger.LogLevels messageType)
@@ -154,7 +154,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Show a debug event at the console, but do not log
         /// </summary>
-        /// <param name="statusMessage"></param>
+        /// <param name="statusMessage">Debug message</param>
         protected void DebugEventHandlerConsoleOnly(string statusMessage)
         {
             LogDebug(statusMessage, writeToLog: false);
@@ -163,7 +163,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Show a debug event at the console (and log if enabled)
         /// </summary>
-        /// <param name="statusMessage"></param>
+        /// <param name="statusMessage">Debug message</param>
         protected void DebugEventHandler(string statusMessage)
         {
             LogDebug(statusMessage);
@@ -172,7 +172,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Show a status event at the console (and log if enabled)
         /// </summary>
-        /// <param name="statusMessage"></param>
+        /// <param name="statusMessage">message</param>
         protected void StatusEventHandler(string statusMessage)
         {
             LogMessage(statusMessage);
@@ -181,8 +181,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Show an error event at the console (and log if enabled)
         /// </summary>
-        /// <param name="errorMessage"></param>
-        /// <param name="ex"></param>
+        /// <param name="errorMessage">Error message</param>
+        /// <param name="ex">Exception</param>
         protected void ErrorEventHandler(string errorMessage, Exception ex)
         {
             LogError(errorMessage, ex);
@@ -191,7 +191,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Show a warning event at the console (and log if enabled)
         /// </summary>
-        /// <param name="warningMessage"></param>
+        /// <param name="warningMessage">Warning message</param>
         protected void WarningEventHandler(string warningMessage)
         {
             LogWarning(warningMessage);

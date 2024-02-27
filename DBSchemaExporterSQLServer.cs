@@ -68,7 +68,7 @@ namespace DB_Schema_Export_Tool
         /// Will auto-connect to the server if options contains a server name
         /// Otherwise, explicitly call ConnectToServer
         /// </remarks>
-        /// <param name="options"></param>
+        /// <param name="options">Options</param>
         public DBSchemaExporterSQLServer(SchemaExportOptions options) : base(options)
         {
             mSchemaToIgnore = new SortedSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -360,11 +360,11 @@ namespace DB_Schema_Export_Tool
         /// Export the tables, views, procedures, etc. in the given database
         /// Also export data from tables in tablesForDataExport
         /// </summary>
-        /// <param name="databaseName"></param>
-        /// <param name="tablesForDataExport"></param>
-        /// <param name="tableDataExportOrder"></param>
-        /// <param name="databaseNotFound"></param>
-        /// <param name="workingParams"></param>
+        /// <param name="databaseName">Database name</param>
+        /// <param name="tablesForDataExport">Tables to export data from</param>
+        /// <param name="tableDataExportOrder">Table data export order</param>
+        /// <param name="databaseNotFound">Output: true if the database is not found</param>
+        /// <param name="workingParams">Working parameters</param>
         /// <returns>True if successful, false if an error</returns>
         protected override bool ExportDBObjectsAndTableData(
             string databaseName,
@@ -385,7 +385,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="tablesForDataExport">Table names that should be auto-selected</param>
         /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported</param>
         /// <param name="databaseNotFound">Output: true if the database does not exist on the server (or is inaccessible)</param>
-        /// <param name="workingParams"></param>
+        /// <param name="workingParams">Working parameters</param>
         /// <returns>True if successful, false if an error</returns>
         private bool ExportDBObjectsUsingSMO(
             Server sqlServer,
@@ -1502,8 +1502,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Generate SQL to delete extra rows from the target table
         /// </summary>
-        /// <param name="dataExportParams"></param>
-        /// <param name="queryResults"></param>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="queryResults">Query results</param>
         private void ExportDBTableDataDeleteExtraRows(DataExportWorkingParams dataExportParams, DataSet queryResults)
         {
             // If just one column in the table, use:
@@ -1677,14 +1677,14 @@ namespace DB_Schema_Export_Tool
         /// <remarks>
         /// If DeleteExtraRowsBeforeImport is true and the table has a primary key, will create a file for deleting extra data rows in a target table
         /// </remarks>
-        /// <param name="tableInfo"></param>
-        /// <param name="columnMapInfo"></param>
-        /// <param name="dataExportParams"></param>
-        /// <param name="headerRows"></param>
-        /// <param name="workingParams"></param>
-        /// <param name="queryResults"></param>
-        /// <param name="tableDataOutputFile"></param>
-        /// <param name="tableDataOutputFileRelativePath"></param>
+        /// <param name="tableInfo">Table info</param>
+        /// <param name="columnMapInfo">Class tracking the source and target column names for the table</param>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="headerRows">Header rows</param>
+        /// <param name="workingParams">Working parameters</param>
+        /// <param name="queryResults">Query results</param>
+        /// <param name="tableDataOutputFile">Table data output file</param>
+        /// <param name="tableDataOutputFileRelativePath">Table data output file relative path</param>
         /// <param name="dataExportError">Output: true if an error was encountered, otherwise false</param>
         /// <returns>Insert Into line to use when SaveDataAsInsertIntoStatements is true and PgInsertEnabled is false; otherwise, an empty string</returns>
         private string ExportDBTableDataInit(
@@ -1914,7 +1914,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="writer">Text file writer</param>
         /// <param name="queryResults">Query results dataset</param>
         /// <param name="insertIntoLine">Insert Into (Column1, Column2, Column3) line (used when SaveDataAsInsertIntoStatements is true and PgInsertEnabled is false)</param>
-        /// <param name="dataExportParams"></param>
+        /// <param name="dataExportParams">Data export parameters</param>
         private void ExportDBTableDataWork(
             TextWriter writer,
             DataSet queryResults,
@@ -2218,9 +2218,9 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Export the server logins
         /// </summary>
-        /// <param name="sqlServer"></param>
-        /// <param name="scriptOptions"></param>
-        /// <param name="outputDirectoryPathCurrentServer"></param>
+        /// <param name="sqlServer">SQL Server instance</param>
+        /// <param name="scriptOptions">Scripting options</param>
+        /// <param name="outputDirectoryPathCurrentServer">Output directory path for the current server</param>
         private void ExportSQLServerLogins(Server sqlServer, ScriptingOptions scriptOptions, FileSystemInfo outputDirectoryPathCurrentServer)
         {
             // Do not include a Try block in this Function; let the calling function handle errors
@@ -2259,9 +2259,9 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Export the SQL Server Agent jobs
         /// </summary>
-        /// <param name="sqlServer"></param>
-        /// <param name="scriptOptions"></param>
-        /// <param name="outputDirectoryPathCurrentServer"></param>
+        /// <param name="sqlServer">SQL Server instance</param>
+        /// <param name="scriptOptions">Scripting options</param>
+        /// <param name="outputDirectoryPathCurrentServer">Output directory path for the current server</param>
         private void ExportSQLServerAgentJobs(Server sqlServer, ScriptingOptions scriptOptions, FileSystemInfo outputDirectoryPathCurrentServer)
         {
             // Do not include a Try block in this Function; let the calling function handle errors
@@ -2356,7 +2356,7 @@ namespace DB_Schema_Export_Tool
         /// Query the database to obtain the primary key information for every table
         /// Store in workingParams.PrimaryKeysByTable
         /// </summary>
-        /// <param name="workingParams"></param>
+        /// <param name="workingParams">Working parameters</param>
         /// <returns>True if successful, false if an error</returns>
         public bool GetPrimaryKeyInfoFromDatabase(WorkingParams workingParams)
         {
@@ -2447,7 +2447,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Use mTableDataScripter to look for primary key column(s) for the table
         /// </summary>
-        /// <param name="tableInfo"></param>
+        /// <param name="tableInfo">Table info</param>
         /// <returns>Comma separated list of primary key columns</returns>
         private IEnumerable<string> GetPrimaryKeysForTableViaScripter(TableNameInfo tableInfo)
         {
@@ -2789,7 +2789,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Login to the server
         /// </summary>
-        /// <param name="sqlServer"></param>
+        /// <param name="sqlServer">SQL Server instance</param>
         /// <returns>True if success, otherwise false</returns>
         private bool LoginToServerWork(out Server sqlServer)
         {
@@ -2871,7 +2871,7 @@ namespace DB_Schema_Export_Tool
         /// If objectName contains characters other than A-Z, a-z, 0-9, or an underscore, surround the name with square brackets
         /// </summary>
         /// <remarks>Also quote if the name is a keyword</remarks>
-        /// <param name="objectName"></param>
+        /// <param name="objectName">Object name</param>
         private string PossiblyQuoteName(string objectName)
         {
             return PossiblyQuoteName(objectName, true);
@@ -2880,10 +2880,10 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Determine the primary key column (or columns) for a table
         /// </summary>
-        /// <param name="dataExportParams"></param>
-        /// <param name="workingParams"></param>
-        /// <param name="tableInfo"></param>
-        /// <param name="columnMapInfo"></param>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="workingParams">Working parameters</param>
+        /// <param name="tableInfo">Table info</param>
+        /// <param name="columnMapInfo">Class tracking the source and target column names for the table</param>
         /// <returns>Comma separated list of primary key column names (using target column names)</returns>
         private string ResolvePrimaryKeys(
             DataExportWorkingParams dataExportParams,
@@ -3003,7 +3003,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Export SQL Server settings and SQL Server Agent jobs
         /// </summary>
-        /// <param name="sqlServer"></param>
+        /// <param name="sqlServer">SQL Server instance</param>
         private bool ScriptServerObjects(Server sqlServer)
         {
             try

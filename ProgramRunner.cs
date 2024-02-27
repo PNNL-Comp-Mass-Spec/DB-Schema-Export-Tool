@@ -12,12 +12,12 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Run the specified external program (.exe)
         /// </summary>
-        /// <param name="exePath"></param>
-        /// <param name="cmdArgs"></param>
-        /// <param name="workDirPath"></param>
-        /// <param name="consoleOutput"></param>
-        /// <param name="errorOutput"></param>
-        /// <param name="maxRuntimeSeconds"></param>
+        /// <param name="exePath">Executable path</param>
+        /// <param name="cmdArgs">Command line arguments</param>
+        /// <param name="workDirPath">Working directory path</param>
+        /// <param name="consoleOutput">Output: console output</param>
+        /// <param name="errorOutput">Output: error stream output</param>
+        /// <param name="maxRuntimeSeconds">Maximum allowed runtime, in seconds</param>
         /// <returns>True if successful, false if an error</returns>
         public bool RunCommand(
             string exePath,

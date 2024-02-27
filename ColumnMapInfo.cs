@@ -56,7 +56,7 @@ namespace DB_Schema_Export_Tool
         /// Look for the column name in the column name map dictionary's values and return the original (source) column name if found
         /// If not found, return the provided column name
         /// </summary>
-        /// <param name="columnName"></param>
+        /// <param name="columnName">Column name</param>
         /// <returns>Source column name if in the name map dictionary, otherwise the provided column name</returns>
         public string GetSourceColumnName(string columnName)
         {
@@ -91,7 +91,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Update the target column name to be "&lt;skip&gt;"
         /// </summary>
-        /// <param name="sourceColumnName"></param>
+        /// <param name="sourceColumnName">Source column name</param>
         public void SkipColumn(string sourceColumnName)
         {
             if (IsColumnDefined(sourceColumnName))

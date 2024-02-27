@@ -27,8 +27,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="dbSchemaExporter"></param>
-        /// <param name="options"></param>
+        /// <param name="dbSchemaExporter">DB Schema Exporter instances</param>
+        /// <param name="options">Options</param>
         public DeleteExtraDataRowsScripter(DBSchemaExporterSQLServer dbSchemaExporter, SchemaExportOptions options)
         {
             mDbSchemaExporter = dbSchemaExporter;
@@ -38,8 +38,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Create a SQL script to truncate data in a table
         /// </summary>
-        /// <param name="dataExportParams"></param>
-        /// <param name="deleteExtrasFile"></param>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="deleteExtrasFile">File with delete statements for deleting extra rows</param>
         /// <returns>True if successful, false if an error</returns>
         private bool CreateTruncateTableScriptFile(DataExportWorkingParams dataExportParams, FileSystemInfo deleteExtrasFile)
         {
@@ -66,13 +66,13 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Create a file with commands to delete extra rows from the target table, filtering using the primary key column(s)
         /// </summary>
-        /// <param name="tableInfo"></param>
-        /// <param name="columnMapInfo"></param>
-        /// <param name="dataExportParams"></param>
-        /// <param name="workingParams"></param>
-        /// <param name="queryResults"></param>
-        /// <param name="tableDataOutputFile"></param>
-        /// <param name="tableDataOutputFileRelativePath"></param>
+        /// <param name="tableInfo">Table info</param>
+        /// <param name="columnMapInfo">Class tracking the source and target column names for the table</param>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="workingParams">Working parameters</param>
+        /// <param name="queryResults">Query results</param>
+        /// <param name="tableDataOutputFile">Table data output file info</param>
+        /// <param name="tableDataOutputFileRelativePath">Table data output file relative path</param>
         /// <returns>True if successful, false if an error</returns>
         public bool DeleteExtraRowsInTargetTable(
             TableDataExportInfo tableInfo,
@@ -211,12 +211,12 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Create a SQL script to delete extra rows in a table based on data in primary key column(s)
         /// </summary>
-        /// <param name="tableInfo"></param>
-        /// <param name="columnMapInfo"></param>
-        /// <param name="dataExportParams"></param>
-        /// <param name="workingParams"></param>
-        /// <param name="queryResults"></param>
-        /// <param name="deleteExtrasFile"></param>
+        /// <param name="tableInfo">Table info</param>
+        /// <param name="columnMapInfo">Class tracking the source and target column names for the table</param>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="workingParams">Working parameters</param>
+        /// <param name="queryResults">Query results</param>
+        /// <param name="deleteExtrasFile">File with delete statements for deleting extra rows</param>
         /// <returns>True if successful, false if an error</returns>
         private bool DeleteExtraRowsUsingPrimaryKey(
             TableNameInfo tableInfo,
@@ -353,12 +353,12 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Create a SQL script to delete extra rows in a table based on data in each of the table's primary key columns
         /// </summary>
-        /// <param name="dataExportParams"></param>
-        /// <param name="queryResults"></param>
-        /// <param name="deleteExtrasFile"></param>
-        /// <param name="primaryKeyColumnIndices"></param>
-        /// <param name="primaryKeyColumnsInTarget"></param>
-        /// <param name="primaryKeyColumnTypes"></param>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="queryResults">Query results</param>
+        /// <param name="deleteExtrasFile">File with delete statements for deleting extra rows</param>
+        /// <param name="primaryKeyColumnIndices">Primary key column indices</param>
+        /// <param name="primaryKeyColumnsInTarget">Primary key column names</param>
+        /// <param name="primaryKeyColumnTypes">Primary key column types</param>
         /// <returns>True if successful, false if an error</returns>
         private bool DeleteUsingMultiColumnPrimaryKey(
             DataExportWorkingParams dataExportParams,
@@ -566,11 +566,11 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Create a SQL script to delete extra rows in a table based on data in primary key column
         /// </summary>
-        /// <param name="dataExportParams"></param>
-        /// <param name="queryResults"></param>
-        /// <param name="deleteExtrasFile"></param>
-        /// <param name="primaryKeyColumnIndex"></param>
-        /// <param name="primaryKeyTargetColumnName"></param>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="queryResults">Query results</param>
+        /// <param name="deleteExtrasFile">File with delete statements for deleting extra rows</param>
+        /// <param name="primaryKeyColumnIndex">Primary key column index</param>
+        /// <param name="primaryKeyTargetColumnName">Primary key column name</param>
         /// <param name="primaryKeyIsNumeric">True if the primary key column is a number (most likely an integer)</param>
         /// <param name="primaryKeyIsText">True if the primary key column is text</param>
         /// <returns>True if successful, false if an error</returns>
@@ -815,8 +815,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Return true if the column data type is a data type that we can store in .NET dictionaries and sorted sets (integer, float, double, char, etc.)
         /// </summary>
-        /// <param name="dataExportParams"></param>
-        /// <param name="columnIndex"></param>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="columnIndex">Column index</param>
         private bool IsDotNetCompatibleDataType(DataExportWorkingParams dataExportParams, int columnIndex)
         {
             var columnInfo = dataExportParams.ColumnInfoByType[columnIndex];

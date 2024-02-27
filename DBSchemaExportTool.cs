@@ -76,7 +76,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="options"></param>
+        /// <param name="options">Options</param>
         public DBSchemaExportTool(SchemaExportOptions options) : base(options)
         {
             mOptions = options;
@@ -527,8 +527,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Look for the table named sourceTableName in tablesForDataExport
         /// </summary>
-        /// <param name="tablesForDataExport"></param>
-        /// <param name="sourceTableName"></param>
+        /// <param name="tablesForDataExport">Tables to export data from</param>
+        /// <param name="sourceTableName">Source table name</param>
         /// <param name="tableInfo">Output: tableInfo for the named table, or null if not found</param>
         /// <returns>True if found, otherwise false</returns>
         public static bool GetTableByName(IEnumerable<TableDataExportInfo> tablesForDataExport, string sourceTableName, out TableDataExportInfo tableInfo)
@@ -549,7 +549,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get a list of table names to auto-export data
         /// </summary>
-        /// <param name="isPostgreSQL"></param>
+        /// <param name="isPostgreSQL">When true, return PostgreSQL table names</param>
         public static SortedSet<string> GetTableNamesToAutoExportData(bool isPostgreSQL)
         {
             // Keys are table names
@@ -682,7 +682,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Return true if the text in headerName matches one of the supported names for the Table Name column
         /// </summary>
-        /// <param name="headerName"></param>
+        /// <param name="headerName">Header name</param>
         private bool IsHeaderRowTableColumn(string headerName)
         {
             headerName = headerName.Trim();
@@ -861,8 +861,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Parse a file that defines date filters to use when exporting table data
         /// </summary>
-        /// <param name="dateFilterFilePath"></param>
-        /// <param name="tablesForDataExport"></param>
+        /// <param name="dateFilterFilePath">Date filter file path</param>
+        /// <param name="tablesForDataExport">Tables to export data from</param>
         /// <returns>True if success (or if dateFilterFilePath is an empty string); false if an error</returns>
         private bool LoadDateFiltersForTableData(string dateFilterFilePath, ICollection<TableDataExportInfo> tablesForDataExport)
         {
@@ -1035,8 +1035,8 @@ namespace DB_Schema_Export_Tool
         /// Read the table data export file
         /// </summary>
         /// <remarks>This file can also have views that should be renamed</remarks>
-        /// <param name="tableDataFilePath"></param>
-        /// <param name="abortProcessing"></param>
+        /// <param name="tableDataFilePath">Table data file path</param>
+        /// <param name="abortProcessing">Output: if true, abort processing</param>
         /// <returns>List of loaded column info</returns>
         private List<TableDataExportInfo> LoadTablesForDataExport(string tableDataFilePath, out bool abortProcessing)
         {
@@ -1132,7 +1132,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Invoke event DebugEvent and show a debug message at the console; log if enabled
         /// </summary>
-        /// <param name="message"></param>
+        /// <param name="message">Debug message</param>
         protected new void OnDebugEvent(string message)
         {
             LogDebug(message);
@@ -1141,7 +1141,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Invoke event ErrorEvent and show an error message at the console; log if enabled
         /// </summary>
-        /// <param name="message"></param>
+        /// <param name="message">Error message</param>
         protected new void OnErrorEvent(string message)
         {
             LogError(message);
@@ -1151,8 +1151,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Invoke event ErrorEvent and show an error message and stack trace at the console; log if enabled
         /// </summary>
-        /// <param name="message"></param>
-        /// <param name="ex"></param>
+        /// <param name="message">Error message</param>
+        /// <param name="ex">Exception</param>
         protected new void OnErrorEvent(string message, Exception ex)
         {
             LogError(message, ex);
@@ -1170,7 +1170,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Invoke event StatusEvent and show the message at the console; log if enabled
         /// </summary>
-        /// <param name="message"></param>
+        /// <param name="message">Status message</param>
         protected new void OnStatusEvent(string message)
         {
             LogMessage(message);
@@ -1180,7 +1180,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Invoke event WarningEvent and show the warning at the console; log if enabled
         /// </summary>
-        /// <param name="message"></param>
+        /// <param name="message">Warning message</param>
         protected new void OnWarningEvent(string message)
         {
             LogWarning(message);
@@ -1324,7 +1324,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Export the schema or data for the databases defined in databasesToProcess
         /// </summary>
-        /// <param name="options"></param>
+        /// <param name="options">Options</param>
         /// <returns>True if successful, false if an error</returns>
         /// <exception cref="ArgumentException"></exception>
         public bool ProcessDatabases(SchemaExportOptions options)
@@ -1335,9 +1335,9 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Export the schema or data for the databases defined in databaseList
         /// </summary>
-        /// <param name="outputDirectoryPath"></param>
-        /// <param name="serverName"></param>
-        /// <param name="databaseList"></param>
+        /// <param name="outputDirectoryPath">Output directory path</param>
+        /// <param name="serverName">Server name</param>
+        /// <param name="databaseList">List of database names</param>
         /// <returns>True if successful, false if an error</returns>
         /// <exception cref="ArgumentException"></exception>
         public bool ProcessDatabases(string outputDirectoryPath, string serverName, SortedSet<string> databaseList)
@@ -1382,7 +1382,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Register the schema exporter's events
         /// </summary>
-        /// <param name="schemaExporter"></param>
+        /// <param name="schemaExporter">DB Schema Exporter instance</param>
         protected void RegisterEvents(DBSchemaExporterBase schemaExporter)
         {
             base.RegisterEvents(schemaExporter);
@@ -1413,8 +1413,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Start scripting server and database objects
         /// </summary>
-        /// <param name="databaseList"></param>
-        /// <param name="tablesForDataExport"></param>
+        /// <param name="databaseList">List of database names</param>
+        /// <param name="tablesForDataExport">Tables to export data from</param>
         /// <returns>True if successful; false if an error</returns>
         public bool ScriptServerAndDBObjects(
             List<string> databaseList,
@@ -1431,8 +1431,8 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Script server and database objects, plus optionally table data
         /// </summary>
-        /// <param name="databaseList"></param>
-        /// <param name="tablesForDataExport"></param>
+        /// <param name="databaseList">List of database names</param>
+        /// <param name="tablesForDataExport">Tables to export data from</param>
         /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported</param>
         /// <returns>True if successful; false if an error</returns>
         private bool ScriptServerAndDBObjectsWork(
@@ -1454,7 +1454,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Store a list of table name RegEx patterns for auto-exporting table data
         /// </summary>
-        /// <param name="tableNameRegExSpecs"></param>
+        /// <param name="tableNameRegExSpecs">Table name Regex specs</param>
         public void StoreTableNameRegexToAutoExportData(SortedSet<string> tableNameRegExSpecs)
         {
             mDBSchemaExporter.StoreTableNameRegexToAutoExportData(tableNameRegExSpecs);
@@ -1463,7 +1463,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Store a list of table names for auto-exporting table data
         /// </summary>
-        /// <param name="tableNames"></param>
+        /// <param name="tableNames">Table names</param>
         public void StoreTableNamesToAutoExportData(SortedSet<string> tableNames)
         {
             mDBSchemaExporter.StoreTableNameRegexToAutoExportData(tableNames);
@@ -1473,8 +1473,8 @@ namespace DB_Schema_Export_Tool
         /// Compare two strings
         /// </summary>
         /// <remarks>Case sensitive comparison</remarks>
-        /// <param name="text1"></param>
-        /// <param name="text2"></param>
+        /// <param name="text1">Item 1</param>
+        /// <param name="text2">Item 2</param>
         /// <returns>True if the strings match, otherwise false</returns>
         private static bool StringMatch(string text1, string text2)
         {

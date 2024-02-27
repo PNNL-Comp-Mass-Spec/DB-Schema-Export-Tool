@@ -758,7 +758,7 @@ namespace DB_Schema_Export_Tool
         /// Return Enabled if value is true
         /// Return Disabled if value is false
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name="value">If true, return "Enabled", otherwise return "Disabled"</param>
         private static string BoolToEnabledDisabled(bool value)
         {
             return value ? "Enabled" : "Disabled";
@@ -775,7 +775,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get the expected base log file path
         /// </summary>
-        /// <param name="options"></param>
+        /// <param name="options">Options</param>
         /// <param name="defaultBaseLogFileName">Explicit base log file name to use</param>
         public static string GetLogFilePath(SchemaExportOptions options, string defaultBaseLogFileName)
         {
@@ -1151,7 +1151,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Validate the options
         /// </summary>
-        /// <param name="errorMessage"></param>
+        /// <param name="errorMessage">Error message</param>
         /// <returns>True settings are valid; false if required arguments are missing</returns>
         public bool ValidateArgs(out string errorMessage)
         {

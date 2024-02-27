@@ -23,7 +23,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
-        /// <param name="args"></param>
+        /// <param name="args">Command line arguments</param>
         /// <returns>0 if successful, -1 if an error</returns>
         [STAThread]
         private static int Main(string[] args)
@@ -94,7 +94,7 @@ namespace DB_Schema_Export_Tool
                         return 0;
                     }
 
-                    // Delay for 1500 msec in case the user double clicked this file from within Windows Explorer (or started the program via a shortcut)
+                    // Delay for 1500 msec in case the user double-clicked this file from within Windows Explorer (or started the program via a shortcut)
                     Thread.Sleep(1500);
                     return -1;
                 }
@@ -153,7 +153,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Use this method to chain events between classes
         /// </summary>
-        /// <param name="sourceClass"></param>
+        /// <param name="sourceClass">Class to register</param>
         private static void RegisterEvents(IEventNotifier sourceClass)
         {
             sourceClass.DebugEvent += OnDebugEvent;
