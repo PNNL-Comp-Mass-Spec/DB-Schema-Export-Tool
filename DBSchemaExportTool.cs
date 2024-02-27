@@ -635,7 +635,11 @@ namespace DB_Schema_Export_Tool
 
                 // dba
                 {"AlertContacts", string.Empty},
-                {"AlertSettings", string.Empty}
+                {"AlertSettings", string.Empty},
+
+                // pg_timetable
+                {string.Empty, "chain"},    // timetable.chain
+                {string.Empty, "task"}      // timetable.task
 
                 // ReSharper restore StringLiteralTypo
             };
