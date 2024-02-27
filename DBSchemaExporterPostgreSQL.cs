@@ -1808,6 +1808,11 @@ namespace DB_Schema_Export_Tool
                                 nameToUse = targetObjectName;
                                 break;
 
+
+                            case "DOMAIN":
+                                targetScriptFile = previousTargetScriptFile;
+                                return;
+
                             default:
                                 OnWarningEvent("Possibly add a custom object type handler for comments on target object " + targetObjectType);
                                 nameToUse = targetObjectName;
@@ -1889,6 +1894,10 @@ namespace DB_Schema_Export_Tool
                         unhandledScriptingCommands = true;
                     }
 
+                    break;
+
+                case "DOMAIN":
+                    nameToUse = "_Domain_" + currentObject.Name;
                     break;
 
                 case "EVENT TRIGGER":
@@ -2011,6 +2020,10 @@ namespace DB_Schema_Export_Tool
                         OnWarningEvent("Did not find a valid table name for trigger: " + currentObject.Name);
                         unhandledScriptingCommands = true;
                     }
+                    break;
+
+                case "TYPE":
+                    nameToUse = "_Type_" + currentObject.Name;
                     break;
 
                 case "USER MAPPING":
