@@ -26,7 +26,8 @@
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\DB_Schema_Export_Tool.xml</DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
-    <NoWarn>RCS1228</NoWarn>
+    <NoWarn>IDE0028, IDE0290, IDE0300, IDE0305</NoWarn>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -37,7 +38,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
-    <NoWarn>RCS1228</NoWarn>
+    <NoWarn>IDE0028, IDE0290, IDE0300, IDE0305</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
