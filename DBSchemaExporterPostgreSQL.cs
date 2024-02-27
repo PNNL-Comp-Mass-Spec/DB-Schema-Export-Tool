@@ -112,6 +112,22 @@ namespace DB_Schema_Export_Tool
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
+        /// Use this to parse out the table and column name from column comment lines, e.g. t_analysis_job.param_file_name
+        /// This RegEx assumes the schema name has already been removed
+        /// </summary>
+        private readonly Regex mTableColumnMatcher = new(
+            @"(?<TableName>[^.]+)\.(?<ColumnName>[^ ]+)",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary>
+        /// Use this to parse out the schema, table, and column name from column comment lines, e.g.
+        /// timetable.chain.client_name
+        /// </summary>
+        private readonly Regex mTableColumnMatcherWithSchema = new(
+            @"(?<SchemaName>[^.]+)\.(?<TableName>[^.]+)\.(?<ColumnName>[^ ]+)",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary>
         /// Use this to find text
         /// t_users t_users_trigger_update_persisted
         /// </summary>
@@ -1808,6 +1824,30 @@ namespace DB_Schema_Export_Tool
                                 nameToUse = targetObjectName;
                                 break;
 
+                            case "COLUMN":
+                                // targetObjectName should be of the form "schema.table.column"
+                                // Remove the column name
+
+                                var columnMatchWithSchema = mTableColumnMatcherWithSchema.Match(targetObjectName);
+
+                                if (columnMatchWithSchema.Success)
+                                {
+                                    nameToUse = columnMatchWithSchema.Groups["TableName"].Value;
+                                    break;
+                                }
+
+                                var columnMatch = mTableColumnMatcher.Match(targetObjectName);
+
+                                if (columnMatch.Success)
+                                {
+                                    nameToUse = columnMatch.Groups["TableName"].Value;
+                                    break;
+                                }
+
+                                OnWarningEvent("Possibly add a custom object type handler for comments on target object " + targetObjectType);
+                                nameToUse = targetObjectName;
+                                unhandledScriptingCommands = true;
+                                break;
 
                             case "DOMAIN":
                                 targetScriptFile = previousTargetScriptFile;
