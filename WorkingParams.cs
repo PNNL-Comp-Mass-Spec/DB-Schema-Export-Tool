@@ -94,9 +94,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="message">Warning message</param>
         public void AddWarningMessage(string message)
         {
-            if (WarningMessages.Contains(message))
-                return;
-
+            // Add the warning, if not yet in the sorted set
             WarningMessages.Add(message);
         }
 

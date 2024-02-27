@@ -734,11 +734,10 @@ namespace DB_Schema_Export_Tool
 
             var dataImportLogFile = string.Format("ImportLog_{0:yyyy-MM-dd_HHmm}.txt", DateTime.Now);
 
-            using var writer = new StreamWriter(new FileStream(scriptFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
-            {
-                // Use Linux-compatible line feeds
-                NewLine = "\n"
-            };
+            using var writer = new StreamWriter(new FileStream(scriptFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite));
+
+            // Use Linux-compatible line feeds
+            writer.NewLine = "\n";
 
             writer.WriteLine("#!/bin/sh");
 
