@@ -590,56 +590,55 @@ namespace DB_Schema_Export_Tool
                 {"T_Status", string.Empty},
 
                 // DMS5
-                {"T_Dataset_Rating_Name", "t_dataset_rating_name"},
-                {"T_Default_PSM_Job_Types", "t_default_psm_job_types"},
-                {"T_Enzymes", "t_enzymes"},
-                {"T_Instrument_Ops_Role", "t_instrument_ops_role"},
-                {"T_MiscPaths", "t_misc_paths"},
-                {"T_Modification_Types", "t_modification_types"},
-                {"T_MyEMSLState", "t_myemsl_state"},
-                {"T_Predefined_Analysis_Scheduling_Rules", "t_predefined_analysis_scheduling_rules"},
-                {"T_Research_Team_Roles", "t_research_team_roles"},
-                {"T_Residues", "t_residues"},
-                {"T_User_Operations", "t_user_operations"},
+                {"T_Dataset_Rating_Name", "public.t_dataset_rating_name"},
+                {"T_Default_PSM_Job_Types", "public.t_default_psm_job_types"},
+                {"T_Enzymes", "public.t_enzymes"},
+                {"T_Instrument_Ops_Role", "public.t_instrument_ops_role"},
+                {"T_MiscPaths", "public.t_misc_paths"},
+                {"T_Modification_Types", "public.t_modification_types"},
+                {"T_MyEMSLState", "public.t_myemsl_state"},
+                {"T_Predefined_Analysis_Scheduling_Rules", "public.t_predefined_analysis_scheduling_rules"},
+                {"T_Research_Team_Roles", "public.t_research_team_roles"},
+                {"T_Residues", "public.t_residues"},
+                {"T_User_Operations", "public.t_user_operations"},
 
                 // Data_Package
-                {"T_Properties", "t_properties"},
-                {"T_URI_Paths", "t_uri_paths"},
+                {"T_Properties", "dpkg.t_properties"},
+                {"T_URI_Paths", "public.t_uri_paths"},
 
                 // Ontology_Lookup
-                {"ontology", "ontology"},
-                {"T_Unimod_AminoAcids", "t_unimod_amino_acids"},
-                {"T_Unimod_Bricks", "t_unimod_bricks"},
-                {"T_Unimod_Specificity_NL", "t_unimod_specificity_nl"},
+                {"T_Unimod_AminoAcids", "ont.t_unimod_amino_acids"},
+                {"T_Unimod_Bricks", "ont.t_unimod_bricks"},
+                {"T_Unimod_Specificity_NL", "ont.t_unimod_specificity_nl"},
 
                 // DMS_Pipeline and DMS_Capture
-                {"T_Automatic_Jobs", "t_automatic_jobs"},
-                {"T_Default_SP_Params", "t_default_sp_params"},
-                {"T_Processor_Instrument", "t_processor_instrument"},
-                {"T_Processor_Tool", "t_processor_tool"},
-                {"T_Processor_Tool_Group_Details", "t_processor_tool_group_details"},
-                {"T_Processor_Tool_Groups", "t_processor_tool_groups"},
-                {"T_Scripts", "t_scripts"},
-                {"T_Scripts_History", "t_scripts_history"},
-                {"T_Signatures", "t_signatures"},
-                {"T_Step_Tools", "t_step_tools"},
+                {"T_Automatic_Jobs", "cap.t_automatic_jobs"},
+                {"T_Default_SP_Params", "cap.t_default_sp_params"},
+                {"T_Processor_Instrument", "cap.t_processor_instrument"},
+                {"T_Processor_Tool", "cap.t_processor_tool"},
+                {"T_Processor_Tool_Group_Details", "cap.t_processor_tool_group_details"},
+                {"T_Processor_Tool_Groups", "cap.t_processor_tool_groups"},
+                {"T_Scripts", "cap.t_scripts"},
+                {"T_Scripts_History", "cap.t_scripts_history"},
+                {"T_Signatures", "cap.t_signatures"},
+                {"T_Step_Tools", "cap.t_step_tools"},
 
                 // Protein Sequences
-                {"T_Annotation_Types", "t_annotation_types"},
-                {"T_Archived_File_Types", "t_archived_file_types"},
-                {"T_Creation_Option_Keywords", "t_creation_option_keywords"},
-                {"T_Creation_Option_Values", "t_creation_option_values"},
-                {"T_Naming_Authorities", "t_naming_authorities"},
-                {"T_Output_Sequence_Types", "t_output_sequence_types"},
-                {"T_Protein_Collection_Types", "t_protein_collection_types"},
+                {"T_Annotation_Types", "pc.t_annotation_types"},
+                {"T_Archived_File_Types", "pc.t_archived_file_types"},
+                {"T_Creation_Option_Keywords", "pc.t_creation_option_keywords"},
+                {"T_Creation_Option_Values", "pc.t_creation_option_values"},
+                {"T_Naming_Authorities", "pc.t_naming_authorities"},
+                {"T_Output_Sequence_Types", "pc.t_output_sequence_types"},
+                {"T_Protein_Collection_Types", "pc.t_protein_collection_types"},
 
                 // dba
                 {"AlertContacts", string.Empty},
                 {"AlertSettings", string.Empty},
 
                 // pg_timetable
-                {string.Empty, "chain"},    // timetable.chain
-                {string.Empty, "task"}      // timetable.task
+                {"timetable.chain", "timetable.chain"},
+                {"timetable.task", "timetable.task"}
 
                 // ReSharper restore StringLiteralTypo
             };
