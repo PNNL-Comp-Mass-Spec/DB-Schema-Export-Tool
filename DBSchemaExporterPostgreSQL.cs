@@ -127,6 +127,20 @@ namespace DB_Schema_Export_Tool
             @"(?<SchemaName>[^.]+)\.(?<TableName>[^.]+)\.(?<ColumnName>[^ ]+)",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+        // ReSharper disable once GrammarMistakeInComment
+
+        /// <summary>
+        /// Use this to parse out the schema name and table name, or just the table name if there is no schema
+        /// </summary>
+        /// <remarks>
+        /// Example matches:
+        ///   T_Separation_Group
+        ///   timetable.parameter
+        /// </remarks>
+        private readonly Regex mTableNameAndSchemaMatcher = new(
+            @"^((?<SchemaName>[^.]+)\.)?(?<TableName>.+)$",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
         /// <summary>
         /// Use this to find text
         /// t_users t_users_trigger_update_persisted
@@ -612,6 +626,29 @@ namespace DB_Schema_Export_Tool
                     "public." + tableInfo.SourceTableName,
                     "public." + PossiblyQuoteName(tableInfo.SourceTableName)
                 };
+
+                var tableSchemaNameMatch = mTableNameAndSchemaMatcher.Match(tableInfo.SourceTableName);
+
+                if (tableSchemaNameMatch.Success)
+                {
+                    string quotedName;
+
+                    // Possibly quote the schema name (if present) and the table name in tableInfo.SourceTableName
+
+                    if (tableSchemaNameMatch.Groups["SchemaName"].Value.Length > 0)
+                    {
+                        quotedName = string.Format("{0}.{1}",
+                            PossiblyQuoteName(tableSchemaNameMatch.Groups["SchemaName"].Value),
+                            PossiblyQuoteName(tableSchemaNameMatch.Groups["TableName"].Value));
+                    }
+                    else
+                    {
+                        quotedName = PossiblyQuoteName(tableSchemaNameMatch.Groups["TableName"].Value);
+                    }
+
+                    if (!quotedName.Equals(tableInfo.SourceTableName))
+                        tableNamesToFind.Add(quotedName);
+                }
 
                 foreach (var nameToFind in tableNamesToFind)
                 {
