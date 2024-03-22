@@ -1689,6 +1689,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// If objectName contains characters other than A-Z, a-z, 0-9, or an underscore, surround the name with square brackets or double quotes
         /// </summary>
+        /// <remarks>Also quote if the name is a keyword</remarks>
         /// <param name="objectName">Object name</param>
         /// <param name="quoteWithSquareBrackets">When true, quote names with square brackets; otherwise, quote with double quotes</param>
         /// <param name="alwaysQuoteNames">When true, always quote names</param>

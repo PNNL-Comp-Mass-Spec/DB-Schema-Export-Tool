@@ -1529,6 +1529,8 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        // ReSharper disable once GrammarMistakeInComment
+
         /// <summary>
         /// Look for a .pgpass file (if Linux) or a pgpass.conf file (if Windows)
         /// If a file is found, parse it to look for the given user and database on the server defined by mOptions.ServerName
@@ -1729,6 +1731,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// If objectName contains characters other than A-Z, a-z, 0-9, or an underscore, surround the name with double quotes
         /// </summary>
+        /// <remarks>Also quote if the name is a keyword</remarks>
         /// <param name="objectName">Object name</param>
         private string PossiblyQuoteName(string objectName)
         {
