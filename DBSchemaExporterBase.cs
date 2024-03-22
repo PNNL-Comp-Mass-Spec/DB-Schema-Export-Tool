@@ -188,12 +188,14 @@ namespace DB_Schema_Export_Tool
         private readonly Regex mColumnCharNonStandardMatcher;
 
         /// <summary>
-        /// Matches reserved words (keywords)
+        /// True when connected to a server
         /// </summary>
-        /// <remarks>
-        /// If a match is found, quote the name with double quotes (PostgreSQL) or square brackets (SQL Server)
-        /// </remarks>
-        private readonly Regex mReservedWordMatcher;
+        protected bool mConnectedToServer;
+
+        /// <summary>
+        /// Current server info
+        /// </summary>
+        protected ServerConnectionInfo mCurrentServerInfo;
 
         /// <summary>
         /// Disallowed characters for file names
@@ -204,16 +206,6 @@ namespace DB_Schema_Export_Tool
         /// Object name Reg Ex match list
         /// </summary>
         protected readonly List<Regex> mObjectNameMatchers;
-
-        /// <summary>
-        /// Current server info
-        /// </summary>
-        protected ServerConnectionInfo mCurrentServerInfo;
-
-        /// <summary>
-        /// True when connected to a server
-        /// </summary>
-        protected bool mConnectedToServer;
 
         /// <summary>
         /// Export options
@@ -229,6 +221,14 @@ namespace DB_Schema_Export_Tool
         /// Progress percent complete, ending value for the current operation
         /// </summary>
         protected float mPercentCompleteEnd;
+
+        /// <summary>
+        /// Matches reserved words (keywords)
+        /// </summary>
+        /// <remarks>
+        /// If a match is found, quote the name with double quotes (PostgreSQL) or square brackets (SQL Server)
+        /// </remarks>
+        private readonly Regex mReservedWordMatcher;
 
         /// <summary>
         /// Error code
