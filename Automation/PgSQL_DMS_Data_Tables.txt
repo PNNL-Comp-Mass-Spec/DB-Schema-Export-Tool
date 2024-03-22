@@ -107,3 +107,9 @@ T_Yes_No
 # pgwatch2_metrics tables
 admin.all_distinct_dbname_metrics
 admin.storage_schema_type
+
+# pg_timetable tables
+timetable.chain
+timetable.parameter
+timetable.task
+timetable.t_cron_interval
