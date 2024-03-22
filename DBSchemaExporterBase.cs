@@ -223,6 +223,11 @@ namespace DB_Schema_Export_Tool
         protected float mPercentCompleteEnd;
 
         /// <summary>
+        /// Characters used to quote object names
+        /// </summary>
+        private readonly Regex mQuoteChars;
+
+        /// <summary>
         /// Matches reserved words (keywords)
         /// </summary>
         /// <remarks>
@@ -312,6 +317,8 @@ namespace DB_Schema_Export_Tool
             {
                 new(".+", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline)
             };
+
+            mQuoteChars = new Regex(@"[""\[\]]", RegexOptions.Compiled);
 
             mConnectedToServer = false;
             mCurrentServerInfo = new ServerConnectionInfo(string.Empty, true);
@@ -1332,9 +1339,11 @@ namespace DB_Schema_Export_Tool
             // Make sure output file name doesn't contain any invalid characters
             var defaultOwnerSchema = IsDefaultOwnerSchema(dataExportParams.TargetTableSchema);
 
+            // When calling CleanNameForOS(), use UnquoteName() to remove double quotes and square brackets, which are used for quoting names with spaces or reserved words
+
             var cleanName = defaultOwnerSchema ?
-                CleanNameForOS(dataExportParams.TargetTableName + TABLE_DATA_FILE_SUFFIX) :
-                CleanNameForOS(dataExportParams.TargetTableNameWithSchema + TABLE_DATA_FILE_SUFFIX);
+                CleanNameForOS(UnquoteName(dataExportParams.TargetTableName) + TABLE_DATA_FILE_SUFFIX) :
+                CleanNameForOS(UnquoteName(dataExportParams.TargetTableNameWithSchema) + TABLE_DATA_FILE_SUFFIX);
 
             var suffix = tableInfo.FilterByDate
                 ? string.Format("_Since_{0:yyyy-MM-dd}", tableInfo.MinimumDate)
@@ -1832,6 +1841,7 @@ namespace DB_Schema_Export_Tool
                     {
                         currentDB = currentDbName;
                         OnDebugEvent(tasksToPerform + " from database " + currentDbName);
+
                         success = ExportDBObjectsAndTableData(
                             currentDbName,
                             tablesForDataExport,
@@ -2200,6 +2210,16 @@ namespace DB_Schema_Export_Tool
             {
                 SetPauseStatus(PauseStatusConstants.UnpauseRequested);
             }
+        }
+
+        /// <summary>
+        /// Remove double quotes and square brackets from an object name
+        /// </summary>
+        /// <param name="objectName">Object name</param>
+        /// <returns></returns>
+        private object UnquoteName(string objectName)
+        {
+            return mQuoteChars.Replace(objectName, string.Empty);
         }
 
         /// <summary>
