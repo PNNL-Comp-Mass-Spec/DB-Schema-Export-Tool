@@ -50,6 +50,8 @@ namespace DB_Schema_Export_Tool
                 LogTools.LogError(errorMessage, null, logToDb);
         }
 
+        // ReSharper disable once GrammarMistakeInComment
+
         /// <summary>
         /// Log an error message and exception
         /// </summary>

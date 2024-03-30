@@ -52,6 +52,8 @@ namespace DB_Schema_Export_Tool
             mColumnNameMap[sourceColumnName] = targetColumnName;
         }
 
+        // ReSharper disable once GrammarMistakeInComment
+
         /// <summary>
         /// Look for the column name in the column name map dictionary's values and return the original (source) column name if found
         /// If not found, return the provided column name

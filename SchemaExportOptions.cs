@@ -192,6 +192,8 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        // ReSharper disable once GrammarMistakeInComment
+
         /// <summary>
         /// PostgreSQL user password
         /// </summary>

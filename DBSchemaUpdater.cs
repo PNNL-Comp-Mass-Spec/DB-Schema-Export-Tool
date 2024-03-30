@@ -403,6 +403,8 @@ namespace DB_Schema_Export_Tool
             // This holds DDL after the last column
             var suffixLines = new List<string>();
 
+            // ReSharper disable once GrammarMistakeInComment
+
             // Find the column names
             // Assume they are listed between the CREATE TABLE and CONSTRAINT lines
             // (or between CREATE TABLE and ) if the table does not have a primary key constraint)

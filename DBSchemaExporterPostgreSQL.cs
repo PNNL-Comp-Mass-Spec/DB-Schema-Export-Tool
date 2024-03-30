@@ -19,7 +19,7 @@ namespace DB_Schema_Export_Tool
         // ReSharper disable CommentTypo
 
         // Ignore Spelling: bigint, datallowconn, datistemplate, datname, dumpall, hostname,
-        // Ignore Spelling: mc, Npgsql, oid, pgpass, pgsql, postgres, PostgreSQL
+        // Ignore Spelling: mc, Npgsql, oid, pgpass, pgsql, Postgre, postgres, PostgreSQL
         // Ignore Spelling: regclass, relname, reltuples, schemaname, schemas, setval
         // Ignore Spelling: tablename, tableowner, tablespace, tcp, udf, username, usr
 
@@ -956,6 +956,8 @@ namespace DB_Schema_Export_Tool
             {
                 return true;
             }
+
+            // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
 
             if (tableDataOutputFile.Exists)
                 OnWarningEvent("{0} did not replace {1}", pgDump.Name, tableDataOutputFile.FullName);

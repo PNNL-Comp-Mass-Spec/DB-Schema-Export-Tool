@@ -617,6 +617,8 @@ namespace DB_Schema_Export_Tool
 
                     var columnValue = currentRow[primaryKeyColumnIndex];
 
+                    // ReSharper disable once CanSimplifySetAddingWithSingleCall
+
                     if (primaryKeyValues.Contains(columnValue))
                     {
                         OnWarningEvent(

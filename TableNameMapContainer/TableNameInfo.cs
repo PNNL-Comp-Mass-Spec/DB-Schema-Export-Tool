@@ -49,6 +49,8 @@ namespace TableNameMapContainer
         /// </summary>
         public bool UsePgInsert { get; set; }
 
+        // ReSharper disable once GrammarMistakeInComment
+
         /// <summary>
         /// Primary key column (or column names), using target table names
         /// </summary>
@@ -106,6 +108,8 @@ namespace TableNameMapContainer
             // This tracks column names using a SortedSet
             mPrimaryKeyColumnNames.Add(columnName);
         }
+
+        // ReSharper disable once UnusedMember.Global
 
         /// <summary>
         /// Returns true if the primary keys include the specified column
