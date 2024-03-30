@@ -63,7 +63,7 @@ namespace TableNameMapContainer
         /// Only used when UsePgInsert is true
         /// </para>
         /// <para>
-        /// If UsePgInsert is true, but this list is empty, will be auto-populated using the table's identity column
+        /// If UsePgInsert is true, but this list is empty, it will be auto-populated using the table's identity column
         /// </para>
         /// <para>
         /// Use ContainsPrimaryKey() to check whether the primary key list includes a given column

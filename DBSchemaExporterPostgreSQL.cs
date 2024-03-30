@@ -973,7 +973,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="baseDirectory">Base directory</param>
         /// <param name="exeName">Executable name</param>
         /// <param name="preferredDirectoryName">Preferred subdirectory</param>
-        /// <returns></returns>
+        /// <returns>Newest version of the executable</returns>
         private FileInfo FindNewestExecutable(DirectoryInfo baseDirectory, string exeName, string preferredDirectoryName)
         {
             var foundFiles = baseDirectory.GetFileSystemInfos(exeName, SearchOption.AllDirectories);

@@ -856,7 +856,7 @@ namespace DB_Schema_Export_Tool
         private bool ExportDBViewsProceduresAndUDFs(Database currentDatabase, ScriptingOptions scriptOptions, WorkingParams workingParams)
         {
             // Option 1) obtain the list of views, stored procedures, and UDFs is to use currentDatabase.EnumObjects
-            // However, this only returns the object name, type, and URN, not whether or not it is a system object
+            // However, this only returns the object name, type, and URN, not whether it is a system object
 
             // Option 2) use currentDatabase.Views, currentDatabase.StoredProcedures, etc.
             // However, on Sql Server 2005 this returns many system views and system procedures that we typically don't want to export
@@ -2712,7 +2712,7 @@ namespace DB_Schema_Export_Tool
                     // Table T_Job_Steps in DMS_Capture has computed column "step" which is a synonym for primary key column Step_Number
                     // Column Step_Number gets renamed to "step" when converting to PostgreSQL
 
-                    // For T_Job_Steps, names in in sourceColumnNames are "job" and "step" when this for loop is reached
+                    // For T_Job_Steps, names in sourceColumnNames are "job" and "step" when this for loop is reached
 
                     // GetTargetColumnName() will thus convert "step" to "<skip>" since it is a computed column in the source table
                     // (and method SkipColumn() in ColumnMapInfo will have set the new name to "<skip>")

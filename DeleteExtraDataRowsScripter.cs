@@ -583,7 +583,7 @@ namespace DB_Schema_Export_Tool
             bool primaryKeyIsNumeric,
             bool primaryKeyIsText)
         {
-            // Generate commands of the either of these forms:
+            // Generate commands of either of these forms:
 
             // -- Option 1:
             // DELETE FROM t_target_table
