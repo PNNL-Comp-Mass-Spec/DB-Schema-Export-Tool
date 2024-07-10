@@ -2217,7 +2217,7 @@ namespace DB_Schema_Export_Tool
         /// Remove double quotes and square brackets from an object name
         /// </summary>
         /// <param name="objectName">Object name</param>
-        /// <returns></returns>
+        /// <returns>Unquoted name</returns>
         private object UnquoteName(string objectName)
         {
             return mQuoteChars.Replace(objectName, string.Empty);
