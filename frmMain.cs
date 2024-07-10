@@ -7,14 +7,13 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
-using PRISM.FileProcessor;
 using ShFolderBrowser.FolderBrowser;
 
 namespace DB_Schema_Export_Tool
 {
     public partial class frmMain : Form
     {
-        // Ignore Spelling: Ctrl, dms, dmsdev, mts, PostgreSQL, Schemas, Un&pause, Un&pausing, unpause, username
+        // Ignore Spelling: Ctrl, dms, dmsdev, frm, mts, PostgreSQL, Schemas, Un&pause, Un&pausing, unpause, username
 
         public frmMain()
         {
