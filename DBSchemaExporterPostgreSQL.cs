@@ -1656,7 +1656,7 @@ namespace DB_Schema_Export_Tool
                 // dataLine is of the form
                 // hostname:port:database:username:password
                 // The first four fields can contain a *
-                var lineParts = dataLine.Split(new[] { ':' }, 5);
+                var lineParts = dataLine.Split([':'], 5);
 
                 if (lineParts.Length < 5)
                     continue;

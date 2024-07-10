@@ -2274,7 +2274,7 @@ namespace DB_Schema_Export_Tool
                 var nameFilters = new List<string>();
 
                 // Split on commas, but do not split if mOptions.ObjectNameFilter has square brackets
-                if (mOptions.ObjectNameFilter.IndexOfAny(new[] { '[', ']' }) >= 0)
+                if (mOptions.ObjectNameFilter.IndexOfAny(['[', ']']) >= 0)
                 {
                     nameFilters.Add(mOptions.ObjectNameFilter);
                 }
