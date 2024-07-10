@@ -1,0 +1,17 @@
+SourceTableName	SourceColumnName	TargetColumnName	Comment
+T_Default_SP_Params	ParamName	param_name	
+T_Default_SP_Params	ParamValue	param_value	
+T_Task_State_Name	ID	job_state_id	
+T_Task_State_Name	Name	job_state	
+T_Task_Step_Dependencies	Step_Number	step	
+T_Task_Step_Dependencies	Target_Step_Number	target_step	
+T_Task_Step_Dependencies_History	Step_Number	step	
+T_Task_Step_Dependencies_History	Target_Step_Number	target_step	
+T_Task_Step_State_Name	ID	step_state_id	
+T_Task_Step_State_Name	Name	step_state	
+T_Task_Steps	Step_Number	step	
+T_Task_Steps_History	Step_Number	step	
+T_Scripts	ID	script_id	
+T_Scripts_History	ID	script_id	
+T_Step_Tools	ID	step_tool_id	
+T_Step_Tools	Name	step_tool	

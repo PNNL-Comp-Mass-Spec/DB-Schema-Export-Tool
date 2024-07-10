@@ -1,0 +1,15 @@
+SourceTableName	SourceColumnName	TargetColumnName	Comment
+T_Job_State_Name	ID	job_state_id	
+T_Job_State_Name	Name	job_state	
+T_Job_Step_Processing_Stats	RunTime_minutes	runtime_minutes
+T_Job_Step_Processing_Stats	RunTime_Predicted_Hours	runtime_predicted_hours
+T_Job_Step_State_Name	ID	step_state_id	
+T_Job_Step_State_Name	Name	step_state	
+T_Jobs	Owner	owner_username
+T_Jobs_History	Owner	owner_username
+T_Local_Processor_Job_Step_Exclusion	ID	processor_id
+T_Local_Processors	ID	processor_id
+T_Scripts	ID	script_id	
+T_Scripts_History	ID	script_id	
+T_Step_Tools	ID	step_tool_id	
+T_Step_Tools	Name	step_tool	

@@ -1,0 +1,24 @@
+SourceTableName	TargetSchemaName	TargetTableName	PgInsert	KeyColumn(s)
+T_Job_State_Name	sw	t_job_state_name	TRUE	job_state_id
+T_Job_Step_Dependencies	sw	t_job_step_dependencies	TRUE	"job, step, target_step"
+T_Job_Step_Dependencies_History	sw	t_job_step_dependencies_history	TRUE	"job, step, target_step"
+T_Job_Step_State_Name	sw	t_job_step_state_name	TRUE	step_state_id
+T_Job_Steps	sw	t_job_steps	TRUE	"job, step"
+T_Job_Steps_History	sw	t_job_steps_history	TRUE	"job, step, saved"
+T_Scripts	sw	t_scripts	TRUE	script_id
+dtproperties	sw	<skip>		
+SchemaChangeLog	sw	<skip>		
+sysdiagrams	sw	<skip>		
+T_Query_Row_Count_Default_Refresh_Interval	sw	<skip>		
+T_Query_Row_Counts	sw	<skip>		
+V_Table_Index_Sizes	sw	<skip>		
+V_Table_Row_Counts	sw	<skip>		
+V_Table_Size_Summary	sw	<skip>		
+V_Table_Sizes	sw	<skip>		
+V_Tuning_ExecRequests	sw	<skip>		
+V_Tuning_IndexUsage	sw	<skip>		
+V_Tuning_MissingIndices	sw	<skip>		
+V_Tuning_QueryExecutionStats	sw	<skip>		
+V_Tuning_QueryExecutionStats_WithPlanStats	sw	<skip>		
+V_Tuning_Sessions	sw	<skip>		
+V_Tuning_UnusedIndices	sw	<skip>		

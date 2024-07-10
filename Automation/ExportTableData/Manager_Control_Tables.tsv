@@ -1,0 +1,32 @@
+SourceTableName	TargetSchemaName	TargetTableName	PgInsert	KeyColumn(s)
+T_Mgrs	mc	t_mgrs	TRUE	mgr_id
+T_MgrTypes	mc	t_mgr_types	TRUE	mgr_type_id
+x_T_MgrState	public	<skip>		
+SchemaChangeLog	public	<skip>		
+T_Auth_Database_LoginsAndRoles	public	<skip>		
+T_Auth_Database_Permissions	public	<skip>		
+T_Auth_Server_Logins	public	<skip>		
+T_ParamType	mc	t_param_type
+T_ParamValue	mc	t_param_value
+T_ParamValue_OldManagers	mc	t_param_value_old_managers
+T_MgrType_ParamType_Map	mc	t_mgr_type_param_type_map
+T_Query_Row_Count_Default_Refresh_Interval	mc	<skip>		
+T_Query_Row_Counts	mc	<skip>		
+
+T_Usage_Log	public	<skip>		
+T_Usage_Stats	public	<skip>		
+				
+V_MgrParams	public	<skip>		
+V_MgrTypeListByParam	public	<skip>		
+V_Tuning_ExecRequests	public	<skip>		
+V_Tuning_IndexUsage	public	<skip>		
+V_Tuning_MissingIndices	public	<skip>		
+V_Tuning_QueryExecutionStats	public	<skip>		
+V_Tuning_QueryExecutionStats_WithPlanStats	public	<skip>		
+V_Tuning_Sessions	public	<skip>		
+V_Tuning_UnusedIndices	public	<skip>		
+V_Table_Index_Sizes	public	<skip>		
+V_Table_Row_Counts	public	<skip>		
+V_Table_Size_Summary	public	<skip>		
+V_Table_Sizes	public	<skip>		
+x_V_MgrState	public	<skip>		

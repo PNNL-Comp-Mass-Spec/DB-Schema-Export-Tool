@@ -1,0 +1,72 @@
+SourceTableName	TargetSchemaName	TargetTableName	PgInsert	KeyColumn(s)
+T_Task_Events	cap	t_task_events	TRUE	event_id
+T_Task_Parameters	cap	t_task_parameters	TRUE	job
+T_Task_Parameters_History	cap	t_task_parameters_history	TRUE	"job, saved"
+T_Task_State_Name	cap	t_task_state_name	TRUE	job_state_id
+T_Task_Step_Dependencies	cap	t_task_step_dependencies	TRUE	"job, step, target_step"
+T_Task_Step_Dependencies_History	cap	t_task_step_dependencies_history	TRUE	"job, step, target_step"
+T_Task_Step_Events	cap	t_task_step_events	TRUE	event_id
+T_Task_Step_Processing_Log	cap	t_task_step_processing_log	TRUE	event_id
+T_Task_Step_State_Name	cap	t_task_step_state_name	TRUE	step_state_id
+T_Task_Step_Status_History	cap	t_task_step_status_history	TRUE	entry_id
+T_Task_Steps	cap	t_task_steps	TRUE	"job, step"
+T_Task_Steps_History	cap	t_task_steps_history	TRUE	"job, step, saved"
+T_Tasks	cap	t_tasks	TRUE	job
+T_Tasks_History	cap	t_tasks_history	TRUE	job
+T_MyEMSL_TestUploads	cap	t_myemsl_test_uploads	TRUE	entry_id
+T_MyEMSL_Upload_Resets	cap	t_myemsl_upload_resets	TRUE	entry_id
+T_MyEMSL_Uploads	cap	t_myemsl_uploads	TRUE	entry_id
+T_Scripts	cap	t_scripts	TRUE	script_id
+T_Scripts_History	cap	t_scripts_history	TRUE	entry_id
+V_Capture_Jobs_ActiveOrComplete	cap	v_capture_jobs_active_or_complete		
+V_Job_Step_Backlog_Crosstab	cap	v_task_step_backlog_crosstab		
+V_Job_Step_Backlog_History	cap	v_task_step_backlog_history		
+V_Job_Step_Processing_Log	cap	v_task_step_processing_log		
+V_Job_Steps	cap	v_task_steps		
+V_Job_Steps_History	cap	v_task_steps_history		
+V_Job_Steps_Stale_and_Failed	cap	v_task_steps_stale_and_failed		
+V_Job_Steps2	cap	v_task_steps2		
+V_Job_Steps3	cap	v_task_steps3		
+V_Jobs	cap	v_tasks		
+V_Jobs_History	cap	v_tasks_history		
+V_MyEMSL_DatasetID_TransactionID	cap	v_myemsl_datasetid_transactionid		
+V_MyEMSL_Job_Counts_By_Instrument	cap	v_myemsl_job_counts_by_instrument		
+V_MyEMSL_TestUploads	cap	v_myemsl_test_uploads		
+V_MyEMSL_Upload_Resets	cap	v_myemsl_upload_resets		
+V_MyEMSL_Upload_Resets2	cap	v_myemsl_upload_resets2		
+V_MyEMSL_Upload_Stats	cap	v_myemsl_upload_stats		
+V_MyEMSL_Upload_Stats_Monthly	cap	v_myemsl_upload_stats_monthly		
+V_MyEMSL_Uploads	cap	v_myemsl_uploads		
+V_MyEMSL_Uploads2	cap	v_myemsl_uploads2		
+V_Pipeline_Jobs_History_Detail_Report	cap	v_tasks_history_detail_report		
+T_MyEMSL_MetadataValidation	cap	<skip>		
+T_MyEMSL_MetadataValidation_Part2	cap	<skip>		
+T_MyEMSL_MetadataValidation_Part2_WithDupes	cap	<skip>		
+T_MyEMSL_MetadataValidation_WithDupes	cap	<skip>		
+dtproperties	cap	<skip>		
+SchemaChangeLog	cap	<skip>		
+T_Auth_Database_LoginsAndRoles	cap	<skip>		
+T_Auth_Database_LoginsAndRoles_2016Feb	cap	<skip>		
+T_Auth_Database_Permissions	cap	<skip>		
+T_Auth_Database_Permissions_2016Feb	cap	<skip>		
+T_Auth_Server_Logins	cap	<skip>		
+T_Auth_Server_Logins_2016Feb	cap	<skip>
+T_Query_Row_Count_Default_Refresh_Interval	cap	<skip>		
+T_Query_Row_Counts	cap	<skip>		
+V_DMS_Archive_Path	cap	<skip>		
+V_DMS_Dataset_Instruments	cap	<skip>		
+V_DMS_Get_Dataset_Info	cap	<skip>		
+V_DMS_Instrument_class	cap	<skip>		
+V_JobsForCleanupTool	cap	<skip>		
+V_Mgr_Params	cap	<skip>		
+V_Table_Index_Sizes	cap	<skip>		
+V_Table_Row_Counts	cap	<skip>		
+V_Table_Size_Summary	cap	<skip>		
+V_Table_Sizes	cap	<skip>		
+V_Tuning_ExecRequests	cap	<skip>		
+V_Tuning_IndexUsage	cap	<skip>		
+V_Tuning_MissingIndices	cap	<skip>		
+V_Tuning_QueryExecutionStats	cap	<skip>		
+V_Tuning_QueryExecutionStats_WithPlanStats	cap	<skip>		
+V_Tuning_Sessions	cap	<skip>		
+V_Tuning_UnusedIndices	cap	<skip>		

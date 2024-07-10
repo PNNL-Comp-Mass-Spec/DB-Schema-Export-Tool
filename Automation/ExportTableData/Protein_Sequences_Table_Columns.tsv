@@ -1,0 +1,4 @@
+SourceTableName	SourceColumnName	TargetColumnName
+T_Protein_Collections	Collection_RowVersion	<skip>	Use t_protein_collections.xmin to store in a column of type xid
+T_Archived_Output_Files	Filesize	file_size_bytes
+T_Legacy_File_Upload_Requests	Legacy_Filename	legacy_file_name

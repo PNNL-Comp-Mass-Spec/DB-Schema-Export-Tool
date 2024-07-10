@@ -1,0 +1,6 @@
+Table	Column	Comment
+T_Cached_Dataset_Folder_Paths	DS_RowVersion	In Postgres, tracked via data type xid; comes from t_dataset.xmin
+T_Cached_Dataset_Folder_Paths	SPath_RowVersion	In Postgres, tracked via data type xid; comes from t_storage_path.xmin
+T_Cached_Dataset_Links	DS_RowVersion	In Postgres, tracked via data type xid; comes from t_dataset.xmin
+T_Cached_Dataset_Links	SPath_RowVersion	In Postgres, tracked via data type xid; comes from t_storage_path.xmin
+T_EUS_Proposals	Numeric_ID	Computed column (redundant here since the DB Schema Export Tool auto-skips computed columns when exporting data as Postgres compatible INSERT INTO statements)
