@@ -83,7 +83,7 @@ Use `/PgUser` to define the username to use to connect to a PostgreSQL database
 Use `/PgPass` to define the password for the PostgreSQL user
 * As described below, you can create a file named `pgpass.conf` at `%APPDATA%\postgresql` to track passwords for PostgreSQL users
 * The format is `server:port:database:username:password`
-* pg_dump.exe will obtain the password from this file if it exists
+* `pg_dump.exe` will obtain the password from this file if it exists
 * On Linux, the file is stored at `~/.pgpass`
 
 Use `/PgPort` to specify the port to use for PostgreSQL
@@ -161,7 +161,7 @@ Use `/Map` or `/ColumnMap` to define a tab-delimited text file mapping source co
 | t_users          | name_with_prn    | `<skip>`         |
 
 
-Use `/TableFilterList` or `/TableNameFilter` to specify a table name (or comma separated list of names) to restrict table export operations.
+Use `/TableFilterList` or `/TableNameFilter` to specify a table name (or comma separated list of names) to restrict table export operations
 * This is useful for exporting the data from just a single table (or a few tables)
 * This parameter does not support reading names from a file; it only supports actual table names
 * If a file was defined via the `/DataTables` parameter, the list of tables loaded from that file will be filtered by this list (matching both SourceTableName and TargetTableName)
@@ -169,7 +169,7 @@ Use `/TableFilterList` or `/TableNameFilter` to specify a table name (or comma s
 Use `/SchemaSkipList` to specify a schema name (or comma separated list of names) of schema to skip
 * This is useful if using partitioned tables
 
-Use `ColumnFilter` or `/TableDataColumnFilter` to define a tab-delimited text file that defines columns to skip when exporting data from tables
+Use `/ColumnFilter` or `/TableDataColumnFilter` to define a tab-delimited text file that defines columns to skip when exporting data from tables
 * The program auto-skips computed columns and timestamp columns when exporting data as PostgreSQL compatible INSERT INTO statements
 * File format:
 
@@ -180,7 +180,7 @@ Use `ColumnFilter` or `/TableDataColumnFilter` to define a tab-delimited text fi
 | T_EUS_Proposals        | Numeric_ID       | Computed column (redundant here since the program auto-skips computed columns) |
 
 
-Use `/DateFilter` or `/TableDataDateFilter` to define a tab-delimited text file that defines date filters to use when exporting data from tables.
+Use `/DateFilter` or `/TableDataDateFilter` to define a tab-delimited text file that defines date filters to use when exporting data from tables
 * The data file will include the start date in the name, for example: `mc.t_log_entries_Data_Since_2020-01-01.sql`
 * File format:
 
@@ -388,7 +388,7 @@ This program leverages the SQL Server Management Objects (SMO) Framework
 * All of the required DLLs should be included in the DBSchemaExportTool .zip file
 
 In order to use the `/Git,` `/Svn,` or `/Hg` switches, you need the following software installed
-and the executables present at a specific location.
+and the executables present at a specific location:
 
 Git
 * `C:\Program Files\Git\bin\git.exe`
@@ -405,12 +405,12 @@ Mercurial
 ### PostgreSQL
 
 Schema export from PostgreSQL databases utilizes the pg_dump utility
-* pg_dump.exe is available as part of the PostgreSQL for Windows installer from the EDB website
+* `pg_dump.exe` is available as part of the PostgreSQL for Windows installer from the EDB website
   * https://www.enterprisedb.com/downloads/postgres-postgresql-downloads
 * Run the installer
   * De-select installing PostgreSQL Server
-* Copy `pg_dump.exe` plus several DLLs from `C:\Program Files\PostgreSQL\12\bin` to the directory with the DB_Schema_Export_Tool executable
-  * See batch file Lib\Copy_pg_dump_files.bat
+* Copy `pg_dump.exe` plus several DLLs from `C:\Program Files\PostgreSQL\16\bin` to the directory with the DB_Schema_Export_Tool executable
+  * See batch file `Copy_pg_dump_files.bat`
 
 File `pgpass.conf` at `%APPDATA%\postgresql` can be used to store the password for the PostgreSQL user
 * On Linux, the file is stored at `~/.pgpass`
@@ -425,7 +425,7 @@ Example call to pg_dump:
 pg_dump.exe -h prismweb3 -p 5432 -U dmsreader -d dms --schema-only --format=p --file=_AllObjects_.sql
 ```
 
-Note that on Windows the .sql file created by pg_dump.exe includes extra carriage returns, resulting in `CR CR LF` instead of `CR LF`
+Note that on Windows the .sql file created by `pg_dump.exe` includes extra carriage returns, resulting in `CR CR LF` instead of `CR LF`
 * DB_Schema_Export_Tool.exe removes the extra carriage returns while parsing the SQL dump file
 
 ## Contacts
