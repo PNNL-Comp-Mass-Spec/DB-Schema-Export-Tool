@@ -2311,14 +2311,16 @@ namespace DB_Schema_Export_Tool
                 // Assure that the file was created
                 outputFile.Refresh();
 
+                if (!outputFile.Exists)
+                {
+                    OnWarningEvent("{0} did not create {1}", pgDumpAll.Name, outputFile.FullName);
+                    return false;
+                }
+
                 if (outputFile.LastWriteTime > existingData)
                     return true;
 
-                if (outputFile.Exists)
-                    OnWarningEvent("{0} did not replace {1}", pgDumpAll.Name, outputFile.FullName);
-                else
-                    OnWarningEvent("{0} did not create {1}", pgDumpAll.Name, outputFile.FullName);
-
+                OnWarningEvent("{0} did not replace {1}", pgDumpAll.Name, outputFile.FullName);
                 return false;
             }
             catch (Exception ex)
