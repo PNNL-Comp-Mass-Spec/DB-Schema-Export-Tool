@@ -18,7 +18,7 @@ namespace DB_Schema_Export_Tool
         {
             try
             {
-                if (sortOrder.SortNumeric && sortOrder.SortColumns.Count > 0)
+                if (sortOrder.SortNumeric || sortOrder.SortColumns.Count > 0)
                 {
                     // Examine the additional sort columns to see if they should be sorted numerically
 
