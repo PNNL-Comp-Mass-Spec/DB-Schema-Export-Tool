@@ -71,7 +71,7 @@ DB_Schema_Export_Tool.exe
 
 To process a single database, use `/Server` and `/DB`
 * The server is assumed to be Microsoft SQL Server
-* However, if `/PgUser` is provided (or `PgUser` is defined in the parameter file), will treat as a Postgres server
+* However, if `/PgUser` is provided (or `PgUser` is defined in the parameter file), will treat as a PostgreSQL server
 
 Use `/DBList` to process several databases (separate names with commas)
 
@@ -175,8 +175,8 @@ Use `/ColumnFilter` or `/TableDataColumnFilter` to define a tab-delimited text f
 
 | Table                  | Column           | Comment                                                                        |
 |------------------------|------------------|--------------------------------------------------------------------------------|
-| T_Cached_Dataset_Links | DS_RowVersion    | In Postgres, tracked via data type xid; comes from t_dataset.xmin              |
-| T_Cached_Dataset_Links | SPath_RowVersion | In Postgres, tracked via data type xid; comes from t_storage_path.xmin         |
+| T_Cached_Dataset_Links | DS_RowVersion    | In PostgreSQL, tracked via data type xid; comes from t_dataset.xmin              |
+| T_Cached_Dataset_Links | SPath_RowVersion | In PostgreSQL, tracked via data type xid; comes from t_storage_path.xmin         |
 | T_EUS_Proposals        | Numeric_ID       | Computed column (redundant here since the program auto-skips computed columns) |
 
 
@@ -335,7 +335,8 @@ Use `/PgDump` or `/PgDumpData` to specify that exported data should use `COPY` c
 
 Use `/KeepPgDumpFile` to not delete the `_AllObjects_.sql` created for each database
 * By default, this is false, meaning the `_AllObjects_.sql` file will be deleted (since it is no longer needed because a separate .sql file has been created for each object)
-* If any unhandled scripting commands are encountered, the `_AllObjects_.sql` file will not be deleted, even if KeepPgDumpFile is false
+** If any unhandled scripting commands are encountered, the `_AllObjects_.sql` file will not be deleted, even if KeepPgDumpFile is false
+* In addition, when this is true, store the original PgDump table data files in directory `Replaced_PgDump_Files`
 
 The `/PgInsert` applies when exporting data from SQL Server database tables
 * While reading the TableDataToExport.txt file, default the PgInsert column to true when `/PgInsert` is provided, meaning table data will be exported via INSERT INTO statements, as mentioned above

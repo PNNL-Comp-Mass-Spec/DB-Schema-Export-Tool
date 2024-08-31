@@ -14,6 +14,11 @@ namespace DB_Schema_Export_Tool
         /// <remarks>Keys are table names (including schema), values are the column numbers to sort on</remarks>
         private readonly Dictionary<string, TableDataSortOrder> mTableDataSortOrder;
 
+        /// <summary>
+        /// When true, store the original PgDump table data files in directory Replaced_PgDump_Files
+        /// </summary>
+        public bool KeepPgDumpFiles { get; }
+
         private bool DefinePgDumpTableDataSortKeys(List<PgDumpTableDataRow> tableData, TableDataSortOrder sortOrder)
         {
             try
@@ -202,9 +207,11 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Constructor
         /// </summary>
-        public PgDumpTableDataSorter()
+        /// <param name="keepPgDumpFiles">When true, store the original PgDump table data files in directory Replaced_PgDump_Files</param>
+        public PgDumpTableDataSorter(bool keepPgDumpFiles)
         {
             mTableDataSortOrder = new Dictionary<string, TableDataSortOrder>(StringComparer.OrdinalIgnoreCase);
+            KeepPgDumpFiles = keepPgDumpFiles;
         }
 
         private bool ReplacePgDumpTableDataFile(FileInfo tableDataOutputFile, List<string> startingFileContent, List<string> endingFileContent, List<PgDumpTableDataRow> tableData)
@@ -239,15 +246,22 @@ namespace DB_Schema_Export_Tool
 
                 var replacedFilesFolder = new DirectoryInfo(Path.Combine(tableDataOutputFile.Directory?.FullName ?? string.Empty, "Replaced_PgDump_Files"));
 
-                if (!replacedFilesFolder.Exists)
-                    replacedFilesFolder.Create();
+                if (KeepPgDumpFiles)
+                {
+                    if (!replacedFilesFolder.Exists)
+                        replacedFilesFolder.Create();
 
-                var replacedFile = new FileInfo(Path.Combine(replacedFilesFolder.FullName, tableDataOutputFile.Name));
+                    var replacedFile = new FileInfo(Path.Combine(replacedFilesFolder.FullName, tableDataOutputFile.Name));
 
-                if (replacedFile.Exists)
-                    replacedFile.Delete();
+                    if (replacedFile.Exists)
+                        replacedFile.Delete();
 
-                tableDataOutputFile.MoveTo(replacedFile.FullName);
+                    tableDataOutputFile.MoveTo(replacedFile.FullName);
+                }
+                else
+                {
+                    tableDataOutputFile.Delete();
+                }
 
                 updatedFile.MoveTo(finalFilePath);
                 return true;

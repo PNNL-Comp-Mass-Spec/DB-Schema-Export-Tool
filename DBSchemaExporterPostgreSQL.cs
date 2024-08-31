@@ -171,7 +171,7 @@ namespace DB_Schema_Export_Tool
 
             mCachedExecutables = new Dictionary<string, FileInfo>();
 
-            PgDumpDataSorter = new PgDumpTableDataSorter();
+            PgDumpDataSorter = new PgDumpTableDataSorter(mOptions.KeepPgDumpFile);
             RegisterEvents(PgDumpDataSorter);
         }
 

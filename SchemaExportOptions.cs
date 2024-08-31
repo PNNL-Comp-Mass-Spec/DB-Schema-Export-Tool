@@ -153,6 +153,7 @@ namespace DB_Schema_Export_Tool
 
         /// <summary>
         /// When true, do not delete the PgDump output file (_AllObjects_.sql)
+        /// In addition, store the original PgDump table data files in directory Replaced_PgDump_Files
         /// </summary>
         [Option("KeepPgDumpFile", "KeepPgDump", HelpShowsDefault = false, SecondaryArg = true,
             HelpText = "By default, the PgDump output file (_AllObjects_.sql) is deleted after it has been processed\n" +
