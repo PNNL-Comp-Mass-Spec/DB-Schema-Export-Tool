@@ -32,5 +32,13 @@
                 NumericValue = numericValue;
             }
         }
+
+        /// <summary>
+        /// Show the sort key value
+        /// </summary>
+        public override string ToString()
+        {
+            return Value;
+        }
     }
 }

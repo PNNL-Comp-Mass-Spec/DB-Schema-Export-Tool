@@ -32,5 +32,19 @@ namespace DB_Schema_Export_Tool
 
             SortKeys = new List<SortKeyValue>();
         }
+
+        /// <summary>
+        /// Show the values of the first three columns of data in DataValues
+        /// </summary>
+        public override string ToString()
+        {
+            return DataValues.Count switch
+            {
+                0 => string.Empty,
+                1 => string.Format("{0}", DataValues[0]),
+                2 => string.Format("{0}, {1}", DataValues[0], DataValues[1]),
+                _ => string.Format("{0}, {1}, {2}", DataValues[0], DataValues[1], DataValues[2])
+            };
+        }
     }
 }
