@@ -1850,7 +1850,7 @@ namespace DB_Schema_Export_Tool
                             out var databaseNotFound,
                             out var workingParams);
 
-                        if (!warningsByDatabase.ContainsKey(currentDB))
+                        if (!warningsByDatabase.ContainsKey(currentDB) && workingParams.WarningMessages.Count > 0)
                         {
                             warningsByDatabase.Add(currentDB, workingParams.WarningMessages);
                         }

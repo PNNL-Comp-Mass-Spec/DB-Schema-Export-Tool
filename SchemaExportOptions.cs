@@ -17,7 +17,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "August 22, 2024";
+        public const string PROGRAM_DATE = "August 30, 2024";
 
         /// <summary>
         /// Default output directory name prefix
@@ -125,6 +125,8 @@ namespace DB_Schema_Export_Tool
 
         // ReSharper disable once InconsistentNaming
 
+#pragma warning disable VSSpell001 // Spell Check
+
         /// <summary>
         /// When true, connecting to a PostgreSQL server
         /// </summary>
@@ -132,6 +134,8 @@ namespace DB_Schema_Export_Tool
         /// Auto set to true if /PgUser is defined
         /// </remarks>
         public bool PostgreSQL { get; set; }
+
+#pragma warning restore VSSpell001 // Spell Check
 
         /// <summary>
         /// <para>
@@ -318,6 +322,20 @@ namespace DB_Schema_Export_Tool
         public string TableDataColumnMapFile { get; set; }
 
         /// <summary>
+        /// Text file that defines the sort order for table data exported using PgDump
+        /// </summary>
+        [Option("PgDumpTableDataSortOrder", "PgDumpDataSort", "DataSort", HelpShowsDefault = false, IsInputFilePath = true,
+            HelpText = "Text file that defines the sort order for table data exported using PgDump. The export file will be re-written with data sorted by the specified column numbers (1-based). " +
+                       "Tab-delimited columns are:\n" +
+                       "Table_Name  Sort_Columns  Sort_Numeric\n" +
+                       "Table names should include the schema, e.g. 'public.t_event_target' or 'sw.t_job_state_name'\n" +
+                       "Sort_Columns should list the column number (or comma-separated list of column numbers) to sort the data on; " +
+                       "'1' means to sort using the first column, '2, 3' means to sort using the second column, then the third column\n" +
+                       "Values in Sort_Numeric should be True, False, or an empty string; True means to treat the data in the sorted column as a number; " +
+                       "if there are multiple columns to sort on, the first column must be numeric, while the second column will be treated as numeric if all values are numbers, otherwise as text")]
+        public string PgDumpTableDataSortOrderFile { get; set; }
+
+        /// <summary>
         /// Table name (or comma separated list of names) to restrict table export operations
         /// </summary>
         [Option("TableFilterList", "TableNameFilter", HelpShowsDefault = false,
@@ -416,7 +434,7 @@ namespace DB_Schema_Export_Tool
         public string TableDataExportOrderFile { get; set; }
 
         /// <summary>
-        /// "Default schema for exported tables and data
+        /// Default schema for exported tables and data
         /// </summary>
         [Option("DefaultSchema", "Schema", HelpShowsDefault = false,
             HelpText = "Default schema for exported tables and data. If undefined, use the original table's schema")]
@@ -963,6 +981,11 @@ namespace DB_Schema_Export_Tool
                 if (!string.IsNullOrWhiteSpace(TableDataDateFilterFile))
                 {
                     Console.WriteLine(" {0,-48} {1}", "File with date filter column info:", PathUtils.CompactPathString(TableDataDateFilterFile, 80));
+                }
+
+                if (PgDumpTableData && !string.IsNullOrWhiteSpace(PgDumpTableDataSortOrderFile))
+                {
+                    Console.WriteLine(" {0,-48} {1}", "File defining the sort order for exported data:", PathUtils.CompactPathString(PgDumpTableDataSortOrderFile, 80));
                 }
             }
 

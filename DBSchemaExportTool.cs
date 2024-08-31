@@ -546,11 +546,14 @@ namespace DB_Schema_Export_Tool
             return false;
         }
 
+#pragma warning disable VSSpell001 // Spell Check
+
         /// <summary>
         /// Get a list of table names to auto-export data
         /// </summary>
         /// <param name="isPostgreSQL">When true, return PostgreSQL table names</param>
         public static SortedSet<string> GetTableNamesToAutoExportData(bool isPostgreSQL)
+#pragma warning restore VSSpell001 // Spell Check
         {
             // Keys are table names
             // Values are the equivalent PostgreSQL name (empty strings for table names that will not get ported in the near future, or ever)

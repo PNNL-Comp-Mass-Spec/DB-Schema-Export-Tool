@@ -149,6 +149,11 @@ namespace DB_Schema_Export_Tool
             "[^ ]+",
             RegexOptions.Compiled);
 
+        /// <summary>
+        /// This is optionally used to sort table data exported using PgDump
+        /// </summary>
+        private PgDumpTableDataSorter PgDumpDataSorter { get; }
+
         private readonly ProgramRunner mProgramRunner;
 
         private NpgsqlConnection mPgConnection;
@@ -165,6 +170,9 @@ namespace DB_Schema_Export_Tool
             mCachedDatabaseTableInfo = new Dictionary<string, Dictionary<TableDataExportInfo, long>>();
 
             mCachedExecutables = new Dictionary<string, FileInfo>();
+
+            PgDumpDataSorter = new PgDumpTableDataSorter();
+            RegisterEvents(PgDumpDataSorter);
         }
 
         /// <summary>
@@ -465,7 +473,33 @@ namespace DB_Schema_Export_Tool
             {
                 SetLocalError(
                     DBSchemaExportErrorCodes.GeneralError,
-                    "Error auto selecting table names for data export from database" + databaseName, ex);
+                    "Error auto selecting table names for data export from database " + databaseName, ex);
+
+                databaseNotFound = false;
+                return false;
+            }
+
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(mOptions.PgDumpTableDataSortOrderFile))
+                {
+                    var fileLoaded = PgDumpDataSorter.LoadPgDumpTableDataSortOrderFile(mOptions.PgDumpTableDataSortOrderFile);
+
+                    if (!fileLoaded)
+                    {
+                        SetLocalError(
+                            DBSchemaExportErrorCodes.GeneralError,
+                            "Error loading the pgDump table data sort order file: LoadPgDumpTableDataSortOrderFile returned false");
+
+                        return false;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SetLocalError(
+                    DBSchemaExportErrorCodes.GeneralError,
+                    "Error loading the pgDump table data sort order file", ex);
 
                 databaseNotFound = false;
                 return false;
@@ -954,7 +988,13 @@ namespace DB_Schema_Export_Tool
 
             if (tableDataOutputFile.LastWriteTime > existingData)
             {
-                return true;
+                if (string.IsNullOrWhiteSpace(mOptions.PgDumpTableDataSortOrderFile))
+                {
+                    return true;
+                }
+
+                // Possibly sort the table data (if the table is not defined in the sort order file, the data is not sorted)
+                return PgDumpDataSorter.SortPgDumpTableData(tableInfo.SourceTableName, sourceTableNameWithSchema, tableDataOutputFile);
             }
 
             // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression

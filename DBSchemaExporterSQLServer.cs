@@ -465,7 +465,7 @@ namespace DB_Schema_Export_Tool
             {
                 SetLocalError(
                     DBSchemaExportErrorCodes.GeneralError,
-                    "Error auto selecting table names for data export from database" + databaseName, ex);
+                    "Error auto selecting table names for data export from database " + databaseName, ex);
 
                 databaseNotFound = false;
                 return false;
@@ -1886,7 +1886,7 @@ namespace DB_Schema_Export_Tool
             }
             else if (mOptions.PgDumpTableData)
             {
-                // Use the T-SQL COPY command to export data from a SQL Server database
+                // Format data exported from SQL Server as PostgreSQL COPY commands
 
                 // ReSharper disable once StringLiteralTypo
                 var copyCommand = string.Format("COPY {0} ({1}) from stdin;",
