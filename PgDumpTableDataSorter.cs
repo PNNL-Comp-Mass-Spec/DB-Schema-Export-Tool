@@ -54,17 +54,19 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
-                // Define the sort keys for each row
+                // Define the sort key values for each row
                 foreach (var row in tableData)
                 {
+                    // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
                     foreach (var sortColumn in sortOrder.SortColumns)
                     {
                         var columnNumber = sortColumn.Key;
+                        var isNumeric = sortColumn.Value;
 
                         if (columnNumber > row.DataValues.Count)
                             continue;
 
-                        var sortKey = new SortKeyValue(row.DataValues[columnNumber - 1], sortColumn.Value);
+                        var sortKey = new SortKeyValue(row.DataValues[columnNumber - 1], isNumeric);
                         row.SortKeys.Add(sortKey);
                     }
                 }
