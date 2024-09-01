@@ -46,6 +46,7 @@ DB_Schema_Export_Tool.exe
  [/PgUser:username] [/PgPass:password] [/PgPort:5432]
  [/DirectoryPrefix:PrefixText] [/NoSubdirectory] [/CreateDBDirectories]
  [/DataTables:TableDataToExport.txt] [/Map:ColumnMapping.txt]
+ [/DataSort:PgDumpTableDataSortOrder.txt]
  [/TableFilterList] [/SchemaSkipList]
  [/ColumnFilter:FileName] [/DateFilter:FileName]
  [/NameFilter:FilterSpec]
@@ -161,6 +162,30 @@ Use `/Map` or `/ColumnMap` to define a tab-delimited text file mapping source co
 | t_users          | name_with_prn    | `<skip>`         |
 
 
+Use `/DataSort` (or `/PgDumpDataSort` or `/PgDumpTableDataSortOrder`) to define a tab-delimited text file that defines the columns to use for sorting data exported using PgDump
+* The export file will be re-written with data sorted by the specified column numbers (1-based)
+* Table names should include the schema, e.g. "public.t_event_target" or "sw.t_job_state_name"
+* Sort_Columns should list the column number (or comma-separated list of column numbers) to sort the data on
+  * "1" means to sort using the first column
+  * "2, 3" means to sort using the second column, then the third column
+* Values in Sort_Numeric should be True, False, or an empty string
+  * True means to assume the data in the first sort column is numeric (integer or double)
+  * False is ignored; if any sort column has numbers for every row, it will be sorted as numeric
+* File format:
+
+| Table_Name                           | Sort_Columns   | Sort_Numeric |
+|--------------------------------------|----------------|--------------|
+| cap.t_automatic_jobs                 | 1, 2           |              |
+| cap.t_scripts                        | 2              |              |
+| cap.t_scripts_history                | 3, 1           |              |
+| cap.t_step_tools                     | 2, 1           |              |
+| cap.t_task_state_name                | 1              | True         |
+| public.t_analysis_job_state          | 1              | True         |
+| public.t_default_psm_job_parameters  | 2, 3, 4, 5, 6  |              |
+| public.t_user_operations_permissions | 1, 2           | True         |
+| sw.t_job_state_name                  | 1              | True         |
+| timetable.task                       | 2, 1           | True         |
+                       
 Use `/TableFilterList` or `/TableNameFilter` to specify a table name (or comma separated list of names) to restrict table export operations
 * This is useful for exporting the data from just a single table (or a few tables)
 * This parameter does not support reading names from a file; it only supports actual table names
@@ -175,8 +200,8 @@ Use `/ColumnFilter` or `/TableDataColumnFilter` to define a tab-delimited text f
 
 | Table                  | Column           | Comment                                                                        |
 |------------------------|------------------|--------------------------------------------------------------------------------|
-| T_Cached_Dataset_Links | DS_RowVersion    | In PostgreSQL, tracked via data type xid; comes from t_dataset.xmin              |
-| T_Cached_Dataset_Links | SPath_RowVersion | In PostgreSQL, tracked via data type xid; comes from t_storage_path.xmin         |
+| T_Cached_Dataset_Links | DS_RowVersion    | In PostgreSQL, tracked via data type xid; comes from t_dataset.xmin            |
+| T_Cached_Dataset_Links | SPath_RowVersion | In PostgreSQL, tracked via data type xid; comes from t_storage_path.xmin       |
 | T_EUS_Proposals        | Numeric_ID       | Computed column (redundant here since the program auto-skips computed columns) |
 
 

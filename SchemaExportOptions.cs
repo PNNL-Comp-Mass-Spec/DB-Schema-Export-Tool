@@ -332,8 +332,8 @@ namespace DB_Schema_Export_Tool
                        "Table names should include the schema, e.g. 'public.t_event_target' or 'sw.t_job_state_name'\n" +
                        "Sort_Columns should list the column number (or comma-separated list of column numbers) to sort the data on; " +
                        "'1' means to sort using the first column, '2, 3' means to sort using the second column, then the third column\n" +
-                       "Values in Sort_Numeric should be True, False, or an empty string; True means to treat the data in the sorted column as a number; " +
-                       "if there are multiple columns to sort on, the first column must be numeric, while the second column will be treated as numeric if all values are numbers, otherwise as text")]
+                       "Values in Sort_Numeric should be True, False, or an empty string; True means to assume the data in the first sort column is numeric (integer or double); " +
+                       "False is ignored; if any sort column has numbers for every row, it will be sorted as numeric")]
         public string PgDumpTableDataSortOrderFile { get; set; }
 
         /// <summary>
