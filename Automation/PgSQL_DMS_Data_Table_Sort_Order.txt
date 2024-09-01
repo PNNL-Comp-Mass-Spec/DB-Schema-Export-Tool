@@ -1,44 +1,47 @@
 Table_Name	Sort_Columns	Sort_Numeric
-cap.t_automatic_jobs	1, 2	False
-cap.t_default_sp_params	1, 2	False
-cap.t_processor_instrument	1, 2	False
-cap.t_processor_tool	1, 2	False
-cap.t_scripts	2	False
-cap.t_scripts_history	3, 1	False
-cap.t_sp_authorization	3, 2, 4, 1	False
-cap.t_step_tools	2, 1	False
+admin.all_distinct_dbname_metrics	1, 2
+admin.config	1
+admin.storage_schema_type	1
+cap.t_automatic_jobs	1, 2
+cap.t_default_sp_params	1, 2
+cap.t_processor_instrument	1, 2
+cap.t_processor_tool	1, 2
+cap.t_scripts	2
+cap.t_scripts_history	3, 1
+cap.t_sp_authorization	3, 2, 4, 1
+cap.t_step_tools	2, 1
 cap.t_task_state_name	1	True
 cap.t_task_step_state_name	1	True
-dpkg.t_data_package_state	1	False
-dpkg.t_osm_package_state	1	False
-dpkg.t_properties	1	False
-dpkg.t_sp_authorization	3, 2, 4, 1	False
-mc.t_sp_authorization	3, 2, 4, 1	False
+dpkg.t_data_package_state	1
+dpkg.t_osm_package_state	1
+dpkg.t_properties	1
+dpkg.t_sp_authorization	3, 2, 4, 1
+mc.t_sp_authorization	3, 2, 4, 1
 mts.t_mt_database_state_name	1	True
-ont.t_unimod_amino_acids	1	False
-ont.t_unimod_bricks	1	False
+ont.t_unimod_amino_acids	1
+ont.t_unimod_bricks	1
 ont.t_unimod_specificity_nl	1, 2	True
-pc.t_annotation_types	2	False
+pc.t_annotation_types	2
 pc.t_archived_file_states	1	True
 pc.t_archived_file_types	1	True
 pc.t_creation_option_keywords	1	True
 pc.t_creation_option_values	1	True
-pc.t_naming_authorities	2	False
+pc.t_naming_authorities	2
 pc.t_output_sequence_types	1	True
 pc.t_protein_collection_states	1	True
 pc.t_protein_collection_types	1	True
-pc.t_sp_authorization	3, 2, 4, 1	False
+pc.t_sp_authorization	3, 2, 4, 1
 public.t_acceptable_param_entries	1	True
 public.t_acceptable_param_entry_types	1	True
 public.t_analysis_job_processor_group	1	True
 public.t_analysis_job_processor_tools	1	True
 public.t_analysis_job_request_state	1	True
 public.t_analysis_job_state	1	True
-public.t_analysis_status_monitor_params	2	False
-public.t_analysis_tool	2	False
+public.t_analysis_status_monitor_params	2
+public.t_analysis_tool	2
 public.t_analysis_tool_allowed_dataset_type	1, 2	True
 public.t_analysis_tool_allowed_instrument_class	1, 2	True
-public.t_archive_path_function	1	False
+public.t_archive_path_function	1
 public.t_archive_space_usage	1	True
 public.t_attachments	1	True
 public.t_aux_info_allowed_values	1, 2	True
@@ -46,25 +49,25 @@ public.t_aux_info_category	1	True
 public.t_aux_info_description	1	True
 public.t_aux_info_subcategory	1	True
 public.t_aux_info_target	1	True
-public.t_biomaterial_type_name	2	False
+public.t_biomaterial_type_name	2
 public.t_charge_code_activation_state	1	True
 public.t_charge_code_state	1	True
 public.t_data_analysis_request_state_name	1	True
-public.t_data_analysis_request_type_name	1	False
+public.t_data_analysis_request_type_name	1
 public.t_data_release_restrictions	1	True
 public.t_dataset_archive_state_name	1	True
 public.t_dataset_archive_update_state_name	1	True
 public.t_dataset_create_queue_state	1	True
-public.t_dataset_qc_instruments	1	False
-public.t_dataset_qc_metric_names	1	False
+public.t_dataset_qc_instruments	1
+public.t_dataset_qc_metric_names	1
 public.t_dataset_rating_name	1	True
-public.t_dataset_scan_type_glossary	1	False
+public.t_dataset_scan_type_glossary	1
 public.t_dataset_state_name	1	True
-public.t_dataset_type_name	2	False
-public.t_default_psm_job_parameters	2, 3, 4, 5, 6	False
-public.t_default_psm_job_settings	2, 3, 4, 5	False
+public.t_dataset_type_name	2
+public.t_default_psm_job_parameters	2, 3, 4, 5, 6
+public.t_default_psm_job_settings	2, 3, 4, 5
 public.t_default_psm_job_types	1	True
-public.t_dim_error_solution	1	False
+public.t_dim_error_solution	1
 public.t_email_alert_state	1	True
 public.t_emsl_dms_instrument_mapping	1, 2	True
 public.t_emsl_instruments	1	True
@@ -80,36 +83,36 @@ public.t_filter_set_criteria_names	1	True
 public.t_filter_set_types	1	True
 public.t_filter_sets	1	True
 public.t_general_statistics	1	True
-public.t_instrument_class	1	False
+public.t_instrument_class	1
 public.t_instrument_data_type_name	1	True
-public.t_instrument_group	1	False
-public.t_instrument_group_allocation_tag	1	False
-public.t_instrument_group_allowed_ds_type	1, 2	False
-public.t_instrument_name	2	False
-public.t_instrument_name_bkup	2	False
-public.t_instrument_ops_role	1	False
-public.t_instrument_state_name	1	False
+public.t_instrument_group	1
+public.t_instrument_group_allocation_tag	1
+public.t_instrument_group_allowed_ds_type	1, 2
+public.t_instrument_name	2
+public.t_instrument_name_bkup	2
+public.t_instrument_ops_role	1
+public.t_instrument_state_name	1
 public.t_internal_standards	1	True
 public.t_internal_std_components	1	True
 public.t_internal_std_composition	1, 2	True
 public.t_internal_std_parent_mixes	1	True
-public.t_lc_cart	2	False
+public.t_lc_cart	2
 public.t_lc_cart_state_name	1	True
 public.t_lc_column_state_name	1	True
-public.t_mass_correction_factors	2	False
+public.t_mass_correction_factors	2
 public.t_maxquant_mod_residues	1, 2	True
 public.t_maxquant_mods	1	True
-public.t_misc_paths	2	False
-public.t_modification_types	1	False
-public.t_mts_cached_data_status	1	False
+public.t_misc_paths	2
+public.t_modification_types	1
+public.t_mts_cached_data_status	1
 public.t_myemsl_state	1	True
 public.t_notification_entity_type	1	True
 public.t_notification_event_type	1	True
-public.t_organism_db_file	2	False
-public.t_organisms	2	False
-public.t_param_file_types	2	False
+public.t_organism_db_file	2
+public.t_organisms	2
+public.t_param_file_types	2
 public.t_predefined_analysis	1	True
-public.t_predefined_analysis_scheduling_queue_state	1	False
+public.t_predefined_analysis_scheduling_queue_state	1
 public.t_predefined_analysis_scheduling_rules	1	True
 public.t_prep_file_storage	1	True
 public.t_prep_lc_column	1	True
@@ -120,22 +123,22 @@ public.t_research_team_roles	1	True
 public.t_residues	1	True
 public.t_sample_labelling	1	True
 public.t_sample_prep_request_state_name	1	True
-public.t_sample_prep_request_type_name	1	False
-public.t_secondary_sep	2	False
-public.t_separation_group	1	False
+public.t_sample_prep_request_type_name	1
+public.t_secondary_sep	2
+public.t_separation_group	1
 public.t_seq_local_symbols_list	1	True
-public.t_settings_files	2, 3	False
-public.t_sp_authorization	3, 2, 4, 1	False
+public.t_settings_files	2, 3
+public.t_sp_authorization	3, 2, 4, 1
 public.t_spectral_library_state	1	True
-public.t_usage_stats	1	False
+public.t_usage_stats	1
 public.t_user_operations	1	True
 public.t_user_operations_permissions	1, 2	True
 public.t_wellplates	1	True
 public.t_yes_no	1	True
 sw.t_job_state_name	1	True
 sw.t_job_step_state_name	1	True
-sw.t_sp_authorization	3, 2, 4, 1	False
+sw.t_sp_authorization	3, 2, 4, 1
 timetable.chain	1	True
 timetable.parameter	1, 2	True
-timetable.t_cron_interval	3	False
+timetable.t_cron_interval	3
 timetable.task	2, 1	True
