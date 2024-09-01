@@ -23,39 +23,44 @@ namespace DB_Schema_Export_Tool
         {
             try
             {
-                if (sortOrder.SortNumeric || sortOrder.SortColumns.Count > 0)
+                if (sortOrder.SortColumns.Count == 0)
+                    return true;
+
+                // Examine the sort columns to see if they should be sorted numerically
+                for (var sortColumnIndex = 0; sortColumnIndex < sortOrder.SortColumns.Count; sortColumnIndex++)
                 {
-                    // Examine the additional sort columns to see if they should be sorted numerically
-
-                    for (var sortColumnIndex = 1; sortColumnIndex < sortOrder.SortColumns.Count; sortColumnIndex++)
+                    if (sortOrder.SortColumns[sortColumnIndex].Value)
                     {
-                        var columnNumber = sortOrder.SortColumns[sortColumnIndex].Key;
+                        // The column has already been identified as being numeric (column Sort_Numeric was True for this table in the Data Table Sort Order text file)
+                        continue;
+                    }
 
-                        var numericValues = 0;
+                    var columnNumber = sortOrder.SortColumns[sortColumnIndex].Key;
 
-                        foreach (var row in tableData)
+                    var numericValues = 0;
+
+                    foreach (var row in tableData)
+                    {
+                        if (columnNumber > row.DataValues.Count)
+                            continue;
+
+                        if (string.IsNullOrWhiteSpace(row.DataValues[columnNumber - 1]))
                         {
-                            if (columnNumber > row.DataValues.Count)
-                                continue;
-
-                            if (string.IsNullOrWhiteSpace(row.DataValues[columnNumber - 1]))
-                            {
-                                // Treat an empty string as number (with a value of 0)
-                                numericValues++;
-                                continue;
-                            }
-
-                            if (double.TryParse(row.DataValues[columnNumber - 1], out _))
-                            {
-                                numericValues++;
-                            }
+                            // Treat an empty string as number (with a value of 0)
+                            numericValues++;
+                            continue;
                         }
 
-                        if (numericValues == tableData.Count)
+                        if (double.TryParse(row.DataValues[columnNumber - 1], out _))
                         {
-                            // Every row has a numeric value in column columnNumber
-                            sortOrder.SortColumns[sortColumnIndex] = new KeyValuePair<int, bool>(columnNumber, true);
+                            numericValues++;
                         }
+                    }
+
+                    if (numericValues == tableData.Count)
+                    {
+                        // Every row has a numeric value in column columnNumber
+                        sortOrder.SortColumns[sortColumnIndex] = new KeyValuePair<int, bool>(columnNumber, true);
                     }
                 }
 
