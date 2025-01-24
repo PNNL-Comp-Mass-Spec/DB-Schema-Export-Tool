@@ -67,6 +67,7 @@ t_internal_std_parent_mixes
 t_lc_cart
 t_lc_cart_state_name
 t_lc_column_state_name
+t_material_freezers
 t_mass_correction_factors
 t_maxquant_mod_residues
 t_maxquant_mods
@@ -102,7 +103,6 @@ t_usage_stats
 t_user_operations
 t_user_operations_permissions
 t_users_access_list
-t_wellplates
 t_yes_no
 
 cap.t_sp_authorization

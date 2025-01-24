@@ -100,6 +100,7 @@ public.t_lc_cart	2
 public.t_lc_cart_state_name	1	True
 public.t_lc_column_state_name	1	True
 public.t_mass_correction_factors	2
+public.t_material_freezers	2, 1
 public.t_maxquant_mod_residues	1, 2	True
 public.t_maxquant_mods	1	True
 public.t_misc_paths	2
@@ -133,7 +134,6 @@ public.t_spectral_library_state	1	True
 public.t_usage_stats	1
 public.t_user_operations	1	True
 public.t_user_operations_permissions	1, 2	True
-public.t_wellplates	1	True
 public.t_yes_no	1	True
 sw.t_job_state_name	1	True
 sw.t_job_step_state_name	1	True
