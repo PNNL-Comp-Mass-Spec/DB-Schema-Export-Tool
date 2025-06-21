@@ -105,6 +105,9 @@ t_user_operations_permissions
 t_users_access_list
 t_yes_no
 
+cap.t_scripts
+sw.t_scripts
+
 cap.t_sp_authorization
 dpkg.t_sp_authorization
 mc.t_sp_authorization
