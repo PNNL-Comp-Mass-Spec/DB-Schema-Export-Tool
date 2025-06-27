@@ -27,6 +27,7 @@ t_data_release_restrictions
 t_data_repository
 t_dataset_annotations
 t_dataset_archive_state_name
+t_dataset_cc_report_state
 t_dataset_qc_instruments
 t_dataset_qc_metric_names
 t_dataset_rating_name
@@ -104,6 +105,9 @@ t_user_operations
 t_user_operations_permissions
 t_users_access_list
 t_yes_no
+
+cc.t_service_cost_group_state
+cc.t_service_type
 
 cap.t_scripts
 sw.t_scripts
