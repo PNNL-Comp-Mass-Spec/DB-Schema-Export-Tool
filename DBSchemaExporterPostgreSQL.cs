@@ -2153,6 +2153,29 @@ namespace DB_Schema_Export_Tool
                     schemaToUse = string.Empty;
                     break;
 
+                case "RULE":
+                    // Older versions of pg_dump exported views as "Type: RULE"
+
+                    // pg_dump v17.x does this for view v_separation_group_list_report, first creating a view where the value for each column is Null
+                    // then altering the view to have the correct source columns
+
+                    // Excerpts from the dump file:
+
+                    // -- Name: v_separation_group_list_report; Type: VIEW; Schema: public; Owner: d3l243
+                    // CREATE VIEW public.v_separation_group_list_report AS
+                    // SELECT
+                    //     NULL::public.citext AS separation_group,
+                    //     NULL::public.citext AS comment,
+
+                    // -- Name: v_separation_group_list_report _RETURN; Type: RULE; Schema: public; Owner: d3l243
+                    // CREATE OR REPLACE VIEW public.v_separation_group_list_report AS
+                    //  SELECT sg.separation_group,
+                    //     sg.comment,
+
+                    // Append this rule-style DDL to the corresponding file (e.g. v_separation_group_list_report.sql)
+                    nameToUse = currentObject.Name.Replace(" _RETURN", "");
+                    break;
+
                 default:
                     OnWarningEvent("Unrecognized object type: " + currentObject.Type);
                     unhandledScriptingCommands = true;
