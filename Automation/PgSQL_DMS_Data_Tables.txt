@@ -109,6 +109,7 @@ t_yes_no
 cc.t_service_cost_group
 cc.t_service_cost_group_state
 cc.t_service_cost_rate
+cc.t_service_cost_rate_burdened
 cc.t_service_type
 
 cap.t_scripts
