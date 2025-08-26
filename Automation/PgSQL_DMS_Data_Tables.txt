@@ -106,11 +106,12 @@ t_user_operations_permissions
 t_users_access_list
 t_yes_no
 
-cc.t_service_cost_group
-cc.t_service_cost_group_state
-cc.t_service_cost_rate
-cc.t_service_cost_rate_burdened
-cc.t_service_type
+svc.t_service_cost_group
+svc.t_service_cost_group_state
+svc.t_service_cost_rate
+svc.t_service_cost_rate_burdened
+svc.t_service_type
+svc.t_service_use_report_state
 
 cap.t_scripts
 sw.t_scripts
