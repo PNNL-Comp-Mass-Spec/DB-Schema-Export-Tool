@@ -960,6 +960,9 @@ namespace DB_Schema_Export_Tool
 
             using var writer = new StreamWriter(new FileStream(tableDataOutputFile.FullName, FileMode.Create, FileAccess.Write, FileShare.ReadWrite));
 
+            // Note that the following method will set the session_replication_role to "replica" if PgInsertEnabled is true
+            PossiblyDisableTriggers(dataExportParams, mOptions, writer);
+
             foreach (var headerRow in headerRows)
             {
                 writer.WriteLine(headerRow);
@@ -994,6 +997,9 @@ namespace DB_Schema_Export_Tool
                 writer.WriteLine("-- Option 2, for columns that get their default value from a sequence");
                 writer.WriteLine("-- select setval('my_sequence_name', (select max(my_serial_column) from {0});", dataExportParams.TargetTableNameWithSchema);
             }
+
+            // Note that the following method will set the session_replication_role to "origin" if PgInsertEnabled is true
+            PossiblyEnableTriggers(dataExportParams, mOptions, writer);
 
             return true;
         }
