@@ -181,6 +181,17 @@ namespace DB_Schema_Export_Tool
         public bool PgInsertTableData { get; set; }
 
         /// <summary>
+        /// With PostgreSQL databases, if PgDump is false but this is true, table data will be exported
+        /// via INSERT INTO statements using the syntax "ON CONFLICT (key_column) DO UPDATE SET"
+        /// </summary>
+        [Option("PgInsertUpdateOnConflict", HelpShowsDefault = false,
+            HelpText = "When true and exporting data from a PostgreSQL database, if PgDump is false, table data will be exported " +
+                       "via INSERT INTO statements using the syntax \"ON CONFLICT (key_column) DO UPDATE SET\"\n" +
+                       "When false, if PgDump is true, export data using \"COPY t_table (column1, column2, column3) FROM stdin;\" followed by a list of tab-delimited rows of data, " +
+                       "otherwise, export data using SQL Server compatible INSERT INTO statements")]
+        public bool PgInsertUpdateOnConflict { get; set; }
+
+        /// <summary>
         /// Database username when connecting to PostgreSQL
         /// </summary>
         [Option("PgUser", HelpShowsDefault = false,
@@ -745,6 +756,7 @@ namespace DB_Schema_Export_Tool
             KeepPgDumpFile = false;
 
             PgInsertTableData = false;
+            PgInsertUpdateOnConflict = true;
             PgInsertChunkSize = 50000;
 
             PgPort = DBSchemaExporterPostgreSQL.DEFAULT_PORT;
@@ -915,20 +927,29 @@ namespace DB_Schema_Export_Tool
 
                     if (!PostgreSQL && PgInsertTableData)
                     {
-                        Console.WriteLine(" {0,-48} {1}", "Dump table data as:", "PostgreSQL compatible INSERT INTO statements");
+                        Console.WriteLine(" {0,-48} {1}", "Dump table data as:", "PostgreSQL compatible INSERT INTO statements using the syntax \"ON CONFLICT (key_column) DO UPDATE SET\"");
                     }
                     else
                     {
                         Console.WriteLine(" {0,-48} {1}", "Dump table data as:", "PostgreSQL COPY commands");
                     }
                 }
+                else if (PostgreSQL)
+                {
+                    Console.WriteLine(" {0,-48} {1}", "Table data export tool:", "Npgsql");
+
+                    if (PgInsertUpdateOnConflict)
+                    {
+                        Console.WriteLine(" {0,-48} {1}", "Dump table data as:",
+                            "PostgreSQL compatible INSERT INTO statements using the syntax \"ON CONFLICT (key_column) DO UPDATE SET\"");
+                    }
+                    else
+                    {
+                        Console.WriteLine(" {0,-48} {1}", "Dump table data as:", "PostgreSQL compatible INSERT INTO statements");
+                    }
+                }
                 else
                 {
-                    if (PostgreSQL)
-                    {
-                        Console.WriteLine(" {0,-48} {1}", "Table data export tool:", "Npgsql");
-                    }
-
                     Console.WriteLine(" {0,-48} {1}", "Dump table data as:",
                         PgInsertTableData ? "PostgreSQL compatible INSERT INTO statements" : "SQL Server compatible INSERT INTO statements");
                 }

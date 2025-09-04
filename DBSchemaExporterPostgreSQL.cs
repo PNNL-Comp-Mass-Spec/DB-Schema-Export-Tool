@@ -783,7 +783,9 @@ namespace DB_Schema_Export_Tool
             if (dataRowCount == 0)
                 return true;
 
-            var dataExportParams = new DataExportWorkingParams(false, "null")
+            var pgInsertEnabled = mOptions.PgInsertUpdateOnConflict;
+
+            var dataExportParams = new DataExportWorkingParams(pgInsertEnabled, "null")
             {
                 SourceTableNameWithSchema = sourceTableNameWithSchema,
             };
