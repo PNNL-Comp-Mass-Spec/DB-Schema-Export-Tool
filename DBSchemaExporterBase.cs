@@ -2314,6 +2314,56 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
+        /// Disable triggers if PgInsertEnabled is true or IncludeDisableTriggerCommands is true
+        /// </summary>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="options">Options</param>
+        /// <param name="writer">Text file writer</param>
+        internal static void PossiblyDisableTriggers(DataExportWorkingParams dataExportParams, SchemaExportOptions options, TextWriter writer)
+        {
+            if (dataExportParams.PgInsertEnabled)
+            {
+                // Set the replication role to replicate to disable triggers
+
+                // By default, triggers will fire when the replication role is "origin" (the default) or "local", but will not fire if the replication role is "replica"
+                // Triggers configured as ENABLE REPLICA will only fire if the session is in "replica" mode
+                // Triggers configured as ENABLE ALWAYS will fire regardless of the current replication role
+
+                writer.WriteLine("-- Setting the replication role to 'replica' will disable normal triggers on tables");
+                writer.WriteLine("SET session_replication_role = replica;");
+                writer.WriteLine();
+            }
+            else if (options.IncludeDisableTriggerCommands)
+            {
+                writer.WriteLine("ALTER TABLE {0} DISABLE TRIGGER ALL;", dataExportParams.TargetTableNameWithSchema);
+                writer.WriteLine();
+            }
+        }
+
+        /// <summary>
+        /// Enable triggers if PgInsertEnabled is true or IncludeDisableTriggerCommands is true
+        /// </summary>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="options">Options</param>
+        /// <param name="writer">Text file writer</param>
+        internal static void PossiblyEnableTriggers(DataExportWorkingParams dataExportParams, SchemaExportOptions options, TextWriter writer)
+        {
+            if (dataExportParams.PgInsertEnabled)
+            {
+                writer.WriteLine();
+                writer.WriteLine("SET session_replication_role = origin;");
+                return;
+            }
+
+            if (!options.IncludeDisableTriggerCommands)
+                return;
+
+            writer.WriteLine();
+            writer.WriteLine("ALTER TABLE {0} ENABLE TRIGGER ALL;", dataExportParams.TargetTableNameWithSchema);
+            writer.WriteLine();
+        }
+
+        /// <summary>
         /// If objectName contains characters other than A-Z, a-z, 0-9, or an underscore, surround the name with square brackets or double quotes
         /// </summary>
         /// <remarks>Also quote if the name is a keyword</remarks>

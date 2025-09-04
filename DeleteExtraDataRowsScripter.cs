@@ -636,7 +636,7 @@ namespace DB_Schema_Export_Tool
                 using var writer = new StreamWriter(new FileStream(deleteExtrasFile.FullName, FileMode.Create, FileAccess.Write, FileShare.Read));
 
                 // Note that the following method will set the session_replication_role to "replica" if PgInsertEnabled is true
-                DBSchemaExporterSQLServer.PossiblyDisableTriggers(dataExportParams, mOptions, writer);
+                DBSchemaExporterBase.PossiblyDisableTriggers(dataExportParams, mOptions, writer);
 
                 writer.WriteLine("-- Commands to delete extra rows from table {0}", dataExportParams.TargetTableNameWithSchema);
                 writer.WriteLine();
@@ -768,7 +768,7 @@ namespace DB_Schema_Export_Tool
                 }
 
                 // Note that the following method will set the session_replication_role to "origin" if PgInsertEnabled is true
-                DBSchemaExporterSQLServer.PossiblyEnableTriggers(dataExportParams, mOptions, writer);
+                DBSchemaExporterBase.PossiblyEnableTriggers(dataExportParams, mOptions, writer);
 
                 return true;
             }
