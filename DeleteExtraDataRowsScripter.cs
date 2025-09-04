@@ -20,7 +20,7 @@ namespace DB_Schema_Export_Tool
     {
         // Ignore Spelling: scripter, subquery
 
-        private readonly DBSchemaExporterSQLServer mDbSchemaExporter;
+        private readonly DBSchemaExporterBase mDbSchemaExporter;
 
         private readonly SchemaExportOptions mOptions;
 
@@ -29,7 +29,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="dbSchemaExporter">DB Schema Exporter instances</param>
         /// <param name="options">Options</param>
-        public DeleteExtraDataRowsScripter(DBSchemaExporterSQLServer dbSchemaExporter, SchemaExportOptions options)
+        public DeleteExtraDataRowsScripter(DBSchemaExporterBase dbSchemaExporter, SchemaExportOptions options)
         {
             mDbSchemaExporter = dbSchemaExporter;
             mOptions = options;

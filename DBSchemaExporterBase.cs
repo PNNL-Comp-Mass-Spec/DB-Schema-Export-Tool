@@ -1,11 +1,14 @@
 ﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using PRISM;
+using TableNameMapContainer;
 
 namespace DB_Schema_Export_Tool
 {
@@ -332,6 +335,66 @@ namespace DB_Schema_Export_Tool
         {
             mAbortProcessing = true;
             RequestUnpause();
+        }
+
+        protected void AppendPgExportFooters(TextWriter writer, DataExportWorkingParams dataExportParams)
+        {
+            if (!dataExportParams.FooterWriteRequired)
+            {
+                return;
+            }
+
+            if (dataExportParams.PgInsertFooters.Count == 0)
+            {
+                writer.WriteLine(";");
+            }
+            else
+            {
+                foreach (var line in dataExportParams.PgInsertFooters)
+                {
+                    writer.WriteLine(line);
+                }
+            }
+
+            dataExportParams.FooterWriteRequired = false;
+        }
+
+        private void AppendPgExportHeaders(TextWriter writer, DataExportWorkingParams dataExportParams)
+        {
+            if (dataExportParams.PgInsertHeaders.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var line in dataExportParams.PgInsertHeaders)
+            {
+                writer.WriteLine(line);
+            }
+        }
+
+        /// <summary>
+        /// Append a SQL statement for setting a table's sequence value to the maximum current ID in the table
+        /// </summary>
+        /// <param name="writer">Text file writer</param>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="identityColumnIndex">Identity column index</param>
+        protected void AppendPgExportSetSequenceValue(TextWriter writer, DataExportWorkingParams dataExportParams, int identityColumnIndex)
+        {
+            var primaryKeyColumnName = identityColumnIndex >= 0
+                ? dataExportParams.ColumnNamesAndTypes[identityColumnIndex].Key
+                : dataExportParams.IdentityColumnName;
+
+            // Make an educated guess of the sequence name, for example
+            // mc.t_mgr_types_mt_type_id_seq
+            var sequenceName = GetIdentityColumnSequenceName(dataExportParams.TargetTableNameWithSchema, primaryKeyColumnName);
+
+            writer.WriteLine();
+            writer.WriteLine("-- Set the sequence's current value to the maximum current ID");
+            writer.WriteLine("SELECT setval('{0}', (SELECT MAX({1}) FROM {2}));",
+                sequenceName, PossiblyQuoteName(primaryKeyColumnName, false), dataExportParams.TargetTableNameWithSchema);
+            writer.WriteLine();
+            writer.WriteLine("-- Preview the ID that will be assigned to the next item");
+            writer.WriteLine("SELECT currval('{0}');", sequenceName);
         }
 
         /// <summary>
@@ -910,6 +973,14 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
+        /// Query the database to obtain the primary key information for every table
+        /// Store in workingParams.PrimaryKeysByTable
+        /// </summary>
+        /// <param name="workingParams">Working parameters</param>
+        /// <returns>True if successful, false if an error</returns>
+        public abstract bool GetPrimaryKeyInfoFromDatabase(WorkingParams workingParams);
+
+        /// <summary>
         /// If option DeleteExtraRows was enabled, workingParams.DataLoadScriptFiles will have a mix of scripts to remove extra rows and to load new data
         /// This method extracts the delete extra data scripts, reverses their order, then appends the load data scripts to the end
         /// The reason for this is to delete extra rows from tables in the reverse order specified by the table data export order file
@@ -936,6 +1007,46 @@ namespace DB_Schema_Export_Tool
             sortedScriptFiles.AddRange(dataLoadScriptFiles);
 
             return sortedScriptFiles;
+        }
+
+        /// <summary>
+        /// Get target table primary key column names
+        /// </summary>
+        /// <param name="columnMapInfo"></param>
+        /// <param name="sourceColumnNames"></param>
+        /// <param name="targetPrimaryKeyColumns"></param>
+        /// <returns></returns>
+        protected string GetTargetPrimaryKeyColumnNames(
+            ColumnMapInfo columnMapInfo,
+            IEnumerable<string> sourceColumnNames,
+            out List<string> targetPrimaryKeyColumns)
+        {
+            targetPrimaryKeyColumns = new List<string>();
+
+            // ReSharper disable once LoopCanBeConvertedToQuery
+            foreach (var columnName in sourceColumnNames)
+            {
+                var targetColumnName = GetTargetColumnName(columnMapInfo, columnName);
+
+                if (targetColumnName.Equals(NameMapReader.SKIP_FLAG))
+                {
+                    // Table T_Job_Steps in DMS_Capture has computed column "step" which is a synonym for primary key column Step_Number
+                    // Column Step_Number gets renamed to "step" when converting to PostgreSQL
+
+                    // For T_Job_Steps, names in sourceColumnNames are "job" and "step" when this for loop is reached
+
+                    // GetTargetColumnName() will thus convert "step" to "<skip>" since it is a computed column in the source table
+                    // (and method SkipColumn() in ColumnMapInfo will have set the new name to "<skip>")
+
+                    // Therefore, use the original column name as the primary key column
+                    targetPrimaryKeyColumns.Add(columnName);
+                    continue;
+                }
+
+                targetPrimaryKeyColumns.Add(targetColumnName);
+            }
+
+            return string.Join(",", targetPrimaryKeyColumns);
         }
 
         /// <summary>
@@ -1088,53 +1199,6 @@ namespace DB_Schema_Export_Tool
             }
         }
 
-        private bool StoreDataExportTableIfMatch(
-            TableDataExportInfo tableInfo,
-            long maxRowsToExport,
-            string tableNameToFind,
-            string alternateNameToFind,
-            ICollection<KeyValuePair<TableDataExportInfo, long>> tablesToExportOrdered,
-            ISet<string> storedTableInfo)
-        {
-            if (string.IsNullOrWhiteSpace(tableInfo.SourceTableName))
-                return false;
-
-            var tableNameWithoutSchema = GetNameWithoutSchema(tableInfo.SourceTableName);
-            var namesToCheck = new List<string>
-            {
-                tableNameWithoutSchema
-            };
-
-            var sourceNameSnakeCase = ConvertNameToSnakeCase(tableNameWithoutSchema);
-
-            if (!sourceNameSnakeCase.Equals(tableNameWithoutSchema, StringComparison.OrdinalIgnoreCase))
-            {
-                namesToCheck.Add(sourceNameSnakeCase);
-            }
-
-            if (!string.IsNullOrWhiteSpace(tableInfo.TargetTableName))
-                namesToCheck.Add(tableInfo.TargetTableName);
-
-            var storeTable = namesToCheck.Any(tableName =>
-                tableName.Equals(tableNameToFind, StringComparison.OrdinalIgnoreCase) ||
-                tableName.Equals(alternateNameToFind, StringComparison.OrdinalIgnoreCase));
-
-            if (!storeTable)
-            {
-                return false;
-            }
-
-            if (storedTableInfo.Contains(tableInfo.SourceTableName))
-            {
-                OnWarningEvent("Table {0} has already been added to the list of tables to export; skipping duplicate", tableInfo.SourceTableName);
-                return false;
-            }
-
-            tablesToExportOrdered.Add(new KeyValuePair<TableDataExportInfo, long>(tableInfo, maxRowsToExport));
-            storedTableInfo.Add(tableInfo.SourceTableName);
-            return true;
-        }
-
         /// <summary>
         /// Export data from the specified table (if it exists)
         /// </summary>
@@ -1147,6 +1211,414 @@ namespace DB_Schema_Export_Tool
         protected abstract bool ExportDBTableData(string databaseName, TableDataExportInfo tableInfo, long maxRowsToExport, WorkingParams workingParams);
 
         /// <summary>
+        /// Construct the header rows then return the INSERT INTO line to use for each block of data
+        /// </summary>
+        /// <remarks>
+        /// If DeleteExtraRowsBeforeImport is true and the table has a primary key, will create a file for deleting extra data rows in a target table
+        /// </remarks>
+        /// <param name="tableInfo">Table info</param>
+        /// <param name="columnMapInfo">Class tracking the source and target column names for the table</param>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="headerRows">Header rows</param>
+        /// <param name="workingParams">Working parameters</param>
+        /// <param name="queryResults">Query results</param>
+        /// <param name="tableDataOutputFile">Table data output file</param>
+        /// <param name="tableDataOutputFileRelativePath">Table data output file relative path</param>
+        /// <param name="dataExportError">Output: true if an error was encountered, otherwise false</param>
+        /// <returns>Insert Into line to use when SaveDataAsInsertIntoStatements is true and PgInsertEnabled is false; otherwise, an empty string</returns>
+        protected string ExportDBTableDataInit(
+            TableDataExportInfo tableInfo,
+            ColumnMapInfo columnMapInfo,
+            DataExportWorkingParams dataExportParams,
+            List<string> headerRows,
+            WorkingParams workingParams,
+            DataSet queryResults,
+            FileInfo tableDataOutputFile,
+            string tableDataOutputFileRelativePath,
+            out bool dataExportError)
+        {
+            string insertIntoLine;
+            dataExportError = false;
+
+            var dataRowCount = queryResults.Tables[0].Rows.Count;
+
+            if (dataExportParams.PgInsertEnabled)
+            {
+                // Exporting data from PostgreSQL or from SQL Server and using insert commands that are formatted as
+                // PostgreSQL compatible INSERT INTO statements using the ON CONFLICT (key_column) DO UPDATE SET syntax
+
+                var primaryKeyColumnList = ResolvePrimaryKeys(dataExportParams, workingParams, tableInfo, columnMapInfo);
+
+                bool deleteExtrasThenAddNew;
+                bool deleteExtrasUsingPrimaryKey;
+                bool useTruncateTable;
+
+                if (tableInfo.PrimaryKeyColumns.Count == dataExportParams.ColumnNamesAndTypes.Count)
+                {
+                    if (dataRowCount < 100 && tableInfo.PrimaryKeyColumns.Count <= 2)
+                    {
+                        // Every column in the table is part of the primary key
+
+                        // For smaller tables, we can delete extra rows then add new rows
+
+                        // This is preferable to TRUNCATE TABLE since the table might be referenced via a foreign key
+                        // and PostgreSQL will not allow a table to be truncated when it is the target of a foreign key reference
+
+                        deleteExtrasThenAddNew = true;
+                        deleteExtrasUsingPrimaryKey = false;
+                        useTruncateTable = false;
+
+                        Console.WriteLine();
+
+                        var message = string.Format(
+                            "Every column in table {0} is part of the primary key; since this is a small table, will delete extra rows from the target table, then add missing rows",
+                            dataExportParams.QuotedTargetTableNameWithSchema);
+
+                        OnStatusEvent(message);
+                    }
+                    else
+                    {
+                        deleteExtrasThenAddNew = false;
+                        deleteExtrasUsingPrimaryKey = false;
+                        useTruncateTable = true;
+
+                        Console.WriteLine();
+
+                        var message = string.Format(
+                            "Every column in table {0} is part of the primary key; will use TRUNCATE TABLE instead of ON CONFLICT ... DO UPDATE",
+                            dataExportParams.QuotedTargetTableNameWithSchema);
+
+                        OnStatusEvent(message);
+
+                        workingParams.AddWarningMessage(message);
+                    }
+                }
+                else if (tableInfo.PrimaryKeyColumns.Count == 0)
+                {
+                    deleteExtrasThenAddNew = false;
+                    deleteExtrasUsingPrimaryKey = false;
+                    useTruncateTable = true;
+
+                    var warningMessage = string.Format(
+                        "Table {0} does not have a primary key; will use TRUNCATE TABLE since ON CONFLICT ... DO UPDATE is not possible",
+                        dataExportParams.QuotedTargetTableNameWithSchema);
+
+                    OnWarningEvent(warningMessage);
+
+                    workingParams.AddWarningMessage(warningMessage);
+                }
+                else
+                {
+                    deleteExtrasThenAddNew = false;
+                    deleteExtrasUsingPrimaryKey = mOptions.DeleteExtraRowsBeforeImport;
+                    useTruncateTable = false;
+                }
+
+                if (dataRowCount > 0 && !tableInfo.FilterByDate && mOptions.MaxRows <= 0)
+                {
+                    if (deleteExtrasThenAddNew)
+                    {
+                        ExportDBTableDataDeleteExtraRows(dataExportParams, queryResults);
+                    }
+                    else if (deleteExtrasUsingPrimaryKey)
+                    {
+                        var deleteExtrasScripter = new DeleteExtraDataRowsScripter(this, mOptions);
+
+                        RegisterEvents(deleteExtrasScripter);
+
+                        var success = deleteExtrasScripter.DeleteExtraRowsInTargetTable(
+                            tableInfo, columnMapInfo,
+                            dataExportParams, workingParams,
+                            queryResults,
+                            tableDataOutputFile, tableDataOutputFileRelativePath);
+
+                        if (!success)
+                        {
+                            dataExportError = true;
+                            return string.Empty;
+                        }
+                    }
+                }
+
+                if (useTruncateTable)
+                {
+                    var truncateTableCommand = string.Format("TRUNCATE TABLE {0};", dataExportParams.QuotedTargetTableNameWithSchema);
+
+                    if (dataRowCount > 0)
+                    {
+                        headerRows.Add(truncateTableCommand);
+                    }
+                    else
+                    {
+                        dataExportParams.PgInsertHeaders.Add(string.Empty);
+                        dataExportParams.PgInsertHeaders.Add(
+                            "-- The following is commented out because the source table is empty (or all rows were filtered out by a date filter)");
+                        dataExportParams.PgInsertHeaders.Add("-- " + truncateTableCommand);
+                    }
+
+                    dataExportParams.PgInsertHeaders.Add(string.Empty);
+                }
+
+                // Note that column names in HeaderRowValues should already be properly quoted
+
+                var insertCommand = string.Format("INSERT INTO {0} ({1})",
+                    dataExportParams.QuotedTargetTableNameWithSchema,
+                    dataExportParams.HeaderRowValues);
+
+                if (dataRowCount == 0)
+                {
+                    dataExportParams.PgInsertHeaders.Add(string.Empty);
+                    dataExportParams.PgInsertHeaders.Add(
+                        "-- The following is commented out because the source table is empty (or all rows were filtered out by a date filter)");
+                    dataExportParams.PgInsertHeaders.Add("-- " + insertCommand);
+
+                    headerRows.AddRange(dataExportParams.PgInsertHeaders);
+                    return string.Empty;
+                }
+
+                dataExportParams.PgInsertHeaders.Add(insertCommand);
+                dataExportParams.PgInsertHeaders.Add("OVERRIDING SYSTEM VALUE");
+                dataExportParams.PgInsertHeaders.Add("VALUES");
+
+                headerRows.AddRange(dataExportParams.PgInsertHeaders);
+
+                dataExportParams.ColSepChar = ',';
+                insertIntoLine = string.Empty;
+
+                if (primaryKeyColumnList.Length == 0)
+                    return string.Empty;
+
+                if (useTruncateTable)
+                {
+                    return string.Empty;
+                }
+
+                var setStatements = ExportDBTableDataGetSetStatements(tableInfo, columnMapInfo, dataExportParams, primaryKeyColumnList, deleteExtrasThenAddNew);
+
+                dataExportParams.PgInsertFooters.AddRange(setStatements);
+                dataExportParams.PgInsertFooters.Add(";");
+            }
+            else if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData)
+            {
+                // Export as SQL Server compatible INSERT INTO statements
+
+                if (dataExportParams.IdentityColumnFound)
+                {
+                    insertIntoLine = string.Format(
+                        "INSERT INTO {0} ({1}) VALUES (",
+                        dataExportParams.QuotedTargetTableNameWithSchema,
+                        dataExportParams.HeaderRowValues);
+
+                    headerRows.Add("SET IDENTITY_INSERT " + dataExportParams.QuotedTargetTableNameWithSchema + " ON");
+                }
+                else
+                {
+                    // Identity column not present; no need to explicitly list the column names
+                    insertIntoLine = string.Format(
+                        "INSERT INTO {0} VALUES (",
+                        dataExportParams.QuotedTargetTableNameWithSchema);
+
+                    headerRows.Add(COMMENT_START_TEXT + "Columns: " + dataExportParams.HeaderRowValues + COMMENT_END_TEXT);
+                }
+
+                dataExportParams.ColSepChar = ',';
+            }
+            else if (mOptions.PgDumpTableData)
+            {
+                // Format data exported from SQL Server as PostgreSQL COPY commands
+
+                // ReSharper disable once StringLiteralTypo
+                var copyCommand = string.Format("COPY {0} ({1}) from stdin;",
+                    dataExportParams.TargetTableNameWithSchema, dataExportParams.HeaderRowValues);
+
+                headerRows.Add(copyCommand);
+                dataExportParams.ColSepChar = '\t';
+                insertIntoLine = string.Empty;
+            }
+            else
+            {
+                // Export data as a tab-delimited table
+                headerRows.Add(dataExportParams.HeaderRowValues.ToString());
+                dataExportParams.ColSepChar = '\t';
+                insertIntoLine = string.Empty;
+            }
+
+            return insertIntoLine;
+        }
+
+        /// <summary>
+        /// Generate SQL to delete extra rows from the target table
+        /// </summary>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="queryResults">Query results</param>
+        protected void ExportDBTableDataDeleteExtraRows(DataExportWorkingParams dataExportParams, DataSet queryResults)
+        {
+            // If just one column in the table, use:
+            //   DELETE FROM t_target_table
+            //   WHERE NOT id in (1, 2, 3);
+
+            // If multiple columns, use:
+            //   DELETE FROM t_target_table
+            //   WHERE NOT (
+            //       id = 1 and value = 'Item A' Or
+            //       id = 2 and value = 'Item B' Or
+            //       id = 3 and value = 'Item C');
+
+            var sql = new StringBuilder();
+
+            sql.AppendFormat("DELETE FROM {0}", dataExportParams.QuotedTargetTableNameWithSchema).AppendLine();
+
+            var columnCount = queryResults.Tables[0].Columns.Count;
+            var pgInsertEnabled = dataExportParams.PgInsertEnabled;
+
+            var filterValues = new StringBuilder();
+
+            if (columnCount == 1)
+            {
+                sql.AppendFormat("WHERE NOT {0} IN (", dataExportParams.ColumnNameByIndex[0]);
+            }
+            else
+            {
+                sql.AppendLine("WHERE NOT (");
+            }
+
+            var rowNumber = 0;
+
+            foreach (DataRow currentRow in queryResults.Tables[0].Rows)
+            {
+                filterValues.Clear();
+                rowNumber++;
+
+                var columnValues = GetColumnValues(columnCount, currentRow);
+
+                for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
+                {
+                    if (columnCount > 1 && dataExportParams.ColumnNamesAndTypes[columnIndex].Value == DataColumnTypeConstants.SkipColumn)
+                    {
+                        // Skip this column
+                        continue;
+                    }
+
+                    var formattedValue = FormatValueForInsert(dataExportParams.ColumnNamesAndTypes, columnValues, columnIndex, pgInsertEnabled);
+
+                    if (columnCount == 1)
+                    {
+                        // Using the form "WHERE NOT id in (1, 2, 3);"
+                        // Append to the list
+
+                        if (rowNumber > 1)
+                            sql.Append(", ");
+
+                        sql.Append(columnValues[columnIndex] == null ? "NULL" : formattedValue);
+
+                        continue;
+                    }
+
+                    if (filterValues.Length == 0)
+                    {
+                        if (rowNumber > 1)
+                        {
+                            // Add OR to the previous filter value
+                            sql.AppendLine(" OR");
+                        }
+
+                        sql.Append("    ");
+                    }
+
+                    var quotedColumnName = dataExportParams.ColumnNameByIndex[columnIndex];
+
+                    if (columnIndex > 0 && filterValues.Length > 0)
+                    {
+                        filterValues.Append(" AND ");
+                    }
+
+                    if (columnValues[columnIndex] == null)
+                    {
+                        filterValues.AppendFormat("{0} IS NULL", quotedColumnName);
+                        continue;
+                    }
+
+                    filterValues.AppendFormat("{0} = {1}", quotedColumnName, formattedValue);
+                }
+
+                if (columnCount > 1)
+                {
+                    sql.Append(filterValues);
+                }
+            }
+
+            sql.AppendLine(");");
+
+            dataExportParams.PgInsertHeaders.Add(sql.ToString());
+        }
+
+        private IEnumerable<string> ExportDBTableDataGetSetStatements(
+            TableNameInfo tableInfo,
+            ColumnMapInfo columnMapInfo,
+            DataExportWorkingParams dataExportParams,
+            string primaryKeyColumnList,
+            bool deleteExtrasThenAddNew)
+        {
+            var setStatements = new List<string>();
+
+            for (var columnIndex = 0; columnIndex < dataExportParams.ColumnNamesAndTypes.Count; columnIndex++)
+            {
+                var currentColumn = dataExportParams.ColumnInfoByType[columnIndex];
+
+                var currentColumnName = currentColumn.Key;
+
+                var dataColumnType = DataColumnTypeConstants.Numeric;
+                var targetColumnName = GetTargetColumnName(columnMapInfo, currentColumnName, ref dataColumnType);
+
+                if (dataColumnType == DataColumnTypeConstants.SkipColumn)
+                    continue;
+
+                if (tableInfo.PrimaryKeyColumns.Contains(targetColumnName))
+                {
+                    // Skip this column
+                    continue;
+                }
+
+                var optionalComma = columnIndex < dataExportParams.ColumnNamesAndTypes.Count - 1 ? "," : string.Empty;
+
+                if (setStatements.Count == 0)
+                {
+                    setStatements.Add(string.Format("ON CONFLICT ({0})", PossiblyQuoteNameList(primaryKeyColumnList, false)));
+                    setStatements.Add("DO UPDATE SET");
+                }
+
+                if (!deleteExtrasThenAddNew)
+                {
+                    setStatements.Add(string.Format("  {0} = EXCLUDED.{0}{1}", PossiblyQuoteName(targetColumnName, false), optionalComma));
+                }
+            }
+
+            if (deleteExtrasThenAddNew)
+            {
+                if (setStatements.Count > 0)
+                {
+                    throw new Exception("Logic bug in ExportDBTableDataGetSetStatements: deleteExtrasThenAddNew is true, but setStatements is not empty");
+                }
+
+                setStatements.Add(string.Format("ON CONFLICT ({0})", PossiblyQuoteNameList(primaryKeyColumnList, false)));
+                setStatements.Add("DO NOTHING");
+            }
+            else
+            {
+                // Assure that the last line in setStatements does not end with a comma
+                // This would be the case if the final column for the table is a <skip> column or an identity column
+                var mostRecentLine = setStatements.LastOrDefault() ?? string.Empty;
+
+                if (mostRecentLine.EndsWith(","))
+                {
+                    setStatements[setStatements.Count - 1] = mostRecentLine.Substring(0, mostRecentLine.Length - 1);
+                }
+            }
+
+            return setStatements;
+        }
+
+        /// <summary>
         /// Append a single row of results to the output file
         /// </summary>
         /// <param name="writer">Text file writer</param>
@@ -1155,7 +1627,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="columnCount">Number of columns</param>
         /// <param name="columnValues">Column values</param>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        protected void ExportDBTableDataRow(
+        private void ExportDBTableDataRow(
             TextWriter writer,
             DataExportWorkingParams dataExportParams,
             StringBuilder delimitedRowValues,
@@ -1209,6 +1681,93 @@ namespace DB_Schema_Export_Tool
                 }
 
                 writer.WriteLine(delimitedRowValues.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Step through the results in queryResults
+        /// Append lines to the output file
+        /// </summary>
+        /// <param name="writer">Text file writer</param>
+        /// <param name="queryResults">Query results dataset</param>
+        /// <param name="insertIntoLine">Insert Into (Column1, Column2, Column3) line (used when SaveDataAsInsertIntoStatements is true and PgInsertEnabled is false)</param>
+        /// <param name="dataExportParams">Data export parameters</param>
+        protected void ExportDBTableDataWork(
+            TextWriter writer,
+            DataSet queryResults,
+            string insertIntoLine,
+            DataExportWorkingParams dataExportParams)
+        {
+            var columnCount = queryResults.Tables[0].Columns.Count;
+
+            var delimitedRowValues = new StringBuilder();
+
+            var commandAndLfRequired = false;
+            var startingNewChunk = false;
+
+            var rowCountWritten = 0;
+
+            var usingPgInsert = dataExportParams.PgInsertEnabled;
+            dataExportParams.FooterWriteRequired = false;
+
+            foreach (DataRow currentRow in queryResults.Tables[0].Rows)
+            {
+                delimitedRowValues.Clear();
+
+                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData && !usingPgInsert)
+                {
+                    delimitedRowValues.Append(insertIntoLine);
+                }
+
+                var columnValues = GetColumnValues(columnCount, currentRow);
+
+                if (commandAndLfRequired)
+                {
+                    // Add a comma and a line feed
+                    writer.WriteLine(",");
+                }
+
+                if (startingNewChunk)
+                {
+                    AppendPgExportHeaders(writer, dataExportParams);
+                    startingNewChunk = false;
+                }
+
+                ExportDBTableDataRow(writer, dataExportParams, delimitedRowValues, columnCount, columnValues);
+
+                if (usingPgInsert)
+                    commandAndLfRequired = true;
+
+                rowCountWritten++;
+
+                if (mOptions.PgInsertChunkSize > 0 && rowCountWritten > mOptions.PgInsertChunkSize)
+                {
+                    dataExportParams.FooterWriteRequired = true;
+                    writer.WriteLine();
+                    AppendPgExportFooters(writer, dataExportParams);
+                    rowCountWritten = 0;
+                    commandAndLfRequired = false;
+                    startingNewChunk = true;
+                }
+            }
+
+            // Note that the calling method will call AppendPgExportFooters()
+
+            if (commandAndLfRequired)
+            {
+                // Add a line feed (but no comma)
+                writer.WriteLine();
+                dataExportParams.FooterWriteRequired = true;
+            }
+
+            if (mOptions.PgDumpTableData && !usingPgInsert)
+            {
+                // Append a line with just backslash-period (\.)
+                // This represents "End of data"
+                writer.WriteLine(@"\.");
+
+                // Append a semicolon to finalize the DDL
+                writer.WriteLine(";");
             }
         }
 
@@ -1318,6 +1877,31 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
+        /// Store the values in the current row in an array, using null when the given column is null
+        /// </summary>
+        /// <param name="columnCount">Column count</param>
+        /// <param name="currentRow">Current row from a DataSet</param>
+        /// <returns>Column values, as an array of objects</returns>
+        protected static object[] GetColumnValues(int columnCount, DataRow currentRow)
+        {
+            var columnValues = new object[columnCount];
+
+            for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
+            {
+                if (currentRow.IsNull(columnIndex))
+                {
+                    columnValues[columnIndex] = null;
+                }
+                else
+                {
+                    columnValues[columnIndex] = currentRow[columnIndex];
+                }
+            }
+
+            return columnValues;
+        }
+
+        /// <summary>
         /// Retrieve a list of tables in the given database
         /// </summary>
         /// <param name="databaseName">Database to query</param>
@@ -1325,6 +1909,27 @@ namespace DB_Schema_Export_Tool
         /// <param name="includeSystemObjects">When true, also returns system tables</param>
         /// <returns>Dictionary where keys are information on database tables and values are row counts (if includeTableRowCounts = true)</returns>
         public abstract Dictionary<TableDataExportInfo, long> GetDatabaseTables(string databaseName, bool includeTableRowCounts, bool includeSystemObjects);
+
+        private string GetIdentityColumnSequenceName(string targetTableNameWithSchema, string primaryKeyColumnName)
+        {
+            var tableName = GetNameWithoutSchema(targetTableNameWithSchema).Replace("\"", string.Empty);
+
+            var sequenceNameWithoutSchema = string.Format("{0}_{1}_seq", tableName, primaryKeyColumnName);
+
+            if (sequenceNameWithoutSchema.Length <= DBSchemaExporterPostgreSQL.MAX_OBJECT_NAME_LENGTH)
+            {
+                return string.Format("{0}_{1}_seq", targetTableNameWithSchema.Replace("\"", string.Empty), primaryKeyColumnName);
+            }
+
+            // Shorten the table name, trimming any trailing underscores
+            var tableNameLengthToUse = DBSchemaExporterPostgreSQL.MAX_OBJECT_NAME_LENGTH - primaryKeyColumnName.Length - 4;
+
+            var truncatedTableName = tableName.Substring(0, tableNameLengthToUse).TrimEnd('_');
+
+            var truncatedTableNameWithSchema = targetTableNameWithSchema.Replace(tableName, truncatedTableName).Replace("\"", string.Empty);
+
+            return string.Format("{0}_{1}_seq", truncatedTableNameWithSchema, primaryKeyColumnName);
+        }
 
         /// <summary>
         /// Generate the file name to exporting table data
@@ -1563,6 +2168,32 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
+        /// If the table schema is "dbo", "public", or an empty string, simply return the table name, quoted if necessary
+        /// Otherwise, return the schema name and table name, separated by a period, quoted if necessary
+        /// </summary>
+        /// <param name="tableSchema">Table schema</param>
+        /// <param name="tableName">Table name</param>
+        /// <param name="quoteWithSquareBrackets">When true, quote names with square brackets; otherwise, quote with double quotes</param>
+        /// <param name="alwaysQuoteNames">When true, always returned quoted schema.table_name</param>
+        /// <returns>Table name, with schema if required</returns>
+        protected string GetTableNameToUse(
+            string tableSchema,
+            string tableName,
+            bool quoteWithSquareBrackets,
+            bool alwaysQuoteNames)
+        {
+            if (IsDefaultOwnerSchema(tableSchema))
+            {
+                return PossiblyQuoteName(tableName, quoteWithSquareBrackets, alwaysQuoteNames);
+            }
+
+            return string.Format(
+                "{0}.{1}",
+                PossiblyQuoteName(tableSchema, quoteWithSquareBrackets, alwaysQuoteNames),
+                PossiblyQuoteName(tableName, quoteWithSquareBrackets, alwaysQuoteNames));
+        }
+
+        /// <summary>
         /// Get the target table name to use when exporting data
         /// </summary>
         /// <param name="dataExportParams">Data export parameters, including source and target table info</param>
@@ -1598,15 +2229,7 @@ namespace DB_Schema_Export_Tool
                 dataExportParams.TargetTableName = tableInfo.TargetTableName;
             }
 
-            if (IsDefaultOwnerSchema(dataExportParams.TargetTableSchema))
-            {
-                return PossiblyQuoteName(dataExportParams.TargetTableName, quoteWithSquareBrackets, alwaysQuoteNames);
-            }
-
-            return string.Format(
-                "{0}.{1}",
-                PossiblyQuoteName(dataExportParams.TargetTableSchema, quoteWithSquareBrackets, alwaysQuoteNames),
-                PossiblyQuoteName(dataExportParams.TargetTableName, quoteWithSquareBrackets, alwaysQuoteNames));
+            return GetTableNameToUse(dataExportParams.TargetTableSchema, dataExportParams.TargetTableName, quoteWithSquareBrackets, alwaysQuoteNames);
         }
 
         /// <summary>
@@ -1775,6 +2398,76 @@ namespace DB_Schema_Export_Tool
         {
             mConnectedToServer = false;
             mCurrentServerInfo.Reset();
+        }
+
+
+        /// <summary>
+        /// Determine the primary key column (or columns) for a table
+        /// </summary>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="workingParams">Working parameters</param>
+        /// <param name="tableInfo">Table info</param>
+        /// <param name="columnMapInfo">Class tracking the source and target column names for the table</param>
+        /// <returns>Comma separated list of primary key column names (using target column names)</returns>
+        protected abstract string ResolvePrimaryKeys(
+            DataExportWorkingParams dataExportParams,
+            WorkingParams workingParams,
+            TableNameInfo tableInfo,
+            ColumnMapInfo columnMapInfo);
+
+        /// <summary>
+        /// Determine the primary key column (or columns) for a table
+        /// </summary>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="workingParams">Working parameters</param>
+        /// <param name="tableInfo">Table info</param>
+        /// <param name="columnMapInfo">Class tracking the source and target column names for the table</param>
+        /// <returns>Comma separated list of primary key column names (using target column names)</returns>
+        protected string ResolvePrimaryKeysBase(
+            DataExportWorkingParams dataExportParams,
+            WorkingParams workingParams,
+            TableNameInfo tableInfo,
+            ColumnMapInfo columnMapInfo)
+        {
+            if (!workingParams.PrimaryKeysRetrieved)
+            {
+                GetPrimaryKeyInfoFromDatabase(workingParams);
+            }
+
+            if (tableInfo.PrimaryKeyColumns.Count > 0)
+            {
+                return GetTargetPrimaryKeyColumnNames(columnMapInfo, tableInfo.PrimaryKeyColumns, out _);
+            }
+
+            if (workingParams.PrimaryKeysByTable.TryGetValue(tableInfo.SourceTableName, out var primaryKeys))
+            {
+                foreach (var item in primaryKeys)
+                {
+                    var targetColumnName = GetTargetColumnName(columnMapInfo, item);
+
+                    if (targetColumnName.Equals(NameMapReader.SKIP_FLAG, StringComparison.OrdinalIgnoreCase))
+                    {
+                        OnWarningEvent("Ignoring primary key column {0} since it is flagged to be skipped", item);
+                        continue;
+                    }
+
+                    tableInfo.AddPrimaryKeyColumn(targetColumnName);
+                }
+            }
+
+            if (tableInfo.PrimaryKeyColumns.Count == 0 && dataExportParams.IdentityColumnFound)
+            {
+                var targetIdentityColumn = GetTargetColumnName(columnMapInfo, dataExportParams.IdentityColumnName);
+
+                tableInfo.AddPrimaryKeyColumn(targetIdentityColumn);
+            }
+
+            if (tableInfo.PrimaryKeyColumns.Count > 0)
+            {
+                return GetTargetPrimaryKeyColumnNames(columnMapInfo, tableInfo.PrimaryKeyColumns, out _);
+            }
+
+            return string.Empty;
         }
 
         /// <summary>
@@ -2140,6 +2833,53 @@ namespace DB_Schema_Export_Tool
 
             tableInfo = new TableDataExportInfo(candidateTableSourceTableName);
             return false;
+        }
+
+        private bool StoreDataExportTableIfMatch(
+            TableDataExportInfo tableInfo,
+            long maxRowsToExport,
+            string tableNameToFind,
+            string alternateNameToFind,
+            ICollection<KeyValuePair<TableDataExportInfo, long>> tablesToExportOrdered,
+            ISet<string> storedTableInfo)
+        {
+            if (string.IsNullOrWhiteSpace(tableInfo.SourceTableName))
+                return false;
+
+            var tableNameWithoutSchema = GetNameWithoutSchema(tableInfo.SourceTableName);
+            var namesToCheck = new List<string>
+            {
+                tableNameWithoutSchema
+            };
+
+            var sourceNameSnakeCase = ConvertNameToSnakeCase(tableNameWithoutSchema);
+
+            if (!sourceNameSnakeCase.Equals(tableNameWithoutSchema, StringComparison.OrdinalIgnoreCase))
+            {
+                namesToCheck.Add(sourceNameSnakeCase);
+            }
+
+            if (!string.IsNullOrWhiteSpace(tableInfo.TargetTableName))
+                namesToCheck.Add(tableInfo.TargetTableName);
+
+            var storeTable = namesToCheck.Any(tableName =>
+                tableName.Equals(tableNameToFind, StringComparison.OrdinalIgnoreCase) ||
+                tableName.Equals(alternateNameToFind, StringComparison.OrdinalIgnoreCase));
+
+            if (!storeTable)
+            {
+                return false;
+            }
+
+            if (storedTableInfo.Contains(tableInfo.SourceTableName))
+            {
+                OnWarningEvent("Table {0} has already been added to the list of tables to export; skipping duplicate", tableInfo.SourceTableName);
+                return false;
+            }
+
+            tablesToExportOrdered.Add(new KeyValuePair<TableDataExportInfo, long>(tableInfo, maxRowsToExport));
+            storedTableInfo.Add(tableInfo.SourceTableName);
+            return true;
         }
 
         /// <summary>
