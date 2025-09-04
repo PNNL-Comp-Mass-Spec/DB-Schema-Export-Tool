@@ -978,6 +978,12 @@ namespace DB_Schema_Export_Tool
             }
             else if (dataExportParams.IdentityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
             {
+                if (!mOptions.PgDumpTableData)
+                {
+                    writer.WriteLine("SET IDENTITY_INSERT " + dataExportParams.QuotedTargetTableNameWithSchema + " OFF;");
+                }
+
+                writer.WriteLine();
                 writer.WriteLine("-- If a table has an identity value, after inserting data with explicit identities,");
                 writer.WriteLine("-- the sequence will need to be synchronized up with the table");
                 writer.WriteLine();

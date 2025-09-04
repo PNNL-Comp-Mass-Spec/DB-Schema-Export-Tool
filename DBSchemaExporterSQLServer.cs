@@ -1413,7 +1413,7 @@ namespace DB_Schema_Export_Tool
                 }
                 else if (dataExportParams.IdentityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements && !mOptions.PgDumpTableData)
                 {
-                    writer.WriteLine("SET IDENTITY_INSERT " + dataExportParams.QuotedTargetTableNameWithSchema + " OFF");
+                    writer.WriteLine("SET IDENTITY_INSERT " + dataExportParams.QuotedTargetTableNameWithSchema + " OFF;");
                 }
 
                 // Note that the following method will set the session_replication_role to "origin" if PgInsertEnabled is true

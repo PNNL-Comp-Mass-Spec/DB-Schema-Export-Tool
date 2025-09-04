@@ -1413,7 +1413,7 @@ namespace DB_Schema_Export_Tool
                         dataExportParams.QuotedTargetTableNameWithSchema,
                         dataExportParams.HeaderRowValues);
 
-                    headerRows.Add("SET IDENTITY_INSERT " + dataExportParams.QuotedTargetTableNameWithSchema + " ON");
+                    headerRows.Add("SET IDENTITY_INSERT " + dataExportParams.QuotedTargetTableNameWithSchema + " ON;");
                 }
                 else
                 {
