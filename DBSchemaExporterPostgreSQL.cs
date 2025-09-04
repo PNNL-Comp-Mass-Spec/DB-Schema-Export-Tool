@@ -992,36 +992,6 @@ namespace DB_Schema_Export_Tool
             return true;
         }
 
-        private void ExportDBTableDataUsingNpgsql(
-            TextWriter writer,
-            IDataReader reader,
-            DataExportWorkingParams dataExportParams,
-            string insertIntoLine)
-        {
-            var columnCount = reader.FieldCount;
-
-            var delimitedRowValues = new StringBuilder();
-
-            var columnValues = new object[columnCount];
-
-            while (reader.Read())
-            {
-                delimitedRowValues.Clear();
-
-                if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
-                {
-                    delimitedRowValues.Append(insertIntoLine);
-                }
-
-                for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
-                {
-                    columnValues[columnIndex] = reader.GetValue(columnIndex);
-                }
-
-                ExportDBTableDataRow(writer, dataExportParams, delimitedRowValues, columnCount, columnValues);
-            }
-        }
-
         private bool ExportDBTableDataUsingPgDump(
             string databaseName,
             WorkingParams workingParams,
