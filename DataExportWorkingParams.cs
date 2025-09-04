@@ -97,8 +97,8 @@ namespace DB_Schema_Export_Tool
         public List<string> PgInsertHeaders { get; }
 
         /// <summary>
-        /// True when exporting data from SQL Server and using insert commands formatted as PostgreSQL compatible
-        /// INSERT INTO statements using the ON CONFLICT (key_column) DO UPDATE SET syntax
+        /// True when exporting data from PostgreSQL or from SQL Server and using insert commands formatted as
+        /// PostgreSQL compatible INSERT INTO statements using the ON CONFLICT (key_column) DO UPDATE SET syntax
         /// </summary>
         public bool PgInsertEnabled { get; set; }
 

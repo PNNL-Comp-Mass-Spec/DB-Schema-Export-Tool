@@ -40,7 +40,7 @@ namespace TableNameMapContainer
 
         /// <summary>
         /// <para>
-        /// When true, export data from SQL Server using insert commands formatted as PostgreSQL compatible
+        /// When true, export data from PostgreSQL or SQL Server using insert commands formatted as PostgreSQL compatible
         /// INSERT INTO statements using the syntax "ON CONFLICT(key_column) DO UPDATE SET"
         /// </para>
         /// <para>

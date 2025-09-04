@@ -25,6 +25,7 @@
         /// <summary>
         /// Save data as insert into statements
         /// </summary>
+        /// <remarks>This is always true</remarks>
         public bool SaveDataAsInsertIntoStatements { get; set; }
 
         /// <summary>

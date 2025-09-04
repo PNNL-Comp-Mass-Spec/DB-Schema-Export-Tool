@@ -36,6 +36,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Dictionary tracking the primary key column(s) for each table, as obtained from the INFORMATION_SCHEMA views
         /// Keys are table names in the source database, values are lists of primary key column names (using column names from the source database)
+        /// For PostgreSQL, table names include schema_name and table_name
         /// </summary>
         /// <remarks>The column order in the list matches the column order in the table</remarks>
         public Dictionary<string, List<string>> PrimaryKeysByTable { get; }

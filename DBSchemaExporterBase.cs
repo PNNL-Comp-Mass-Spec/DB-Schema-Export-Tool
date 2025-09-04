@@ -337,6 +337,11 @@ namespace DB_Schema_Export_Tool
             RequestUnpause();
         }
 
+        /// <summary>
+        /// Append footers that follow the value list for an Insert Into statement
+        /// </summary>
+        /// <param name="writer">Text file writer</param>
+        /// <param name="dataExportParams">Data export parameters</param>
         protected void AppendPgExportFooters(TextWriter writer, DataExportWorkingParams dataExportParams)
         {
             if (!dataExportParams.FooterWriteRequired)
@@ -1012,10 +1017,10 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Get target table primary key column names
         /// </summary>
-        /// <param name="columnMapInfo"></param>
-        /// <param name="sourceColumnNames"></param>
-        /// <param name="targetPrimaryKeyColumns"></param>
-        /// <returns></returns>
+        /// <param name="columnMapInfo">Class tracking the source and target column names for the table</param>
+        /// <param name="sourceColumnNames">Primary key column names in the source table</param>
+        /// <param name="targetPrimaryKeyColumns">Output: primary key column names in the target table</param>
+        /// <returns>Target table primary key column names, as a comma-separated list</returns>
         protected string GetTargetPrimaryKeyColumnNames(
             ColumnMapInfo columnMapInfo,
             IEnumerable<string> sourceColumnNames,
