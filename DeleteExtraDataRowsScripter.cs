@@ -1,10 +1,10 @@
-﻿using PRISM;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
+using PRISM;
 using TableNameMapContainer;
 
 namespace DB_Schema_Export_Tool

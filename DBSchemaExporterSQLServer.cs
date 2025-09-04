@@ -5,7 +5,6 @@ using System.Collections.Specialized;
 using System.Data;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.SqlServer.Management.Common;
 using Microsoft.SqlServer.Management.Smo;
@@ -1428,7 +1427,7 @@ namespace DB_Schema_Export_Tool
                 return false;
             }
         }
-        
+
         private bool ExportRole(DatabaseRole databaseRole)
         {
             try
