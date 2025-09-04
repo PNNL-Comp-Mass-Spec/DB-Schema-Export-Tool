@@ -2325,6 +2325,22 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
+        /// Determine the primary key column (or columns) for a table
+        /// </summary>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="workingParams">Working parameters</param>
+        /// <param name="tableInfo">Table info</param>
+        /// <param name="columnMapInfo">Class tracking the source and target column names for the table</param>
+        /// <returns>Comma separated list of primary key column names (using target column names)</returns>
+        protected override string ResolvePrimaryKeys(
+            DataExportWorkingParams dataExportParams,
+            WorkingParams workingParams,
+            TableNameInfo tableInfo,
+            ColumnMapInfo columnMapInfo)
+        {
+            return ResolvePrimaryKeysBase(dataExportParams, workingParams, tableInfo, columnMapInfo);
+        }
+        /// <summary>
         /// Export PostgreSQL Server settings
         /// </summary>
         protected override bool ScriptServerObjects()

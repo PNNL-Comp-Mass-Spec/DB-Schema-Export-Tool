@@ -2247,54 +2247,29 @@ namespace DB_Schema_Export_Tool
         /// <param name="tableInfo">Table info</param>
         /// <param name="columnMapInfo">Class tracking the source and target column names for the table</param>
         /// <returns>Comma separated list of primary key column names (using target column names)</returns>
-        private string ResolvePrimaryKeys(
+        protected override string ResolvePrimaryKeys(
             DataExportWorkingParams dataExportParams,
             WorkingParams workingParams,
             TableNameInfo tableInfo,
             ColumnMapInfo columnMapInfo)
         {
-            if (!workingParams.PrimaryKeysRetrieved)
+            var primaryKeyColumnList = ResolvePrimaryKeysBase(dataExportParams, workingParams, tableInfo, columnMapInfo);
+
+            if (!string.IsNullOrWhiteSpace(primaryKeyColumnList))
             {
-                GetPrimaryKeyInfoFromDatabase(workingParams);
+                return primaryKeyColumnList;
             }
 
-            if (tableInfo.PrimaryKeyColumns.Count > 0)
+            if (mTableDataScripter == null)
+                return string.Empty;
+
+            var primaryKeyColumns = GetPrimaryKeysForTableViaScripter(tableInfo);
+
+            GetTargetPrimaryKeyColumnNames(columnMapInfo, primaryKeyColumns, out var targetPrimaryKeyColumns);
+
+            foreach (var targetColumnName in targetPrimaryKeyColumns)
             {
-                return GetTargetPrimaryKeyColumnNames(columnMapInfo, tableInfo.PrimaryKeyColumns, out _);
-            }
-
-            if (workingParams.PrimaryKeysByTable.TryGetValue(tableInfo.SourceTableName, out var primaryKeys))
-            {
-                foreach (var item in primaryKeys)
-                {
-                    var targetColumnName = GetTargetColumnName(columnMapInfo, item);
-
-                    if (targetColumnName.Equals(NameMapReader.SKIP_FLAG, StringComparison.OrdinalIgnoreCase))
-                    {
-                        OnWarningEvent("Ignoring primary key column {0} since it is flagged to be skipped", item);
-                        continue;
-                    }
-
-                    tableInfo.AddPrimaryKeyColumn(targetColumnName);
-                }
-            }
-
-            if (tableInfo.PrimaryKeyColumns.Count == 0 && dataExportParams.IdentityColumnFound)
-            {
-                var targetIdentityColumn = GetTargetColumnName(columnMapInfo, dataExportParams.IdentityColumnName);
-
-                tableInfo.AddPrimaryKeyColumn(targetIdentityColumn);
-            }
-            else if (tableInfo.PrimaryKeyColumns.Count == 0 && mTableDataScripter != null)
-            {
-                var primaryKeyColumns = GetPrimaryKeysForTableViaScripter(tableInfo);
-
-                GetTargetPrimaryKeyColumnNames(columnMapInfo, primaryKeyColumns, out var targetPrimaryKeyColumns);
-
-                foreach (var targetColumnName in targetPrimaryKeyColumns)
-                {
-                    tableInfo.AddPrimaryKeyColumn(targetColumnName);
-                }
+                tableInfo.AddPrimaryKeyColumn(targetColumnName);
             }
 
             if (tableInfo.PrimaryKeyColumns.Count > 0)
