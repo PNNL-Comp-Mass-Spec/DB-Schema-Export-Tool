@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using Npgsql;
 using PRISM;
 using PRISMDatabaseUtils;
+using TableNameMapContainer;
 
 namespace DB_Schema_Export_Tool
 {
@@ -743,6 +743,16 @@ namespace DB_Schema_Export_Tool
             // Export the data from tableNameWithSchema, possibly limiting the number of rows to export
             var sql = "SELECT * FROM " + sourceTableNameWithSchema;
 
+            var sqlFirstRow = "SELECT * FROM " + sourceTableNameWithSchema + " limit 1";
+
+            var sqlGeneratedStoredColumns = string.Format(
+                "SELECT attname AS column_name FROM pg_attribute WHERE attrelid = '{0}'::regclass::oid AND attnum > 0 AND attgenerated = 's'",
+                sourceTableNameWithSchema);
+
+            var sqlIdentityColumn = string.Format(
+                "SELECT attname AS column_name, attnum AS column_position FROM pg_attribute WHERE attrelid = '{0}'::regclass::oid AND attnum > 0 AND attidentity = 'a'",
+                sourceTableNameWithSchema);
+
             if (tableInfo.FilterByDate)
             {
                 sql += string.Format(" WHERE {0} >= '{1:yyyy-MM-dd}'", tableInfo.DateColumnName, tableInfo.MinimumDate);
@@ -760,9 +770,17 @@ namespace DB_Schema_Export_Tool
             }
 
             var tableListCommand = new NpgsqlCommand(sql, mPgConnection);
-            using var reader = tableListCommand.ExecuteReader();
 
-            if (!reader.HasRows)
+            var queryResults = new DataSet();
+
+            using (var adapter = new NpgsqlDataAdapter(tableListCommand))
+            {
+                adapter.Fill(queryResults);     // Fill the DataSet with the results of the query
+            }
+
+            var dataRowCount = queryResults.Tables[0].Rows.Count;
+
+            if (dataRowCount == 0)
                 return true;
 
             var dataExportParams = new DataExportWorkingParams(false, "null")
@@ -770,6 +788,8 @@ namespace DB_Schema_Export_Tool
                 SourceTableNameWithSchema = sourceTableNameWithSchema,
             };
 
+            // Get the target table name
+            // If the target schema is "dbo", "public", or an empty string, dataExportParams.TargetTableNameWithSchema will not include the schema
             dataExportParams.TargetTableNameWithSchema = GetTargetTableName(dataExportParams, tableInfo);
 
             if (string.IsNullOrWhiteSpace(dataExportParams.TargetTableNameWithSchema))
@@ -778,6 +798,42 @@ namespace DB_Schema_Export_Tool
                 OnStatusEvent("Could not determine the target table name for table {0} in database {1}", dataExportParams.SourceTableNameWithSchema, databaseName);
                 return false;
             }
+
+            if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || tableInfo.UsePgInsert)
+            {
+                // Skip any computed columns since exporting data using PostgreSQL compatible INSERT INTO statements
+
+                var mapInfoToUse = mOptions.ColumnMapForDataExport.TryGetValue(tableInfo.SourceTableName, out var currentColumnMapInfo)
+                    ? currentColumnMapInfo
+                    : new ColumnMapInfo(tableInfo.SourceTableName);
+
+                var skippedColumn = false;
+
+                var generatedColumnCommand = new NpgsqlCommand(sqlGeneratedStoredColumns, mPgConnection);
+
+                using (var generatedColumnReader = generatedColumnCommand.ExecuteReader())
+                {
+                    while (generatedColumnReader.Read())
+                    {
+                        var currentColumn = generatedColumnReader.GetString(0);
+
+                        OnStatusEvent("Skipping computed column {0} on table {1}", currentColumn, tableInfo.SourceTableName);
+
+                        mapInfoToUse.SkipColumn(currentColumn);
+                        skippedColumn = true;
+                    }
+                }
+
+                if (skippedColumn && !mOptions.ColumnMapForDataExport.ContainsKey(tableInfo.SourceTableName))
+                {
+                    mOptions.ColumnMapForDataExport.Add(tableInfo.SourceTableName, mapInfoToUse);
+                }
+            }
+
+            const bool quoteWithSquareBrackets = false;
+
+            // Get the target table name to use when exporting data; schema name will be included if not "dbo" or "public"
+            dataExportParams.QuotedTargetTableNameWithSchema = GetQuotedTargetTableName(dataExportParams, tableInfo, quoteWithSquareBrackets);
 
             var headerRows = new List<string>();
 
@@ -797,32 +853,75 @@ namespace DB_Schema_Export_Tool
                     COMMENT_START_TEXT, tableInfo.DateColumnName, tableInfo.MinimumDate, COMMENT_END_TEXT));
             }
 
-            // See if any of the columns in the table is an identity column
+            // Store the column names and data types in dataExportParams.ColumnInfoByType
+            // Also look for identity columns using .IsIdentity, though this is not reliable (it is always false, as of September 2025)
 
-            foreach (var dbColumn in reader.GetColumnSchema())
+            var firstRowCommand = new NpgsqlCommand(sqlFirstRow, mPgConnection);
+            var identityColumnIndex = -1;
+
+            using (var firstRowReader = firstRowCommand.ExecuteReader())
             {
-                if (dbColumn.IsIdentity == true)
+                var columnCount = firstRowReader.FieldCount;
+
+                for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
                 {
-                    dataExportParams.IdentityColumnFound = true;
+                    var currentColumnName = firstRowReader.GetName(columnIndex);
+                    var currentColumnType = firstRowReader.GetFieldType(columnIndex);
+                    dataExportParams.ColumnInfoByType.Add(new KeyValuePair<string, Type>(currentColumnName, currentColumnType));
                 }
-                else if (dbColumn.IsAutoIncrement == true)
+
+                var index = -1;
+
+                foreach (var dbColumn in firstRowReader.GetColumnSchema())
                 {
+                    index++;
+
+                    if (dbColumn.IsIdentity != true && dbColumn.IsAutoIncrement != true)
+                        continue;
+
                     dataExportParams.IdentityColumnFound = true;
+
+                    if (identityColumnIndex >= 0)
+                        continue;
+
+                    dataExportParams.IdentityColumnName = dbColumn.ColumnName;
+                    identityColumnIndex = index;
                 }
             }
 
-            var columnCount = reader.FieldCount;
+            // Look for an identity column by querying pg_attribute
 
-            for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
+            var identityColumnCommand = new NpgsqlCommand(sqlIdentityColumn, mPgConnection);
+
+            using (var identityColumnReader = identityColumnCommand.ExecuteReader())
             {
-                var currentColumnName = reader.GetName(columnIndex);
-                var currentColumnType = reader.GetFieldType(columnIndex);
-                dataExportParams.ColumnInfoByType.Add(new KeyValuePair<string, Type>(currentColumnName, currentColumnType));
+                if (identityColumnReader.HasRows)
+                {
+                    while (identityColumnReader.Read())
+                    {
+                        var columnName = identityColumnReader.GetString(0);
+                        var columnPosition = identityColumnReader.GetInt32(1);
+
+                        dataExportParams.IdentityColumnFound = true;
+
+                        if (identityColumnIndex >= 0)
+                            continue;
+
+                        dataExportParams.IdentityColumnName = columnName;
+                        identityColumnIndex = columnPosition - 1;
+                    }
+                }
             }
 
-            const bool quoteWithSquareBrackets = false;
+            var columnMapInfo = ConvertDataTableColumnInfo(dataExportParams.SourceTableNameWithSchema, quoteWithSquareBrackets, dataExportParams);
 
-            ConvertDataTableColumnInfo(dataExportParams.SourceTableNameWithSchema, quoteWithSquareBrackets, dataExportParams);
+            var tableDataOutputFile = GetTableDataOutputFile(tableInfo, dataExportParams, workingParams, out var relativeFilePath);
+
+            if (tableDataOutputFile == null)
+            {
+                // Skip this table (a warning message should have already been shown)
+                return false;
+            }
 
             var insertIntoLine = string.Empty;
 
@@ -836,7 +935,10 @@ namespace DB_Schema_Export_Tool
                 // OVERRIDING SYSTEM VALUE
                 //   VALUES(1,'admin', 'password');
 
-                insertIntoLine = string.Format("INSERT INTO {0} VALUES (", dataExportParams.TargetTableNameWithSchema);
+                // Simple Insert Into
+                // insertIntoLine = string.Format("INSERT INTO {0} VALUES (", dataExportParams.TargetTableNameWithSchema);
+
+                insertIntoLine = ExportDBTableDataInit(tableInfo, columnMapInfo, dataExportParams, headerRows, workingParams, queryResults, tableDataOutputFile, relativeFilePath, out _);
 
                 headerRows.Add(COMMENT_START_TEXT + "Columns: " + dataExportParams.HeaderRowValues + COMMENT_END_TEXT);
 
@@ -847,14 +949,6 @@ namespace DB_Schema_Export_Tool
                 // Export data as a tab-delimited table
                 headerRows.Add(dataExportParams.HeaderRowValues.ToString());
                 dataExportParams.ColSepChar = '\t';
-            }
-
-            var tableDataOutputFile = GetTableDataOutputFile(tableInfo, dataExportParams, workingParams, out var relativeFilePath);
-
-            if (tableDataOutputFile == null)
-            {
-                // Skip this table (a warning message should have already been shown)
-                return false;
             }
 
             if (mOptions.ScriptPgLoadCommands)
@@ -869,9 +963,18 @@ namespace DB_Schema_Export_Tool
                 writer.WriteLine(headerRow);
             }
 
-            ExportDBTableDataUsingNpgsql(writer, reader, dataExportParams, insertIntoLine);
+            ExportDBTableDataWork(writer, queryResults, insertIntoLine, dataExportParams);
 
-            if (dataExportParams.IdentityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
+            if (dataExportParams.PgInsertEnabled)
+            {
+                AppendPgExportFooters(writer, dataExportParams);
+
+                if (dataExportParams.IdentityColumnFound)
+                {
+                    AppendPgExportSetSequenceValue(writer, dataExportParams, identityColumnIndex);
+                }
+            }
+            else if (dataExportParams.IdentityColumnFound && mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements)
             {
                 writer.WriteLine("-- If a table has an identity value, after inserting data with explicit identities,");
                 writer.WriteLine("-- the sequence will need to be synchronized up with the table");
@@ -1403,6 +1506,81 @@ namespace DB_Schema_Export_Tool
                     string.Format("Error obtaining list of tables in database {0} on server {1}", databaseName, mCurrentServerInfo.ServerName), ex);
 
                 return new Dictionary<TableDataExportInfo, long>();
+            }
+        }
+
+        /// <summary>
+        /// Query the database to obtain the primary key information for every table
+        /// Store in workingParams.PrimaryKeysByTable
+        /// </summary>
+        /// <param name="workingParams">Working parameters</param>
+        /// <returns>True if successful, false if an error</returns>
+        public override bool GetPrimaryKeyInfoFromDatabase(WorkingParams workingParams)
+        {
+            try
+            {
+                // Query to view primary key columns, by table, listed by schema name, table name, and ordinal position
+
+                workingParams.PrimaryKeysByTable.Clear();
+
+                var sql = string.Format(
+                    "SELECT U.Table_Schema, " +
+                    "       U.Table_Name, " +
+                    "       U.Column_Name, " +
+                    "       C.Ordinal_Position " +
+                    "FROM INFORMATION_SCHEMA.Table_Constraints T " +
+                    "     INNER JOIN INFORMATION_SCHEMA.Constraint_Column_Usage U " +
+                    "       ON U.Constraint_Name = T.Constraint_Name AND " +
+                    "          U.Constraint_Schema = T.Constraint_Schema " +
+                    "     INNER JOIN INFORMATION_SCHEMA.Columns C " +
+                    "       ON U.Table_Schema = C.Table_Schema AND " +
+                    "          U.Table_Name = C.Table_Name AND " +
+                    "          U.Column_Name = C.Column_Name " +
+                    "WHERE U.Table_Catalog = '{0}' AND " +
+                    "      T.Constraint_Type = 'PRIMARY KEY' " +
+                    "ORDER BY U.Table_Schema, U.Table_Name, C.Ordinal_Position, U.Column_Name;",
+                    mCurrentServerInfo.DatabaseName);
+
+                var constraintInfoCommand = new NpgsqlCommand(sql, mPgConnection);
+                using var reader = constraintInfoCommand.ExecuteReader();
+
+                const bool quoteWithSquareBrackets = false;
+                const bool alwaysQuoteNames = false;
+
+                if (reader.HasRows)
+                {
+                    while (reader.Read())
+                    {
+                        var tableSchema = reader.GetString(0);
+                        var tableName = reader.GetString(1);
+                        var columnName = reader.GetString(2);
+
+                        // var ordinalPosition = reader.GetInt32(3);
+
+                        var tableNameWithSchema = GetTableNameToUse(tableSchema, tableName, quoteWithSquareBrackets, alwaysQuoteNames);
+
+                        if (workingParams.PrimaryKeysByTable.TryGetValue(tableNameWithSchema, out var existingPrimaryKeyColumns))
+                        {
+                            existingPrimaryKeyColumns.Add(columnName);
+                            continue;
+                        }
+
+                        var primaryKeyColumns = new List<string>
+                        {
+                            columnName
+                        };
+
+                        workingParams.PrimaryKeysByTable.Add(tableNameWithSchema, primaryKeyColumns);
+                    }
+                }
+
+                workingParams.PrimaryKeysRetrieved = true;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                OnErrorEvent(string.Format("Error obtaining primary key columns for tables in database {0} on the current server", mCurrentServerInfo.DatabaseName), ex);
+                return false;
             }
         }
 
@@ -2340,6 +2518,7 @@ namespace DB_Schema_Export_Tool
         {
             return ResolvePrimaryKeysBase(dataExportParams, workingParams, tableInfo, columnMapInfo);
         }
+
         /// <summary>
         /// Export PostgreSQL Server settings
         /// </summary>
