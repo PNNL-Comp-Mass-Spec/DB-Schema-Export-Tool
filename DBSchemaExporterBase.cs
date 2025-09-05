@@ -1158,10 +1158,36 @@ namespace DB_Schema_Export_Tool
                     var tableInfo = tableItem.Key;
                     var maxRowsToExport = tableItem.Value;
 
+                    /*
+                     * Uncomment to only script out certain tables
+
+                    switch (tableItem.Key.SourceTableName)
+                    {
+                        case "public.t_yes_no":
+                        case "public.t_misc_paths":
+                        case "cap.t_local_processors":
+                        case "cap.t_task_step_state_name":
+                        case "sw.t_scripts":
+                        case "sw.t_step_tools":
+                            break;
+                        default:
+                            if (tableItem.Key.SourceTableName.StartsWith("squeeze."))
+                                break;
+
+                            continue;
+                    }
+
+                    */
+
                     var success = ExportDBTableData(databaseName, tableInfo, maxRowsToExport, workingParams);
 
                     if (!success)
                     {
+                        if (mOptions.ScriptPgLoadCommands)
+                        {
+                            CreateDataLoadScriptFile(workingParams, tablesToExportData.Keys);
+                        }
+
                         return false;
                     }
 
