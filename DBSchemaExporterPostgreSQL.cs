@@ -759,20 +759,6 @@ namespace DB_Schema_Export_Tool
                 return true;
             }
 
-            var tableListCommand = new NpgsqlCommand(sql, mPgConnection);
-
-            var queryResults = new DataSet();
-
-            using (var adapter = new NpgsqlDataAdapter(tableListCommand))
-            {
-                adapter.Fill(queryResults);     // Fill the DataSet with the results of the query
-            }
-
-            var dataRowCount = queryResults.Tables[0].Rows.Count;
-
-            if (dataRowCount == 0)
-                return true;
-
             var pgInsertEnabled = mOptions.PgInsertUpdateOnConflict;
 
             var dataExportParams = new DataExportWorkingParams(pgInsertEnabled, "null")
@@ -787,39 +773,8 @@ namespace DB_Schema_Export_Tool
             if (string.IsNullOrWhiteSpace(dataExportParams.TargetTableNameWithSchema))
             {
                 // Skip this table
-                OnStatusEvent("Could not determine the target table name for table {0} in database {1}", dataExportParams.SourceTableNameWithSchema, databaseName);
+                OnStatusEvent("Could not determine the target table name for table {0} in database {1}; skipping data export", dataExportParams.SourceTableNameWithSchema, databaseName);
                 return false;
-            }
-
-            if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || tableInfo.UsePgInsert)
-            {
-                // Skip any computed columns since exporting data using PostgreSQL compatible INSERT INTO statements
-
-                var mapInfoToUse = mOptions.ColumnMapForDataExport.TryGetValue(tableInfo.SourceTableName, out var currentColumnMapInfo)
-                    ? currentColumnMapInfo
-                    : new ColumnMapInfo(tableInfo.SourceTableName);
-
-                var skippedColumn = false;
-
-                var generatedColumnCommand = new NpgsqlCommand(sqlGeneratedStoredColumns, mPgConnection);
-
-                using (var generatedColumnReader = generatedColumnCommand.ExecuteReader())
-                {
-                    while (generatedColumnReader.Read())
-                    {
-                        var currentColumn = generatedColumnReader.GetString(0);
-
-                        OnStatusEvent("Skipping computed column {0} on table {1}", currentColumn, tableInfo.SourceTableName);
-
-                        mapInfoToUse.SkipColumn(currentColumn);
-                        skippedColumn = true;
-                    }
-                }
-
-                if (skippedColumn && !mOptions.ColumnMapForDataExport.ContainsKey(tableInfo.SourceTableName))
-                {
-                    mOptions.ColumnMapForDataExport.Add(tableInfo.SourceTableName, mapInfoToUse);
-                }
             }
 
             const bool quoteWithSquareBrackets = false;
@@ -827,39 +782,43 @@ namespace DB_Schema_Export_Tool
             // Get the target table name to use when exporting data; schema name will be included if not "dbo" or "public"
             dataExportParams.QuotedTargetTableNameWithSchema = GetQuotedTargetTableName(dataExportParams, tableInfo, quoteWithSquareBrackets);
 
-            var headerRows = new List<string>();
-
-            var header = COMMENT_START_TEXT + "Object:  Table " + dataExportParams.TargetTableNameWithSchema;
-
-            if (mOptions.ScriptingOptions.IncludeTimestampInScriptFileHeader)
-            {
-                header += "    " + COMMENT_SCRIPT_DATE_TEXT + GetTimeStamp();
-            }
-
-            header += COMMENT_END_TEXT;
-            headerRows.Add(header);
-
-            if (tableInfo.FilterByDate)
-            {
-                headerRows.Add(string.Format("{0}Date filter: {1} >= '{2:yyyy-MM-dd}'{3}",
-                    COMMENT_START_TEXT, tableInfo.DateColumnName, tableInfo.MinimumDate, COMMENT_END_TEXT));
-            }
-
             // Store the column names and data types in dataExportParams.ColumnInfoByType
             // Also look for identity columns using .IsIdentity, though this is not reliable (it is always false, as of September 2025)
 
             var firstRowCommand = new NpgsqlCommand(sqlFirstRow, mPgConnection);
             var identityColumnIndex = -1;
 
+            var quotedColumnNames = new List<string>();
+            var skippedColumnCount = 0;
+
             using (var firstRowReader = firstRowCommand.ExecuteReader())
             {
+                if (!firstRowReader.HasRows)
+                {
+                    OnStatusEvent("No data found for table {0} in database {1}; skipping data export", sourceTableNameWithSchema, databaseName);
+                    return true;
+                }
+
                 var columnCount = firstRowReader.FieldCount;
 
                 for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
                 {
                     var currentColumnName = firstRowReader.GetName(columnIndex);
-                    var currentColumnType = firstRowReader.GetFieldType(columnIndex);
-                    dataExportParams.ColumnInfoByType.Add(new KeyValuePair<string, Type>(currentColumnName, currentColumnType));
+
+                    try
+                    {
+                        var currentColumnType = firstRowReader.GetFieldType(columnIndex);
+                        dataExportParams.ColumnInfoByType.Add(new KeyValuePair<string, Type>(currentColumnName, currentColumnType));
+
+                        quotedColumnNames.Add(PossiblyQuoteName(currentColumnName));
+                    }
+                    catch (InvalidCastException)
+                    {
+                        OnStatusEvent("Skipping column {0} in table {1} in database {2} since it is an unsupported data type (likely User-Defined)",
+                            currentColumnName, sourceTableNameWithSchema, databaseName);
+
+                        skippedColumnCount++;
+                    }
                 }
 
                 var index = -1;
@@ -903,6 +862,89 @@ namespace DB_Schema_Export_Tool
                         identityColumnIndex = columnPosition - 1;
                     }
                 }
+            }
+
+            if (quotedColumnNames.Count == 0)
+            {
+                OnStatusEvent("All of the columns in table {0} in database {1} are an unsupported data type; skipping data export", sourceTableNameWithSchema, databaseName);
+                return true;
+            }
+
+            string columnList;
+
+            if (skippedColumnCount == 0)
+            {
+                columnList = "*";
+            }
+            else
+            {
+                columnList = string.Join(", ", quotedColumnNames);
+            }
+
+            var sqlGetTableData = GetDataExportSql(sourceTableNameWithSchema, tableInfo, maxRowsToExport, columnList);
+
+            if (!GetTableDataAsDataSet(sqlGetTableData, out var queryResults))
+            {
+                // Skip this table
+                OnStatusEvent("Error retrieving data from table {0} in database {1}; skipping data export", sourceTableNameWithSchema, databaseName);
+                return false;
+            }
+
+            var dataRowCount = queryResults.Tables[0].Rows.Count;
+
+            if (dataRowCount == 0)
+            {
+                OnStatusEvent("No data found for table {0} in database {1}; skipping data export", sourceTableNameWithSchema, databaseName);
+                return true;
+            }
+
+            if (mOptions.ScriptingOptions.SaveDataAsInsertIntoStatements || tableInfo.UsePgInsert)
+            {
+                // Skip any computed columns since exporting data using PostgreSQL compatible INSERT INTO statements
+
+                var mapInfoToUse = mOptions.ColumnMapForDataExport.TryGetValue(tableInfo.SourceTableName, out var currentColumnMapInfo)
+                    ? currentColumnMapInfo
+                    : new ColumnMapInfo(tableInfo.SourceTableName);
+
+                var skippedColumn = false;
+
+                var generatedColumnCommand = new NpgsqlCommand(sqlGeneratedStoredColumns, mPgConnection);
+
+                using (var generatedColumnReader = generatedColumnCommand.ExecuteReader())
+                {
+                    while (generatedColumnReader.Read())
+                    {
+                        var currentColumn = generatedColumnReader.GetString(0);
+
+                        OnStatusEvent("Skipping computed column {0} on table {1}", currentColumn, tableInfo.SourceTableName);
+
+                        mapInfoToUse.SkipColumn(currentColumn);
+                        skippedColumn = true;
+                    }
+                }
+
+                if (skippedColumn && !mOptions.ColumnMapForDataExport.ContainsKey(tableInfo.SourceTableName))
+                {
+                    mOptions.ColumnMapForDataExport.Add(tableInfo.SourceTableName, mapInfoToUse);
+                }
+            }
+
+            var headerRows = new List<string>();
+
+            var header = COMMENT_START_TEXT + "Object:  Table " + dataExportParams.TargetTableNameWithSchema;
+
+            if (mOptions.ScriptingOptions.IncludeTimestampInScriptFileHeader)
+            {
+                header += "    " + COMMENT_SCRIPT_DATE_TEXT + GetTimeStamp();
+            }
+
+            header += COMMENT_END_TEXT;
+            headerRows.Add(header);
+
+            if (tableInfo.FilterByDate)
+            {
+                headerRows.Add(string.Format("{0}Date filter: {1} >= '{2:yyyy-MM-dd}'{3}",
+                    COMMENT_START_TEXT, tableInfo.DateColumnName, tableInfo.MinimumDate, COMMENT_END_TEXT));
             }
 
             var columnMapInfo = ConvertDataTableColumnInfo(dataExportParams.SourceTableNameWithSchema, quoteWithSquareBrackets, dataExportParams);
@@ -1671,10 +1713,24 @@ namespace DB_Schema_Export_Tool
             return databaseNames;
         }
 
+        private bool GetTableDataAsDataSet(string sqlGetTableData, out DataSet queryResults)
         {
+            queryResults = new DataSet();
 
+            try
             {
+                var tableListCommand = new NpgsqlCommand(sqlGetTableData, mPgConnection);
 
+                using var adapter = new NpgsqlDataAdapter(tableListCommand);
+                adapter.Fill(queryResults);     // Fill the DataSet with the results of the query
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                SetLocalError(DBSchemaExportErrorCodes.GeneralError, "Error in DBSchemaExporterPostgreSQL.GetTableDataAsDataSet", ex);
+                return false;
+            }
         }
 
         private string GetTargetTableName(
