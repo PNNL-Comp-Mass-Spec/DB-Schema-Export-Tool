@@ -642,7 +642,7 @@ namespace DB_Schema_Export_Tool
                     {
                         SetLocalError(
                             DBSchemaExportErrorCodes.GeneralError,
-                            string.Format("Error in ExportDBTableData; database not found: " + databaseName));
+                            string.Format("Error in DBSchemaExporterPostgreSQL.ExportDBTableData; database not found: " + databaseName));
 
                         return false;
                     }
@@ -723,7 +723,7 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                SetLocalError(DBSchemaExportErrorCodes.GeneralError, "Error in ExportDBTableData", ex);
+                SetLocalError(DBSchemaExportErrorCodes.GeneralError, "Error in DBSchemaExporterPostgreSQL.ExportDBTableData", ex);
                 return false;
             }
         }
