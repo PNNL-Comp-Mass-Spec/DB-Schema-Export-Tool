@@ -1264,6 +1264,24 @@ namespace DB_Schema_Export_Tool
             return GetPgServerDatabaseTables(databaseName, includeTableRowCounts, includeSystemObjects, true, out _);
         }
 
+
+        private string GetFunctionOrProcedureName(
+            DatabaseObjectInfo currentObject,
+            string objectDescription,
+            ref bool unhandledScriptingCommands)
+        {
+            var nameMatch = mFunctionOrProcedureNameMatcher.Match(currentObject.Name);
+
+            if (nameMatch.Success)
+            {
+                return nameMatch.Value;
+            }
+
+            OnWarningEvent("Did not find a {0} name in: {1}", objectDescription, currentObject.Name);
+            unhandledScriptingCommands = true;
+            return currentObject.Name;
+        }
+
         /// <summary>
         /// Look for the "Name" and "Type" groups in the RegEx match
         /// Combine them, but excluding any arguments after the object name
@@ -1647,21 +1665,10 @@ namespace DB_Schema_Export_Tool
             return databaseNames;
         }
 
-        private string GetFunctionOrProcedureName(
-            DatabaseObjectInfo currentObject,
-            string objectDescription,
-            ref bool unhandledScriptingCommands)
         {
-            var nameMatch = mFunctionOrProcedureNameMatcher.Match(currentObject.Name);
 
-            if (nameMatch.Success)
             {
-                return nameMatch.Value;
-            }
 
-            OnWarningEvent("Did not find a {0} name in: {1}", objectDescription, currentObject.Name);
-            unhandledScriptingCommands = true;
-            return currentObject.Name;
         }
 
         private string GetTargetTableName(
