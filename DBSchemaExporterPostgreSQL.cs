@@ -741,7 +741,7 @@ namespace DB_Schema_Export_Tool
             }
 
             // Export the data from tableNameWithSchema, possibly limiting the number of rows to export
-            var sql = "SELECT * FROM " + sourceTableNameWithSchema;
+            var sqlGetTableDataSelectAll = GetDataExportSql(sourceTableNameWithSchema, tableInfo, maxRowsToExport);
 
             var sqlFirstRow = "SELECT * FROM " + sourceTableNameWithSchema + " limit 1";
 
@@ -753,19 +753,9 @@ namespace DB_Schema_Export_Tool
                 "SELECT attname AS column_name, attnum AS column_position FROM pg_attribute WHERE attrelid = '{0}'::regclass::oid AND attnum > 0 AND attidentity = 'a'",
                 sourceTableNameWithSchema);
 
-            if (tableInfo.FilterByDate)
-            {
-                sql += string.Format(" WHERE {0} >= '{1:yyyy-MM-dd}'", tableInfo.DateColumnName, tableInfo.MinimumDate);
-            }
-
-            if (maxRowsToExport > 0)
-            {
-                sql += " limit " + maxRowsToExport;
-            }
-
             if (mOptions.PreviewExport)
             {
-                OnStatusEvent("Preview querying database {0} with {1}", databaseName, sql);
+                OnStatusEvent("Preview querying database {0} with {1}", databaseName, sqlGetTableDataSelectAll);
                 return true;
             }
 
@@ -1264,6 +1254,22 @@ namespace DB_Schema_Export_Tool
             return GetPgServerDatabaseTables(databaseName, includeTableRowCounts, includeSystemObjects, true, out _);
         }
 
+        private string GetDataExportSql(string sourceTableNameWithSchema, TableDataExportInfo tableInfo, long maxRowsToExport, string columnList = "*")
+        {
+            var sql = string.Format("SELECT {0} FROM {1}", columnList, sourceTableNameWithSchema);
+
+            if (tableInfo.FilterByDate)
+            {
+                sql += string.Format(" WHERE {0} >= '{1:yyyy-MM-dd}'", tableInfo.DateColumnName, tableInfo.MinimumDate);
+            }
+
+            if (maxRowsToExport > 0)
+            {
+                sql += " limit " + maxRowsToExport;
+            }
+
+            return sql;
+        }
 
         private string GetFunctionOrProcedureName(
             DatabaseObjectInfo currentObject,
