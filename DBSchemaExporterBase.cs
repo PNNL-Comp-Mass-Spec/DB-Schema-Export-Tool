@@ -939,7 +939,7 @@ namespace DB_Schema_Export_Tool
             writer.WriteLine("    echo \"Commands to retry loading data\"");
             writer.WriteLine();
             writer.WriteLine("    while IFS= read -r line; do");
-            writer.WriteLine("        echo \"psql -d dms -h localhost -U d3l243  -f $line 2>&1 | tee -a RetryLog.txt\"");
+            writer.WriteLine("        echo \"psql -d dmsdev -h localhost -U d3l243  -f $line 2>&1 | tee -a RetryLog.txt\"");
             writer.WriteLine("    done < FilesToRetry2.txt");
             writer.WriteLine();
 
