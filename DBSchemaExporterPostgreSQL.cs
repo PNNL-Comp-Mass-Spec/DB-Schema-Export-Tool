@@ -753,6 +753,25 @@ namespace DB_Schema_Export_Tool
                 "SELECT attname AS column_name, attnum AS column_position FROM pg_attribute WHERE attrelid = '{0}'::regclass::oid AND attnum > 0 AND attidentity = 'a'",
                 sourceTableNameWithSchema);
 
+            var sourceTableSchema = GetSchemaName(sourceTableNameWithSchema, out var sourceTableName);
+
+            string xidTableQuerySchemaAndTable;
+
+            if (string.IsNullOrWhiteSpace(sourceTableSchema))
+            {
+                xidTableQuerySchemaAndTable = string.Format("table_name = '{0}'",
+                    tableInfo.SourceTableName);
+            }
+            else
+            {
+                xidTableQuerySchemaAndTable = string.Format("table_schema = '{0}' AND table_name = '{1}'",
+                    sourceTableSchema, sourceTableName);
+            }
+
+            var sqlXidColumns = string.Format(
+                "SELECT column_name FROM information_schema.columns WHERE {0} AND data_type = 'xid'",
+                xidTableQuerySchemaAndTable);
+
             if (mOptions.PreviewExport)
             {
                 OnStatusEvent("Preview querying database {0} with {1}", databaseName, sqlGetTableDataSelectAll);
@@ -917,6 +936,21 @@ namespace DB_Schema_Export_Tool
                         var currentColumn = generatedColumnReader.GetString(0);
 
                         OnStatusEvent("Skipping computed column {0} on table {1}", currentColumn, tableInfo.SourceTableName);
+
+                        mapInfoToUse.SkipColumn(currentColumn);
+                        skippedColumn = true;
+                    }
+                }
+
+                var xidColumnCommand = new NpgsqlCommand(sqlXidColumns, mPgConnection);
+
+                using (var xidColumnReader = xidColumnCommand.ExecuteReader())
+                {
+                    while (xidColumnReader.Read())
+                    {
+                        var currentColumn = xidColumnReader.GetString(0);
+
+                        OnStatusEvent("Skipping xid column {0} on table {1}", currentColumn, tableInfo.SourceTableName);
 
                         mapInfoToUse.SkipColumn(currentColumn);
                         skippedColumn = true;
