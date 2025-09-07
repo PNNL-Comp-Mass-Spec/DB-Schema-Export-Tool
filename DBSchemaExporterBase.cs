@@ -2417,9 +2417,15 @@ namespace DB_Schema_Export_Tool
 
             if (quoteWithSquareBrackets)
             {
+                if (objectName.Trim().StartsWith("["))
+                    return objectName;
+
                 // SQL Server quotes names with square brackets
                 return '[' + objectName + ']';
             }
+
+            if (objectName.Trim().StartsWith("\""))
+                return objectName;
 
             // PostgreSQL quotes names with double quotes
             return '"' + objectName + '"';
