@@ -806,7 +806,7 @@ namespace DB_Schema_Export_Tool
 
         private string GetFormattedValue<dynamic>(dynamic columnValue, DBSchemaExporterBase.DataColumnTypeConstants dataColumnTypeConstants, bool pgInsertEnabled)
         {
-            if (dataColumnTypeConstants == DBSchemaExporterBase.DataColumnTypeConstants.Text)
+            if (dataColumnTypeConstants is DBSchemaExporterBase.DataColumnTypeConstants.Text or DBSchemaExporterBase.DataColumnTypeConstants.IPAddress)
             {
                 return mDbSchemaExporter.FormatValueForInsertAsString(columnValue, pgInsertEnabled);
             }

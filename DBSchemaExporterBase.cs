@@ -114,9 +114,14 @@ namespace DB_Schema_Export_Tool
             GeneralObject = 8,
 
             /// <summary>
+            /// IP Address
+            /// </summary>
+            IPAddress = 9,
+
+            /// <summary>
             /// SkipColumn
             /// </summary>
-            SkipColumn = 9
+            SkipColumn = 10
         }
 
         /// <summary>
@@ -676,6 +681,10 @@ namespace DB_Schema_Export_Tool
                 if (currentColumnType == Type.GetType("System.String"))
                 {
                     dataColumnType = DataColumnTypeConstants.Text;
+                }
+                else if (currentColumnType.FullName == "System.Net.IPAddress")
+                {
+                    dataColumnType = DataColumnTypeConstants.IPAddress;
                 }
                 else if (currentColumnType == Type.GetType("System.DateTime"))
                 {
@@ -1824,6 +1833,7 @@ namespace DB_Schema_Export_Tool
                 case DataColumnTypeConstants.Text:
                 case DataColumnTypeConstants.DateTime:
                 case DataColumnTypeConstants.GUID:
+                case DataColumnTypeConstants.IPAddress:
                     return FormatValueForInsertAsString(columnValues[columnIndex], pgInsertEnabled);
 
                 case DataColumnTypeConstants.BinaryArray:
