@@ -371,6 +371,11 @@ namespace DB_Schema_Export_Tool
                     var trimmedName = tableName.Trim();
 
                     TableNameFilterSet.Add(trimmedName);
+
+                    if (PostgreSQL && trimmedName.IndexOf('.') < 0)
+                    {
+                        TableNameFilterSet.Add(string.Format("public.{0}", trimmedName));
+                    }
                 }
             }
         }
