@@ -9,6 +9,8 @@ namespace DB_Schema_Export_Tool
     /// </summary>
     public abstract class LoggerBase : EventNotifier
     {
+        // Ignore Spelling: Unregister
+
         private readonly SchemaExportOptions mOptions;
 
         /// <summary>
