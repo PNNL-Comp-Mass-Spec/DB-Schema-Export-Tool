@@ -1294,7 +1294,7 @@ namespace DB_Schema_Export_Tool
 
                 if (tableInfo.PrimaryKeyColumns.Count == dataExportParams.ColumnNamesAndTypes.Count)
                 {
-                    if (dataRowCount < 100 && tableInfo.PrimaryKeyColumns.Count <= 2)
+                    if (dataRowCount < 5000 && tableInfo.PrimaryKeyColumns.Count <= 2)
                     {
                         // Every column in the table is part of the primary key
 
@@ -2218,14 +2218,16 @@ namespace DB_Schema_Export_Tool
         /// <param name="tableName">Table name</param>
         /// <param name="quoteWithSquareBrackets">When true, quote names with square brackets; otherwise, quote with double quotes</param>
         /// <param name="alwaysQuoteNames">When true, always returned quoted schema.table_name</param>
+        /// <param name="alwaysIncludePublicSchemaName">When true, always return the name as public.table_name if the table is in the public schema</param>
         /// <returns>Table name, with schema if required</returns>
         protected string GetTableNameToUse(
             string tableSchema,
             string tableName,
             bool quoteWithSquareBrackets,
-            bool alwaysQuoteNames)
+            bool alwaysQuoteNames,
+            bool alwaysIncludePublicSchemaName = false)
         {
-            if (IsDefaultOwnerSchema(tableSchema))
+            if (!alwaysIncludePublicSchemaName && IsDefaultOwnerSchema(tableSchema))
             {
                 return PossiblyQuoteName(tableName, quoteWithSquareBrackets, alwaysQuoteNames);
             }

@@ -275,6 +275,26 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        private void AddUpdatePrimaryKeyInfo(
+            IDictionary<string, List<string>> primaryKeysByTable,
+            string tableNameWithSchema,
+            string columnName)
+        {
+
+            if (primaryKeysByTable.TryGetValue(tableNameWithSchema, out var existingPrimaryKeyColumns))
+            {
+                existingPrimaryKeyColumns.Add(columnName);
+                return;
+            }
+
+            var primaryKeyColumns = new List<string>
+            {
+                columnName
+            };
+
+            primaryKeysByTable.Add(tableNameWithSchema, primaryKeyColumns);
+        }
+
         /// <summary>
         /// Determines the table names for which data will be exported
         /// </summary>
@@ -1641,20 +1661,15 @@ namespace DB_Schema_Export_Tool
 
                         // var ordinalPosition = reader.GetInt32(3);
 
-                        var tableNameWithSchema = GetTableNameToUse(tableSchema, tableName, quoteWithSquareBrackets, alwaysQuoteNames);
+                        var tableNameWithSchema = GetTableNameToUse(tableSchema, tableName, quoteWithSquareBrackets, alwaysQuoteNames, true);
+                        var tableNamePossiblyWithSchema = GetTableNameToUse(tableSchema, tableName, quoteWithSquareBrackets, alwaysQuoteNames);
 
-                        if (workingParams.PrimaryKeysByTable.TryGetValue(tableNameWithSchema, out var existingPrimaryKeyColumns))
-                        {
-                            existingPrimaryKeyColumns.Add(columnName);
+                        AddUpdatePrimaryKeyInfo(workingParams.PrimaryKeysByTable, tableNameWithSchema, columnName);
+
+                        if (tableNameWithSchema.Equals(tableNamePossiblyWithSchema))
                             continue;
-                        }
 
-                        var primaryKeyColumns = new List<string>
-                        {
-                            columnName
-                        };
-
-                        workingParams.PrimaryKeysByTable.Add(tableNameWithSchema, primaryKeyColumns);
+                        AddUpdatePrimaryKeyInfo(workingParams.PrimaryKeysByTable, tableNamePossiblyWithSchema, columnName);
                     }
                 }
 
