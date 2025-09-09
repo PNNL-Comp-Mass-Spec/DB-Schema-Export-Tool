@@ -1831,10 +1831,13 @@ namespace DB_Schema_Export_Tool
                     return columnValues[columnIndex].ToString();
 
                 case DataColumnTypeConstants.Text:
-                case DataColumnTypeConstants.DateTime:
                 case DataColumnTypeConstants.GUID:
                 case DataColumnTypeConstants.IPAddress:
                     return FormatValueForInsertAsString(columnValues[columnIndex], pgInsertEnabled);
+
+                case DataColumnTypeConstants.DateTime:
+                    var timeStamp = Convert.ToDateTime(columnValues[columnIndex]);
+                    return timeStamp.ToString("yyyy-MM-dd HH:mm:ss.fff");
 
                 case DataColumnTypeConstants.BinaryArray:
                     try
