@@ -1837,7 +1837,7 @@ namespace DB_Schema_Export_Tool
 
                 case DataColumnTypeConstants.DateTime:
                     var timeStamp = Convert.ToDateTime(columnValues[columnIndex]);
-                    return timeStamp.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                    return string.Format("'{0:yyyy-MM-dd HH:mm:ss.fff}'", timeStamp);
 
                 case DataColumnTypeConstants.BinaryArray:
                     try
