@@ -213,6 +213,11 @@ sw.t_job_steps_history
 sw.t_job_parameters_history
 sw.t_job_step_dependencies_history
 sw.t_job_step_status_history
+svc.t_service_use
+svc.t_service_use_report
+svc.t_service_cost_rate_burdened
+svc.t_service_cost_rate
+svc.t_service_cost_group
 pc.t_archived_file_states
 pc.t_protein_collection_states
 pc.t_annotation_types
