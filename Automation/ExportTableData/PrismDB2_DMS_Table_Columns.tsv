@@ -1,0 +1,5 @@
+SourceTableName	SourceColumnName	TargetColumnName	Comment
+public.t_cached_dataset_folder_paths	dataset_row_version	<skip>
+public.t_cached_dataset_folder_paths	storage_path_row_version	<skip>
+public.t_cached_dataset_links	dataset_row_version	<skip>
+public.t_cached_dataset_links	storage_path_row_version	<skip>
