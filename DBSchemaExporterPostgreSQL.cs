@@ -723,6 +723,16 @@ namespace DB_Schema_Export_Tool
                     return true;
                 }
 
+                if (sourceTableNameWithSchema.StartsWith("pg_temp_"))
+                {
+                    // ReSharper disable once CommentTypo
+
+                    // This is a PostgreSQL temp table, e.g. pg_temp_380.tmp_jobparamstable
+                    // Ignore this table
+                    OnStatusEvent("Ignoring temporary table {0}", sourceTableNameWithSchema);
+                    return true;
+                }
+
                 var subTaskProgress = ComputeSubtaskProgress(workingParams.ProcessCount, workingParams.ProcessCountExpected);
                 var percentComplete = ComputeIncrementalProgress(mPercentCompleteStart, mPercentCompleteEnd, subTaskProgress);
 
