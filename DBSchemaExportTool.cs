@@ -1458,7 +1458,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseList">List of database names</param>
         /// <param name="tablesForDataExport">Tables to export data from</param>
-        /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported</param>
+        /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported (table name only, not schema)</param>
         /// <returns>True if successful; false if an error</returns>
         private bool ScriptServerAndDBObjectsWork(
             IReadOnlyList<string> databaseList,

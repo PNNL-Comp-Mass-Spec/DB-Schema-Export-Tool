@@ -436,7 +436,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseName">Database name</param>
         /// <param name="tablesForDataExport">Table names that should be auto-selected</param>
-        /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported</param>
+        /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported (table name only, not schema)</param>
         /// <param name="databaseNotFound">Output: true if the database does not exist on the server (or is inaccessible)</param>
         /// <param name="workingParams">Working parameters</param>
         /// <returns>True if successful, false if an error</returns>

@@ -1067,7 +1067,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseName">Database name</param>
         /// <param name="tablesForDataExport">Tables to export data from</param>
-        /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported</param>
+        /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported (table name only, not schema)</param>
         /// <param name="databaseNotFound">Output: true if the database does not exist on the server (or is inaccessible)</param>
         /// <param name="workingParams">Working parameters</param>
         /// <returns>True if successful, false if an error</returns>
@@ -1083,7 +1083,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseName">Database name</param>
         /// <param name="tablesToExportData">Dictionary where keys are information on tables to export and values are the maximum number of rows to export</param>
-        /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported</param>
+        /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported (table name only, not schema)</param>
         /// <param name="workingParams">Working parameters</param>
         /// <returns>True if successful, false if an error</returns>
         protected bool ExportDBTableData(
@@ -2577,7 +2577,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseListToProcess">List of database names to process</param>
         /// <param name="tablesForDataExport">Tables to export data from</param>
-        /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported</param>
+        /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported (table name only, not schema)</param>
         private bool ScriptDBObjectsAndData(
             IReadOnlyCollection<string> databaseListToProcess,
             IReadOnlyList<TableDataExportInfo> tablesForDataExport,
@@ -2700,7 +2700,7 @@ namespace DB_Schema_Export_Tool
         /// </summary>
         /// <param name="databaseList">Database names to export</param>
         /// <param name="tablesForDataExport">Table names for which data should be exported</param>
-        /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported</param>
+        /// <param name="tableDataExportOrder">List of table names that defines the order that table data should be exported (table name only, not schema)</param>
         /// <returns>True if success, false if a problem</returns>
         public bool ScriptServerAndDBObjects(
             IReadOnlyList<string> databaseList,
