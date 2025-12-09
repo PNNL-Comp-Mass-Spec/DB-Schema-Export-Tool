@@ -964,8 +964,11 @@ namespace DB_Schema_Export_Tool
         {
             var tableDataExportOrder = new List<string>();
 
-            // This SortedSet is used to check for duplicate table names
+            // This SortedSet is used to assure that tableDataExportOrder does not have any duplicate table names
             var tableNames = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // This SortedSet is used to check for duplicate table names
+            var tableNamesWithSchema = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
             abortProcessing = false;
 
@@ -1011,11 +1014,22 @@ namespace DB_Schema_Export_Tool
                         continue;
                     }
 
-                    var tableName = mDBSchemaExporter.GetNameWithoutSchema(lineParts[0].Trim());
+                    var tableNamePossiblyWithSchema = lineParts[0].Trim();
+
+                    // ReSharper disable once CanSimplifySetAddingWithSingleCall
+                    if (tableNamesWithSchema.Contains(tableNamePossiblyWithSchema))
+                    {
+                        OnWarningEvent("Table {0} is listed more than once in file {1}", tableNamePossiblyWithSchema, dataFile.Name);
+                        continue;
+                    }
+
+                    tableNamesWithSchema.Add(tableNamePossiblyWithSchema);
+
+                    var tableName = mDBSchemaExporter.GetNameWithoutSchema(tableNamePossiblyWithSchema);
 
                     if (tableNames.Contains(tableName))
                     {
-                        OnWarningEvent("Table {0} is listed more than once in file {1}", tableName, dataFile.Name);
+                        // This table has already been stored in tableDataExportOrder
                         continue;
                     }
 
