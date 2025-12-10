@@ -10,7 +10,6 @@ If Not [%1] == [] Set ExePath=%1
 rem If [%1] == [] Set ExePath=..\..\..\DB_Schema_Export_Tool\bin\DB_Schema_Export_Tool.exe
 If [%1] == [] Set ExePath=F:\Documents\Projects\DataMining\Database_Tools\DB_Schema_Export_Tool\bin\DB_Schema_Export_Tool.exe
 
-
 @echo on
 %ExePath% /conf:PrismDB2_DMS_DataExportOptions.conf
 
