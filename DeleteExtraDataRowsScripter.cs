@@ -364,12 +364,27 @@ namespace DB_Schema_Export_Tool
             DataExportWorkingParams dataExportParams,
             DataSet queryResults,
             FileSystemInfo deleteExtrasFile,
-            IReadOnlyList<int> primaryKeyColumnIndices,
-            IReadOnlyList<string> primaryKeyColumnsInTarget,
-            IReadOnlyList<DBSchemaExporterBase.DataColumnTypeConstants> primaryKeyColumnTypes)
+            List<int> primaryKeyColumnIndicesSrc,
+            List<string> primaryKeyColumnsInTargetSrc,
+            List<DBSchemaExporterBase.DataColumnTypeConstants> primaryKeyColumnTypesSrc)
         {
-            // Generate commands of the form:
+            // Generate commands to delete extra rows from the target table
 
+            // Option 1, tables with a dual-column primary key
+            // DELETE FROM t_target_table target
+            // WHERE target.protein_collection_id = 1026 AND
+            //       NOT EXISTS ( SELECT S.protein_collection_id
+            //                          ,S.reference_id
+            //                    FROM t_target_table S
+            //                    WHERE target.protein_collection_id = S.protein_collection_id AND
+            //                          target.reference_id = S.reference_id AND
+            //                          S.protein_collection_id = 1026 AND
+            //                          S.reference_id IN (
+            //                              152213354, 152213355, 152213356, 152213357, 152213358
+            //                          )
+            //                   );
+
+            // Option 2, for tables with primary keys involving three or more columns
             // DELETE FROM t_target_table target
             // WHERE target.group_id BETWEEN 1 AND 5 AND
             //       NOT EXISTS ( SELECT S.group_id,
@@ -393,9 +408,29 @@ namespace DB_Schema_Export_Tool
                 // Keys are primary key values, values are a list of comparisons to perform (e.g. "S.job = 20", "S.job = 21", "S.job = 23")
                 var primaryKeyComparisonCriteria = new SortedDictionary<dynamic, List<string>>();
 
+                // This tracks the primary key values for the first primary key column in tables with dual-column primary keys
+                // In the dictionary, keys are primary key values, values are a list of secondary key values
+                var dualColumnPrimaryKeyComparisonValues = new SortedDictionary<dynamic, List<string>>();
+
                 var additionalCriteria = new StringBuilder();
 
+                // This is used to hold the value for the secondary primary key column, for the purposes of storing in dualColumnPrimaryKeyComparisonValues
+                var additionalValue = new StringBuilder();
+
                 var pgInsertEnabled = dataExportParams.PgInsertEnabled;
+
+                // Define the order with which primary key columns should be processed
+                // The primary key column with the fewest number of unique values is processed first, followed by the remaining primary key columns
+
+                GetPrimaryKeyProcessingOrder(
+                    queryResults,
+                    primaryKeyColumnIndicesSrc, primaryKeyColumnsInTargetSrc, primaryKeyColumnTypesSrc,
+                    out var primaryKeyColumnIndices, out var primaryKeyColumnsInTarget, out var primaryKeyColumnTypes);
+
+                var rowCount = queryResults.Tables[0].Rows.Count;
+
+                // If the table has a dual-column primary key, we can use a more efficient delete query, but only use this when the table has more than 1000 rows
+                var useDualColumnPrimaryKeyDelete = primaryKeyColumnIndices.Count == 2 && rowCount > 1000;
 
                 foreach (DataRow currentRow in queryResults.Tables[0].Rows)
                 {
@@ -409,12 +444,27 @@ namespace DB_Schema_Export_Tool
 
                     additionalCriteria.Clear();
 
+                    // This is only used when dualColumnPrimaryKeyComparisonValues is true
+                    additionalValue.Clear();
+
                     for (var i = 1; i < primaryKeyColumnIndices.Count; i++)
                     {
+                        // Values in a multicolumn primary key constraint should never be null, but we'll check for this anyway
+                        var valueIsNull = currentRow.IsNull(primaryKeyColumnIndices[i]);
+
+                        var formattedValue = valueIsNull
+                            ? string.Empty
+                            : GetFormattedValue(currentRow[primaryKeyColumnIndices[i]], primaryKeyColumnTypes[i], pgInsertEnabled);
+
+                        if (useDualColumnPrimaryKeyDelete && i == 1 && !valueIsNull)
+                        {
+                            additionalValue.Append(formattedValue);
+                        }
+
                         if (additionalCriteria.Length > 0)
                             additionalCriteria.Append(" AND ");
 
-                        if (currentRow.IsNull(primaryKeyColumnIndices[i]))
+                        if (valueIsNull)
                         {
                             additionalCriteria.AppendFormat("S.{0} Is Null", primaryKeyColumnsInTarget[i]);
                             continue;
@@ -423,32 +473,48 @@ namespace DB_Schema_Export_Tool
                         additionalCriteria.AppendFormat(
                             "S.{0} = {1}",
                             primaryKeyColumnsInTarget[i],
-                            GetFormattedValue(currentRow[primaryKeyColumnIndices[i]], primaryKeyColumnTypes[i], pgInsertEnabled));
+                            formattedValue);
                     }
 
-                    if (primaryKeyComparisonCriteria.TryGetValue(firstPrimaryKeyValue, out var comparisonCriteria))
+                    if (useDualColumnPrimaryKeyDelete)
                     {
-                        if (additionalCriteria.Length == 0)
+                        if (additionalValue.Length == 0)
                         {
                             OnWarningEvent(
-                                "Encountered a duplicate primary key ({0}) but there is only one primary key column on table {1}; this should never happen and likely indicates a programming error",
+                                "Encountered a duplicate primary key ({0}) but there is only one primary key column on table {1}; this should never happen and likely indicates a programming error; see just above dualColumnPrimaryKeyComparisonValues.TryGetValue(firstPrimaryKeyValue, out var secondaryKeyValues)",
                                 firstPrimaryKeyValue, dataExportParams.SourceTableNameWithSchema);
 
                             continue;
                         }
 
-                        comparisonCriteria.Add(additionalCriteria.ToString());
+                        if (dualColumnPrimaryKeyComparisonValues.TryGetValue(firstPrimaryKeyValue, out var secondaryKeyValues))
+                        {
+                            secondaryKeyValues.Add(additionalValue.ToString());
+                            continue;
+                        }
+
+                        var newSecondaryKeyValues = new List<string> { additionalValue.ToString() };
+                        dualColumnPrimaryKeyComparisonValues.Add(firstPrimaryKeyValue, newSecondaryKeyValues);
+                    }
+
+                    if (additionalCriteria.Length == 0)
+                    {
+                        OnWarningEvent(
+                            "Encountered a duplicate primary key ({0}) but there is only one primary key column on table {1}; this should never happen and likely indicates a programming error; see just above primaryKeyComparisonCriteria.TryGetValue(firstPrimaryKeyValue, out var comparisonCriteria)",
+                            firstPrimaryKeyValue, dataExportParams.SourceTableNameWithSchema);
+
                         continue;
                     }
 
-                    var newComparisonCriteria = new List<string>();
-
-                    if (additionalCriteria.Length > 0)
+                    if (primaryKeyComparisonCriteria.TryGetValue(firstPrimaryKeyValue, out var comparisonCriteria))
                     {
-                        newComparisonCriteria.Add(additionalCriteria.ToString());
+                        comparisonCriteria.Add(additionalCriteria.ToString());
                     }
-
-                    primaryKeyComparisonCriteria.Add(firstPrimaryKeyValue, newComparisonCriteria);
+                    else
+                    {
+                        var newComparisonCriteria = new List<string> { additionalCriteria.ToString() };
+                        primaryKeyComparisonCriteria.Add(firstPrimaryKeyValue, newComparisonCriteria);
+                    }
                 }
 
                 ShowDeleteExtrasFilePath(deleteExtrasFile);
@@ -477,6 +543,200 @@ namespace DB_Schema_Export_Tool
                         GetFormattedValue(maximumValue, primaryKeyColumnTypes[0], pgInsertEnabled));
                 }
 
+                // Create delete commands using either DeleteUsingDualColumnPrimaryKeys or DeleteUsingGroupedMultiColumnPrimaryKeys
+
+                if (useDualColumnPrimaryKeyDelete)
+                {
+                    return DeleteUsingDualColumnPrimaryKeys(
+                                dataExportParams,
+                                primaryKeyColumnsInTarget,
+                                primaryKeyColumnTypes,
+                                primaryKeyComparisonCriteria,
+                                dualColumnPrimaryKeyComparisonValues,
+                                writer,
+                                pgInsertEnabled);
+                }
+
+                return DeleteUsingGroupedMultiColumnPrimaryKeys(
+                    dataExportParams,
+                    primaryKeyColumnIndices,
+                    primaryKeyColumnsInTarget,
+                    primaryKeyColumnTypes,
+                    primaryKeyComparisonCriteria,
+                    writer,
+                    pgInsertEnabled);
+            }
+            catch (Exception ex)
+            {
+                OnErrorEvent(string.Format("Error in DeleteUsingMultiColumnPrimaryKey for table {0}", dataExportParams.SourceTableNameWithSchema), ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Examine values in the primary key columns to determine the column with the lowest number of unique values
+        /// </summary>
+        /// <param name="queryResults">Query results</param>
+        /// <param name="primaryKeyColumnIndicesSrc">Primary key column indices, as obtained from the database</param>
+        /// <param name="primaryKeyColumnsInTargetSrc">Primary key column names (using target database names); this list is parallel to primaryKeyColumnIndicesSrc</param>
+        /// <param name="primaryKeyColumnTypesSrc">Primary key column types; this list is parallel to primaryKeyColumnIndicesSrc</param>
+        /// <param name="primaryKeyColumnIndices">Output: updated list of primary key column indices</param>
+        /// <param name="primaryKeyColumnsInTarget">Output: updated list of primary key column names</param>
+        /// <param name="primaryKeyColumnTypes">Output: updated list of primary key column types</param>
+        private void GetPrimaryKeyProcessingOrder(
+            DataSet queryResults,
+            List<int> primaryKeyColumnIndicesSrc,
+            List<string> primaryKeyColumnsInTargetSrc,
+            List<DBSchemaExporterBase.DataColumnTypeConstants> primaryKeyColumnTypesSrc,
+            out List<int> primaryKeyColumnIndices,
+            out List<string> primaryKeyColumnsInTarget,
+            out List<DBSchemaExporterBase.DataColumnTypeConstants> primaryKeyColumnTypes)
+
+        {
+            // Keys in this dictionary are the primary key array indices; values are the unique values for each primary key column
+            var primaryKeyColumnValues = new Dictionary<int, SortedSet<dynamic>>();
+
+            var primaryKeyCount = primaryKeyColumnIndicesSrc.Count;
+
+            for (var i = 0; i < primaryKeyCount; i++)
+            {
+                primaryKeyColumnValues.Add(i, new SortedSet<dynamic>());
+            }
+
+            // Populate primaryKeyColumnValues with the unique values defined for each primary key column
+            foreach (DataRow currentRow in queryResults.Tables[0].Rows)
+            {
+                if (currentRow.IsNull(primaryKeyColumnIndicesSrc[0]))
+                {
+                    // Do not delete rows where the first-column primary key is null
+                    continue;
+                }
+
+                for (var i = 0; i < primaryKeyCount; i++)
+                {
+                    if (currentRow.IsNull(primaryKeyColumnIndicesSrc[i]))
+                        continue;
+
+                    primaryKeyColumnValues[i].Add(currentRow[primaryKeyColumnIndicesSrc[i]]);
+                }
+            }
+
+            // Find the primary key column with the fewest number of unique values
+
+            var lowestUniqueValueCount = int.MaxValue;
+            var primaryKeyIndexWithLowestCount = -1;
+
+            // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
+            foreach (var item in primaryKeyColumnValues)
+            {
+                if (item.Value.Count >= lowestUniqueValueCount)
+                    continue;
+
+                lowestUniqueValueCount = item.Value.Count;
+                primaryKeyIndexWithLowestCount = item.Key;
+            }
+
+            if (primaryKeyIndexWithLowestCount < 0)
+            {
+                // This is unexpected; use the source lists as-is
+                primaryKeyColumnIndices = primaryKeyColumnIndicesSrc;
+                primaryKeyColumnsInTarget = primaryKeyColumnsInTargetSrc;
+                primaryKeyColumnTypes = primaryKeyColumnTypesSrc;
+                return;
+            }
+
+            // Populate these three lists using the source lists, but add primary key index primaryKeyIndexWithLowestCount first
+            primaryKeyColumnIndices = new List<int>();
+            primaryKeyColumnsInTarget = new List<string>();
+            primaryKeyColumnTypes = new List<DBSchemaExporterBase.DataColumnTypeConstants>();
+
+            primaryKeyColumnIndices.Add(primaryKeyColumnIndicesSrc[primaryKeyIndexWithLowestCount]);
+            primaryKeyColumnsInTarget.Add(primaryKeyColumnsInTargetSrc[primaryKeyIndexWithLowestCount]);
+            primaryKeyColumnTypes.Add(primaryKeyColumnTypesSrc[primaryKeyIndexWithLowestCount]);
+
+            for (var i = 0; i < primaryKeyCount; i++)
+            {
+                if (i == primaryKeyIndexWithLowestCount)
+                    continue;
+
+                primaryKeyColumnIndices.Add(primaryKeyColumnIndicesSrc[i]);
+                primaryKeyColumnsInTarget.Add(primaryKeyColumnsInTargetSrc[i]);
+                primaryKeyColumnTypes.Add(primaryKeyColumnTypesSrc[i]);
+            }
+        }
+
+        /// <summary>
+        /// Delete extra rows in a table with a dual-column primary key
+        /// </summary>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="primaryKeyColumnsInTarget">Primary key column names</param>
+        /// <param name="primaryKeyColumnTypes">Primary key column types</param>
+        /// <param name="primaryKeyComparisonCriteria">Primary key comparison criteria; Keys are primary key values, values are a list of comparisons to perform (e.g. "S.job = 20", "S.job = 21", "S.job = 23")</param>
+        /// <param name="dualColumnPrimaryKeyComparisonValues">Keys are primary key values, values are a list of secondary key values</param>
+        /// <param name="writer">Text file writer</param>
+        /// <param name="pgInsertEnabled">True if using insert commands formatted as PostgreSQL compatible INSERT INTO statements</param>
+        /// <returns>True if successful, false if an error</returns>
+        private bool DeleteUsingDualColumnPrimaryKeys(
+            DataExportWorkingParams dataExportParams,
+            IReadOnlyList<string> primaryKeyColumnsInTarget,
+            IReadOnlyList<DBSchemaExporterBase.DataColumnTypeConstants> primaryKeyColumnTypes,
+            SortedDictionary<dynamic, List<string>> primaryKeyComparisonCriteria,
+            IReadOnlyDictionary<dynamic, List<string>> dualColumnPrimaryKeyComparisonValues,
+            StreamWriter writer,
+            bool pgInsertEnabled)
+        {
+            try
+            {
+                foreach (var item in primaryKeyComparisonCriteria)
+                {
+                    if (!dualColumnPrimaryKeyComparisonValues.TryGetValue(item.Key, out List<string> secondaryPrimaryKeyValues))
+                    {
+                        OnWarningEvent("Did not find key {0} in dualColumnPrimaryKeyComparisonValues for table dataExportParams.SourceTableNameWithSchema; this is unexpected", item.Key);
+                        continue;
+                    }
+
+                    WriteDualColumnPrimaryKeyDeleteQuery(
+                        writer,
+                        dataExportParams.TargetTableNameWithSchema,
+                        primaryKeyColumnsInTarget,
+                        primaryKeyColumnTypes,
+                        item.Key,
+                        secondaryPrimaryKeyValues,
+                        pgInsertEnabled);
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                OnErrorEvent(string.Format("Error in DeleteUsingDualColumnPrimaryKeys for table {0}", dataExportParams.SourceTableNameWithSchema), ex);
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Delete extra rows in a table with a primary key that references multiple columns
+        /// </summary>
+        /// <param name="dataExportParams">Data export parameters</param>
+        /// <param name="primaryKeyColumnIndices">Primary key column indices</param>
+        /// <param name="primaryKeyColumnsInTarget">Primary key column names</param>
+        /// <param name="primaryKeyColumnTypes">Primary key column types</param>
+        /// <param name="primaryKeyComparisonCriteria">Primary key comparison criteria; Keys are primary key values, values are a list of comparisons to perform (e.g. "S.job = 20", "S.job = 21", "S.job = 23")</param>
+        /// <param name="writer">Text file writer</param>
+        /// <param name="pgInsertEnabled">True if using insert commands formatted as PostgreSQL compatible INSERT INTO statements</param>
+        /// <returns>True if successful, false if an error</returns>
+        private bool DeleteUsingGroupedMultiColumnPrimaryKeys(
+            DataExportWorkingParams dataExportParams,
+            IReadOnlyCollection<int> primaryKeyColumnIndices,
+            IReadOnlyList<string> primaryKeyColumnsInTarget,
+            IReadOnlyList<DBSchemaExporterBase.DataColumnTypeConstants> primaryKeyColumnTypes,
+            SortedDictionary<dynamic, List<string>> primaryKeyComparisonCriteria,
+            StreamWriter writer,
+            bool pgInsertEnabled)
+        {
+            try
+            {
                 // Create delete commands in batches of size PgInsertChunkSize
 
                 // The batch size is computed using the number of data values being compared in the WHERE clause of the subquery
@@ -491,6 +751,7 @@ namespace DB_Schema_Export_Tool
                 var currentGroupComparisonCriteria = new Dictionary<dynamic, List<string>>();
 
                 var currentGroupValueCount = 0;
+
                 var startKey = default(dynamic);
                 var previousKey = default(dynamic);
 
@@ -558,7 +819,8 @@ namespace DB_Schema_Export_Tool
             }
             catch (Exception ex)
             {
-                OnErrorEvent(string.Format("Error in DeleteUsingMultiColumnPrimaryKey for table {0}", dataExportParams.SourceTableNameWithSchema), ex);
+                OnErrorEvent(string.Format("Error in DeleteUsingGroupedMultiColumnPrimaryKeys for table {0}", dataExportParams.SourceTableNameWithSchema), ex);
+
                 return false;
             }
         }
@@ -850,6 +1112,114 @@ namespace DB_Schema_Export_Tool
             Console.WriteLine();
         }
 
+        /// <summary>
+        /// Use this method to delete extra rows from large tables with a dual-column primary key
+        /// </summary>
+        /// <remarks>
+        /// In particular t_analysis_job_processor_group_associations and pc.t_protein_collection_members_cached
+        /// </remarks>
+        /// <param name="writer">Text file writer</param>
+        /// <param name="targetTableNameWithSchema">Target table name, with schema</param>
+        /// <param name="primaryKeyColumnsInTarget">Primary key column names</param>
+        /// <param name="primaryKeyColumnTypes">Primary key column types</param>
+        /// <param name="firstPrimaryKeyValue">First primary key value</param>
+        /// <param name="secondaryPrimaryKeyValues">Secondary primary key values</param>
+        /// <param name="pgInsertEnabled">True if using insert commands formatted as PostgreSQL compatible INSERT INTO statements</param>
+        private void WriteDualColumnPrimaryKeyDeleteQuery(
+            StreamWriter writer,
+            string targetTableNameWithSchema,
+            IReadOnlyList<string> primaryKeyColumnsInTarget,
+            IReadOnlyList<DBSchemaExporterBase.DataColumnTypeConstants> primaryKeyColumnTypes,
+            dynamic firstPrimaryKeyValue,
+            List<string> secondaryPrimaryKeyValues,
+            bool pgInsertEnabled)
+        {
+            // Generate a command of the form:
+
+            // DELETE FROM pc.t_protein_collection_members_cached target
+            // WHERE target.protein_collection_id = 1026 AND
+            //       NOT EXISTS ( SELECT S.protein_collection_id
+            //                          ,S.reference_id
+            //                    FROM pc.t_protein_collection_members_cached S
+            //                    WHERE target.protein_collection_id = S.protein_collection_id AND
+            //                          target.reference_id = S.reference_id AND
+            //                          S.protein_collection_id = 1026 AND
+            //                          S.reference_id IN (
+            //                              152213354, 152213355, 152213356, 152213357, 152213358
+            //                          )
+            //                   );
+
+            if (primaryKeyColumnsInTarget.Count != 2)
+            {
+                OnErrorEvent("Table {0} has {1} primary key column(s); method WriteDualColumnPrimaryKeyDeleteQuery should only be called for tables with two primary keys",
+                    targetTableNameWithSchema, primaryKeyColumnsInTarget.Count);
+
+                return;
+            }
+
+            var firstPrimaryKeyColumnName = primaryKeyColumnsInTarget[0];
+            var secondPrimaryKeyColumnName = primaryKeyColumnsInTarget[1];
+
+            var formattedPrimaryKeyValue = GetFormattedValue(firstPrimaryKeyValue, primaryKeyColumnTypes[0], pgInsertEnabled);
+
+            writer.WriteLine();
+            writer.WriteLine("DELETE FROM {0} target", targetTableNameWithSchema);                                  // DELETE FROM t_target_table target
+
+            writer.WriteLine("WHERE target.{0} = {1} AND",                                                          // WHERE target.protein_collection_id = 1026 AND
+                firstPrimaryKeyColumnName,
+                formattedPrimaryKeyValue);
+
+            writer.WriteLine("      NOT EXISTS ( SELECT S.{0}", firstPrimaryKeyColumnName);                         //       NOT EXISTS ( SELECT S.protein_collection_id
+
+            for (var i = 1; i < primaryKeyColumnsInTarget.Count; i++)
+            {
+                writer.WriteLine("                         ,S.{0}", primaryKeyColumnsInTarget[i]);                  //                          ,S.reference_id
+            }
+
+            writer.WriteLine("                   FROM {0} S", targetTableNameWithSchema);                           //                    FROM t_target_table S
+            writer.WriteLine("                   WHERE target.{0} = S.{0} AND", firstPrimaryKeyColumnName);         //                    WHERE target.protein_collection_id = S.protein_collection_id AND
+
+            for (var i = 1; i < primaryKeyColumnsInTarget.Count; i++)
+            {
+                writer.WriteLine("                         target.{0} = S.{0} AND", primaryKeyColumnsInTarget[i]);  //                          target.reference_id = S.reference_id AND
+            }
+            writer.WriteLine("                             S.{0} = {1} AND",                                        //                          S.protein_collection_id = 1026 AND
+                firstPrimaryKeyColumnName,
+                formattedPrimaryKeyValue);
+
+            if (secondaryPrimaryKeyValues.Count > 0)
+            {
+                writer.WriteLine("                             S.{0} IN (", //                          S.reference_id IN (
+                    secondPrimaryKeyColumnName);
+
+                var valuesWritten = 0;
+
+                foreach (var secondaryKeyValue in secondaryPrimaryKeyValues)
+                {
+                    if (valuesWritten > 0)
+                    {
+                        if (valuesWritten % 1000 == 0)
+                        {
+                            writer.WriteLine(",");
+                        }
+                        else
+                        {
+                            writer.Write(", ");
+                        }
+                    }
+
+                    writer.Write("{0}", secondaryKeyValue);
+                    valuesWritten++;
+                }
+
+                writer.WriteLine();
+            }
+
+            // Add the required closing parentheses and semicolon
+            writer.WriteLine("                         )");
+            writer.WriteLine("                  );");
+        }
+
         private void WriteMultiColumnPrimaryKeyDeleteQuery(
             StreamWriter writer,
             string targetTableNameWithSchema,
@@ -901,7 +1271,7 @@ namespace DB_Schema_Export_Tool
             }
 
             writer.WriteLine("                   FROM {0} S", targetTableNameWithSchema);                           //                    FROM t_target_table S
-            writer.WriteLine("                   WHERE target.{0} = S.{0} AND", firstPrimaryKeyColumnName);         // WHERE target.group_id = S.group_id AND
+            writer.WriteLine("                   WHERE target.{0} = S.{0} AND", firstPrimaryKeyColumnName);         //                    WHERE target.group_id = S.group_id AND
 
             for (var i = 1; i < primaryKeyColumnsInTarget.Count; i++)
             {
