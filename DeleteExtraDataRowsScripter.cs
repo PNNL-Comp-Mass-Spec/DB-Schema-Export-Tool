@@ -20,8 +20,14 @@ namespace DB_Schema_Export_Tool
     {
         // Ignore Spelling: scripter, subquery
 
+        /// <summary>
+        /// Database Schema exporter
+        /// </summary>
         private readonly DBSchemaExporterBase mDbSchemaExporter;
 
+        /// <summary>
+        /// Schema export options
+        /// </summary>
         private readonly SchemaExportOptions mOptions;
 
         /// <summary>
@@ -356,9 +362,9 @@ namespace DB_Schema_Export_Tool
         /// <param name="dataExportParams">Data export parameters</param>
         /// <param name="queryResults">Query results</param>
         /// <param name="deleteExtrasFile">File with delete statements for deleting extra rows</param>
-        /// <param name="primaryKeyColumnIndices">Primary key column indices</param>
-        /// <param name="primaryKeyColumnsInTarget">Primary key column names</param>
-        /// <param name="primaryKeyColumnTypes">Primary key column types</param>
+        /// <param name="primaryKeyColumnIndicesSrc">Primary key column indices</param>
+        /// <param name="primaryKeyColumnsInTargetSrc">Primary key column names</param>
+        /// <param name="primaryKeyColumnTypesSrc">Primary key column types</param>
         /// <returns>True if successful, false if an error</returns>
         private bool DeleteUsingMultiColumnPrimaryKey(
             DataExportWorkingParams dataExportParams,
@@ -826,7 +832,7 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
-        /// Create a SQL script to delete extra rows in a table based on data in primary key column
+        /// Create a SQL script to delete extra rows in a table based on data in the primary key column
         /// </summary>
         /// <param name="dataExportParams">Data export parameters</param>
         /// <param name="queryResults">Query results</param>
@@ -1042,6 +1048,12 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
+        /// Convert a list of values to a comma separated list
+        /// </summary>
+        /// <param name="items">List of database values</param>
+        /// <param name="valueIsText">True if the value is text; false if numeric, a date, a boolean, etc.</param>
+        /// <param name="pgInsertEnabled">True if using insert commands formatted as PostgreSQL compatible INSERT INTO statements</param>
+        /// <returns>Comma separated list of values, as text</returns>
         private string GetCommaSeparatedList(IEnumerable<dynamic> items, bool valueIsText, bool pgInsertEnabled)
         {
             if (!valueIsText)
@@ -1058,6 +1070,13 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
+        /// Convert database value to text
+        /// </summary>
+        /// <typeparam name="dynamic"></typeparam>
+        /// <param name="columnValue">Database value</param>
+        /// <param name="valueIsText">True if the value is text; false if numeric, a date, a boolean, etc.</param>
+        /// <param name="pgInsertEnabled">True if using insert commands formatted as PostgreSQL compatible INSERT INTO statements</param>
+        /// <returns>Value, as text</returns>
         private string GetFormattedValue<dynamic>(dynamic columnValue, bool valueIsText, bool pgInsertEnabled)
         {
             if (valueIsText)
@@ -1069,6 +1088,14 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
+        /// Convert database value to text
+        /// </summary>
+        /// <typeparam name="dynamic"></typeparam>
+        /// <param name="columnValue">Database value</param>
+        /// <param name="dataColumnType">Data type of the database value</param>
+        /// <param name="pgInsertEnabled">True if using insert commands formatted as PostgreSQL compatible INSERT INTO statements</param>
+        /// <returns>Value, as text</returns>
+        private string GetFormattedValue<dynamic>(dynamic columnValue, DBSchemaExporterBase.DataColumnTypeConstants dataColumnType, bool pgInsertEnabled)
         {
             if (dataColumnType is DBSchemaExporterBase.DataColumnTypeConstants.Text or DBSchemaExporterBase.DataColumnTypeConstants.IPAddress)
             {
