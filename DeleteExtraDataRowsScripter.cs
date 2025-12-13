@@ -1041,9 +1041,10 @@ namespace DB_Schema_Export_Tool
             }
         }
 
-        private string GetCommaSeparatedList(IEnumerable<dynamic> items, bool primaryKeyIsText, bool pgInsertEnabled)
+        /// <summary>
+        private string GetCommaSeparatedList(IEnumerable<dynamic> items, bool valueIsText, bool pgInsertEnabled)
         {
-            if (!primaryKeyIsText)
+            if (!valueIsText)
                 return string.Join(",", items);
 
             var quotedValues = new List<string>();
@@ -1056,9 +1057,10 @@ namespace DB_Schema_Export_Tool
             return string.Join(",", quotedValues);
         }
 
-        private string GetFormattedValue<dynamic>(dynamic columnValue, bool primaryKeyIsText, bool pgInsertEnabled)
+        /// <summary>
+        private string GetFormattedValue<dynamic>(dynamic columnValue, bool valueIsText, bool pgInsertEnabled)
         {
-            if (primaryKeyIsText)
+            if (valueIsText)
             {
                 return mDbSchemaExporter.FormatValueForInsertAsString(columnValue, pgInsertEnabled);
             }
@@ -1066,9 +1068,9 @@ namespace DB_Schema_Export_Tool
             return columnValue.ToString();
         }
 
-        private string GetFormattedValue<dynamic>(dynamic columnValue, DBSchemaExporterBase.DataColumnTypeConstants dataColumnTypeConstants, bool pgInsertEnabled)
+        /// <summary>
         {
-            if (dataColumnTypeConstants is DBSchemaExporterBase.DataColumnTypeConstants.Text or DBSchemaExporterBase.DataColumnTypeConstants.IPAddress)
+            if (dataColumnType is DBSchemaExporterBase.DataColumnTypeConstants.Text or DBSchemaExporterBase.DataColumnTypeConstants.IPAddress)
             {
                 return mDbSchemaExporter.FormatValueForInsertAsString(columnValue, pgInsertEnabled);
             }
