@@ -1499,9 +1499,9 @@ namespace DB_Schema_Export_Tool
             // If multiple columns, use:
             //   DELETE FROM t_target_table
             //   WHERE NOT (
-            //       id = 1 and value = 'Item A' Or
-            //       id = 2 and value = 'Item B' Or
-            //       id = 3 and value = 'Item C');
+            //       id = 1 AND value = 'Item A' OR
+            //       id = 2 AND value = 'Item B' OR
+            //       id = 3 AND value = 'Item C');
 
             var sql = new StringBuilder();
 
@@ -1542,7 +1542,7 @@ namespace DB_Schema_Export_Tool
 
                     if (columnCount == 1)
                     {
-                        // Using the form "WHERE NOT id in (1, 2, 3);"
+                        // Using the form "WHERE NOT id IN (1, 2, 3);"
                         // Append to the list
 
                         if (rowNumber > 1)

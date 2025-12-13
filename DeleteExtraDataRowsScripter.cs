@@ -378,12 +378,12 @@ namespace DB_Schema_Export_Tool
             //                    WHERE target.group_id = S.group_id AND
             //                          target.job = S.job AND
             //                          (
-            //                              S.group_id = 1 and S.job = 20 OR
-            //                              S.group_id = 1 and S.job = 21 OR
-            //                              S.group_id = 1 and S.job = 23 OR
-            //                              S.group_id = 2 and S.job = 21 OR
-            //                              S.group_id = 2 and S.job = 35 OR
-            //                              S.group_id = 3 and S.job = 20
+            //                              S.group_id = 1 AND S.job = 20 OR
+            //                              S.group_id = 1 AND S.job = 21 OR
+            //                              S.group_id = 1 AND S.job = 23 OR
+            //                              S.group_id = 2 AND S.job = 21 OR
+            //                              S.group_id = 2 AND S.job = 35 OR
+            //                              S.group_id = 3 AND S.job = 20
             //                          )
             //                   )
 
@@ -862,22 +862,26 @@ namespace DB_Schema_Export_Tool
         {
             // Generate a command of the form:
 
-            // DELETE FROM t_target_table target
-            // WHERE target.group_id BETWEEN 1 AND 5 AND
-            //       NOT EXISTS ( SELECT S.group_id
-            //                          ,S.job
-            //                    FROM t_target_table S
-            //                    WHERE target.group_id = S.group_id AND
-            //                          target.job = S.job AND
+            // DELETE FROM t_analysis_job_processor_group_membership target
+            // WHERE target.processor_id BETWEEN 210 AND 250 AND
+            //       NOT EXISTS ( SELECT S.processor_id
+            //                          ,S.group_id
+            //                    FROM t_analysis_job_processor_group_membership S
+            //                    WHERE target.processor_id = S.processor_id AND
+            //                          target.group_id = S.group_id AND
             //                          (
-            //                              S.group_id = 1 and S.job = 20 OR
-            //                              S.group_id = 1 and S.job = 21 OR
-            //                              S.group_id = 1 and S.job = 23 OR
-            //                              S.group_id = 2 and S.job = 21 OR
-            //                              S.group_id = 2 and S.job = 35 OR
-            //                              S.group_id = 3 and S.job = 20
+            //                              S.processor_id = 210 AND S.group_id = 100 OR
+            //                              S.processor_id = 240 AND S.group_id = 100 OR
+            //                              S.processor_id = 241 AND S.group_id = 100 OR
+            //                              S.processor_id = 243 AND S.group_id = 100 OR
+            //                              S.processor_id = 244 AND S.group_id = 100 OR
+            //                              S.processor_id = 246 AND S.group_id = 100 OR
+            //                              S.processor_id = 247 AND S.group_id = 100 OR
+            //                              S.processor_id = 248 AND S.group_id = 100 OR
+            //                              S.processor_id = 249 AND S.group_id = 100 OR
+            //                              S.processor_id = 250 AND S.group_id = 100
             //                          )
-            //                   )
+            //                   );
 
             var firstPrimaryKeyColumnName = primaryKeyColumnsInTarget[0];
 

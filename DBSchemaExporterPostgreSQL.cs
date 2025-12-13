@@ -1635,6 +1635,22 @@ namespace DB_Schema_Export_Tool
             {
                 // Query to view primary key columns, by table, listed by schema name, table name, and ordinal position
 
+                // SELECT U.Table_Schema,
+                //        U.Table_Name,
+                //        U.Column_Name,
+                //        C.Ordinal_Position
+                // FROM INFORMATION_SCHEMA.Table_Constraints T
+                //      INNER JOIN INFORMATION_SCHEMA.Constraint_Column_Usage U
+                //        ON U.Constraint_Name = T.Constraint_Name AND
+                //          U.Constraint_Schema = T.Constraint_Schema
+                //      INNER JOIN INFORMATION_SCHEMA.Columns C
+                //        ON U.Table_Schema = C.Table_Schema AND
+                //           U.Table_Name = C.Table_Name AND
+                //           U.Column_Name = C.Column_Name
+                // WHERE U.Table_Catalog = 'dms' AND
+                //       T.Constraint_Type = 'PRIMARY KEY'
+                // ORDER BY U.Table_Schema, U.Table_Name, C.Ordinal_Position, U.Column_Name;
+
                 workingParams.PrimaryKeysByTable.Clear();
 
                 var sql = string.Format(
