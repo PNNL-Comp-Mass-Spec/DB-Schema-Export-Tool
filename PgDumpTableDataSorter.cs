@@ -92,7 +92,7 @@ namespace DB_Schema_Export_Tool
 
         private bool GetTableDataSortOrder(string tableName, string tableNameWithSchema, out TableDataSortOrder sortOrder)
         {
-            if (mTableDataSortOrder.TryGetValue(tableName, out var sortColumnsFromTableName) )
+            if (mTableDataSortOrder.TryGetValue(tableName, out var sortColumnsFromTableName))
             {
                 sortOrder = sortColumnsFromTableName;
                 return true;
@@ -139,7 +139,7 @@ namespace DB_Schema_Export_Tool
 
                     var dataLine = reader.ReadLine();
 
-                    if (dataLine == null)
+                    if (string.IsNullOrWhiteSpace(dataLine))
                         continue;
 
                     var dataValues = dataLine.Split('\t');
@@ -160,7 +160,7 @@ namespace DB_Schema_Export_Tool
                         }
                     }
 
-                    if (string.IsNullOrWhiteSpace(dataValues[1]))
+                    if (dataValues.Length < 2 || string.IsNullOrWhiteSpace(dataValues[1]))
                     {
                         // No sort columns are defined
                         continue;
