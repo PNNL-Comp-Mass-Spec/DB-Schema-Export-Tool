@@ -370,11 +370,13 @@ namespace DB_Schema_Export_Tool
                 {
                     var trimmedName = tableName.Trim();
 
-                    TableNameFilterSet.Add(trimmedName);
-
-                    if (PostgreSQL && trimmedName.IndexOf('.') < 0)
+                    if (PostgreSQL)
                     {
-                        TableNameFilterSet.Add(string.Format("public.{0}", trimmedName));
+                        TableNameFilterSet.Add(trimmedName.IndexOf('.') < 0 ? string.Format("public.{0}", trimmedName) : trimmedName);
+                    }
+                    else
+                    {
+                        TableNameFilterSet.Add(trimmedName);
                     }
                 }
             }
