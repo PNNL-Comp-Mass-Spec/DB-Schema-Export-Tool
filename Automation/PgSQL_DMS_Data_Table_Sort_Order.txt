@@ -63,6 +63,7 @@ public.t_dataset_qc_metric_names	1
 public.t_dataset_rating_name	1	True
 public.t_dataset_scan_type_glossary	1
 public.t_dataset_state_name	1	True
+public.t_dataset_svc_center_report_state	1	True
 public.t_dataset_type_name	2
 public.t_default_psm_job_parameters	2, 3, 4, 5, 6
 public.t_default_psm_job_settings	2, 3, 4, 5
@@ -135,8 +136,15 @@ public.t_usage_stats	1
 public.t_user_operations	1	True
 public.t_user_operations_permissions	1, 2	True
 public.t_yes_no	1	True
+svc.t_service_cost_group	1	True
+svc.t_service_cost_group_state	1	True
+svc.t_service_cost_rate	1, 2	True
+svc.t_service_cost_rate_burdened	1, 2, 3	True
+svc.t_service_type	1	True
+svc.t_service_use_report_state	1	True
 sw.t_job_state_name	1	True
 sw.t_job_step_state_name	1	True
+sw.t_scripts	1	True
 sw.t_sp_authorization	3, 2, 4, 1
 timetable.chain	1	True
 timetable.parameter	1, 2	True
