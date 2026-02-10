@@ -2543,7 +2543,10 @@ namespace DB_Schema_Export_Tool
                 if (dataLine == null)
                     continue;
 
+                if (dataLine.StartsWith(@"\restrict") || dataLine.StartsWith(@"\unrestrict"))
                 {
+                    // Ignore lines that start with \restrict or \unrestrict
+                    continue;
                 }
 
                 if (dataLine.StartsWith("-- PostgreSQL database dump complete"))
