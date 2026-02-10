@@ -2543,9 +2543,7 @@ namespace DB_Schema_Export_Tool
                 if (dataLine == null)
                     continue;
 
-                if (dataLine.StartsWith("USER MAPPING"))
                 {
-                    Console.WriteLine("Check this code");
                 }
 
                 if (dataLine.StartsWith("-- PostgreSQL database dump complete"))
