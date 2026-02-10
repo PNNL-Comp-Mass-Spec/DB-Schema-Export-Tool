@@ -281,6 +281,7 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Possibly sort table data in a PgDump output file
         /// </summary>
+        /// <remarks>This method also removes the \restrict and \unrestrict lines</remarks>
         /// <param name="tableName">Table name (possibly with schema)</param>
         /// <param name="tableNameWithSchema">Table name with schema</param>
         /// <param name="tableDataOutputFile">Table data output file from PgDump</param>
@@ -289,14 +290,17 @@ namespace DB_Schema_Export_Tool
         {
             try
             {
-                if (!GetTableDataSortOrder(tableName, tableNameWithSchema, out var sortOrder))
+                var sortOrderDefined = GetTableDataSortOrder(tableName, tableNameWithSchema, out var sortOrder);
+
+                if (!sortOrderDefined)
                 {
                     string tableNameToShow;
 
                     if (string.IsNullOrWhiteSpace(tableNameWithSchema))
                     {
                         tableNameToShow = tableName;
-                    } else if (tableName.Equals(tableNameWithSchema))
+                    }
+                    else if (tableName.Equals(tableNameWithSchema))
                     {
                         tableNameToShow = tableName;
                     }
@@ -305,8 +309,7 @@ namespace DB_Schema_Export_Tool
                         tableNameToShow = string.Format("{0} ({1})", tableName, tableNameWithSchema);
                     }
 
-                    OnDebugEvent("Sort order not defined for table {0}; not sorting table data", tableNameToShow);
-                    return true;
+                    OnDebugEvent(@"Sort order not defined for table {0}; not sorting table data, but will still remove \protect and \unprotect lines", tableNameToShow);
                 }
 
                 // Cache the contents of tableDataOutputFile in memory
@@ -318,6 +321,8 @@ namespace DB_Schema_Export_Tool
 
                 var copyCommandFound = false;
                 var parsingTableData = false;
+                var removeNextLineIfBlank = false;
+                var linesRemoved = false;
 
                 using (var reader = new StreamReader(new FileStream(tableDataOutputFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
                 {
@@ -326,6 +331,21 @@ namespace DB_Schema_Export_Tool
                         var dataLine = reader.ReadLine();
                         if (dataLine == null)
                             continue;
+
+                        if (dataLine.StartsWith(@"\restrict") || dataLine.StartsWith(@"\unrestrict"))
+                        {
+                            // Ignore lines that start with \restrict or \unrestrict
+                            removeNextLineIfBlank = true;
+                            linesRemoved = true;
+                            continue;
+                        }
+
+                        if (removeNextLineIfBlank)
+                        {
+                            removeNextLineIfBlank = false;
+                            if (dataLine.Trim().Equals(string.Empty))
+                                continue;
+                        }
 
                         if (copyCommandFound && !parsingTableData)
                         {
@@ -363,12 +383,33 @@ namespace DB_Schema_Export_Tool
                     }
                 }
 
+                if (!sortOrderDefined)
+                {
+                    // ReSharper disable once ConvertIfStatementToReturnStatement
+                    if (linesRemoved)
+                    {
+                        // Write out a new version of the file
+                        return ReplacePgDumpTableDataFile(tableDataOutputFile, startingFileContent, endingFileContent, tableData);
+                    }
+
+                    return true;
+                }
+
                 // Define the sort key(s) for each data row
                 // This includes updating IsNumeric for columns in sortOrder
                 var sortKeysDefined = DefinePgDumpTableDataSortKeys(tableData, sortOrder);
 
                 if (!sortKeysDefined)
+                {
+                    // ReSharper disable once ConvertIfStatementToReturnStatement
+                    if (linesRemoved)
+                    {
+                        // Write out a new version of the file
+                        return ReplacePgDumpTableDataFile(tableDataOutputFile, startingFileContent, endingFileContent, tableData);
+                    }
+
                     return false;
+                }
 
                 // Sort the data
                 tableData.Sort(new PgDumpTableDataRowComparer());
