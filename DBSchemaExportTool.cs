@@ -441,6 +441,8 @@ namespace DB_Schema_Export_Tool
 
                     if (dbDefinitionFile && dataLine.StartsWith("( NAME =") && comparisonLine.StartsWith("( NAME ="))
                     {
+                        // ReSharper disable once GrammarMistakeInComment
+
                         // DBDefinition file, example line:
                         // NAME = N'Protein_Sequences_Data', FILENAME = N'J:\SQLServerData\Protein_Sequences.mdf' , SIZE = 174425088KB , MAXSIZE = UNLIMITED
 
@@ -489,8 +491,7 @@ namespace DB_Schema_Export_Tool
                     if (dataLine.StartsWith("-- Dumped from database version") && comparisonLine.StartsWith("-- Dumped from") ||
                         dataLine.StartsWith("-- Dumped by pg_dump version") && comparisonLine.StartsWith("-- Dumped by"))
                     {
-                        if (MajorVersionsMatch(dataLine, comparisonLine))
-                            continue;
+                        continue;
                     }
 
                     if (!linesMatch)
@@ -1147,13 +1148,27 @@ namespace DB_Schema_Export_Tool
             return tablesForDataExport;
         }
 
-        private bool MajorVersionsMatch(string line1, string line2)
+#pragma warning disable RCS1213
+#pragma warning disable IDE0051
+        private bool MajorVersionsMatchOrAreClose(string line1, string line2, int majorVersionTolerance = 2)
+#pragma warning restore IDE0051
+#pragma warning restore RCS1213
         {
             var match1 = mVersionExtractor.Match(line1);
             var match2 = mVersionExtractor.Match(line2);
 
-            return match1.Success && match2.Success &&
-                   match1.Groups["Major"].Value.Equals(match2.Groups["Major"].Value);
+            if (!match1.Success && match2.Success)
+                return false;
+
+            var majorVersion1 = match1.Groups["Major"].Value;
+            var majorVersion2 = match2.Groups["Major"].Value;
+
+            if (majorVersion1.Equals(majorVersion2))
+                return true;
+
+            return float.TryParse(majorVersion1, out var version1) &&
+                   float.TryParse(majorVersion2, out var version2) &&
+                   Math.Abs(version1 - version2) <= majorVersionTolerance;
         }
 
         /// <summary>
