@@ -597,18 +597,18 @@ namespace DB_Schema_Export_Tool
 
                 if (SqlServer2005OrNewer(currentDatabase))
                 {
-                    for (var index = 0; index < currentDatabase.Schemas.Count; index++)
+                    foreach (var schema in currentDatabase.Schemas)
                     {
-                        if (ExportSchema(currentDatabase.Schemas[index]))
+                        if (ExportSchema(schema))
                         {
                             workingParams.ProcessCount++;
                         }
                     }
                 }
 
-                for (var index = 0; index < currentDatabase.Roles.Count; index++)
+                foreach (var role in currentDatabase.Roles)
                 {
-                    if (ExportRole(currentDatabase.Roles[index]))
+                    if (ExportRole(role))
                     {
                         workingParams.ProcessCount++;
                     }
@@ -635,25 +635,25 @@ namespace DB_Schema_Export_Tool
 
             if (SqlServer2005OrNewer(currentDatabase))
             {
-                for (var index = 0; index < currentDatabase.Schemas.Count; index++)
+                foreach (var schema in currentDatabase.Schemas)
                 {
-                    if (!ExportSchema(currentDatabase.Schemas[index]))
+                    if (!ExportSchema(schema))
                     {
                         continue;
                     }
 
                     try
                     {
-                        ShowTrace("Exporting schema " + currentDatabase.Schemas[index]);
+                        ShowTrace("Exporting schema " + schema);
 
-                        var scriptInfo = CleanSqlScript(StringCollectionToList(currentDatabase.Schemas[index].Script(scriptOptions)));
+                        var scriptInfo = CleanSqlScript(StringCollectionToList(schema.Script(scriptOptions)));
 
-                        WriteTextToFile(workingParams.OutputDirectory, "Schema_" + currentDatabase.Schemas[index].Name, scriptInfo);
+                        WriteTextToFile(workingParams.OutputDirectory, "Schema_" + schema.Name, scriptInfo);
                     }
                     catch (Exception ex)
                     {
                         // User likely doesn't have privilege to script the schema; ignore the error
-                        OnWarningEvent("Unable to script schema {0}: {1}", currentDatabase.Schemas[index], ex.Message);
+                        OnWarningEvent("Unable to script schema {0}: {1}", schema, ex.Message);
                     }
 
                     workingParams.ProcessCount++;
@@ -667,20 +667,20 @@ namespace DB_Schema_Export_Tool
                 }
             }
 
-            for (var index = 0; index < currentDatabase.Roles.Count; index++)
+            foreach (var role in currentDatabase.Roles)
             {
-                if (!ExportRole(currentDatabase.Roles[index]))
+                if (!ExportRole(role))
                     continue;
 
                 try
                 {
-                    var scriptInfo = CleanSqlScript(StringCollectionToList(currentDatabase.Roles[index].Script(scriptOptions)));
-                    WriteTextToFile(workingParams.OutputDirectory, "Role_" + currentDatabase.Roles[index].Name, scriptInfo);
+                    var scriptInfo = CleanSqlScript(StringCollectionToList(role.Script(scriptOptions)));
+                    WriteTextToFile(workingParams.OutputDirectory, "Role_" + role.Name, scriptInfo);
                 }
                 catch (Exception ex)
                 {
                     // User likely doesn't have privilege to script the role; ignore the error
-                    OnWarningEvent("Unable to script role {0}: {1}", currentDatabase.Roles[index], ex.Message);
+                    OnWarningEvent("Unable to script role {0}: {1}", role, ex.Message);
                 }
 
                 workingParams.ProcessCount++;
@@ -704,7 +704,7 @@ namespace DB_Schema_Export_Tool
 
                 var tableCountPassingFilters = 0;
 
-                foreach (Table databaseTable in currentDatabase.Tables)
+                foreach (var databaseTable in currentDatabase.Tables)
                 {
                     var includeTable = TablePassesFilters(workingParams, databaseTable, false);
 
@@ -728,7 +728,7 @@ namespace DB_Schema_Export_Tool
 
             var tableExportCount = 0;
 
-            foreach (Table databaseTable in currentDatabase.Tables)
+            foreach (var databaseTable in currentDatabase.Tables)
             {
                 var includeTable = TablePassesFilters(workingParams, databaseTable, true);
 
@@ -1224,7 +1224,7 @@ namespace DB_Schema_Export_Tool
 
                 var index = -1;
 
-                foreach (Column currentColumn in databaseTable.Columns)
+                foreach (var currentColumn in databaseTable.Columns)
                 {
                     index++;
 
@@ -1302,7 +1302,7 @@ namespace DB_Schema_Export_Tool
 
                     var skippedColumn = false;
 
-                    foreach (Column currentColumn in databaseTable.Columns)
+                    foreach (var currentColumn in databaseTable.Columns)
                     {
                         if (currentColumn.Computed)
                         {
@@ -1640,12 +1640,12 @@ namespace DB_Schema_Export_Tool
 
             OnProgressUpdate("Exporting SQL Server logins", 0);
 
-            for (var index = 0; index < sqlServer.Logins.Count; index++)
+            foreach (var login in sqlServer.Logins)
             {
-                var currentLogin = sqlServer.Logins[index].Name;
+                var currentLogin = login.Name;
                 OnDebugEvent("Exporting login " + currentLogin);
 
-                var scriptInfo = CleanSqlScript(StringCollectionToList(sqlServer.Logins[index].Script(scriptOptions)), true, true);
+                var scriptInfo = CleanSqlScript(StringCollectionToList(login.Script(scriptOptions)), true, true);
                 var success = WriteTextToFile(outputDirectoryPathCurrentServer, "Login_" + currentLogin, scriptInfo);
 
                 CheckPauseStatus();
@@ -1681,12 +1681,12 @@ namespace DB_Schema_Export_Tool
 
             OnProgressUpdate("Exporting SQL Server Agent jobs", 0);
 
-            for (var index = 0; index < sqlServer.JobServer.Jobs.Count; index++)
+            foreach (var job in sqlServer.JobServer.Jobs)
             {
-                var currentJob = sqlServer.JobServer.Jobs[index].Name;
+                var currentJob = job.Name;
                 OnDebugEvent("Exporting job " + currentJob);
 
-                var scriptInfo = CleanSqlScript(StringCollectionToList(sqlServer.JobServer.Jobs[index].Script(scriptOptions)), true, true);
+                var scriptInfo = CleanSqlScript(StringCollectionToList(job.Script(scriptOptions)), true, true);
                 var success = WriteTextToFile(outputDirectoryPathCurrentServer, "AgentJob_" + currentJob, scriptInfo);
 
                 CheckPauseStatus();
@@ -1986,9 +1986,9 @@ namespace DB_Schema_Export_Tool
             if (databases.Count <= 0)
                 return databaseNames;
 
-            for (var index = 0; index < databases.Count; index++)
+            foreach (var database in databases)
             {
-                databaseNames.Add(databases[index].Name);
+                databaseNames.Add(database.Name);
             }
 
             databaseNames.Sort();
