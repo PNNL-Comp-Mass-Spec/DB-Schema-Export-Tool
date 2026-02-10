@@ -1171,12 +1171,7 @@ namespace DB_Schema_Export_Tool
 
             if (tableDataOutputFile.LastWriteTime > existingData)
             {
-                if (string.IsNullOrWhiteSpace(mOptions.PgDumpTableDataSortOrderFile))
-                {
-                    return true;
-                }
-
-                // Possibly sort the table data (if the table is not defined in the sort order file, the data is not sorted)
+                // Possibly sort the table data (if the table is not defined in the sort order file, the data is not sorted, but \restrict and \unrestrict lines are still removed)
                 return PgDumpDataSorter.SortPgDumpTableData(tableInfo.SourceTableName, sourceTableNameWithSchema, tableDataOutputFile);
             }
 
