@@ -693,7 +693,7 @@ namespace DB_Schema_Export_Tool
                 }
                 else if (currentColumnType == Type.GetType("System.Byte[]"))
                 {
-                    dataColumnType = currentColumnType?.Name switch
+                    dataColumnType = currentColumnType.Name switch
                     {
                         "image" => DataColumnTypeConstants.ImageObject,
                         "timestamp" => DataColumnTypeConstants.BinaryArray,
@@ -707,7 +707,7 @@ namespace DB_Schema_Export_Tool
                 else if (currentColumnType == Type.GetType("System.Boolean"))
                 {
                     // This might be a binary column
-                    dataColumnType = currentColumnType?.Name switch
+                    dataColumnType = currentColumnType.Name switch
                     {
                         "binary" or "bit" => DataColumnTypeConstants.BinaryByte,
                         _ => DataColumnTypeConstants.Text,
@@ -715,7 +715,7 @@ namespace DB_Schema_Export_Tool
                 }
                 else if (currentColumnType == Type.GetType("System.var"))
                 {
-                    dataColumnType = currentColumnType?.Name switch
+                    dataColumnType = currentColumnType.Name switch
                     {
                         "sql_variant" => DataColumnTypeConstants.SqlVariant,
                         _ => DataColumnTypeConstants.GeneralObject
