@@ -432,6 +432,13 @@ namespace DB_Schema_Export_Tool
                         continue;
                     }
 
+                    if (dataLine.StartsWith(@"\restrict") && comparisonLine.StartsWith(@"\restrict") ||
+                        dataLine.StartsWith(@"\unrestrict") && comparisonLine.StartsWith(@"\unrestrict"))
+                    {
+                        // Ignore lines that start with \restrict or \unrestrict
+                        continue;
+                    }
+
                     if (dbDefinitionFile && dataLine.StartsWith("( NAME =") && comparisonLine.StartsWith("( NAME ="))
                     {
                         // DBDefinition file, example line:
