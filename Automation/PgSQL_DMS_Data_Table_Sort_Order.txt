@@ -4,6 +4,7 @@ admin.config	1
 admin.storage_schema_type	1
 cap.t_automatic_jobs	1, 2
 cap.t_default_sp_params	1, 2
+cap.t_process_step_control	1
 cap.t_processor_instrument	1, 2
 cap.t_processor_tool	1, 2
 cap.t_scripts	2
@@ -144,6 +145,7 @@ svc.t_service_type	1	True
 svc.t_service_use_report_state	1	True
 sw.t_job_state_name	1	True
 sw.t_job_step_state_name	1	True
+sw.t_process_step_control	1
 sw.t_scripts	1	True
 sw.t_sp_authorization	3, 2, 4, 1
 timetable.chain	1	True

@@ -113,7 +113,10 @@ svc.t_service_cost_rate_burdened
 svc.t_service_type
 svc.t_service_use_report_state
 
+cap.t_process_step_control
 cap.t_scripts
+
+sw.t_process_step_control
 sw.t_scripts
 
 cap.t_sp_authorization
