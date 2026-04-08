@@ -1,7 +1,13 @@
 # After exporting the data from t_users, edit the file to only include service accounts or placeholder users, as identified by this query
-#   SELECT *
+#   SELECT user_id, username, name, hid, status,
+#          Coalesce(email, '\N') as email,
+#          Coalesce(domain, '\N') as domain,
+#          Coalesce(payroll, '\N') as payroll,
+#          active, update, created,
+#          Coalesce(comment, '\N') as comment,
+#          last_affected
 #   FROM t_users
-#   WHERE Trim(Coalesce(email, '')) = '' AND NOT Status IN ('Inactive', 'Obsolete') OR hid LIKE 'h0909%'
+#   WHERE Trim(Coalesce(email, '')) = '' AND NOT Status IN ('Inactive', 'Obsolete') OR hid LIKE 'H0909%'
 #   ORDER BY user_id;
 
 t_users
