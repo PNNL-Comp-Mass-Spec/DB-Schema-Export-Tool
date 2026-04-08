@@ -28,6 +28,7 @@ t_data_repository
 t_dataset_annotations
 t_dataset_archive_state_name
 t_dataset_cc_report_state
+t_dataset_nom_stat_names
 t_dataset_qc_instruments
 t_dataset_qc_metric_names
 t_dataset_rating_name
