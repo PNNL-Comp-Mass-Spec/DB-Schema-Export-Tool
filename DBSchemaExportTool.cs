@@ -1532,8 +1532,10 @@ namespace DB_Schema_Export_Tool
         {
             try
             {
+                const int PROGRESS_AT_START = 75;
+
                 var startTime = DateTime.UtcNow;
-                OnProgressUpdate("Synchronizing with " + directoryPathForSync, 0);
+                OnProgressUpdate("Synchronizing with " + directoryPathForSync, PROGRESS_AT_START);
 
                 var dbsProcessed = 0;
                 var includeDbNameInCommitMessage = databaseNamesAndOutputPaths.Count > 1;
@@ -1549,7 +1551,7 @@ namespace DB_Schema_Export_Tool
                         continue;
                     }
 
-                    var percentComplete = dbsProcessed / ((float)databaseNamesAndOutputPaths.Count * 100);
+                    var percentComplete = mDBSchemaExporter.ComputeIncrementalProgress(PROGRESS_AT_START, 100, dbsProcessed / ((float)databaseNamesAndOutputPaths.Count * 100));
                     OnProgressUpdate("Synchronizing database " + databaseName, percentComplete);
 
                     var sourceDirectory = new DirectoryInfo(schemaOutputDirectory);

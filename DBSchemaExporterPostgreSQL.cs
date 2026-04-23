@@ -2553,12 +2553,19 @@ namespace DB_Schema_Export_Tool
 
             var previousTargetScriptFile = string.Empty;
 
+            var bytesRead = 0L;
+            var fileSizeBytes = pgDumpOutputFile.Length;
+            var lastProgressTime = DateTime.UtcNow;
+            var progressShown = false;
+
             while (!reader.EndOfStream)
             {
                 var dataLine = reader.ReadLine();
 
                 if (dataLine == null)
                     continue;
+
+                bytesRead += dataLine.Length + 1;
 
                 if (dataLine.StartsWith(@"\restrict") || dataLine.StartsWith(@"\unrestrict"))
                 {
@@ -2634,6 +2641,14 @@ namespace DB_Schema_Export_Tool
                 {
                     OnWarningEvent("Error in ProcessPgDumpFile: " + ex.Message);
                 }
+
+                if (DateTime.UtcNow.Subtract(lastProgressTime).TotalSeconds < 10)
+                    continue;
+
+                lastProgressTime = DateTime.UtcNow;
+                var progressMessage = string.Format("Processing database dump file: {0}% complete", Math.Round(bytesRead * 100 / (double)fileSizeBytes, 2));
+                ConsoleMsgUtils.ShowDebugCustom(progressMessage, emptyLinesBeforeMessage: progressShown ? 0 : 1);
+                progressShown = true;
             }
 
             ProcessAndStoreCachedLinesTargetScriptFile(
