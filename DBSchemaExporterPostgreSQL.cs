@@ -2302,6 +2302,7 @@ namespace DB_Schema_Export_Tool
                 case "DEFAULT":
                 case "SEQUENCE":
                 case "SEQUENCE OWNED BY":
+                case "TABLE ATTACH":
                     // Parse out the target table name from the Alter Table DDL
 
                     // The RegEx will match lines like this:
@@ -2354,9 +2355,17 @@ namespace DB_Schema_Export_Tool
 
                     if (!alterTableMatched)
                     {
+                        string objectDescription;
+
+                        if (currentObject.Type.StartsWith("SEQUENCE"))
+                            objectDescription = "sequence near: ";
+                        else if (currentObject.Type.StartsWith("TABLE"))
+                            objectDescription = "partitioned table near: ";
+                        else objectDescription = "constraint against: ";
+
                         OnWarningEvent(
                             "Did not find a valid ALTER TABLE line in the cached lines for a {0}{1}",
-                            currentObject.Type.StartsWith("SEQUENCE") ? "sequence near: " : "constraint against: ",
+                            objectDescription,
                             currentObject.Name);
 
                         unhandledScriptingCommands = true;
@@ -2431,7 +2440,6 @@ namespace DB_Schema_Export_Tool
                     break;
 
                 case "INDEX ATTACH":
-
                     var alterIndexMatcher = new Regex(string.Format(
                             "ALTER.+INDEX (?<TargetIndex>) ATTACH PARTITION {0}.{1}", currentObject.Schema, currentObject.Name),
                         RegexOptions.Compiled | RegexOptions.IgnoreCase);
