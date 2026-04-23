@@ -985,6 +985,47 @@ namespace DB_Schema_Export_Tool
             }
         }
 
+        private bool DefineRegExNameFilter(ICollection<Regex> nameMatchers, string nameFilter, string filterDescription)
+        {
+            nameMatchers.Clear();
+
+            if (string.IsNullOrWhiteSpace(nameFilter))
+            {
+                nameMatchers.Add(new Regex(".+", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline));
+                return true;
+            }
+
+            var nameFilters = new List<string>();
+
+            // Split on commas, but do not split if nameFilter has square brackets
+            if (nameFilter.IndexOfAny(['[', ']']) >= 0)
+            {
+                nameFilters.Add(nameFilter);
+            }
+            else
+            {
+                nameFilters.AddRange(nameFilter.Split(','));
+            }
+
+            foreach (var filter in nameFilters)
+            {
+                try
+                {
+                    nameMatchers.Add(new Regex(filter.Trim(), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline));
+                }
+                catch (Exception ex)
+                {
+                    OnErrorEvent(string.Format(
+                        "Invalid text defined for the {0}, '{1}'; " +
+                        "should be a series of letters or valid RegEx", filterDescription, filter.Trim()), ex);
+
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Query the database to obtain the primary key information for every table
         /// Store in workingParams.PrimaryKeysByTable
@@ -3145,42 +3186,12 @@ namespace DB_Schema_Export_Tool
                 return false;
             }
 
-            mObjectNameMatchers.Clear();
+            var objectNameFilterSuccess = DefineRegExNameFilter(mObjectNameMatchers, mOptions.ObjectNameFilter, "object name filter");
 
-            if (string.IsNullOrWhiteSpace(mOptions.ObjectNameFilter))
-            {
-                mObjectNameMatchers.Add(new Regex(".+", RegexOptions.Compiled));
-            }
-            else
-            {
-                var nameFilters = new List<string>();
+            if (!objectNameFilterSuccess)
+                return false;
 
-                // Split on commas, but do not split if mOptions.ObjectNameFilter has square brackets
-                if (mOptions.ObjectNameFilter.IndexOfAny(['[', ']']) >= 0)
-                {
-                    nameFilters.Add(mOptions.ObjectNameFilter);
-                }
-                else
-                {
-                    nameFilters.AddRange(mOptions.ObjectNameFilter.Split(','));
-                }
 
-                foreach (var filter in nameFilters)
-                {
-                    try
-                    {
-                        mObjectNameMatchers.Add(new Regex(filter.Trim(), RegexOptions.Compiled | RegexOptions.IgnoreCase));
-                    }
-                    catch (Exception ex)
-                    {
-                        OnErrorEvent(string.Format(
-                            "Invalid text defined for the object name filter, '{0}'; " +
-                            "should be a series of letters or valid RegEx", filter.Trim()), ex);
-
-                        return false;
-                    }
-                }
-            }
 
             return ValidateOutputOptions();
         }
