@@ -12,12 +12,12 @@ namespace DB_Schema_Export_Tool
     /// </summary>
     public class SchemaExportOptions
     {
-        // Ignore Spelling: app, dms, localhost, Npgsql, PostgreSQL, psql, schemas, stdin, Svn, username
+        // Ignore Spelling: app, dms, localhost, Npgsql, PostgreSQL, psql, schemas, stdin, Svn, timestamp, unhandled, username
 
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "February 9, 2026";
+        public const string PROGRAM_DATE = "April 22, 2026";
 
         /// <summary>
         /// Default output directory name prefix
@@ -150,6 +150,15 @@ namespace DB_Schema_Export_Tool
                        "however, if PgInsert is true, use INSERT INTO statements using the syntax \"ON CONFLICT (key_column) DO UPDATE SET\"\n" +
                        "When true and exporting data from a PostgreSQL database, dump table data using pg_dump.exe and COPY commands")]
         public bool PgDumpTableData { get; set; }
+
+        /// <summary>
+        /// PgDump file to use instead of contacting a database
+        /// </summary>
+        [Option("PgDumpFile", "PgFile", HelpShowsDefault = false, SecondaryArg = true,
+            HelpText = "PgDump file to parse in lieu of contacting the database\n" +
+                       "Only applicable for a PgDump file created from a PostgreSQL database; auto-sets PostgreSQL to true\n" +
+                       "Assumes the file is associated with the first database defined by parameter DBList (or the database defined by parameter DB)")]
+        public string PgDumpFile { get; set; }
 
         /// <summary>
         /// When true, do not delete the PgDump output file (_AllObjects_.sql)
@@ -760,6 +769,7 @@ namespace DB_Schema_Export_Tool
 
             PostgreSQL = false;
             PgDumpTableData = false;
+            PgDumpFile = string.Empty;
             KeepPgDumpFile = false;
 
             PgInsertTableData = false;
@@ -923,10 +933,15 @@ namespace DB_Schema_Export_Tool
 
             if (!DisableDataExport)
             {
-                if (PgDumpTableData)
+                if (PgDumpTableData || !string.IsNullOrWhiteSpace(PgDumpFile))
                 {
                     Console.WriteLine();
-                    if (PostgreSQL)
+
+                    if (!string.IsNullOrWhiteSpace(PgDumpFile))
+                    {
+                        PostgreSQL = true;
+                        Console.WriteLine(" {0,-48} {1}", "Existing pg_dump file to process:", PgDumpFile);
+                    } else if (PostgreSQL)
                     {
                         Console.WriteLine(" {0,-48} {1}", "Table data export tool:", "pg_dump");
                         Console.WriteLine(" {0,-48} {1}", "Keep the pg_dump output file, _AllObjects_.sql:", BoolToEnabledDisabled(KeepPgDumpFile));

@@ -2591,10 +2591,28 @@ namespace DB_Schema_Export_Tool
                 OnStatusEvent("Exporting DB objects/data to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
                 SchemaOutputDirectories.Clear();
 
-                // Lookup the database names with the proper capitalization
-                OnProgressUpdate("Obtaining list of databases on " + mCurrentServerInfo.ServerName, 0);
+                List<string> databaseNames;
 
-                var databaseNames = GetServerDatabasesCurrentConnection();
+                if (string.IsNullOrWhiteSpace(mOptions.PgDumpFile))
+                {
+                    // Lookup the database names with the proper capitalization
+                    OnProgressUpdate("Obtaining list of databases on " + mCurrentServerInfo.ServerName, 0);
+
+                    databaseNames = GetServerDatabasesCurrentConnection().ToList();
+                }
+                else
+                {
+                    // Parsing an existing PgDump file; override several options
+                    mOptions.DisableDataExport = true;
+                    mOptions.KeepPgDumpFile = true;
+                    mOptions.PgDumpTableData = true;
+                    mOptions.PgDumpTableDataSortOrderFile = string.Empty;
+                    mOptions.PostgreSQL = true;
+                    mOptions.NoSchema = false;
+
+                    databaseNames = new List<string>();
+                    databaseNames.Add(databaseListToProcess.First());
+                }
 
                 // Populate a dictionary where keys are lowercase database names and values are the properly capitalized database names
                 var databasesOnServer = new Dictionary<string, string>();
@@ -2625,9 +2643,19 @@ namespace DB_Schema_Export_Tool
                     mPercentCompleteStart = processedDBList.Count / (float)databaseListToProcess.Count * 100;
                     mPercentCompleteEnd = (processedDBList.Count + 1) / (float)databaseListToProcess.Count * 100;
 
-                    var tasksToPerform = mOptions.NoSchema ? "Exporting data" : "Exporting objects and data";
+                    string tasksToPerform;
 
-                    OnProgressUpdate(tasksToPerform + " from database " + currentDB, mPercentCompleteStart);
+                    if (string.IsNullOrWhiteSpace(mOptions.PgDumpFile))
+                    {
+                        tasksToPerform = mOptions.NoSchema ? "Exporting data" : "Exporting objects and data";
+
+                        OnProgressUpdate(tasksToPerform + " from database " + currentDB, mPercentCompleteStart);
+                    }
+                    else
+                    {
+                        OnProgressUpdate(string.Format("Using existing PgDump file, {0}", Path.GetFileName(mOptions.PgDumpFile)), mPercentCompleteStart);
+                        tasksToPerform = string.Empty;
+                    }
 
                     processedDBList.Add(currentDB);
                     bool success;
@@ -2635,7 +2663,11 @@ namespace DB_Schema_Export_Tool
                     if (databasesOnServer.TryGetValue(currentDB.ToLower(), out var currentDbName))
                     {
                         currentDB = currentDbName;
-                        OnDebugEvent(tasksToPerform + " from database " + currentDbName);
+
+                        if (!string.IsNullOrEmpty(tasksToPerform))
+                        {
+                            OnDebugEvent(tasksToPerform + " from database " + currentDbName);
+                        }
 
                         success = ExportDBObjectsAndTableData(
                             currentDbName,
@@ -2658,6 +2690,12 @@ namespace DB_Schema_Export_Tool
                     {
                         // Database not actually present on the server; skip it
                         success = false;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(mOptions.PgDumpFile))
+                    {
+                        // An existing PgDump file was processed; this only applies to the first database in the list of databases to process, so exit the for loop
+                        break;
                     }
 
                     CheckPauseStatus();
@@ -2726,30 +2764,33 @@ namespace DB_Schema_Export_Tool
             OnStatusEvent("Exporting schema/data to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
             OnDebugEvent("Connecting to " + mOptions.ServerName);
 
-            // Connect to the server
-            // ScriptDBObjects calls GetServerDatabasesWork to get a list of databases on the server
-            if (!ConnectToServer())
+            if (string.IsNullOrWhiteSpace(mOptions.PgDumpFile))
             {
-                return false;
-            }
-
-            if (!ValidServerConnection())
-            {
-                return false;
-            }
-
-            if (mOptions.ExportServerInfo && !mOptions.NoSchema)
-            {
-                var success = ScriptServerObjects();
-
-                if (!success)
+                // Connect to the server
+                // ScriptDBObjects calls GetServerDatabasesWork to get a list of databases on the server
+                if (!ConnectToServer())
                 {
                     return false;
                 }
 
-                if (mAbortProcessing)
+                if (!ValidServerConnection())
                 {
-                    return true;
+                    return false;
+                }
+
+                if (mOptions.ExportServerInfo && !mOptions.NoSchema)
+                {
+                    var success = ScriptServerObjects();
+
+                    if (!success)
+                    {
+                        return false;
+                    }
+
+                    if (mAbortProcessing)
+                    {
+                        return true;
+                    }
                 }
             }
 

@@ -551,6 +551,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="databaseName">Database name</param>
         /// <param name="workingParams">Working parameters</param>
         /// <param name="databaseNotFound">Output: true if the database does not exist on the server (or is inaccessible)</param>
+        /// <returns>True if successful, false if an error</returns>
         private bool ExportDBObjectsWork(string databaseName, WorkingParams workingParams, out bool databaseNotFound)
         {
             databaseNotFound = false;
@@ -558,48 +559,67 @@ namespace DB_Schema_Export_Tool
             if (mOptions.NoSchema)
                 return true;
 
-            var pgDumpOutputFile = new FileInfo(Path.Combine(workingParams.OutputDirectory.FullName, "_AllObjects_.sql"));
+            FileInfo pgDumpOutputFile;
+            DateTime existingDumpFileTime;
+            FileInfo pgDump;
 
-            var existingData = pgDumpOutputFile.Exists ? pgDumpOutputFile.LastWriteTime : DateTime.MinValue;
-
-            var serverInfoArgs = GetPgDumpServerInfoArgs(string.Empty);
-
-            // pg_dump -h host -p port -U user -W PasswordIfDefined -d database --schema-only --format=p --file=OutFilePath
-            var cmdArgs = string.Format("{0} -d {1} --schema-only --format=p --file={2}", serverInfoArgs, databaseName, pgDumpOutputFile.FullName);
-
-            const int maxRuntimeSeconds = 180;
-
-            var pgDump = FindPgDumpExecutable();
-
-            if (pgDump == null)
+            if (string.IsNullOrWhiteSpace(mOptions.PgDumpFile))
             {
-                return false;
+                pgDumpOutputFile = new FileInfo(Path.Combine(workingParams.OutputDirectory.FullName, "_AllObjects_.sql"));
+                existingDumpFileTime = pgDumpOutputFile.Exists ? pgDumpOutputFile.LastWriteTime : DateTime.MinValue;
+
+                var serverInfoArgs = GetPgDumpServerInfoArgs(string.Empty);
+
+                // pg_dump -h host -p port -U user -W PasswordIfDefined -d database --schema-only --format=p --file=OutFilePath
+                var cmdArgs = string.Format("{0} -d {1} --schema-only --format=p --file={2}", serverInfoArgs, databaseName, pgDumpOutputFile.FullName);
+
+                const int maxRuntimeSeconds = 180;
+
+                pgDump = FindPgDumpExecutable();
+
+                if (pgDump == null)
+                {
+                    return false;
+                }
+
+                if (mOptions.PreviewExport)
+                {
+                    OnStatusEvent("Preview running {0} {1}", pgDump.FullName, cmdArgs);
+                    return true;
+                }
+
+                var success = mProgramRunner.RunCommand(
+                    pgDump.FullName, cmdArgs, workingParams.OutputDirectory.FullName,
+                          out var consoleOutput, out var errorOutput, maxRuntimeSeconds);
+
+                if (!success)
+                {
+                    OnWarningEvent("Error reported for {0}: {1}", pgDump.Name, consoleOutput);
+
+                    var matcher = new Regex("database [^ ]+ does not exist", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+                    databaseNotFound = matcher.IsMatch(consoleOutput) || matcher.IsMatch(errorOutput);
+                    return false;
+                }
+
+                // Assure that the file was created
+                pgDumpOutputFile.Refresh();
+            }
+            else
+            {
+                pgDumpOutputFile = new FileInfo(mOptions.PgDumpFile);
+
+                if (!pgDumpOutputFile.Exists)
+                {
+                    OnErrorEvent("PgDump file not found: {0}", pgDumpOutputFile.FullName);
+                    return false;
+                }
+
+                existingDumpFileTime = DateTime.MinValue;
+                pgDump = new FileInfo("pg_dump.exe");
             }
 
-            if (mOptions.PreviewExport)
-            {
-                OnStatusEvent("Preview running {0} {1}", pgDump.FullName, cmdArgs);
-                return true;
-            }
-
-            var success = mProgramRunner.RunCommand(
-                pgDump.FullName, cmdArgs, workingParams.OutputDirectory.FullName,
-                      out var consoleOutput, out var errorOutput, maxRuntimeSeconds);
-
-            if (!success)
-            {
-                OnWarningEvent("Error reported for {0}: {1}", pgDump.Name, consoleOutput);
-
-                var matcher = new Regex("database [^ ]+ does not exist", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-                databaseNotFound = matcher.IsMatch(consoleOutput) || matcher.IsMatch(errorOutput);
-                return false;
-            }
-
-            // Assure that the file was created
-            pgDumpOutputFile.Refresh();
-
-            if (pgDumpOutputFile.LastWriteTime > existingData)
+            if (pgDumpOutputFile.LastWriteTime > existingDumpFileTime)
             {
                 // Parse the pgDump output file and create a separate file for each object
                 // Overloaded functions will be stored in the same file, with comments indicating the overload number
@@ -612,11 +632,11 @@ namespace DB_Schema_Export_Tool
                 }
                 else
                 {
-                    // Delete the _AllObjects_.sql file (since we no longer need it)
                     try
                     {
                         if (!mOptions.KeepPgDumpFile)
                         {
+                            // Delete the _AllObjects_.sql file (since we no longer need it)
                             pgDumpOutputFile.Delete();
                         }
                     }
@@ -1944,6 +1964,8 @@ namespace DB_Schema_Export_Tool
 
                 if (!passwordFileExists)
                 {
+                    // Could not find the .pgpass file; unable to determine the password for user
+                    // Could not find the pgpass.conf file; unable to determine the password for user
                     OnWarningEvent("Could not find the {0} file; unable to determine the password for user {1}", passwordFileName, pgUser);
                     definedInPgPassFile = false;
                     return string.Empty;
