@@ -215,6 +215,11 @@ namespace DB_Schema_Export_Tool
         protected readonly List<Regex> mObjectNameMatchers;
 
         /// <summary>
+        /// Table name exclusion Reg Ex match list
+        /// </summary>
+        protected readonly List<Regex> mTableNameExclusionMatchers;
+
+        /// <summary>
         /// Export options
         /// </summary>
         protected readonly SchemaExportOptions mOptions;
@@ -321,6 +326,12 @@ namespace DB_Schema_Export_Tool
 
             // This list will get updated later if mOptions.ObjectNameFilter is not empty
             mObjectNameMatchers = new List<Regex>
+            {
+                new(".+", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline)
+            };
+
+            // This list will get updated later if mOptions.TableNameExclusionFilter is not empty
+            mTableNameExclusionMatchers = new List<Regex>
             {
                 new(".+", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline)
             };
@@ -619,7 +630,7 @@ namespace DB_Schema_Export_Tool
         /// <param name="currentTaskProgressAtEnd">Progress at the start of the current subtask (value between 0 and 100)</param>
         /// <param name="subTaskProgress">Progress of the current subtask (value between 0 and 100)</param>
         /// <returns>Overall progress (value between 0 and 100)</returns>
-        protected float ComputeIncrementalProgress(float currentTaskProgressAtStart, float currentTaskProgressAtEnd, float subTaskProgress)
+        public float ComputeIncrementalProgress(float currentTaskProgressAtStart, float currentTaskProgressAtEnd, float subTaskProgress)
         {
             if (subTaskProgress < 0)
             {
@@ -2371,6 +2382,21 @@ namespace DB_Schema_Export_Tool
         }
 
         /// <summary>
+        /// Return true if any of the RegEx matchers in mTableNameExclusionMatchers match the table name
+        /// </summary>
+        /// <param name="tableName">Table name</param>
+        protected bool MatchesTablesToExcludeToProcess(string tableName)
+        {
+            foreach (var matcher in mTableNameExclusionMatchers)
+            {
+                if (matcher.IsMatch(tableName))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Invoke the DBExportStarting event
         /// </summary>
         /// <param name="databaseName">Database name</param>
@@ -3104,8 +3130,16 @@ namespace DB_Schema_Export_Tool
         /// <returns>True if the filter set is empty, or contains the table name; otherwise false</returns>
         private bool TableNamePassesFilters(string tableName)
         {
-            var passesFilter = TableNamePassesFilters(mOptions, tableName);
-            return passesFilter && MatchesObjectsToProcess(tableName);
+            var passesTableNameFilter = TableNamePassesFilters(mOptions, tableName);
+            var passesObjectNameFilter = MatchesObjectsToProcess(tableName);
+            var isExcludedTableName = MatchesTablesToExcludeToProcess(tableName);
+
+            if (isExcludedTableName)
+            {
+                OnDebugEvent("Skipping table {0}", tableName);
+            }
+
+            return passesTableNameFilter && passesObjectNameFilter && !isExcludedTableName;
         }
 
         /// <summary>
@@ -3191,7 +3225,11 @@ namespace DB_Schema_Export_Tool
             if (!objectNameFilterSuccess)
                 return false;
 
+            var tableExclusionFilterSuccess = DefineRegExNameFilter(mTableNameExclusionMatchers, mOptions.TableNameExclusionFilter, "table name exclusion filter");
 
+            // ReSharper disable once ConvertIfStatementToReturnStatement
+            if (!tableExclusionFilterSuccess)
+                return false;
 
             return ValidateOutputOptions();
         }

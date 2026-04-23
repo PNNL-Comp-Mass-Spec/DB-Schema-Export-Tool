@@ -18,10 +18,11 @@ namespace DB_Schema_Export_Tool
     {
         // ReSharper disable CommentTypo
 
-        // Ignore Spelling: bigint, datallowconn, datistemplate, datname, dumpall, hostname,
+        // Ignore Spelling: admin, attgenerated, attidentity, attname, attnum, attrelid
+        // Ignore Spelling: bigint, datallowconn, datistemplate, datname, dbo, dms, dumpall, estrict, hostname,
         // Ignore Spelling: mc, Npgsql, oid, pgpass, pgsql, Postgre, postgres, PostgreSQL
         // Ignore Spelling: regclass, relname, reltuples, schemaname, schemas, setval
-        // Ignore Spelling: tablename, tableowner, tablespace, tcp, udf, username, usr
+        // Ignore Spelling: tablename, tableowner, tablespace, tcp, udf, unrestrict, username, usr, xid
 
         // ReSharper restore CommentTypo
 
@@ -158,6 +159,8 @@ namespace DB_Schema_Export_Tool
 
         private NpgsqlConnection mPgConnection;
 
+        private readonly SortedSet<string> mSkippedTableTypes;
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -173,6 +176,8 @@ namespace DB_Schema_Export_Tool
 
             PgDumpDataSorter = new PgDumpTableDataSorter(mOptions.KeepPgDumpFile);
             RegisterEvents(PgDumpDataSorter);
+
+            mSkippedTableTypes = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -2155,6 +2160,25 @@ namespace DB_Schema_Export_Tool
                 return;
             }
 
+            if (currentObject.Type.ToUpper() is "TABLE" or "TABLE ATTACH" or "CONSTRAINT" or "INDEX" or "ACL")
+            {
+                var nameWithSchema = string.Format("{0}.{1}", schemaToUse, nameToUse);
+
+                if (MatchesTablesToExcludeToProcess(nameToUse) ||
+                    MatchesTablesToExcludeToProcess(nameWithSchema))
+                {
+                    skipExportCachedLines = true;
+                    targetScriptFile = schemaToUse + "." + nameToUse + ".sql";
+
+                    if (mSkippedTableTypes.Contains(currentObject.Type))
+                        return;
+
+                    OnDebugEvent("Skipping schema export of \"{0}\" and similar items", currentObject);
+                    mSkippedTableTypes.Add(currentObject.Type);
+                    return;
+                }
+            }
+
             switch (currentObject.Type)
             {
                 case "TABLE":
@@ -2278,7 +2302,6 @@ namespace DB_Schema_Export_Tool
                 case "DEFAULT":
                 case "SEQUENCE":
                 case "SEQUENCE OWNED BY":
-
                     // Parse out the target table name from the Alter Table DDL
 
                     // The RegEx will match lines like this:

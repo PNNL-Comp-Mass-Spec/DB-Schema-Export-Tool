@@ -450,6 +450,18 @@ namespace DB_Schema_Export_Tool
         public string ObjectNameFilter { get; set; }
 
         /// <summary>
+        /// Only export objects that contain the specified text (comma separated list)
+        /// </summary>
+        /// <remarks>
+        /// Supports RegEx symbols like ^ and $
+        /// </remarks>
+        [Option("TableNameExclusionFilter", "TableExclusionFilter", HelpShowsDefault = false,
+            HelpText = "Comma separated list of text to use to exclude tables to export; useful for excluding partitioned tables\n" +
+                       "Supports RegEx symbols like ^, $, parentheses, and brackets\n" +
+                       "Will not split on commas if the object name filter has square brackets")]
+        public string TableNameExclusionFilter { get; set; }
+
+        /// <summary>
         /// Text file with table names (one name per line) defining the order that table data should be exported
         /// </summary>
         [Option("TableDataExportOrder", "DataExportOrder", HelpShowsDefault = false, IsInputFilePath = true,
@@ -1036,6 +1048,11 @@ namespace DB_Schema_Export_Tool
             if (!string.IsNullOrEmpty(ObjectNameFilter))
             {
                 Console.WriteLine(" {0,-48} {1}", "Object Name Filter:", ObjectNameFilter);
+            }
+
+            if (!string.IsNullOrEmpty(TableNameExclusionFilter))
+            {
+                Console.WriteLine(" {0,-48} {1}", "Table Name Exclusion Filter:", TableNameExclusionFilter);
             }
 
             if (!string.IsNullOrWhiteSpace(ExistingSchemaFileToParse))
