@@ -331,10 +331,7 @@ namespace DB_Schema_Export_Tool
             };
 
             // This list will get updated later if mOptions.TableNameExclusionFilter is not empty
-            mTableNameExclusionMatchers = new List<Regex>
-            {
-                new(".+", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline)
-            };
+            mTableNameExclusionMatchers = new List<Regex>();
 
             mQuoteChars = new Regex(@"[""\[\]]", RegexOptions.Compiled);
 
@@ -996,13 +993,17 @@ namespace DB_Schema_Export_Tool
             }
         }
 
-        private bool DefineRegExNameFilter(ICollection<Regex> nameMatchers, string nameFilter, string filterDescription)
+        private bool DefineRegExNameFilter(ICollection<Regex> nameMatchers, string nameFilter, string filterDescription, string defaultRegEx = ".+")
         {
             nameMatchers.Clear();
 
             if (string.IsNullOrWhiteSpace(nameFilter))
             {
-                nameMatchers.Add(new Regex(".+", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline));
+                if (!string.IsNullOrWhiteSpace(defaultRegEx))
+                {
+                    nameMatchers.Add(new Regex(defaultRegEx, RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline));
+                }
+
                 return true;
             }
 
@@ -2840,10 +2841,11 @@ namespace DB_Schema_Export_Tool
             }
 
             OnStatusEvent("Exporting schema/data to: " + PathUtils.CompactPathString(mOptions.OutputDirectoryPath));
-            OnDebugEvent("Connecting to " + mOptions.ServerName);
 
             if (string.IsNullOrWhiteSpace(mOptions.PgDumpFile))
             {
+                OnDebugEvent("Connecting to " + mOptions.ServerName);
+
                 // Connect to the server
                 // ScriptDBObjects calls GetServerDatabasesWork to get a list of databases on the server
                 if (!ConnectToServer())
@@ -3236,7 +3238,7 @@ namespace DB_Schema_Export_Tool
             if (!objectNameFilterSuccess)
                 return false;
 
-            var tableExclusionFilterSuccess = DefineRegExNameFilter(mTableNameExclusionMatchers, mOptions.TableNameExclusionFilter, "table name exclusion filter");
+            var tableExclusionFilterSuccess = DefineRegExNameFilter(mTableNameExclusionMatchers, mOptions.TableNameExclusionFilter, "table name exclusion filter", string.Empty);
 
             // ReSharper disable once ConvertIfStatementToReturnStatement
             if (!tableExclusionFilterSuccess)

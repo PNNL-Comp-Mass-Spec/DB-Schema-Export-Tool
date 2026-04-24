@@ -2160,7 +2160,7 @@ namespace DB_Schema_Export_Tool
                 return;
             }
 
-            if (currentObject.Type.ToUpper() is "TABLE" or "TABLE ATTACH" or "CONSTRAINT" or "INDEX" or "ACL")
+            if (mTableNameExclusionMatchers.Count > 0 && currentObject.Type.ToUpper() is "TABLE" or "TABLE ATTACH" or "CONSTRAINT" or "INDEX" or "ACL")
             {
                 var nameWithSchema = string.Format("{0}.{1}", schemaToUse, nameToUse);
 
