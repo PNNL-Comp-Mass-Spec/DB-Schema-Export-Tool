@@ -41,7 +41,7 @@ DB_Schema_Export_Tool.exe
 ```
 DB_Schema_Export_Tool.exe
  SchemaFileDirectory /Server:ServerName
- /DB:Database /DBList:CommaSeparatedDatabaseName
+ /DB:Database /DBList:CommaSeparatedDatabaseNames
  [/DBUser:username] [/DBPass:password]
  [/PgUser:username] [/PgPass:password] [/PgPort:5432]
  [/DirectoryPrefix:PrefixText] [/NoSubdirectory] [/CreateDBDirectories]
@@ -50,19 +50,20 @@ DB_Schema_Export_Tool.exe
  [/TableFilterList] [/SchemaSkipList]
  [/ColumnFilter:FileName] [/DateFilter:FileName]
  [/NameFilter:FilterSpec]
+ [/TableExclusion:FilterSpec]
  [/DataExportOrder:FileName]
  [/Schema:SchemaName] [/ExistingDDL:SchemaFileName]
  [/NoAutoData] [/ExportAllData] [/MaxRows:1000] [/NoData]
  [/DisableStatementLogging:true] [/MinLogDuration:5000]
  [/DeleteExtraRows] [/ForceTruncate:TableList]
- [/DisableTriggers] 
- [/ScriptLoad] [/ScriptUser:username] [/ScriptDB:Database] 
+ [/DisableTriggers]
+ [/ScriptLoad] [/ScriptUser:username] [/ScriptDB:Database]
  [/ScriptHost:HostName] [/ScriptPort:Port]
- [/SnakeCase] [/PgDump] [/KeepPgDumpFile]
- [/PgInsert] [/PgInsertChunkSize:50000]
+ [/SnakeCase] [/PgDump] [/PgDumpFile:FileName] [/KeepPgDumpFile]
+ [/PgInsert] [/PgInsertChunkSize:50000] [/PgInsertUpdateOnConflict]
  [/ServerInfo] [/NoSchema]
  [/Sync:TargetDirectoryPath] [/Git] [/Svn] [/Hg] [/Commit]
- [/L] [/LogFile:BaseName] [/LogDir:LogDirectoryPath]
+ [/L] [/LogFile:BaseName] [/LogDir:LogDirectoryPath] [/LogMemoryUsage]
  [/Preview] [/Stats] [/Trace]
  [/ParamFile:ParamFileName.conf] [/CreateParamFile]
 ```
@@ -185,7 +186,7 @@ Use `/DataSort` (or `/PgDumpDataSort` or `/PgDumpTableDataSortOrder`) to define 
 | public.t_user_operations_permissions | 1, 2           | True         |
 | sw.t_job_state_name                  | 1              | True         |
 | timetable.task                       | 2, 1           | True         |
-                       
+
 Use `/TableFilterList` or `/TableNameFilter` to specify a table name (or comma separated list of names) to restrict table export operations
 * This is useful for exporting the data from just a single table (or a few tables)
 * This parameter does not support reading names from a file; it only supports actual table names
@@ -217,7 +218,7 @@ Use `/DateFilter` or `/TableDataDateFilter` to define a tab-delimited text file 
 | T_ParamValue_OldManagers | last_affected    | 2016-01-07   |
 
 
-Use `/NameFilter` to define a filter to apply to exported tables, views, procedures, etc.
+Use `/NameFilter` or `/ObjectNameFilter` to define a filter to apply to exported tables, views, procedures, etc.
 * Will only export objects that contain this text in the name
   * This is only applicable when exporting objects from SQL Server
 * Use `^` to indicate the object names must start with the text, for example `^Auto` to start with Auto
@@ -227,6 +228,17 @@ Use `/NameFilter` to define a filter to apply to exported tables, views, procedu
 * Multiple filters can be provided by separating with commas
   * At the command line, surround comma separated lists with double quotes
   * Will not split on commas if the object name filter has square brackets
+
+Use `/TableExclusion` or `/TableNameExclusionFilter` to define a filter to exclude tables and associated properties when parsing the PgDump file
+* Useful for excluding partitioned tables and their associated constraints and indexes
+* Also used when considering which tables to export data from
+* Use `^` to indicate the object names must start with the text, for example `^t_data_20` to start with "t_data_20"
+  * This only works if using a parameter file, since the Windows command line parser removes ^
+* Use `$` to indicate the object names must end with the text
+* Other RegEx qualifiers are supported; matches are case insensitive
+* Multiple filters can be provided by separating with commas
+  * At the command line, surround comma separated lists with double quotes
+  * Will not split on commas if the table name exclusion filter has square brackets
 
 Use `/DataExportOrder` to define a text file with table names (one name per line) defining the order that data should be exported from tables
 * Should have table names only, without schema
@@ -255,11 +267,12 @@ T_Student
 Use `/Schema` or `/DefaultSchema` to define the default schema name to use when exporting data from tables
 * Entries in the `/DataTables` file will override this default schema
 
-Use `/ExistingDDL` or `/ExistingSchema` to define a text file that should be parsed to rename columns, based on data loaded from the `/ColumnMap` file
+Use `/ExistingDDL` or `/ExistingSchema` to define an existing schema file (DDL file from SSMS) that should be parsed to rename columns, based on data loaded from the `/ColumnMap` file
 * Will create a new text file with CREATE TABLE blocks that include the new column names
   * Will skip columns with `<skip>`
 * Will skip tables (and views, procedures, etc.) that are defined in the `/DataTables` file but have `<skip>` in the TargetTableName column
   * Does not rename tables
+* The updated DDL file will end with `_UpdatedColumnNames.sql` or `_UpdatedColumnAndTableNames.sql`
 
 Use `/ExportAllData` or `/ExportAllTables` to export data from every table in the database
 * Will skip tables (and views) that are defined in the `/DataTables` file but have `<skip>` in the TargetTableName column
@@ -288,7 +301,7 @@ Use `/MinLogDuration` to customize the value to set `log_min_duration_statement`
 Use `/DeleteExtraRows` to create files with commands to delete extra rows in database tables (provided the table has one or more primary keys)
 * If `/ScriptLoad` is enabled (or the parameter file has `ScriptLoad=True`), the shell script will use these files to delete extra rows prior to importing new data
 * If `/DataExportOrder` was used to specify the export order for table data, the shell script will delete extra rows from tables in the reverse order from that defined in the `DataExportOrder` file
-  * The logic for this is that the purpose of the `DataExportOrder` file is to assure that 
+  * The logic for this is that the purpose of the `DataExportOrder` file is to assure that
 
 * If a table has a single-column primary key, the delete queries will be of the form:
 ```PLpgSQL
@@ -358,9 +371,13 @@ Use `/PgDump` or `/PgDumpData` to specify that exported data should use `COPY` c
 * With SQL Server data and PostgreSQL data, if `/PgDump` is not provided, data is exported with `INSERT INTO` statements
 * With SQL Server data, if `/PgDump` is provided, but the `/DataTables` file has `true` in the `PgInsert` column, `INSERT INTO` statements will be used for that table
 
+Use `/PgDumpFile` to specify a PgDump file to parse in lieu of contacting the database
+* Only applicable for a PgDump file created from a PostgreSQL database; auto-sets PostgreSQL to true
+* Assumes the file is associated with the first database defined by parameter DBList (or the database defined by parameter DB)
+
 Use `/KeepPgDumpFile` to not delete the `_AllObjects_.sql` created for each database
 * By default, this is false, meaning the `_AllObjects_.sql` file will be deleted (since it is no longer needed because a separate .sql file has been created for each object)
-** If any unhandled scripting commands are encountered, the `_AllObjects_.sql` file will not be deleted, even if KeepPgDumpFile is false
+  * If any unhandled scripting commands are encountered, the `_AllObjects_.sql` file will not be deleted, even if KeepPgDumpFile is false
 * In addition, when this is true, store the original PgDump table data files in directory `Replaced_PgDump_Files`
 
 The `/PgInsert` applies when exporting data from SQL Server database tables
@@ -369,6 +386,13 @@ The `/PgInsert` applies when exporting data from SQL Server database tables
 
 Use `PgInsertChunkSize` to specify the number of values to insert at a time when PgInsert is true for a table
 * Only applicable when exporting data from SQL Server
+
+When `/PgInsertUpdateOnConflict` is specified while exporting data from a PostgreSQL database,
+if PgDump is false, table data will be exported via INSERT INTO statements using the syntax "ON CONFLICT (key_column) DO UPDATE SET"
+
+When `/PgInsertUpdateOnConflict` is not specified (or if `/PgInsertUpdateOnConflict:false` is used), if PgDump is true,
+export data using "COPY t_table (column1, column2, column3) FROM stdin;" followed by a list of tab-delimited rows of data,
+otherwise, export data using SQL Server compatible INSERT INTO statements
 
 Use `/ServerInfo` to export server settings, logins, and SQL Server Agent jobs
 
@@ -392,6 +416,9 @@ Use `/LogFile` to specify the base name for the log file
 
 Use `/LogDir` or `/LogDirectory` to specify the directory to save the log file in
 * By default, the log file is created in the current working directory
+
+Use `/LogMemoryUsage` to log memory usage to a file while exporting data from tables
+* The file will be auto-named using the current date and time, e.g. `MemoryUsage_2026-04-23_17_16_32.txt`
 
 Use `/Preview` to count the number of database objects that would be exported
 

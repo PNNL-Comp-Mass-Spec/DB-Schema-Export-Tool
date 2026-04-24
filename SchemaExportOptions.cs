@@ -445,19 +445,21 @@ namespace DB_Schema_Export_Tool
         /// </remarks>
         [Option("ObjectNameFilter", "NameFilter", HelpShowsDefault = false,
             HelpText = "Comma separated list of text to use to filter objects to export (at the command line, surround lists with double quotes)\n" +
-                       "Supports RegEx symbols like ^, $, parentheses, and brackets\n" +
+                       "This is only applicable when exporting objects from SQL Server\n" +
+                       "Supports RegEx symbols like ^, $, parentheses, and brackets; comparisons are not case sensitive\n" +
                        "Will not split on commas if the object name filter has square brackets")]
         public string ObjectNameFilter { get; set; }
 
         /// <summary>
-        /// Only export objects that contain the specified text (comma separated list)
+        /// Do not create schema .sql files for certain tables and associated properties
         /// </summary>
         /// <remarks>
         /// Supports RegEx symbols like ^ and $
         /// </remarks>
-        [Option("TableNameExclusionFilter", "TableExclusionFilter", HelpShowsDefault = false,
-            HelpText = "Comma separated list of text to use to exclude tables to export; useful for excluding partitioned tables\n" +
-                       "Supports RegEx symbols like ^, $, parentheses, and brackets\n" +
+        [Option("TableNameExclusionFilter", "TableExclusionFilter", "TableExclusion", HelpShowsDefault = false,
+            HelpText = "Comma separated list of text to use to exclude tables and associated properties when parsing the PgDump file; useful for excluding partitioned tables\n" +
+                       "Also used when considering which tables to export data from\n" +
+                       "Supports RegEx symbols like ^, $, parentheses, and brackets; comparisons are not case sensitive\n" +
                        "Will not split on commas if the object name filter has square brackets")]
         public string TableNameExclusionFilter { get; set; }
 
@@ -713,7 +715,7 @@ namespace DB_Schema_Export_Tool
         /// When true, log memory usage to a file while exporting data from tables
         /// </summary>
         [Option("DataExportLogMemoryUsage", "LogMemoryUsage", HelpShowsDefault = false, SecondaryArg = true,
-            HelpText = "Log memory usage to a file while exporting data from tables; the file will auto-named using the current date and time")]
+            HelpText = "Log memory usage to a file while exporting data from tables; the file will be auto-named using the current date and time (e.g. MemoryUsage_2026-04-23_14_30_20.txt)")]
         public bool DataExportLogMemoryUsage { get; set; }
 
         /// <summary>
