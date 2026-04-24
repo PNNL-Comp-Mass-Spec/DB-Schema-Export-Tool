@@ -1198,14 +1198,22 @@ namespace DB_Schema_Export_Tool
                 StreamWriter memoryLogger;
                 if (mOptions.DataExportLogMemoryUsage)
                 {
-                    var memoryUsageLogFilePath = mOptions.GetMemoryUsageLogFilePath();
+                    var memoryUsageLogFile = new FileInfo(mOptions.GetMemoryUsageLogFilePath());
+                    var fileExists = memoryUsageLogFile.Exists;
 
-                    memoryLogger = new StreamWriter(new FileStream(memoryUsageLogFilePath, FileMode.Create, FileAccess.Write, FileShare.Read))
+                    memoryLogger = new StreamWriter(new FileStream(memoryUsageLogFile.FullName, FileMode.Append, FileAccess.Write, FileShare.Read))
                     {
                         AutoFlush = true
                     };
 
-                    memoryLogger.WriteLine("{0}\t{1}\t{2}\t{3}", "Table", "Elapsed Time (sec)", "Memory Usage (MB)", "Memory Usage (GB)");
+                    if (fileExists)
+                    {
+                        memoryLogger.WriteLine("Database: {0}\t\t\t", databaseName);
+                    }
+                    else
+                    {
+                        memoryLogger.WriteLine("{0}\t{1}\t{2}\t{3}", "Table", "Elapsed Time (sec)", "Memory Usage (MB)", "Memory Usage (GB)");
+                    }
                 }
                 else
                 {
@@ -1249,6 +1257,7 @@ namespace DB_Schema_Export_Tool
                             CreateDataLoadScriptFile(workingParams, tablesToExportData.Keys);
                         }
 
+                        memoryLogger?.Close();
                         return false;
                     }
 
@@ -1259,6 +1268,7 @@ namespace DB_Schema_Export_Tool
                     if (mAbortProcessing)
                     {
                         OnWarningEvent("Aborted processing");
+                        memoryLogger?.Close();
                         return true;
                     }
 
@@ -1281,6 +1291,7 @@ namespace DB_Schema_Export_Tool
                     CreateDataLoadScriptFile(workingParams, tablesToExportData.Keys);
                 }
 
+                memoryLogger?.Close();
                 return true;
             }
             catch (Exception ex)
@@ -2190,7 +2201,7 @@ namespace DB_Schema_Export_Tool
             {
                 targetColumnName = columnMapInfo.GetTargetColumnName(currentColumnName);
 
-                if (targetColumnName.Equals(TableNameMapContainer.NameMapReader.SKIP_FLAG, StringComparison.OrdinalIgnoreCase))
+                if (targetColumnName.Equals(NameMapReader.SKIP_FLAG, StringComparison.OrdinalIgnoreCase))
                 {
                     // Do not include this column in the output file
                     dataColumnType = DataColumnTypeConstants.SkipColumn;
@@ -3006,7 +3017,7 @@ namespace DB_Schema_Export_Tool
             if (!TableNamePassesFilters(options, tableInfo.SourceTableName))
                 return true;
 
-            return tableInfo.TargetTableName?.Equals(TableNameMapContainer.NameMapReader.SKIP_FLAG, StringComparison.OrdinalIgnoreCase) == true;
+            return tableInfo.TargetTableName?.Equals(NameMapReader.SKIP_FLAG, StringComparison.OrdinalIgnoreCase) == true;
         }
 
         /// <summary>
