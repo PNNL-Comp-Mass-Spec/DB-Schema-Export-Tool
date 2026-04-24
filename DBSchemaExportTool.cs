@@ -1647,7 +1647,10 @@ namespace DB_Schema_Export_Tool
                     sourceFile.Name.StartsWith("t_tmp_", StringComparison.OrdinalIgnoreCase) ||
                     sourceFile.Name.StartsWith("t_CandidateModsSeqWork_", StringComparison.OrdinalIgnoreCase) ||
                     sourceFile.Name.StartsWith("t_CandidateSeqWork_", StringComparison.OrdinalIgnoreCase) ||
-                    sourceFile.Name.Equals("_AllObjects_.sql", StringComparison.OrdinalIgnoreCase))
+                    sourceFile.Name.Equals("_AllObjects_.sql", StringComparison.OrdinalIgnoreCase) ||
+                    sourceFile.Name.Equals("_AllObjects__UpdatedColumnNames.sql", StringComparison.OrdinalIgnoreCase) ||
+                    sourceFile.Name.Equals("_AllObjects__UpdatedTableNames.sql", StringComparison.OrdinalIgnoreCase) ||
+                    sourceFile.Name.Equals("_AllObjects__UpdatedColumnAndTableNames.sql", StringComparison.OrdinalIgnoreCase))
                 {
                     OnStatusEvent("Skipping {0} object {1}", databaseName, sourceFile.Name);
                     continue;
