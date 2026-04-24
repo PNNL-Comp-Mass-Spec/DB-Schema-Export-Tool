@@ -1072,12 +1072,12 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Convert database value to text
         /// </summary>
-        /// <typeparam name="dynamic"></typeparam>
+        /// <typeparam name="TDynamic"></typeparam>
         /// <param name="columnValue">Database value</param>
         /// <param name="valueIsText">True if the value is text; false if numeric, a date, a boolean, etc.</param>
         /// <param name="pgInsertEnabled">True if using insert commands formatted as PostgreSQL compatible INSERT INTO statements</param>
         /// <returns>Value, as text</returns>
-        private string GetFormattedValue<dynamic>(dynamic columnValue, bool valueIsText, bool pgInsertEnabled)
+        private string GetFormattedValue<TDynamic>(TDynamic columnValue, bool valueIsText, bool pgInsertEnabled)
         {
             if (valueIsText)
             {
@@ -1090,12 +1090,12 @@ namespace DB_Schema_Export_Tool
         /// <summary>
         /// Convert database value to text
         /// </summary>
-        /// <typeparam name="dynamic"></typeparam>
+        /// <typeparam name="TDynamic"></typeparam>
         /// <param name="columnValue">Database value</param>
         /// <param name="dataColumnType">Data type of the database value</param>
         /// <param name="pgInsertEnabled">True if using insert commands formatted as PostgreSQL compatible INSERT INTO statements</param>
         /// <returns>Value, as text</returns>
-        private string GetFormattedValue<dynamic>(dynamic columnValue, DBSchemaExporterBase.DataColumnTypeConstants dataColumnType, bool pgInsertEnabled)
+        private string GetFormattedValue<TDynamic>(TDynamic columnValue, DBSchemaExporterBase.DataColumnTypeConstants dataColumnType, bool pgInsertEnabled)
         {
             if (dataColumnType is DBSchemaExporterBase.DataColumnTypeConstants.Text or DBSchemaExporterBase.DataColumnTypeConstants.IPAddress)
             {
