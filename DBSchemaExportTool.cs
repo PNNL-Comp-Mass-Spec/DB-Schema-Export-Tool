@@ -17,7 +17,7 @@ namespace DB_Schema_Export_Tool
     {
         // ReSharper disable CommentTypo
 
-        // Ignore Spelling: dba, lcms, myemsl, PostgreSQL, psm, Quantitation, Repo, Svn, tmp, unimod, unpause, unpaused, uri
+        // Ignore Spelling: dba, lcms, myemsl, PostgreSQL, psm, Quantitation, Repo, Svn, tmp, unimod, unpause, unpaused, Untracked, uri
 
         // ReSharper restore CommentTypo
 
