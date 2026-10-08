@@ -578,7 +578,7 @@ namespace DB_Schema_Export_Tool
                 // pg_dump -h host -p port -U user -W PasswordIfDefined -d database --schema-only --format=p --file=OutFilePath
                 var cmdArgs = string.Format("{0} -d {1} --schema-only --format=p --file={2}", serverInfoArgs, databaseName, pgDumpOutputFile.FullName);
 
-                const int maxRuntimeSeconds = 180;
+                const int maxRuntimeSeconds = 360;
 
                 pgDump = FindPgDumpExecutable();
 
